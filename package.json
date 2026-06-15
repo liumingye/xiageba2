@@ -1,0 +1,29 @@
+{
+  "name": "music-download",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "seed:admin": "node scripts/seed-admin.mjs",
+    "db:init": "prisma generate && prisma db push"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.5.1",
+    "lucide-vue-next": "^0.366.0",
+    "nuxt": "^3.11.2",
+    "pinia": "^2.1.7",
+    "qrcode": "^1.5.3",
+    "vue": "^3.4.21"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.12.0",
+    "@prisma/client": "^6.5.0",
+    "@types/node": "^20.11.0",
+    "@types/qrcode": "^1.5.5",
+    "prisma": "^6.5.0",
+    "typescript": "^5.3.3"
+  }
+}

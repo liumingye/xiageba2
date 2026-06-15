@@ -1,0 +1,331 @@
+<script setup lang="ts">
+import { ref, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "~/composables/useAuth";
+import {
+  Music,
+  Users,
+  LogOut,
+  Plus,
+  Search,
+  Trash2,
+  Edit3,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-vue-next";
+import type { Music as MusicType } from "~/stores/music";
+
+const router = useRouter();
+const {
+  isLoggedIn,
+  username,
+  logout,
+  checkLogin,
+  initialized,
+  getAuthHeaders,
+} = useAuth();
+
+const musics = ref<MusicType[]>([]);
+const searchQuery = ref("");
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const totalPages = ref(0);
+const isLoading = ref(false);
+
+onMounted(async () => {
+  // 等待状态初始化
+  if (!initialized.value) {
+    checkLogin();
+  }
+
+  // 延迟检查登录状态，确保 localStorage 已读取
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  if (!isLoggedIn.value) {
+    router.push("/admin/login");
+    return;
+  }
+  await loadMusic();
+});
+
+const loadMusic = async () => {
+  isLoading.value = true;
+  try {
+    const params = new URLSearchParams({
+      page: currentPage.value.toString(),
+      pageSize: pageSize.value.toString(),
+    });
+    if (searchQuery.value) {
+      params.set("search", searchQuery.value);
+    }
+
+    const res = await fetch(`/api/music?${params}`);
+    const data = await res.json();
+    musics.value = data.data;
+    total.value = data.total;
+    totalPages.value = data.totalPages;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+watch(searchQuery, () => {
+  currentPage.value = 1;
+  loadMusic();
+});
+
+const handleLogout = () => {
+  logout();
+  router.push("/admin/login");
+};
+
+const goToAddMusic = () => {
+  router.push("/admin/music/add");
+};
+
+const editMusic = (id: string) => {
+  router.push(`/admin/music/edit/${id}`);
+};
+
+const deleteMusic = async (id: string) => {
+  if (!confirm("确定要删除这首歌吗？")) return;
+
+  const res = await fetch("/api/admin/music", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ id }),
+  });
+
+  if (res.ok) {
+    await loadMusic();
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
+const goToPage = (page: number) => {
+  if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
+  loadMusic();
+};
+
+const getPageNumbers = () => {
+  const pages: (number | string)[] = [];
+  const maxVisible = 5;
+  const current = currentPage.value;
+  const total = totalPages.value;
+
+  if (total <= maxVisible) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    if (current <= 3) {
+      for (let i = 1; i <= 4; i++) pages.push(i);
+      pages.push("...");
+      pages.push(total);
+    } else if (current >= total - 2) {
+      pages.push(1);
+      pages.push("...");
+      for (let i = total - 3; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      pages.push("...");
+      pages.push(current - 1);
+      pages.push(current);
+      pages.push(current + 1);
+      pages.push("...");
+      pages.push(total);
+    }
+  }
+  return pages;
+};
+</script>
+
+<template>
+  <div class="min-h-screen bg-dark-300">
+    <header class="bg-gray-900 border-b border-gray-800 px-6 py-4">
+      <div class="flex items-center justify-between max-w-7xl mx-auto">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
+          >
+            <Music class="w-5 h-5 text-white" />
+          </div>
+          <h1 class="text-xl font-bold text-white">泡椒音乐管理后台</h1>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <span class="text-gray-400">{{ username }}</span>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+            @click="handleLogout"
+          >
+            <LogOut class="w-4 h-4" />
+            退出
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="bg-gray-900/50 border-b border-gray-800 px-6 py-3">
+      <div class="flex items-center gap-4 max-w-7xl mx-auto">
+        <a
+          href="/admin"
+          class="flex items-center gap-2 text-primary-500 font-medium"
+        >
+          <Music class="w-5 h-5" />
+          音乐管理
+        </a>
+        <a
+          href="/admin/admins"
+          class="flex items-center gap-2 text-gray-400 hover:text-gray-200 transition-colors"
+        >
+          <Users class="w-5 h-5" />
+          管理员管理
+        </a>
+      </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-medium text-white">音乐列表</h2>
+        <button
+          class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+          @click="goToAddMusic"
+        >
+          <Plus class="w-4 h-4" />
+          添加音乐
+        </button>
+      </div>
+
+      <div class="relative mb-4 max-w-md">
+        <Search
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500"
+        />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索歌名或歌手..."
+          class="input-search pl-10"
+        />
+      </div>
+
+      <div class="card overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-800">
+            <tr>
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+                封面
+              </th>
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+                歌名
+              </th>
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+                歌手
+              </th>
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+                专辑
+              </th>
+              <th
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
+              >
+                操作
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="isLoading">
+              <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                加载中...
+              </td>
+            </tr>
+            <tr
+              v-else-if="musics.length === 0"
+            >
+              <td colspan="5" class="px-4 py-12 text-center">
+                <p class="text-gray-500">暂无音乐</p>
+              </td>
+            </tr>
+            <tr
+              v-else
+              v-for="music in musics"
+              :key="music.id"
+              class="border-t border-gray-800 hover:bg-gray-800/50"
+            >
+              <td class="px-4 py-4">
+                <img
+                  :src="music.cover || 'https://via.placeholder.com/60'"
+                  :alt="music.title"
+                  class="w-12 h-12 rounded object-cover"
+                />
+              </td>
+              <td class="px-4 py-4 text-white">{{ music.title }}</td>
+              <td class="px-4 py-4 text-gray-400">{{ music.artist }}</td>
+              <td class="px-4 py-4 text-gray-400">{{ music.album || "-" }}</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-2">
+                  <button
+                    class="p-2 text-gray-400 hover:text-primary-500 transition-colors"
+                    title="编辑"
+                    @click="editMusic(music.id)"
+                  >
+                    <Edit3 class="w-4 h-4" />
+                  </button>
+                  <button
+                    class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    title="删除"
+                    @click="deleteMusic(music.id)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 分页 -->
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+          <div class="text-sm text-gray-400">
+            共 {{ total }} 首音乐，第 {{ currentPage }} / {{ totalPages }} 页
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              :disabled="currentPage === 1"
+              class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="goToPage(currentPage - 1)"
+            >
+              <ChevronLeft class="w-4 h-4" />
+            </button>
+            <button
+              v-for="p in getPageNumbers()"
+              :key="p"
+              :class="[
+                'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
+                p === currentPage
+                  ? 'bg-primary-500 text-white'
+                  : p === '...'
+                    ? 'text-gray-500 cursor-default'
+                    : 'text-gray-400 hover:text-white',
+              ]"
+              @click="typeof p === 'number' && goToPage(p)"
+            >
+              {{ p }}
+            </button>
+            <button
+              :disabled="currentPage === totalPages"
+              class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="goToPage(currentPage + 1)"
+            >
+              <ChevronRight class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
