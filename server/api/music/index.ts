@@ -1,14 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient({ log: ['query'] })
+const prisma = new PrismaClient({
+  // log: ["query"],
+});
 
 // 可选：监听查询事件来做自定义处理
-prisma.$on('query', (e: any) => {
-  console.log('查询:', e.query)
-  console.log('参数:', e.params)
-  console.log('耗时:', e.duration + 'ms')
-  console.log('---')
-})
+// prisma.$on('query', (e: any) => {
+//   console.log('查询:', e.query)
+//   console.log('参数:', e.params)
+//   console.log('耗时:', e.duration + 'ms')
+//   console.log('---')
+// })
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -27,12 +29,12 @@ export default defineEventHandler(async (event) => {
     const chars = [...term];
     const bigrams = [];
     for (let i = 0; i < chars.length; i++) {
-      if (chars[i] !== ' ') bigrams.push(chars[i]);          // 单字
-      if (i < chars.length - 1 && chars[i] !== ' ' && chars[i + 1] !== ' ') {
-        bigrams.push(chars[i] + chars[i + 1]);                 // bigram
+      if (chars[i] !== " ") bigrams.push(chars[i]); // 单字
+      if (i < chars.length - 1 && chars[i] !== " " && chars[i + 1] !== " ") {
+        bigrams.push(chars[i] + chars[i + 1]); // bigram
       }
     }
-    const tsQuery = bigrams.join(' & ');
+    const tsQuery = bigrams.join(" & ");
 
     // PG FTS: searchVector @@ to_tsquery('simple', '周杰 & 杰伦')
     // 走 searchVector 上的 GIN 索引，O(log n)

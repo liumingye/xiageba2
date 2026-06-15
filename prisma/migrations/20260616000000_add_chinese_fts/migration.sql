@@ -3,6 +3,9 @@
 -- 例如 "周杰伦" → 拆成 token: 周 杰 伦 周杰 杰伦
 -- 查询 "杰伦" → to_tsquery('simple', '杰伦') — 命中 "周杰伦" 的 bigram token
 
+-- 0. 确保 searchVector 列存在（Prisma schema 中标记为 Unsupported("tsvector")?）
+ALTER TABLE "Music" ADD COLUMN IF NOT EXISTS "searchVector" tsvector;
+
 -- 1. bigram 拆分函数（IMMUTABLE，可用于索引与触发器）
 DROP FUNCTION IF EXISTS chinese_bigram(text);
 CREATE OR REPLACE FUNCTION chinese_bigram(text) RETURNS text AS $$
@@ -79,7 +82,7 @@ SET "searchVector" = to_tsvector(
 
 
 -- 5. 在 searchVector 上建 GIN 索引（真正走 PG FTS 索引，O(log n)）
-CREATE INDEX idx_music_search_vector ON "Music" USING GIN ("searchVector");
+CREATE INDEX IF NOT EXISTS idx_music_search_vector ON "Music" USING GIN ("searchVector");
 
 
 -- 6. 更新统计信息，让查询计划器正确选择索引
