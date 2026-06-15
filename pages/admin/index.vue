@@ -155,7 +155,7 @@ const getPageNumbers = () => {
           >
             <Music class="w-5 h-5 text-white" />
           </div>
-          <h1 class="text-xl font-bold text-white">泡椒音乐管理后台</h1>
+          <h1 class="text-xl font-bold text-white">下歌吧管理后台</h1>
         </div>
 
         <div class="flex items-center gap-4">

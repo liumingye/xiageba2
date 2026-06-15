@@ -23,21 +23,21 @@ const { data: pageData } = await useAsyncData('home-music', () => {
 const hotMusic = computed(() => pageData.value?.data || [])
 
 useHead({
-  title: '泡椒音乐 - 免费下载高品质MP3与FLAC无损音乐',
+  title: '下歌吧 - 免费下载高品质MP3与FLAC无损音乐',
   meta: [
-    { name: 'description', content: '泡椒音乐是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。' },
-    { name: 'keywords', content: '泡椒音乐, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听, 歌词' },
+    { name: 'description', content: '下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。' },
+    { name: 'keywords', content: '下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听, 歌词' },
     { name: 'robots', content: 'index, follow' },
-    { name: 'author', content: '泡椒音乐' },
+    { name: 'author', content: '下歌吧' },
     { name: 'theme-color', content: '#0f172a' },
     { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: '泡椒音乐 - 免费下载高品质MP3与FLAC无损音乐' },
-    { property: 'og:description', content: '泡椒音乐是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。' },
-    { property: 'og:site_name', content: '泡椒音乐' },
+    { property: 'og:title', content: '下歌吧 - 免费下载高品质MP3与FLAC无损音乐' },
+    { property: 'og:description', content: '下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。' },
+    { property: 'og:site_name', content: '下歌吧' },
     { property: 'og:url', content: '/' },
     { property: 'og:image', content: '/og-image.png' },
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: '泡椒音乐 - 免费下载高品质音乐' },
+    { name: 'twitter:title', content: '下歌吧 - 免费下载高品质音乐' },
     { name: 'twitter:description', content: '免费高品质音乐下载，MP3与FLAC无损格式。' }
   ],
   link: [
@@ -77,7 +77,7 @@ const clearHistory = () => {
               <circle cx="18" cy="16" r="3" fill="currentColor" />
             </svg>
           </div>
-          <h1 class="text-4xl font-bold text-white">泡椒音乐</h1>
+          <h1 class="text-4xl font-bold text-white">下歌吧</h1>
         </div>
         <SearchBar />
       </header>
@@ -141,7 +141,7 @@ const clearHistory = () => {
 
       <footer class="mt-8 text-center">
         <p class="text-sm text-gray-600">
-          &copy; {{ new Date().getFullYear() }} 泡椒音乐 - 免费音乐下载平台
+          &copy; {{ new Date().getFullYear() }} 下歌吧 - 免费音乐下载平台
         </p>
         <a
           href="/admin/login"

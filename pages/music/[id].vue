@@ -25,23 +25,23 @@ const { data: music, pending: loading } = await useAsyncData(
 
 const pageTitle = computed(() => {
   if (music.value) {
-    return `${music.value.title} - ${music.value.artist} - 泡椒音乐`
+    return `${music.value.title} - ${music.value.artist} - 下歌吧`
   }
-  return '泡椒音乐 - 免费下载高品质音乐'
+  return '下歌吧 - 免费下载高品质音乐'
 })
 
 const pageDescription = computed(() => {
   if (music.value) {
-    return `${music.value.title} - ${music.value.artist} - ${music.value.album || ''} - 在泡椒音乐免费下载高品质MP3与FLAC音乐，支持在线试听。`
+    return `${music.value.title} - ${music.value.artist} - ${music.value.album || ''} - 在下歌吧免费下载高品质MP3与FLAC音乐，支持在线试听。`
   }
-  return '泡椒音乐，提供高品质MP3与FLAC音乐免费下载，支持在线试听、搜索与歌词展示。'
+  return '下歌吧，提供高品质MP3与FLAC音乐免费下载，支持在线试听、搜索与歌词展示。'
 })
 
 const pageKeywords = computed(() => {
   if (music.value) {
-    return `${music.value.title}, ${music.value.artist}, ${music.value.album || ''}, 音乐下载, FLAC, MP3, 无损音乐, 泡椒音乐`
+    return `${music.value.title}, ${music.value.artist}, ${music.value.album || ''}, 音乐下载, FLAC, MP3, 无损音乐, 下歌吧`
   }
-  return '泡椒音乐, 音乐下载, FLAC, MP3, 无损音乐, 在线试听, 歌词'
+  return '下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 在线试听, 歌词'
 })
 
 const formattedLyrics = computed(() => {
@@ -86,13 +86,13 @@ useHead({
     { name: 'keywords', content: pageKeywords },
     { name: 'robots', content: 'index, follow' },
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    { name: 'author', content: '泡椒音乐' },
+    { name: 'author', content: '下歌吧' },
     { name: 'theme-color', content: '#0f172a' },
 
     { property: 'og:type', content: 'music.song' },
     { property: 'og:title', content: pageTitle },
     { property: 'og:description', content: pageDescription },
-    { property: 'og:site_name', content: '泡椒音乐' },
+    { property: 'og:site_name', content: '下歌吧' },
     { property: 'og:url', content: canonicalUrl },
     { property: 'og:image', content: () => music.value?.cover || '' },
     { property: 'og:music:musician', content: () => music.value?.artist || '' },

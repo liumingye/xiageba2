@@ -61,7 +61,7 @@ const handleKeydown = (e: KeyboardEvent) => {
         <div class="w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
           <Music class="w-10 h-10 text-white" />
         </div>
-        <h1 class="text-2xl font-bold text-white">泡椒音乐管理后台</h1>
+        <h1 class="text-2xl font-bold text-white">下歌吧管理后台</h1>
         <p class="text-gray-500 mt-2">管理员登录</p>
       </div>
       

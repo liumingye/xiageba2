@@ -40,36 +40,36 @@ const pageSize = 10
 const pageTitle = computed(() => {
   const q = searchKeyword.value
   if (q && results.value.length > 0) {
-    return `"${q}" - 第${currentPage.value}页 - 搜索结果 - 泡椒音乐`
+    return `"${q}" - 第${currentPage.value}页 - 搜索结果 - 下歌吧`
   }
   if (q) {
-    return `${q} - 搜索 - 泡椒音乐`
+    return `${q} - 搜索 - 下歌吧`
   }
-  return '搜索 - 泡椒音乐'
+  return '搜索 - 下歌吧'
 })
 
 const pageDescription = computed(() => {
   const q = searchKeyword.value
   if (q && total.value > 0) {
-    return `在泡椒音乐搜索"${q}"，共找到 ${total.value} 首相关歌曲，免费下载高品质MP3与FLAC无损音乐。`
+    return `在下歌吧搜索"${q}"，共找到 ${total.value} 首相关歌曲，免费下载高品质MP3与FLAC无损音乐。`
   }
   if (q) {
-    return `在泡椒音乐搜索"${q}"的相关结果。`
+    return `在下歌吧搜索"${q}"的相关结果。`
   }
-  return '泡椒音乐搜索 - 免费下载高品质音乐。'
+  return '下歌吧搜索 - 免费下载高品质音乐。'
 })
 
 useHead({
   title: pageTitle,
   meta: [
     { name: 'description', content: pageDescription },
-    { name: 'keywords', content: `${searchKeyword.value}, 音乐搜索, 泡椒音乐, MP3下载, FLAC下载` },
+    { name: 'keywords', content: `${searchKeyword.value}, 音乐搜索, 下歌吧, MP3下载, FLAC下载` },
     { name: 'robots', content: 'index, follow' },
     { name: 'theme-color', content: '#0f172a' },
     { property: 'og:title', content: pageTitle },
     { property: 'og:description', content: pageDescription },
     { property: 'og:type', content: 'website' },
-    { property: 'og:site_name', content: '泡椒音乐' }
+    { property: 'og:site_name', content: '下歌吧' }
   ],
   link: [
     { rel: 'canonical', href: () => `/search?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}` },
