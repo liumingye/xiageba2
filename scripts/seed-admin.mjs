@@ -2,8 +2,19 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { createHash } from "crypto";
+import { config } from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+import { existsSync } from "fs";
 
-const connectionString = process.env.DATABASE_URL;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const envPath = resolve(__dirname, "..", ".env");
+if (existsSync(envPath)) {
+  config({ path: envPath });
+}
+
+const connectionString = process.env.DATABASE_URL || "";
 if (!connectionString) {
   console.error("请在 .env 中设置 DATABASE_URL");
   process.exit(1);
