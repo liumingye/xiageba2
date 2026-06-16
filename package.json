@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@pinia/nuxt": "^0.5.1",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@types/pg": "^8.20.0",
     "lucide-vue-next": "^0.366.0",
     "nuxt": "^3.11.2",
+    "pg": "^8.21.0",
     "pinia": "^2.1.7",
     "prisma": "^7.8.0",
     "qrcode": "^1.5.3",
