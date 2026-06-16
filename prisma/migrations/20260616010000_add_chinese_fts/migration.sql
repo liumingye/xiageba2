@@ -1,12 +1,12 @@
 -- PostgreSQL 中文全文检索 FTS（无扩展，纯 PG 内置）
--- 思路：把 title/artist/album 拆成字符 bigram，存进 tsvector + GIN 索引
--- 例如 "周杰伦" → 拆成 token: 周 杰 伦 周杰 杰伦
--- 查询 "杰伦" → to_tsquery('simple', '杰伦') — 命中 "周杰伦" 的 bigram token
+-- 字符 bigram 分词，存进 tsvector + GIN 索引
+-- 例如 "周杰伦" → token: 周 杰 伦 周杰 杰伦
+-- 查询 "杰伦" → to_tsquery('simple', '杰伦') 命中 bigram token
 
--- 0. 确保 searchVector 列存在（Prisma schema 中标记为 Unsupported("tsvector")?）
+-- 0. 添加 searchVector 列
 ALTER TABLE "Music" ADD COLUMN IF NOT EXISTS "searchVector" tsvector;
 
--- 1. bigram 拆分函数（IMMUTABLE，可用于索引与触发器）
+-- 1. bigram 拆分函数
 DROP FUNCTION IF EXISTS chinese_bigram(text);
 CREATE OR REPLACE FUNCTION chinese_bigram(text) RETURNS text AS $$
 DECLARE
@@ -21,7 +21,6 @@ BEGIN
     RETURN '';
   END IF;
 
-  -- 单字符 token：匹配精确字
   FOR i IN 1..ch_len LOOP
     ch := substring(input FROM i FOR 1);
     IF ch <> ' ' THEN
@@ -29,7 +28,6 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- bigram token：支持子串匹配（"杰伦" 命中 "周杰伦"）
   FOR i IN 1..ch_len - 1 LOOP
     bi := substring(input FROM i FOR 2);
     IF bi NOT LIKE '% %' THEN
@@ -41,17 +39,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
-
--- 2. 清理旧索引与触发器
-DROP INDEX IF EXISTS idx_music_search_vector;
-DROP INDEX IF EXISTS idx_music_title_ngrams;
-DROP INDEX IF EXISTS idx_music_artist_ngrams;
-DROP INDEX IF EXISTS idx_music_album_ngrams;
+-- 2. 触发器：写入/更新时自动同步 searchVector
 DROP TRIGGER IF EXISTS music_search_vector_trigger ON "Music";
 DROP FUNCTION IF EXISTS music_search_vector_update();
 
-
--- 3. 触发器：写入时自动把 title/artist/album 转成 bigram tsvector
 CREATE OR REPLACE FUNCTION music_search_vector_update()
 RETURNS trigger AS $$
 BEGIN
@@ -70,8 +61,7 @@ BEFORE INSERT OR UPDATE OF title, artist, album ON "Music"
 FOR EACH ROW
 EXECUTE FUNCTION music_search_vector_update();
 
-
--- 4. 对已有数据全量更新 searchVector
+-- 3. 为已有数据填充 searchVector
 UPDATE "Music"
 SET "searchVector" = to_tsvector(
   'simple',
@@ -80,10 +70,8 @@ SET "searchVector" = to_tsvector(
   chinese_bigram(COALESCE(album, ''))
 );
 
-
--- 5. 在 searchVector 上建 GIN 索引（真正走 PG FTS 索引，O(log n)）
+-- 4. GIN 索引
 CREATE INDEX IF NOT EXISTS idx_music_search_vector ON "Music" USING GIN ("searchVector");
 
-
--- 6. 更新统计信息，让查询计划器正确选择索引
+-- 5. 统计信息
 ANALYZE "Music";

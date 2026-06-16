@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Music {
-  id           String   @id @default(cuid())
+  id           String   @id @default(cuid(2))
   title        String
   artist       String
   album        String
@@ -26,7 +26,7 @@ model Music {
 }
 
 model Admin {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid(2))
   username  String   @unique
   password  String
   createdAt DateTime @default(now())

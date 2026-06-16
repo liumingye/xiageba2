@@ -60,7 +60,9 @@ const loadMusic = async () => {
       params.set("search", searchQuery.value);
     }
 
-    const res = await fetch(`/api/music?${params}`);
+    const res = await fetch(`/api/admin/music?${params}`, {
+      headers: getAuthHeaders(),
+    });
     const data = await res.json();
     musics.value = data.data;
     total.value = data.total;

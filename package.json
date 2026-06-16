@@ -6,9 +6,7 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "seed:admin": "node scripts/seed-admin.mjs",
-    "db:init": "prisma generate && prisma db push"
+    "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.5.1",

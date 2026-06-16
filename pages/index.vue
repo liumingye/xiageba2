@@ -1,68 +1,81 @@
 <script setup lang="ts">
-import SearchBar from '~/components/SearchBar.vue'
-import type { Music } from '~/stores/music'
+import SearchBar from "~/components/SearchBar.vue";
+import type { Music } from "~/stores/music";
+import { Music as MusicIcon } from "lucide-vue-next";
 
-const router = useRouter()
-const musicStore = useMusicStore()
+const router = useRouter();
+const musicStore = useMusicStore();
 
-interface PaginatedResponse {
-  data: Music[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
-}
-
-const { data: pageData } = await useAsyncData('home-music', () => {
-  return $fetch<PaginatedResponse>('/api/music?pageSize=9')
-}, {
-  server: true,
-  lazy: false
-})
-
-const hotMusic = computed(() => pageData.value?.data || [])
+const { data: hotMusic } = await useAsyncData(
+  "home-music",
+  () => {
+    return $fetch<Music[]>("/api/music/recent");
+  },
+  {
+    server: true,
+    lazy: false,
+  },
+);
 
 useHead({
-  title: '下歌吧 - 免费下载高品质MP3与FLAC无损音乐',
+  title: "下歌吧 - 免费下载高品质MP3与FLAC无损音乐",
   meta: [
-    { name: 'description', content: '下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。' },
-    { name: 'keywords', content: '下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听, 歌词' },
-    { name: 'robots', content: 'index, follow' },
-    { name: 'author', content: '下歌吧' },
-    { name: 'theme-color', content: '#0f172a' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:title', content: '下歌吧 - 免费下载高品质MP3与FLAC无损音乐' },
-    { property: 'og:description', content: '下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。' },
-    { property: 'og:site_name', content: '下歌吧' },
-    { property: 'og:url', content: '/' },
-    { property: 'og:image', content: '/og-image.png' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:title', content: '下歌吧 - 免费下载高品质音乐' },
-    { name: 'twitter:description', content: '免费高品质音乐下载，MP3与FLAC无损格式。' }
+    {
+      name: "description",
+      content:
+        "下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。",
+    },
+    {
+      name: "keywords",
+      content:
+        "下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听, 歌词",
+    },
+    { name: "robots", content: "index, follow" },
+    { name: "author", content: "下歌吧" },
+    { name: "theme-color", content: "#0f172a" },
+    { property: "og:type", content: "website" },
+    {
+      property: "og:title",
+      content: "下歌吧 - 免费下载高品质MP3与FLAC无损音乐",
+    },
+    {
+      property: "og:description",
+      content:
+        "下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。",
+    },
+    { property: "og:site_name", content: "下歌吧" },
+    { property: "og:url", content: "/" },
+    { property: "og:image", content: "/og-image.png" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: "下歌吧 - 免费下载高品质音乐" },
+    {
+      name: "twitter:description",
+      content: "免费高品质音乐下载，MP3与FLAC无损格式。",
+    },
   ],
   link: [
-    { rel: 'canonical', href: '/' },
-    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
-  ]
-})
+    { rel: "canonical", href: "/" },
+    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+  ],
+});
 
 onMounted(() => {
-  musicStore.loadSearchHistory()
-})
+  musicStore.loadSearchHistory();
+});
 
 const goToDetail = (music: Music) => {
-  musicStore.setCurrentMusic(music)
-  router.push(`/music/${music.id}`)
-}
+  musicStore.setCurrentMusic(music);
+  router.push(`/music/${music.id}`);
+};
 
 const searchFromHistory = (keyword: string) => {
-  musicStore.addSearchHistory(keyword)
-  router.push(`/search?q=${encodeURIComponent(keyword)}`)
-}
+  musicStore.addSearchHistory(keyword);
+  router.push(`/search?q=${encodeURIComponent(keyword)}`);
+};
 
 const clearHistory = () => {
-  musicStore.clearSearchHistory()
-}
+  musicStore.clearSearchHistory();
+};
 </script>
 
 <template>
@@ -70,20 +83,25 @@ const clearHistory = () => {
     <div class="max-w-4xl mx-auto">
       <header class="text-center mb-12">
         <div class="flex items-center justify-center gap-3 mb-6">
-          <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7 text-white" aria-hidden="true">
-              <path fill="currentColor" d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" fill="currentColor" />
-              <circle cx="18" cy="16" r="3" fill="currentColor" />
-            </svg>
+          <div
+            class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <MusicIcon />
           </div>
           <h1 class="text-4xl font-bold text-white">下歌吧</h1>
         </div>
         <SearchBar />
       </header>
 
-      <section v-if="musicStore.searchHistory.length > 0" class="mb-8" aria-labelledby="history-title">
-        <h2 id="history-title" class="text-lg font-medium text-gray-300 mb-4">搜索历史</h2>
+      <section
+        v-if="musicStore.searchHistory.length > 0"
+        class="mb-8"
+        aria-labelledby="history-title"
+      >
+        <h2 id="history-title" class="text-lg font-medium text-gray-300 mb-4">
+          搜索历史
+        </h2>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="keyword in musicStore.searchHistory"
@@ -104,12 +122,20 @@ const clearHistory = () => {
       </section>
 
       <section aria-labelledby="hot-title">
-        <h2 id="hot-title" class="text-lg font-medium text-gray-300 mb-4">最新音乐</h2>
-        <div v-if="!hotMusic || hotMusic.length === 0" class="text-center py-12">
+        <h2 id="hot-title" class="text-lg font-medium text-gray-300 mb-4">
+          最新音乐
+        </h2>
+        <div
+          v-if="!hotMusic || hotMusic.length === 0"
+          class="text-center py-12"
+        >
           <p class="text-gray-500">暂无最新音乐</p>
           <p class="text-gray-600 text-sm mt-2">请通过管理员后台添加音乐</p>
         </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          v-else
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
           <article
             v-for="music in hotMusic"
             :key="music.id"
@@ -120,18 +146,34 @@ const clearHistory = () => {
           >
             <div class="flex gap-4">
               <img
-                :src="music.cover || 'https://via.placeholder.com/100'"
+                :src="music.cover || '/img/cover.png'"
                 :alt="music.title"
                 class="w-20 h-20 rounded-lg object-cover"
                 loading="lazy"
               />
-              <div class="flex-1 flex flex-col justify-between py-1">
+              <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
                 <div>
-                  <h3 class="font-medium text-white truncate">{{ music.title }}</h3>
-                  <p class="text-sm text-gray-500 truncate">{{ music.artist }}</p>
+                  <h3 class="font-medium text-white truncate">
+                    {{ music.title }}
+                  </h3>
+                  <p class="text-sm text-gray-500 truncate">
+                    {{ music.artist }}
+                  </p>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 text-gray-500 self-end" aria-hidden="true">
-                  <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M13 6l6 6-6 6" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  class="w-5 h-5 text-gray-500 self-end"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 12h14M13 6l6 6-6 6"
+                  />
                 </svg>
               </div>
             </div>
