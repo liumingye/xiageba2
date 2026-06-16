@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, Home } from "lucide-vue-next";
+import { ArrowLeft, ArrowRight, Home, CircleSlash } from "lucide-vue-next";
 import SearchBar from "~/components/SearchBar.vue";
 import type { Music } from "~/stores/music";
 import { useBackHistory } from "~/composables/useBackHistory";
@@ -86,7 +86,6 @@ useHead({
       href: () =>
         `/search?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}`,
     },
-    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
   ],
 });
 
@@ -159,7 +158,10 @@ const goToDetail = (music: Music) => {
           @click="goBack"
           :aria-label="hasBackHistory ? '返回' : '主页'"
         >
-          <component :is="hasBackHistory ? ArrowLeft : Home" class="w-5 h-5 text-gray-400" />
+          <component
+            :is="hasBackHistory ? ArrowLeft : Home"
+            class="w-5 h-5 text-gray-400"
+          />
         </button>
         <SearchBar v-model="searchQuery" @search="performSearch" />
       </nav>
@@ -247,16 +249,7 @@ const goToDetail = (music: Music) => {
             class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
             aria-hidden="true"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              class="w-10 h-10 text-gray-600"
-              aria-hidden="true"
-            >
-              <path fill="currentColor" d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" fill="currentColor" />
-              <circle cx="18" cy="16" r="3" fill="currentColor" />
-            </svg>
+            <CircleSlash />
           </div>
           <p class="text-gray-500">暂无搜索结果：{{ searchKeyword }}</p>
           <p class="text-gray-600 text-sm mt-2">请尝试其他关键词</p>

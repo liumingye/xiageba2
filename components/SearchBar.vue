@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore } from "~/stores/music";
+import { Search, X } from "lucide-vue-next";
 
 const props = defineProps<{
   modelValue?: string;
@@ -51,27 +52,7 @@ const clearInput = () => {
 
 <template>
   <div class="flex items-center w-full relative">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      class="absolute left-4 w-5 h-5 text-gray-500"
-      aria-hidden="true"
-    >
-      <circle
-        cx="11"
-        cy="11"
-        r="8"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      />
-      <path
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        d="M21 21l-4.3-4.3"
-      />
-    </svg>
+    <Search class="absolute left-4 w-5 h-5 text-gray-500" />
     <input
       :value="searchQuery"
       type="text"
@@ -88,19 +69,7 @@ const clearInput = () => {
       aria-label="清除"
       type="button"
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        class="w-4 h-4"
-        aria-hidden="true"
-      >
-        <path
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          d="M18 6L6 18M6 6l12 12"
-        />
-      </svg>
+      <X class="w-4 h-4" />
     </button>
     <button
       class="absolute right-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"

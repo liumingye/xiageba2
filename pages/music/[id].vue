@@ -110,7 +110,6 @@ useHead({
   ],
   link: [
     { rel: "canonical", href: canonicalUrl },
-    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
   ],
   script: jsonLd.value
     ? [

@@ -1,17 +1,17 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "~/lib/prisma";
 import { requireAuth } from "~/server/utils/auth";
-
-const prisma = new PrismaClient();
 
 export default defineEventHandler(async (event) => {
   requireAuth(event);
   const method = event.method;
 
-  // GET - 列表查询
   if (method === "GET") {
     const query = getQuery(event);
     const page = Math.max(1, parseInt(query.page as string) || 1);
-    const pageSize = Math.min(100, Math.max(1, parseInt(query.pageSize as string) || 20));
+    const pageSize = Math.min(
+      100,
+      Math.max(1, parseInt(query.pageSize as string) || 20),
+    );
     const skip = (page - 1) * pageSize;
     const search = (query.search as string)?.trim() || "";
 
@@ -20,25 +20,28 @@ export default defineEventHandler(async (event) => {
       const bigrams: string[] = [];
       for (let i = 0; i < chars.length; i++) {
         if (chars[i] !== " ") bigrams.push(chars[i]);
-        if (i < chars.length - 1 && chars[i] !== " " && chars[i + 1] !== " ") {
+        if (
+          i < chars.length - 1 &&
+          chars[i] !== " " &&
+          chars[i + 1] !== " "
+        ) {
           bigrams.push(chars[i] + chars[i + 1]);
         }
       }
       const tsQuery = bigrams.join(" & ");
 
       const [musics, total] = await Promise.all([
-        prisma.$queryRaw<any[]>`
-          SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
-          FROM "Music"
-          WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
-          ORDER BY "createdAt" DESC
-          LIMIT ${pageSize} OFFSET ${skip}
-        `,
+        prisma.$queryRaw<
+          any[]
+        >`SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
+           FROM "Music"
+           WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
+           ORDER BY "createdAt" DESC
+           LIMIT ${pageSize} OFFSET ${skip}`,
         prisma.$queryRaw<[{ count: bigint }]>`
           SELECT COUNT(*) as count
-          FROM "Music"
-          WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
-        `,
+           FROM "Music"
+           WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})`,
       ]);
 
       const totalCount = Number((total as any)[0]?.count || 0);
@@ -76,7 +79,6 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  // POST - 创建音乐
   if (method === "POST") {
     const body = await readBody(event);
     const { title, artist, album, cover, lyrics, playUrl, downloads } = body;
@@ -100,10 +102,10 @@ export default defineEventHandler(async (event) => {
     return music;
   }
 
-  // PUT - 更新音乐
   if (method === "PUT") {
     const body = await readBody(event);
-    const { id, title, artist, album, cover, lyrics, playUrl, downloads } = body;
+    const { id, title, artist, album, cover, lyrics, playUrl, downloads } =
+      body;
 
     if (!id) {
       throw createError({ statusCode: 400, message: "缺少音乐ID" });
@@ -125,7 +127,6 @@ export default defineEventHandler(async (event) => {
     return music;
   }
 
-  // DELETE - 删除音乐
   if (method === "DELETE") {
     const body = await readBody(event);
     const { id } = body;

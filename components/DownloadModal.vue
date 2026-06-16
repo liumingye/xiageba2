@@ -82,7 +82,7 @@ const handleClose = () => {
         ></div>
 
         <div
-          class="relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
+          class="modal-content relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
         >
           <button
             class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors"
@@ -195,9 +195,15 @@ const handleClose = () => {
 </template>
 
 <style scoped>
-.modal-enter-active,
+.modal-enter-active .modal-content,
 .modal-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 0.25s ease;
+}
+
+.modal-leave-active .modal-content {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .modal-enter-from,
@@ -205,8 +211,9 @@ const handleClose = () => {
   opacity: 0;
 }
 
-.modal-enter-from .relative,
-.modal-leave-to .relative {
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  opacity: 0;
   transform: scale(0.9);
 }
 </style>

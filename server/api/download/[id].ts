@@ -1,27 +1,25 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
-  const id = event.context.params?.id as string
-  
+  const id = event.context.params?.id as string;
+
   if (!id) {
-    throw createError({ statusCode: 400, message: '缺少音乐ID' })
+    throw createError({ statusCode: 400, message: "缺少音乐ID" });
   }
-  
+
   const music = await prisma.music.findUnique({
-    where: { id }
-  })
-  
+    where: { id },
+  });
+
   if (!music) {
-    throw createError({ statusCode: 404, message: '音乐不存在' })
+    throw createError({ statusCode: 404, message: "音乐不存在" });
   }
-  
-  const downloads = JSON.parse(music.downloads || '[]')
-  
+
+  const downloads = JSON.parse(music.downloads || "[]");
+
   return {
     title: music.title,
     artist: music.artist,
-    downloads
-  }
-})
+    downloads,
+  };
+});

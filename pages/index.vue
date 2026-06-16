@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SearchBar from "~/components/SearchBar.vue";
 import type { Music } from "~/stores/music";
-import { Music as MusicIcon } from "lucide-vue-next";
+import { Music as MusicIcon, ArrowRight } from "lucide-vue-next";
 
 const router = useRouter();
 const musicStore = useMusicStore();
@@ -53,10 +53,7 @@ useHead({
       content: "免费高品质音乐下载，MP3与FLAC无损格式。",
     },
   ],
-  link: [
-    { rel: "canonical", href: "/" },
-    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-  ],
+  link: [{ rel: "canonical", href: "/" }],
 });
 
 onMounted(() => {
@@ -160,21 +157,7 @@ const clearHistory = () => {
                     {{ music.artist }}
                   </p>
                 </div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  class="w-5 h-5 text-gray-500 self-end"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 12h14M13 6l6 6-6 6"
-                  />
-                </svg>
+                <ArrowRight class="w-5 h-5 text-gray-600 self-end" />
               </div>
             </div>
           </article>
