@@ -1,6 +1,7 @@
-import prisma from "~/lib/prisma";
+import { usePrisma } from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
+  const prisma = usePrisma();
   const query = getQuery(event);
   const term = (query.q as string)?.trim() || "";
   const page = Math.max(1, parseInt(query.page as string) || 1);

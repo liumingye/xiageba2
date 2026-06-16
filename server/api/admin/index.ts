@@ -1,8 +1,9 @@
-import prisma from "~/lib/prisma";
+import { usePrisma } from "~/lib/prisma";
 import { createHash } from "crypto";
 import { requireAuth } from "~/server/utils/auth";
 
 export default defineEventHandler(async (event) => {
+  const prisma = usePrisma();
   const method = event.method;
 
   requireAuth(event);
