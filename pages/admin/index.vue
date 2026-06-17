@@ -260,7 +260,7 @@ const getPageNumbers = () => {
             >
               <td class="px-4 py-4">
                 <img
-                  :src="music.cover || 'https://via.placeholder.com/60'"
+                  :src="music.cover || '/img/cover.png'"
                   :alt="music.title"
                   class="w-12 h-12 rounded object-cover"
                 />
