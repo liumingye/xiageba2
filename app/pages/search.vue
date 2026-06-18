@@ -22,17 +22,14 @@ const currentPage = computed(() =>
 );
 const searchKeyword = computed(() => (route.query.q as string) || "");
 
-const { data: pageData, pending: loading } = await useAsyncData(
-  () => `search-${searchKeyword.value}-${currentPage.value}`,
-  async () => {
+const { data: pageData, pending: loading } = await useFetch<PaginatedResponse>(
+  () => {
     const q = searchKeyword.value;
     if (!q) return null;
-    return await $fetch<PaginatedResponse>(
-      `/api/music/search?q=${encodeURIComponent(q)}&page=${currentPage.value}&pageSize=20`,
-      { timeout: 15000 },
-    );
+    return `/api/music/search?q=${encodeURIComponent(q)}&page=${currentPage.value}&pageSize=20`;
   },
   {
+    key: () => `search-${searchKeyword.value}-${currentPage.value}`,
     server: true,
     lazy: true,
     watch: [searchKeyword, currentPage],
@@ -139,7 +136,7 @@ const skeletonList = Array.from({ length: 8 });
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-6 px-4">
+  <div class="min-h-screen bg-dark-300 py-4 md:px-6 px-2">
     <div class="max-w-4xl mx-auto">
       <TopBar :search-query="searchQuery" @search="performSearch" />
 

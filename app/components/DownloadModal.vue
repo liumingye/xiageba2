@@ -30,9 +30,9 @@ onMounted(() => {
 
 const generateQrCode = async (url: string) => {
   const qrcode = await import("qrcode");
-  qrCodeUrl.value = await qrcode.toDataURL(url,{
+  qrCodeUrl.value = await qrcode.toDataURL(url, {
     margin: 0,
-  })
+  });
 };
 
 watch(
@@ -55,14 +55,8 @@ watch(
 const selectDownload = async (download: DownloadOption) => {
   selectedDownload.value = download;
 
-  if (isMobile.value) {
-    if (download.url) {
-      window.location.href = download.url;
-    }
-  } else {
-    if (download.url) {
-      await generateQrCode(download.url);
-    }
+  if (download.url) {
+    await generateQrCode(download.url);
   }
 };
 
@@ -107,27 +101,17 @@ const handleClose = () => {
 
             <div v-if="isMobile" class="space-y-4">
               <div class="flex justify-center gap-2">
-                <button
+                <a
                   v-for="download in music.downloads"
                   :key="download.quality"
-                  class="flex flex-col w-full items-center gap-2 p-4 rounded-lg transition-colors"
-                  :class="
-                    selectedDownload?.quality === download.quality
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-gray-800 hover:bg-gray-700 text-white'
-                  "
-                  @click="selectDownload(download)"
+                  class="flex flex-col w-full items-center gap-2 p-4 rounded-lg transition-colors bg-gray-800 hover:bg-gray-700 text-white"
+                  :href="download.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <Download
-                    class="w-8 h-8"
-                    :class="
-                      selectedDownload?.quality === download.quality
-                        ? 'text-white'
-                        : 'text-primary-500'
-                    "
-                  />
+                  <Download class="w-8 h-8 text-primary-500" />
                   <span class="font-medium">{{ download.quality }}</span>
-                </button>
+                </a>
               </div>
 
               <div class="text-center text-gray-500 text-sm">

@@ -43,7 +43,7 @@ const handleSearch = (keyword: string) => {
 </script>
 
 <template>
-  <nav class="flex items-center gap-4 mb-6">
+  <nav class="flex items-center gap-2 mb-6">
     <button
       class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
       @click="navigateTo('/')"

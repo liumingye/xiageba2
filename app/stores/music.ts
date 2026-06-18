@@ -28,7 +28,7 @@ export const useMusicStore = defineStore('music', () => {
       searchHistory.value.splice(index, 1)
     }
     searchHistory.value.unshift(keyword)
-    if (searchHistory.value.length > 10) {
+    if (searchHistory.value.length > 20) {
       searchHistory.value.pop()
     }
     localStorage.setItem('searchHistory', JSON.stringify(searchHistory.value))

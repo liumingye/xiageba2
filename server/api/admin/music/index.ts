@@ -1,10 +1,8 @@
 import { usePrisma } from "#server/lib/prisma";
-import { requireAuth } from "#server/utils/auth";
 import { Pool } from "pg";
 
 export default defineEventHandler(async (event) => {
   const prisma = usePrisma();
-  requireAuth(event);
   const method = event.method;
 
   if (method === "GET") {

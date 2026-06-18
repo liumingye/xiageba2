@@ -10,19 +10,14 @@ const router = useRouter();
 
 const musicId = route.params.id as string;
 
-const { data: music, pending: loading } = await useAsyncData(
-  "music-" + musicId,
-  async () => {
-    try {
-      const res = await $fetch<Music>(`/api/music/${musicId}`, {
-        timeout: 15000,
-      });
-      return res;
-    } catch (e) {
-      return null;
-    }
+const { data: music, pending: loading } = await useFetch<Music>(
+  () => `/api/music/${musicId}`,
+  {
+    key: () => `music-${musicId}`,
+    lazy: true,
+    default: () => null,
+    server: true,
   },
-  { lazy: true, default: () => null },
 );
 
 const pageTitle = computed(() => {
@@ -55,12 +50,7 @@ const formattedLyrics = computed(() => {
   return music.value.lyrics.split("\n").filter((line: string) => line.trim());
 });
 
-const canonicalUrl = computed(() => {
-  if (typeof window !== "undefined") {
-    return window.location.href;
-  }
-  return `/music/${musicId}`;
-});
+const canonicalUrl = `/music/${musicId}`;
 
 const jsonLd = computed(() => {
   if (!music.value) return null;
@@ -77,7 +67,7 @@ const jsonLd = computed(() => {
       name: music.value.album || music.value.title,
     },
     image: music.value.cover || "",
-    url: canonicalUrl.value,
+    url: canonicalUrl,
   };
   if (formattedLyrics.value.length > 0) {
     data.lyrics = formattedLyrics.value.join(" ");
@@ -170,7 +160,7 @@ const closeDownloadModal = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-6 px-4">
+  <div class="min-h-screen bg-dark-300 py-4 md:py-6 px-2">
     <div class="max-w-3xl mx-auto">
       <TopBar />
 

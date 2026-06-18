@@ -52,19 +52,18 @@ const clearInput = () => {
 
 <template>
   <div class="flex items-center w-full relative">
-    <Search class="absolute left-4 w-5 h-5 text-gray-500" />
     <input
       :value="searchQuery"
       type="text"
       placeholder="请输入搜索内容"
-      class="input-search pl-12 pr-20"
+      class="input-search pl-3 pr-20"
       @input="updateSearchQuery"
       @keydown="handleKeydown"
       aria-label="搜索"
     />
     <button
       v-if="searchQuery"
-      class="absolute right-20 p-2 text-gray-500 hover:text-white transition-colors"
+      class="absolute right-14 py-2 text-gray-500 hover:text-white transition-colors"
       @click="clearInput"
       aria-label="清除"
       type="button"
@@ -72,11 +71,11 @@ const clearInput = () => {
       <X class="w-4 h-4" />
     </button>
     <button
-      class="absolute right-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+      class="absolute right-1 px-2 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
       @click="handleSearch"
       type="button"
     >
-      搜索
+      <Search />
     </button>
   </div>
 </template>

@@ -6,12 +6,10 @@ import { Music as MusicIcon, ArrowRight } from "lucide-vue-next";
 const router = useRouter();
 const musicStore = useMusicStore();
 
-const { data: hotMusic, pending: loading } = await useAsyncData(
-  "home-music",
-  () => {
-    return $fetch<Music[]>("/api/music/recent", { timeout: 10000 });
-  },
+const { data: hotMusic, pending: loading } = await useFetch<Music[]>(
+  "/api/music/recent",
   {
+    key: "home-music",
     server: true,
     lazy: true,
     default: () => [],
