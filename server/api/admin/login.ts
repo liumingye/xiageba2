@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   setHeader(
     event,
     "Set-Cookie",
-    `admin-token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${60 * 60 * 24 * 7}`,
+    `admin-token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${60 * 60 * 24 * 7}; Secure`,
   );
 
   return {

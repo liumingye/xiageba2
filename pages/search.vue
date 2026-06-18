@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, Home, CircleSlash } from "lucide-vue-next";
-import SearchBar from "~/components/SearchBar.vue";
+import { CircleSlash } from "lucide-vue-next";
+import TopBar from "~/components/TopBar.vue";
 import type { Music } from "~/stores/music";
-import { useBackHistory } from "~/composables/useBackHistory";
+import { ArrowRight } from "lucide-vue-next";
 
 interface PaginatedResponse {
   data: Music[];
@@ -22,19 +22,21 @@ const currentPage = computed(() =>
 );
 const searchKeyword = computed(() => (route.query.q as string) || "");
 
-const { data: pageData } = await useAsyncData(
+const { data: pageData, pending: loading } = await useAsyncData(
   () => `search-${searchKeyword.value}-${currentPage.value}`,
   async () => {
     const q = searchKeyword.value;
     if (!q) return null;
     return await $fetch<PaginatedResponse>(
       `/api/music/search?q=${encodeURIComponent(q)}&page=${currentPage.value}&pageSize=20`,
+      { timeout: 15000 },
     );
   },
   {
     server: true,
-    lazy: false,
+    lazy: true,
     watch: [searchKeyword, currentPage],
+    default: () => null,
   },
 );
 
@@ -88,18 +90,14 @@ useHead({
   ],
 });
 
-onMounted(() => {
-  searchQuery.value = searchKeyword.value;
-});
-
 watch(searchKeyword, (val) => {
   searchQuery.value = val;
-});
+}, { immediate: true });
 
-const performSearch = () => {
-  if (!searchQuery.value.trim()) return;
-  musicStore.addSearchHistory(searchQuery.value);
-  router.push(`/search?q=${encodeURIComponent(searchQuery.value)}`);
+const performSearch = (keyword: string) => {
+  if (!keyword.trim()) return;
+  musicStore.addSearchHistory(keyword);
+  router.push(`/search?q=${encodeURIComponent(keyword)}`);
 };
 
 const goToPage = (page: number) => {
@@ -132,42 +130,45 @@ const getPageNumbers = (): (number | "...")[] => {
   return pages;
 };
 
-const { hasBackHistory } = useBackHistory();
-
-const goBack = () => {
-  if (hasBackHistory.value) {
-    router.back();
-  } else {
-    router.push("/");
-  }
-};
-
 const goToDetail = (music: Music) => {
   musicStore.setCurrentMusic(music);
   router.push(`/music/${music.id}`);
 };
+
+const skeletonList = Array.from({ length: 8 });
 </script>
 
 <template>
   <div class="min-h-screen bg-dark-300 py-6 px-4">
     <div class="max-w-4xl mx-auto">
-      <nav class="flex items-center gap-4 mb-6">
-        <button
-          class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-          @click="goBack"
-          :aria-label="hasBackHistory ? '返回' : '主页'"
-        >
-          <component
-            :is="hasBackHistory ? ArrowLeft : Home"
-            class="w-5 h-5 text-gray-400"
-          />
-        </button>
-        <SearchBar v-model="searchQuery" @search="performSearch" />
-      </nav>
+      <TopBar :search-query="searchQuery" @search="performSearch" />
 
       <main>
-        <div v-if="searchKeyword && results.length > 0" class="space-y-3">
-          <h2 class="text-gray-500 text-sm">
+        <!-- 骨架屏 -->
+        <div
+          v-if="loading && searchKeyword"
+          class="space-y-2"
+          aria-busy="true"
+          aria-label="正在加载搜索结果"
+        >
+          <div class="h-3 bg-gray-700 rounded w-1/4 animate-pulse mb-2" />
+          <article
+            v-for="(_, i) in skeletonList"
+            :key="i"
+            class="card p-3 animate-pulse"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-gray-700 rounded-lg" />
+              <div class="flex-1 space-y-1">
+                <div class="h-3 bg-gray-700 rounded w-3/4" />
+                <div class="h-2 bg-gray-700 rounded w-1/3" />
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div v-else-if="searchKeyword && results.length > 0" class="space-y-2">
+          <h2 class="text-gray-500 text-sm mb-2">
             搜索"<span class="text-primary-400">{{ searchKeyword }}</span
             >"找到 {{ total }} 首歌曲
             <span v-if="totalPages > 1" class="ml-2"
@@ -178,25 +179,27 @@ const goToDetail = (music: Music) => {
           <article
             v-for="music in results"
             :key="music.id"
-            class="card p-4 cursor-pointer hover:border-primary-500/50 transition-colors"
+            class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
             @click="goToDetail(music)"
             role="article"
           >
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
               <img
                 :src="music.cover || '/img/cover.png'"
                 :alt="music.title"
-                class="w-16 h-16 rounded-lg object-cover"
+                class="w-12 h-12 rounded-lg object-cover"
                 loading="lazy"
+                decoding="async"
+                @error="($event.target as HTMLImageElement).src = '/img/cover.png'"
               />
-              <div class="flex-1">
-                <h3 class="font-medium text-white">{{ music.title }}</h3>
-                <p class="text-sm text-gray-500">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-sm font-medium text-white truncate">{{ music.title }}</h3>
+                <p class="text-xs text-gray-500 truncate">
                   {{ music.artist
                   }}<span v-if="music.album"> - {{ music.album }}</span>
                 </p>
               </div>
-              <ArrowRight class="w-5 h-5 text-gray-600" />
+              <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
             </div>
           </article>
 

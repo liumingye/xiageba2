@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { ArrowLeft, Home, Download, Play, Pause, Disc3 } from "lucide-vue-next";
-import SearchBar from "~/components/SearchBar.vue";
+import { Download, Play, Pause, Disc3 } from "lucide-vue-next";
+import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import type { Music } from "~/stores/music";
-import { useBackHistory } from "~/composables/useBackHistory";
 
 const route = useRoute();
 const router = useRouter();
@@ -15,13 +14,15 @@ const { data: music, pending: loading } = await useAsyncData(
   "music-" + musicId,
   async () => {
     try {
-      const res = await $fetch<Music>(`/api/music/${musicId}`);
+      const res = await $fetch<Music>(`/api/music/${musicId}`, {
+        timeout: 15000,
+      });
       return res;
     } catch (e) {
       return null;
     }
   },
-  { lazy: false },
+  { lazy: true, default: () => null },
 );
 
 const pageTitle = computed(() => {
@@ -108,9 +109,7 @@ useHead({
     { name: "twitter:description", content: pageDescription },
     { name: "twitter:image", content: () => music.value?.cover || "" },
   ],
-  link: [
-    { rel: "canonical", href: canonicalUrl },
-  ],
+  link: [{ rel: "canonical", href: canonicalUrl }],
   script: jsonLd.value
     ? [
         {
@@ -133,16 +132,6 @@ onUnmounted(() => {
   }
 });
 
-const { hasBackHistory } = useBackHistory();
-
-const goBack = () => {
-  if (hasBackHistory.value) {
-    router.back();
-  } else {
-    router.push("/");
-  }
-};
-
 const togglePlay = () => {
   if (!music.value?.playUrl) {
     alert("暂无播放地址");
@@ -157,12 +146,13 @@ const togglePlay = () => {
   } else {
     if (!audioElement.value) {
       audioElement.value = new Audio(music.value.playUrl);
+      audioElement.value.preload = "metadata";
       audioElement.value.addEventListener("ended", () => {
         isPlaying.value = false;
       });
       audioElement.value.addEventListener("error", () => {
         isPlaying.value = false;
-        alert("播放失败，请检查播放地址是否有效");
+        alert("播放失败，请检查网络或播放地址");
       });
     }
     audioElement.value.play();
@@ -181,151 +171,154 @@ const closeDownloadModal = () => {
 
 <template>
   <div class="min-h-screen bg-dark-300 py-6 px-4">
-    <nav class="max-w-3xl mx-auto">
-      <div class="flex items-center gap-4 mb-6">
-        <button
-          class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-          @click="goBack"
-          :aria-label="hasBackHistory ? '返回' : '主页'"
-        >
-          <component
-            :is="hasBackHistory ? ArrowLeft : Home"
-            class="w-5 h-5 text-gray-400"
-          />
-        </button>
-        <SearchBar />
-      </div>
-    </nav>
+    <div class="max-w-3xl mx-auto">
+      <TopBar />
 
-    <main class="max-w-3xl mx-auto">
-      <div v-if="loading" class="flex justify-center py-20">
+      <main>
+        <!-- 骨架屏：数据还没回来时展示 -->
         <div
-          class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"
-          role="status"
-          aria-label="加载中"
-        ></div>
-      </div>
-
-      <article
-        v-else-if="music"
-        class="space-y-6"
-        itemscope
-        itemtype="https://schema.org/MusicRecording"
-      >
-        <meta itemprop="name" :content="music.title" />
-        <meta itemprop="byArtist" :content="music.artist" />
-        <meta itemprop="inAlbum" :content="music.album" />
-        <meta itemprop="image" :content="music.cover || ''" />
-        <meta itemprop="url" :content="canonicalUrl" />
-
-        <section class="card p-6">
-          <div class="flex flex-col sm:flex-row gap-6 items-center">
-            <div class="relative flex-shrink-0">
-              <img
-                :src="music.cover || '/img/cover.png'"
-                :alt="music.title"
-                class="w-48 h-48 rounded-xl object-cover"
-                loading="lazy"
-              />
-              <div
-                v-if="music.playUrl"
-                class="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                @click="togglePlay"
-                role="button"
-                tabindex="0"
-                aria-label="播放/暂停"
-                @keydown.enter="togglePlay"
-              >
-                <div
-                  class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center"
-                >
-                  <Play v-if="!isPlaying" class="w-8 h-8 text-white ml-1" />
-                  <Pause v-else class="w-8 h-8 text-white" />
+          v-if="loading"
+          class="space-y-6"
+          aria-busy="true"
+          aria-label="正在加载"
+        >
+          <section class="card p-6 animate-pulse">
+            <div class="flex flex-col sm:flex-row gap-6 items-center">
+              <div class="w-48 h-48 bg-gray-700 rounded-xl" />
+              <div class="flex-1 w-full space-y-3">
+                <div class="h-6 bg-gray-700 rounded w-3/4 mx-auto sm:mx-0" />
+                <div class="h-4 bg-gray-700 rounded w-1/2 mx-auto sm:mx-0" />
+                <div class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4">
+                  <div class="h-10 bg-gray-700 rounded-lg w-28" />
+                  <div class="h-10 bg-gray-700 rounded-lg w-28" />
                 </div>
               </div>
             </div>
+          </section>
 
-            <div
-              class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left"
-            >
-              <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">
-                {{ music.title }}
-              </h1>
-              <p class="text-gray-400 mb-4" itemprop="byArtist">
-                {{ music.artist }}
-              </p>
+          <section class="card p-6 animate-pulse">
+            <div class="h-5 bg-gray-700 rounded w-1/4 mb-4" />
+            <div class="space-y-2">
+              <div v-for="i in 5" :key="i" class="h-4 bg-gray-700 rounded w-3/4" />
+            </div>
+          </section>
+        </div>
 
-              <div class="flex flex-wrap gap-3 justify-center">
-                <button
-                  class="flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="openDownloadModal"
-                  aria-label="下载歌曲"
-                >
-                  <Download class="w-5 h-5" />
-                  下载
-                </button>
-                <button
+        <article
+          v-else-if="music"
+          class="space-y-6"
+          itemscope
+          itemtype="https://schema.org/MusicRecording"
+        >
+          <meta itemprop="name" :content="music.title" />
+          <meta itemprop="byArtist" :content="music.artist" />
+          <meta itemprop="inAlbum" :content="music.album" />
+          <meta itemprop="image" :content="music.cover || ''" />
+          <meta itemprop="url" :content="canonicalUrl" />
+
+          <section class="card p-6">
+            <div class="flex flex-col sm:flex-row gap-6 items-center">
+              <div class="relative flex-shrink-0">
+                <img
+                  :src="music.cover || '/img/cover.png'"
+                  :alt="music.title"
+                  class="w-48 h-48 rounded-xl object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  @error="($event.target as HTMLImageElement).src = '/img/cover.png'"
+                />
+                <div
                   v-if="music.playUrl"
-                  class="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  class="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
                   @click="togglePlay"
-                  aria-label="播放或暂停"
+                  role="button"
+                  tabindex="0"
+                  aria-label="播放/暂停"
+                  @keydown.enter="togglePlay"
                 >
-                  <Play v-if="!isPlaying" class="w-5 h-5" />
-                  <Pause v-else class="w-5 h-5" />
-                  {{ isPlaying ? "暂停" : "播放" }}
-                </button>
+                  <div class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center">
+                    <Play v-if="!isPlaying" class="w-8 h-8 text-white ml-1" />
+                    <Pause v-else class="w-8 h-8 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
+                <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  {{ music.title }}
+                </h1>
+                <p class="text-gray-400 mb-4" itemprop="byArtist">
+                  {{ music.artist }}
+                </p>
+
+                <div class="flex flex-wrap gap-3 justify-center">
+                  <button
+                    class="flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                    @click="openDownloadModal"
+                    aria-label="下载歌曲"
+                  >
+                    <Download class="w-5 h-5" />
+                    下载
+                  </button>
+                  <button
+                    v-if="music.playUrl"
+                    class="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    @click="togglePlay"
+                    aria-label="播放或暂停"
+                  >
+                    <Play v-if="!isPlaying" class="w-5 h-5" />
+                    <Pause v-else class="w-5 h-5" />
+                    {{ isPlaying ? "暂停" : "播放" }}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section
-          v-if="music.album"
-          class="card p-6"
-          itemscope
-          itemtype="https://schema.org/MusicAlbum"
-        >
-          <div class="flex items-center gap-2 text-gray-400 mb-4">
-            <Disc3 class="w-5 h-5" />
-            <span>所属专辑</span>
-          </div>
-          <p class="text-white text-lg" itemprop="name">{{ music.album }}</p>
-        </section>
-
-        <section class="card p-6">
-          <h3 class="text-lg font-medium text-white mb-4">歌词</h3>
-          <div
-            v-if="formattedLyrics.length > 0"
-            class="space-y-2 text-gray-300"
-            itemprop="lyrics"
+          <section
+            v-if="music.album"
+            class="card p-6"
+            itemscope
+            itemtype="https://schema.org/MusicAlbum"
           >
-            <p
-              v-for="(line, index) in formattedLyrics"
-              :key="index"
-              class="py-1"
+            <div class="flex items-center gap-2 text-gray-400 mb-4">
+              <Disc3 class="w-5 h-5" />
+              <span>所属专辑</span>
+            </div>
+            <p class="text-white text-lg" itemprop="name">{{ music.album }}</p>
+          </section>
+
+          <section class="card p-6">
+            <h3 class="text-lg font-medium text-white mb-4">歌词</h3>
+            <div
+              v-if="formattedLyrics.length > 0"
+              class="space-y-2 text-gray-300"
+              itemprop="lyrics"
             >
-              {{ line }}
-            </p>
-          </div>
-          <p v-else class="text-gray-500 text-center py-8">暂无歌词</p>
-        </section>
-      </article>
+              <p v-for="(line, index) in formattedLyrics" :key="index" class="py-1">
+                {{ line }}
+              </p>
+            </div>
+            <p v-else class="text-gray-500 text-center py-8">暂无歌词</p>
+          </section>
+        </article>
 
-      <div v-else class="text-center py-20">
-        <p class="text-gray-500">音乐不存在</p>
-        <button
-          class="mt-4 text-primary-500 hover:text-primary-400 transition-colors"
-          @click="goBack"
-        >
-          返回首页
-        </button>
-      </div>
-    </main>
+        <div v-else class="text-center py-20">
+          <p class="text-gray-500">音乐不存在</p>
+          <button
+            class="mt-4 text-primary-500 hover:text-primary-400 transition-colors"
+            @click="navigateTo('/')"
+          >
+            返回首页
+          </button>
+        </div>
+      </main>
 
-    <DownloadModal
-      :show="showDownloadModal"
-      :music="music"
-      @close="closeDownloadModal"
-    />
+      <DownloadModal
+        :show="showDownloadModal"
+        :music="music"
+        @close="closeDownloadModal"
+      />
+    </div>
   </div>
 </template>

@@ -6,14 +6,15 @@ import { Music as MusicIcon, ArrowRight } from "lucide-vue-next";
 const router = useRouter();
 const musicStore = useMusicStore();
 
-const { data: hotMusic } = await useAsyncData(
+const { data: hotMusic, pending: loading } = await useAsyncData(
   "home-music",
   () => {
-    return $fetch<Music[]>("/api/music/recent");
+    return $fetch<Music[]>("/api/music/recent", { timeout: 10000 });
   },
   {
     server: true,
-    lazy: false,
+    lazy: true,
+    default: () => [],
   },
 );
 
@@ -73,6 +74,8 @@ const searchFromHistory = (keyword: string) => {
 const clearHistory = () => {
   musicStore.clearSearchHistory();
 };
+
+const skeletonItems = Array.from({ length: 6 });
 </script>
 
 <template>
@@ -122,13 +125,38 @@ const clearHistory = () => {
         <h2 id="hot-title" class="text-lg font-medium text-gray-300 mb-4">
           最新音乐
         </h2>
+
+        <!-- 骨架屏：数据还没回来时展示 -->
         <div
-          v-if="!hotMusic || hotMusic.length === 0"
+          v-if="loading"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          aria-busy="true"
+          aria-label="正在加载最新音乐"
+        >
+          <div
+            v-for="(_, i) in skeletonItems"
+            :key="i"
+            class="card p-4 animate-pulse"
+          >
+            <div class="flex gap-4">
+              <div class="w-20 h-20 bg-gray-700 rounded-lg" />
+              <div class="flex-1 space-y-3 py-1">
+                <div class="h-4 bg-gray-700 rounded w-3/4" />
+                <div class="h-3 bg-gray-700 rounded w-1/2" />
+                <div class="h-4 bg-gray-700 rounded w-1/3 mt-4 ml-auto" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="!hotMusic || hotMusic.length === 0"
           class="text-center py-12"
         >
           <p class="text-gray-500">暂无最新音乐</p>
           <p class="text-gray-600 text-sm mt-2">请通过管理员后台添加音乐</p>
         </div>
+
         <div
           v-else
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
@@ -147,6 +175,8 @@ const clearHistory = () => {
                 :alt="music.title"
                 class="w-20 h-20 rounded-lg object-cover"
                 loading="lazy"
+                decoding="async"
+                @error="($event.target as HTMLImageElement).src = '/img/cover.png'"
               />
               <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
                 <div>

@@ -34,7 +34,7 @@ export const useAuth = () => {
     token.value = ''
     localStorage.removeItem('admin-username')
     localStorage.removeItem('admin-token')
-    document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure'
   }
 
   const getAuthHeaders = (): Record<string, string> => {

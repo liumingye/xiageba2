@@ -26,14 +26,73 @@ export default defineNuxtConfig({
         { property: "og:type", content: "website" },
       ],
     },
+    pageTransition: { name: "page", mode: "out-in" },
   },
   features: {
     inlineStyles: false,
   },
   routeRules: {
     "/admin/**": { ssr: false },
-    "/": { ssr: true },
-    "/music/**": { ssr: true },
-    "/search": { ssr: true },
+    "/": {
+      ssr: true,
+      isr: 60 * 60, // 小时级增量静态再生成
+      cache: {
+        maxAge: 60 * 60,
+        staleWhileRevalidate: 60 * 60 * 24,
+      },
+      headers: {
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      },
+    },
+    "/music/**": {
+      ssr: true,
+      isr: 60 * 30,
+      cache: {
+        maxAge: 60 * 30,
+        staleWhileRevalidate: 60 * 60 * 24,
+      },
+      headers: {
+        "Cache-Control": "public, max-age=1800, stale-while-revalidate=86400",
+      },
+    },
+    "/search": {
+      ssr: true,
+      cache: {
+        maxAge: 60 * 10,
+        staleWhileRevalidate: 60 * 60,
+      },
+      headers: {
+        "Cache-Control": "public, max-age=600, stale-while-revalidate=3600",
+      },
+    },
+    "/api/music/**": {
+      headers: {
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+      },
+    },
+    "/api/music/search": {
+      headers: {
+        "Cache-Control": "public, max-age=120, stale-while-revalidate=600",
+      },
+    },
+    "/img/**": {
+      headers: {
+        "Cache-Control": "public, max-age=864000, stale-while-revalidate=864000",
+      },
+    },
+  },
+  nitro: {
+    compressPublicAssets: true,
+    routeRules: {
+      "/**": { gzip: true, brotli: true },
+    },
+  },
+  vite: {
+    build: {
+      target: "es2020",
+    },
+    optimizeDeps: {
+      include: ["lucide-vue-next", "pinia"],
+    },
   },
 });

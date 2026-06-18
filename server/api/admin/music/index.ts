@@ -1,5 +1,6 @@
 import { usePrisma } from "~/lib/prisma";
 import { requireAuth } from "~/server/utils/auth";
+import { Pool } from "pg";
 
 export default defineEventHandler(async (event) => {
   const prisma = usePrisma();
@@ -17,45 +18,39 @@ export default defineEventHandler(async (event) => {
     const search = (query.search as string)?.trim() || "";
 
     if (search) {
-      const chars = [...search];
-      const bigrams: string[] = [];
-      for (let i = 0; i < chars.length; i++) {
-        if (chars[i] !== " ") bigrams.push(chars[i]);
-        if (
-          i < chars.length - 1 &&
-          chars[i] !== " " &&
-          chars[i + 1] !== " "
-        ) {
-          bigrams.push(chars[i] + chars[i + 1]);
-        }
-      }
-      const tsQuery = bigrams.join(" & ");
+      // 直接用 pg Pool 查询，绕过 Prisma 参数绑定限制
+      // 与公开搜索 API 保持一致：通过 chinese_bigram() + unnest + string_agg 在 SQL 中构造 tsquery
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      const tsqueryExpr = `(SELECT string_agg(token, ' & ') FROM unnest(string_to_array(chinese_bigram($1), ' ')) AS token)`;
 
       const [musics, total] = await Promise.all([
-        prisma.$queryRaw<
-          any[]
-        >`SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
+        pool.query<any[]>(
+          `SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
            FROM "Music"
-           WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
+           WHERE "searchVector" @@ to_tsquery('simple', ${tsqueryExpr})
            ORDER BY "createdAt" DESC
-           LIMIT ${pageSize} OFFSET ${skip}`,
-        prisma.$queryRaw<[{ count: bigint }]>`
-          SELECT COUNT(*) as count
+           LIMIT $2 OFFSET $3`,
+          [search, pageSize, skip],
+        ),
+        pool.query<[{ count: string }]>(
+          `SELECT COUNT(*) as count
            FROM "Music"
-           WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})`,
+           WHERE "searchVector" @@ to_tsquery('simple', ${tsqueryExpr})`,
+          [search],
+        ),
       ]);
 
-      const totalCount = Number((total as any)[0]?.count || 0);
+      await pool.end();
 
       return {
-        data: musics.map((m) => ({
+        data: musics.rows.map((m) => ({
           ...m,
           downloads: JSON.parse(m.downloads || "[]"),
         })),
-        total: totalCount,
+        total: parseInt(total.rows[0]?.count || "0", 10),
         page,
         pageSize,
-        totalPages: Math.ceil(totalCount / pageSize),
+        totalPages: Math.ceil(parseInt(total.rows[0]?.count || "0", 10) / pageSize),
       };
     }
 
