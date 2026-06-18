@@ -1,6 +1,6 @@
-import { usePrisma } from "~/lib/prisma";
+import { usePrisma } from "#server/lib/prisma";
 import { createHash } from "crypto";
-import { generateToken } from "~/server/utils/auth";
+import { generateToken } from "#server/utils/auth";
 
 export default defineEventHandler(async (event) => {
   const prisma = usePrisma();

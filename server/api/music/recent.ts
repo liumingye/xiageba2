@@ -1,4 +1,4 @@
-import { usePrisma } from "~/lib/prisma";
+import { usePrisma } from "#server/lib/prisma";
 
 export default defineEventHandler(async () => {
   const prisma = usePrisma();

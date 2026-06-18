@@ -1,21 +1,34 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "jsx": "preserve",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "lib": ["ESNext", "DOM"],
-    "skipLibCheck": true,
-    "noEmit": true,
-    "paths": {
-      "~/*": ["./*"]
+  // "compilerOptions": {
+  //   "target": "ESNext",
+  //   "module": "ESNext",
+  //   "moduleResolution": "bundler",
+  //   "strict": true,
+  //   "jsx": "preserve",
+  //   "resolveJsonModule": true,
+  //   "isolatedModules": true,
+  //   "esModuleInterop": true,
+  //   "lib": ["ESNext", "DOM"],
+  //   "skipLibCheck": true,
+  //   "noEmit": true,
+  //   "paths": {
+  //     "~/*": ["./*"]
+  //   },
+  //   "types": ["@nuxtjs/tailwindcss"]
+  // },
+  "files": [],
+  "references": [
+    {
+      "path": "./.nuxt/tsconfig.app.json"
     },
-    "types": ["@nuxtjs/tailwindcss"]
-  },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": ["node_modules", ".nuxt"]
+    {
+      "path": "./.nuxt/tsconfig.server.json"
+    },
+    {
+      "path": "./.nuxt/tsconfig.shared.json"
+    },
+    {
+      "path": "./.nuxt/tsconfig.node.json"
+    }
+  ]
 }
