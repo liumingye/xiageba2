@@ -1,7 +1,7 @@
 import { getTokenFromEvent, verifyToken } from "#server/utils/auth";
 
 export default defineEventHandler((event) => {
-  const url = event.node.req.url || "";
+  const url = (event.node.req.url || "").toLowerCase();
 
   // 只拦截 /api/admin/** 下的请求（排除 /api/admin/login）
   if (!url.startsWith("/api/admin")) return;
