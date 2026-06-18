@@ -17,8 +17,7 @@ export default defineNuxtConfig({
         },
         {
           name: "keywords",
-          content:
-            "下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听",
+          content: "下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听",
         },
         { name: "robots", content: "index, follow" },
         { name: "theme-color", content: "#0f172a" },
@@ -27,6 +26,9 @@ export default defineNuxtConfig({
         { property: "og:type", content: "website" },
       ],
     },
+  },
+  features: {
+    inlineStyles: false,
   },
   routeRules: {
     "/admin/**": { ssr: false },

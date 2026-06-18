@@ -28,7 +28,7 @@ const { data: pageData } = await useAsyncData(
     const q = searchKeyword.value;
     if (!q) return null;
     return await $fetch<PaginatedResponse>(
-      `/api/music/search?q=${encodeURIComponent(q)}&page=${currentPage.value}&pageSize=10`,
+      `/api/music/search?q=${encodeURIComponent(q)}&page=${currentPage.value}&pageSize=20`,
     );
   },
   {
@@ -41,7 +41,6 @@ const { data: pageData } = await useAsyncData(
 const results = computed(() => pageData.value?.data || []);
 const total = computed(() => pageData.value?.total || 0);
 const totalPages = computed(() => pageData.value?.totalPages || 0);
-const pageSize = 10;
 
 const pageTitle = computed(() => {
   const q = searchKeyword.value;

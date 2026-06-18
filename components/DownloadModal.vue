@@ -30,7 +30,9 @@ onMounted(() => {
 
 const generateQrCode = async (url: string) => {
   const qrcode = await import("qrcode");
-  qrCodeUrl.value = await qrcode.toDataURL(url);
+  qrCodeUrl.value = await qrcode.toDataURL(url,{
+    margin: 0,
+  })
 };
 
 watch(
@@ -178,9 +180,9 @@ const handleClose = () => {
                     v-if="selectedDownload?.url"
                     :href="selectedDownload.url"
                     target="_blank"
-                    class="text-primary-500 text-sm mt-2 text-center block"
+                    class="text-gray-300 text-sm mt-2 text-center block"
                   >
-                    点击下载
+                    直接下载
                   </a>
                 </div>
               </div>
