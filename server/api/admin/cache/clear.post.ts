@@ -8,34 +8,17 @@
  */
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ route?: string }>(event).catch(() => ({}));
-  const route = (body?.route || "").trim();
 
-  const storage = useStorage("cache:nitro:routes:isr");
+  const storage = useStorage("cache:nuxt:payload:");
 
   let removed: string[] = [];
 
-  if (route) {
-    // 单路径：支持 ** 通配（转换为 startsWith）
-    if (route.endsWith("**") || route.endsWith("/*")) {
-      const prefix = route.replace(/(\*\*|\*)$/, "").replace(/\/$/, "");
-      const keys = await storage.getKeys();
-      const targets = keys.filter((k) => k === prefix || k.startsWith(prefix + "/"));
-      for (const k of targets) {
-        await storage.removeItem(k);
-        removed.push(k);
-      }
-    } else {
-      await storage.removeItem(route);
-      removed.push(route);
-    }
-  } else {
-    // 全量清理
-    const keys = await storage.getKeys();
-    for (const k of keys) {
-      await storage.removeItem(k);
-      removed.push(k);
-    }
+  // 全量清理
+  const keys = await storage.getKeys();
+  for (const k of keys) {
+    await storage.removeItem(k);
+    removed.push(k);
   }
 
-  return { success: true, removed };
+  return { success: true, total: removed.length };
 });

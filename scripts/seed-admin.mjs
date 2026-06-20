@@ -1,18 +1,8 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { createHash } from "crypto";
-import { config } from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
-import { existsSync } from "fs";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const envPath = resolve(__dirname, "..", ".env");
-if (existsSync(envPath)) {
-  config({ path: envPath });
-}
 
 const connectionString = process.env.DATABASE_URL || "";
 if (!connectionString) {

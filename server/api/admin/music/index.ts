@@ -1,9 +1,8 @@
-import { usePrisma } from "#server/lib/prisma";
+import { prisma } from "#server/lib/prisma";
 import { Pool } from "pg";
 import { buildTokens, buildSearchTsQuery } from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
-  const prisma = usePrisma();
   const method = event.method;
 
   if (method === "GET") {
@@ -24,36 +23,35 @@ export default defineEventHandler(async (event) => {
         return { data: [], total: 0, page, pageSize, totalPages: 0 };
       }
 
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
       const [musics, total] = await Promise.all([
-        pool.query<any[]>(
-          `SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
-           FROM "Music"
-           WHERE "searchVector" @@ to_tsquery('simple', $1)
-           ORDER BY "createdAt" DESC
-           LIMIT $2 OFFSET $3`,
-          [tsQuery, pageSize, skip],
-        ),
-        pool.query<[{ count: string }]>(
-          `SELECT COUNT(*) as count
-           FROM "Music"
-           WHERE "searchVector" @@ to_tsquery('simple', $1)`,
-          [tsQuery],
-        ),
+        prisma.$queryRaw<any[]>`
+      SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
+      FROM "Music"
+      WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
+      ORDER BY "createdAt" DESC
+      LIMIT ${pageSize} OFFSET ${skip}
+    `,
+        prisma.$queryRaw<[{ count: string }]>`
+      SELECT COUNT(*) as count
+      FROM "Music"
+      WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
+    `,
       ]);
 
-      await pool.end();
+      const totalCount = parseInt(total[0]?.count || "0", 10);
 
       return {
-        data: musics.rows.map((m) => ({
+        data: musics.map((m) => ({
           ...m,
-          downloads: JSON.parse(m.downloads || "[]"),
+          downloads:
+            typeof m.downloads === "string"
+              ? JSON.parse(m.downloads || "[]")
+              : m.downloads,
         })),
-        total: parseInt(total.rows[0]?.count || "0", 10),
+        total: totalCount,
         page,
         pageSize,
-        totalPages: Math.ceil(parseInt(total.rows[0]?.count || "0", 10) / pageSize),
+        totalPages: Math.ceil(totalCount / pageSize),
       };
     }
 
@@ -100,16 +98,19 @@ export default defineEventHandler(async (event) => {
     });
 
     // 2) 然后用 jieba 构造 tokens，通过原始 SQL 更新 searchVector
-    const searchVectorTokens = buildTokens(title || "", artist || "", album || "");
+    const searchVectorTokens = buildTokens(
+      title || "",
+      artist || "",
+      album || "",
+    );
 
     if (searchVectorTokens) {
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-      await pool.query(
-        `UPDATE "Music" SET "searchVector" = to_tsvector('simple', $1) WHERE id = $2`,
-        [searchVectorTokens, music.id],
-      );
-      await pool.end();
+      await prisma.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens}) WHERE id = ${music.id}`;
     }
+
+    // 清理isr缓存
+    // const storage = useStorage("cache:nitro:routes:isr");
+    // await storage.removeItem(`/music/${music.id}`);
 
     return music;
   }
@@ -138,7 +139,11 @@ export default defineEventHandler(async (event) => {
     });
 
     // 2) 用 jieba 构造 tokens 更新 searchVector
-    const searchVectorTokens = buildTokens(title || "", artist || "", album || "");
+    const searchVectorTokens = buildTokens(
+      title || "",
+      artist || "",
+      album || "",
+    );
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     await pool.query(
       `UPDATE "Music" SET "searchVector" = to_tsvector('simple', $1) WHERE id = $2`,

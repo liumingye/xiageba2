@@ -1,27 +1,44 @@
 # syntax=docker/dockerfile:1.6
 
-# 使用 @node-rs/jieba（预编译二进制，零编译依赖）
-# 不再需要 build-essential / python3
-FROM node:20-bookworm-slim
+############################
+# 1. Builder
+############################
+FROM node:lts-trixie-slim AS builder
 
 WORKDIR /app
 
-ENV NODE_ENV=production \
-    HOST=0.0.0.0 \
-    PORT=3000 \
-    NITRO_PORT=3000
+COPY . .
 
-# 拷贝依赖清单并安装（容器内全新安装，避免主机 node_modules 污染）
-COPY package*.json ./
+# 使用更稳定的 npm 镜像（可选）
+RUN npm config set registry https://registry.npmmirror.com
+
 RUN npm install --no-audit --no-fund
 
-# 拷贝源码并构建
-COPY . .
+# Nuxt build
 RUN npm run build
 
-# 默认启动入口：先执行 Prisma 迁移，再启动 Nuxt
-RUN printf '#!/bin/sh\nset -e\nnpx prisma migrate deploy || true\nnode /app/.output/server/index.mjs\n' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
+# 清理 dev 依赖（可选）
+RUN npm prune --production
+
+
+############################
+# 2. Runtime
+############################
+FROM node:lts-trixie-slim
+
+WORKDIR /app
+
+COPY --from=builder /app/.output ./
+
+# prisma client
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# 运行阶段：切换到生产模式
+
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3000
 
 EXPOSE 3000
 
-ENTRYPOINT [ "/app/docker-entrypoint.sh" ]
+CMD ["node", "server/index.mjs"]

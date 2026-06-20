@@ -42,7 +42,7 @@ onMounted(async () => {
   id.value = route.params.id as string
   
   if (id.value) {
-    const res = await fetch(`/api/music/${id.value}`)
+    const res = await fetch(`/api/music/${id.value}?timestamp=${Date.now()}`)
     if (res.ok) {
       const data = await res.json()
       form.value = {

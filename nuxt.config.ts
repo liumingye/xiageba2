@@ -1,5 +1,5 @@
 export default defineNuxtConfig({
-  compatibilityDate: "2024-11-01",
+  compatibilityDate: "2026-06-01",
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt"],
   css: ["~/assets/css/main.css"],
@@ -36,9 +36,6 @@ export default defineNuxtConfig({
     "/": {
       ssr: true,
       isr: 60,
-      // cache: {
-      //   maxAge: 60 * 60,
-      // },
       headers: {
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       },
@@ -46,9 +43,6 @@ export default defineNuxtConfig({
     "/music/**": {
       ssr: true,
       isr: 60 * 60,
-      // cache: {
-      //   maxAge: 60 * 30,
-      // },
       headers: {
         "Cache-Control": "public, max-age=1800, stale-while-revalidate=86400",
       },
@@ -70,6 +64,7 @@ export default defineNuxtConfig({
       },
     },
     "/img/**": {
+      static: true,
       headers: {
         "Cache-Control":
           "public, max-age=864000, stale-while-revalidate=864000",

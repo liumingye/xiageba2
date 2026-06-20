@@ -1,7 +1,6 @@
-import { usePrisma } from "#server/lib/prisma";
+import { prisma } from "#server/lib/prisma";
 
 export default defineEventHandler(async (event) => {
-  const prisma = usePrisma();
   const id = event.context.params?.id as string;
 
   if (!id) {

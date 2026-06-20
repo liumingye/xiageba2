@@ -1,7 +1,6 @@
-import { usePrisma } from "#server/lib/prisma";
+import { prisma } from "#server/lib/prisma";
 
 export default defineEventHandler(async () => {
-  const prisma = usePrisma();
   const limit = 9;
 
   const musics = await prisma.music.findMany({

@@ -43,7 +43,12 @@ const handleLogout = () => {
 
 const rebuildSearch = async () => {
   if (isRebuilding.value) return;
-  if (!confirm("确定要重建所有音乐的搜索索引吗？\n这将使用 jieba 分词重新生成搜索向量。")) return;
+  if (
+    !confirm(
+      "确定要重建所有音乐的搜索索引吗？\n这将使用 jieba 分词重新生成搜索向量。",
+    )
+  )
+    return;
 
   isRebuilding.value = true;
   rebuildMsg.value = "";
@@ -57,7 +62,7 @@ const rebuildSearch = async () => {
     });
     const data = await res.json();
     if (res.ok) {
-      rebuildMsg.value = `已处理 ${data.removed?.length || 0} 项`;
+      rebuildMsg.value = `已处理 ${data.total} 项`;
     } else {
       rebuildMsg.value = data.message || "重建失败";
     }
@@ -86,7 +91,7 @@ const clearISRCache = async (route?: string) => {
     });
     const data = await res.json();
     if (res.ok) {
-      clearMsg.value = `已清理 ${label}，共 ${data.removed?.length || 0} 项`;
+      clearMsg.value = `已清理 ${label}，共 ${data.total} 项`;
     } else {
       clearMsg.value = data.message || "清理失败";
     }
@@ -188,40 +193,6 @@ const clearISRCache = async (route?: string) => {
           <h2 class="text-lg font-medium text-white">ISR 缓存</h2>
         </div>
         <div class="card p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-white">清理主页缓存</div>
-              <div class="text-sm text-gray-400 mt-1">
-                让首页重新渲染成最新数据
-              </div>
-            </div>
-            <button
-              class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
-              :disabled="isClearing"
-              @click="clearISRCache('/')"
-            >
-              <Eraser class="w-4 h-4" :class="{ 'animate-spin': isClearing }" />
-              清理主页
-            </button>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-white">清理音乐详情缓存</div>
-              <div class="text-sm text-gray-400 mt-1">
-                让所有音乐详情页重新渲染
-              </div>
-            </div>
-            <button
-              class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
-              :disabled="isClearing"
-              @click="clearISRCache('/music/**')"
-            >
-              <Eraser class="w-4 h-4" :class="{ 'animate-spin': isClearing }" />
-              清理音乐详情
-            </button>
-          </div>
-
           <div class="flex items-center justify-between">
             <div>
               <div class="text-white">清理全部 ISR 缓存</div>

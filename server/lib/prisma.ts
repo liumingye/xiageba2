@@ -1,27 +1,22 @@
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { Pool } from 'pg'
+import { PrismaClient } from "@@/prisma/generated";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const g = globalThis as any
-
-const createClient = (): PrismaClient => {
-  const connectionString = process.env.DATABASE_URL
-  if (!connectionString) {
-    throw new Error(
-      'DATABASE_URL 环境变量未设置 — 请在 .env 或部署环境中配置',
-    )
-  }
-
-  const pool = new Pool({ connectionString })
-  const adapter = new PrismaPg(pool)
-  return new PrismaClient({ adapter })
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL 环境变量未设置 — 请在 .env 或部署环境中配置");
 }
 
-export const usePrisma = (): PrismaClient => {
-  if (!g.__prisma_client_store) {
-    g.__prisma_client_store = createClient()
-  }
-  return g.__prisma_client_store
-}
+const prismaClientSingleton = () => {
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+  return new PrismaClient({ adapter });
+};
 
-export default usePrisma
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClientSingleton | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

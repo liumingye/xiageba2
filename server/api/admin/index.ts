@@ -1,8 +1,7 @@
-import { usePrisma } from "#server/lib/prisma";
+import { prisma } from "#server/lib/prisma";
 import { createHash } from "crypto";
 
 export default defineEventHandler(async (event) => {
-  const prisma = usePrisma();
   const method = event.method;
 
   if (method === "POST") {
@@ -21,9 +20,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "用户名已存在" });
     }
 
-    const hashedPassword = createHash("sha256")
-      .update(password)
-      .digest("hex");
+    const hashedPassword = createHash("sha256").update(password).digest("hex");
 
     const admin = await prisma.admin.create({
       data: {

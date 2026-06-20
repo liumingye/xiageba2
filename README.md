@@ -196,6 +196,12 @@ PORT=3000 node .output/server/index.mjs
 
 ## 🐳 Docker 部署
 
+复制示例文件并按实际环境修改：
+
+```bash
+cp .env.example .env
+```
+
 ### docker-compose 一键启动
 
 ```bash
@@ -209,17 +215,11 @@ docker compose up -d --build
 
 访问 <http://localhost:3000>
 
-### 纯 Dockerfile 构建
-
+### 数据库初始化
 ```bash
-docker build -t music .
-docker run -d \
-  --name music-app \
-  -p 3000:3000 \
-  -e DATABASE_URL="postgresql://postgres:postgres@<pg-host>:5432/music?schema=public" \
-  -e ADMIN_SECRET="your-strong-secret" \
-  music
+npx prisma migrate deploy
 ```
+
 
 ## ⚙️ 配置说明
 

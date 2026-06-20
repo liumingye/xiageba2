@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { buildTokens } from "#server/utils/jieba";
-import { usePrisma } from "#server/lib/prisma";
+import { prisma } from "#server/lib/prisma";
 
 /**
  * 批量重建所有 Music 记录的 searchVector（使用 jieba 分词）
@@ -9,7 +9,6 @@ import { usePrisma } from "#server/lib/prisma";
 export default defineEventHandler(async (event) => {
   // 仅管理员可用（admin-auth 中间件已统一校验）
 
-  const prisma = usePrisma();
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
