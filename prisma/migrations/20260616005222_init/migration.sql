@@ -12,7 +12,7 @@ CREATE TABLE "Music" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "searchVector" tsvector,
 
-    CONSTRAINT "Music_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "idx_music_id" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -23,11 +23,11 @@ CREATE TABLE "Admin" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Admin_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "idx_admin_id" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE INDEX "Music_searchVector_idx" ON "Music" USING GIN ("searchVector");
+CREATE INDEX "idx_music_search_vector" ON "Music" USING GIN ("searchVector");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Admin_username_key" ON "Admin"("username");
+CREATE UNIQUE INDEX "idx_admin_username" ON "Admin"("username");

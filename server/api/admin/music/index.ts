@@ -1,5 +1,6 @@
 import { usePrisma } from "#server/lib/prisma";
 import { Pool } from "pg";
+import { buildTokens, tokenize } from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
   const prisma = usePrisma();
@@ -16,23 +17,29 @@ export default defineEventHandler(async (event) => {
     const search = (query.search as string)?.trim() || "";
 
     if (search) {
-      // 与公开搜索 API 保持一致：plainto_tsquery 自动处理标点
+      // 在应用层用 jieba 分词，然后 plainto_tsquery 查询
+      const tokens = tokenize(search);
+
+      if (!tokens) {
+        return { data: [], total: 0, page, pageSize, totalPages: 0 };
+      }
+
       const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
       const [musics, total] = await Promise.all([
         pool.query<any[]>(
           `SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
            FROM "Music"
-           WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))
+           WHERE "searchVector" @@ plainto_tsquery('simple', $1)
            ORDER BY "createdAt" DESC
            LIMIT $2 OFFSET $3`,
-          [search, pageSize, skip],
+          [tokens, pageSize, skip],
         ),
         pool.query<[{ count: string }]>(
           `SELECT COUNT(*) as count
            FROM "Music"
-           WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))`,
-          [search],
+           WHERE "searchVector" @@ plainto_tsquery('simple', $1)`,
+          [tokens],
         ),
       ]);
 
@@ -79,6 +86,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "歌名和歌手不能为空" });
     }
 
+    // 1) 先由 Prisma 创建记录（由 Prisma 生成 cuid(2) id）
     const music = await prisma.music.create({
       data: {
         title,
@@ -90,6 +98,18 @@ export default defineEventHandler(async (event) => {
         downloads: JSON.stringify(downloads || []),
       },
     });
+
+    // 2) 然后用 jieba 构造 tokens，通过原始 SQL 更新 searchVector
+    const searchVectorTokens = buildTokens(title || "", artist || "", album || "");
+
+    if (searchVectorTokens) {
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      await pool.query(
+        `UPDATE "Music" SET "searchVector" = to_tsvector('simple', $1) WHERE id = $2`,
+        [searchVectorTokens, music.id],
+      );
+      await pool.end();
+    }
 
     return music;
   }
@@ -103,6 +123,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "缺少音乐ID" });
     }
 
+    // 1) 先由 Prisma 更新普通字段
     const music = await prisma.music.update({
       where: { id },
       data: {
@@ -115,6 +136,15 @@ export default defineEventHandler(async (event) => {
         downloads: JSON.stringify(downloads || []),
       },
     });
+
+    // 2) 用 jieba 构造 tokens 更新 searchVector
+    const searchVectorTokens = buildTokens(title || "", artist || "", album || "");
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    await pool.query(
+      `UPDATE "Music" SET "searchVector" = to_tsvector('simple', $1) WHERE id = $2`,
+      [searchVectorTokens || "", music.id],
+    );
+    await pool.end();
 
     return music;
   }

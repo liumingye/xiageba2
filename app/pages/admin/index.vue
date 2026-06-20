@@ -12,6 +12,7 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
 } from "lucide-vue-next";
 import type { Music as MusicType } from "~/stores/music";
 
@@ -32,6 +33,8 @@ const pageSize = ref(20);
 const total = ref(0);
 const totalPages = ref(0);
 const isLoading = ref(false);
+const isRebuilding = ref(false);
+const rebuildMsg = ref("");
 
 onMounted(async () => {
   // 等待状态初始化
@@ -107,6 +110,38 @@ const deleteMusic = async (id: string) => {
   } else if (res.status === 401) {
     logout();
     router.push("/admin/login");
+  }
+};
+
+const rebuildSearch = async () => {
+  if (isRebuilding.value) return;
+  if (
+    !confirm(
+      "确定要重建所有音乐的搜索索引吗？\n这将使用 jieba 分词重新生成搜索向量。",
+    )
+  )
+    return;
+
+  isRebuilding.value = true;
+  rebuildMsg.value = "";
+  try {
+    const res = await fetch("/api/admin/music/rebuild-search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+    });
+    const data = await res.json();
+    if (res.ok) {
+      rebuildMsg.value = `成功更新 ${data.updated} / ${data.total} 条`;
+    } else {
+      rebuildMsg.value = data.message || "重建失败";
+    }
+  } catch {
+    rebuildMsg.value = "请求失败";
+  } finally {
+    isRebuilding.value = false;
   }
 };
 
@@ -195,13 +230,29 @@ const getPageNumbers = () => {
     <main class="max-w-7xl mx-auto px-6 py-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">音乐列表</h2>
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-          @click="goToAddMusic"
-        >
-          <Plus class="w-4 h-4" />
-          添加音乐
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+            :disabled="isRebuilding"
+            @click="rebuildSearch"
+          >
+            <RefreshCw
+              class="w-4 h-4"
+              :class="{ 'animate-spin': isRebuilding }"
+            />
+            {{ isRebuilding ? "重建中..." : "重建索引" }}
+          </button>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="goToAddMusic"
+          >
+            <Plus class="w-4 h-4" />
+            添加音乐
+          </button>
+        </div>
+      </div>
+      <div v-if="rebuildMsg" class="mt-2 text-sm text-primary-400">
+        {{ rebuildMsg }}
       </div>
 
       <div class="relative mb-4 max-w-md">
@@ -245,9 +296,7 @@ const getPageNumbers = () => {
                 加载中...
               </td>
             </tr>
-            <tr
-              v-else-if="musics.length === 0"
-            >
+            <tr v-else-if="musics.length === 0">
               <td colspan="5" class="px-4 py-12 text-center">
                 <p class="text-gray-500">暂无音乐</p>
               </td>
@@ -291,7 +340,10 @@ const getPageNumbers = () => {
         </table>
 
         <!-- 分页 -->
-        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+        <div
+          v-if="totalPages > 1"
+          class="flex items-center justify-between px-4 py-3 border-t border-gray-800"
+        >
           <div class="text-sm text-gray-400">
             共 {{ total }} 首音乐，第 {{ currentPage }} / {{ totalPages }} 页
           </div>

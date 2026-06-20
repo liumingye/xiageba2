@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { tokenize } from "#server/utils/jieba";
 
 const MAX_PAGE = 100;
 
@@ -16,28 +17,35 @@ export default defineEventHandler(async (event) => {
     return { data: [], total: 0, page: 1, pageSize, totalPages: 0 };
   }
 
-  // 直接用 pg Pool 查询，绕过 Prisma 参数绑定限制
+  // 在应用层用 jieba 分词，输出 tokens 字符串（空格分隔）
+  // 然后交给 plainto_tsquery 解析：
+  // - plainto_tsquery 把输入当纯文本，按空白分词并用 AND 连接
+  // - 彻底避免标点/特殊字符破坏 tsquery 语法
+  const tokens = tokenize(term);
+  console.log(tokens);
+
+  if (!tokens) {
+    return { data: [], total: 0, page, pageSize, totalPages: 0 };
+  }
+
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
 
-  // 用 plainto_tsquery 替代手工构造 tsquery：
-  // - plainto_tsquery 把输入当纯文本，自动按空白/标点分词并用 AND 连接
-  // - 彻底避免 chinese_bigram 产生的标点字符（，()& 等）破坏 tsquery 语法
   const [musics, total] = await Promise.all([
     pool.query<any[]>(
       `SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
        FROM "Music"
-       WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))
+       WHERE "searchVector" @@ plainto_tsquery('simple', $1)
        ORDER BY "createdAt" DESC
        LIMIT $2 OFFSET $3`,
-      [term, pageSize, skip],
+      [tokens, pageSize, skip],
     ),
     pool.query<[{ count: string }]>(
       `SELECT COUNT(*) as count
        FROM "Music"
-       WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))`,
-      [term],
+       WHERE "searchVector" @@ plainto_tsquery('simple', $1)`,
+      [tokens],
     ),
   ]);
 
