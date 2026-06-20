@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleSlash } from "lucide-vue-next";
+import { CircleSlash, AlertTriangle, RotateCcw, Search } from "lucide-vue-next";
 import TopBar from "~/components/TopBar.vue";
 import type { Music } from "~/stores/music";
 import { ArrowRight } from "lucide-vue-next";
@@ -22,7 +22,13 @@ const currentPage = computed(() =>
 );
 const searchKeyword = computed(() => (route.query.q as string) || "");
 
-const { data: pageData, pending: loading } = await useFetch<PaginatedResponse>(
+const {
+  data: pageData,
+  pending: loading,
+  error: fetchError,
+  refresh: retryFetch,
+  status,
+} = await useFetch<PaginatedResponse>(
   () => {
     const q = searchKeyword.value;
     if (!q) return null;
@@ -40,6 +46,67 @@ const { data: pageData, pending: loading } = await useFetch<PaginatedResponse>(
 const results = computed(() => pageData.value?.data || []);
 const total = computed(() => pageData.value?.total || 0);
 const totalPages = computed(() => pageData.value?.totalPages || 0);
+
+// 错误分类：rate-limit / server / network
+interface ErrorInfo {
+  type: "rate-limit" | "server" | "network";
+  title: string;
+  message: string;
+  canRetry: boolean;
+}
+
+const errorInfo = computed<ErrorInfo | null>(() => {
+  const err: any = fetchError.value;
+  if (!err) return null;
+  // 兼容 Nitro 的 H3Error：statusCode 字段
+  const code = err?.statusCode || err?.status || err?.response?.status || 0;
+
+  if (code === 429) {
+    const retryAfter =
+      (err?.data?.data?.retryAfter as number | undefined) || 15;
+    return {
+      type: "rate-limit",
+      title: "搜索请求过于频繁",
+      message: `请在 ${retryAfter} 秒后再次尝试。`,
+      canRetry: false,
+    };
+  }
+  if (code >= 500 && code < 600) {
+    return {
+      type: "server",
+      title: "服务器开小差了",
+      message: "我们正在排查问题，您可以稍后重试，或换一个关键词试试。",
+      canRetry: true,
+    };
+  }
+  if (code === 404) {
+    return {
+      type: "server",
+      title: "未找到相关资源",
+      message: "请确认关键词后再试。",
+      canRetry: true,
+    };
+  }
+  if (code >= 400) {
+    return {
+      type: "server",
+      title: "请求失败",
+      message: err?.statusMessage || err?.message || "请稍后再试。",
+      canRetry: true,
+    };
+  }
+  // 网络/未知错误
+  return {
+    type: "network",
+    title: "网络连接异常",
+    message: "请检查网络后重试，或稍等片刻再搜索。",
+    canRetry: true,
+  };
+});
+
+const handleRetry = () => {
+  retryFetch();
+};
 
 const pageTitle = computed(() => {
   const q = searchKeyword.value;
@@ -87,9 +154,13 @@ useHead({
   ],
 });
 
-watch(searchKeyword, (val) => {
-  searchQuery.value = val;
-}, { immediate: true });
+watch(
+  searchKeyword,
+  (val) => {
+    searchQuery.value = val;
+  },
+  { immediate: true },
+);
 
 const performSearch = (keyword: string) => {
   if (!keyword.trim()) return;
@@ -141,9 +212,40 @@ const skeletonList = Array.from({ length: 8 });
       <TopBar :search-query="searchQuery" @search="performSearch" />
 
       <main>
+        <!-- 错误提示 -->
+        <div
+          v-if="errorInfo && searchKeyword"
+          class="card p-5 text-center mb-6"
+          role="alert"
+        >
+          <div
+            class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
+            :class="
+              errorInfo.type === 'rate-limit'
+                ? 'bg-yellow-900/50 text-yellow-400'
+                : 'bg-red-900/50 text-red-400'
+            "
+            aria-hidden="true"
+          >
+            <AlertTriangle class="w-7 h-7" />
+          </div>
+          <h3 class="text-lg font-medium text-white mb-1">
+            {{ errorInfo.title }}
+          </h3>
+          <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
+          <button
+            v-if="errorInfo.canRetry"
+            class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="handleRetry"
+          >
+            <RotateCcw class="w-4 h-4" />
+            重新搜索
+          </button>
+        </div>
+
         <!-- 骨架屏 -->
         <div
-          v-if="loading && searchKeyword"
+          v-else-if="loading && searchKeyword"
           class="space-y-2"
           aria-busy="true"
           aria-label="正在加载搜索结果"
@@ -187,10 +289,14 @@ const skeletonList = Array.from({ length: 8 });
                 class="w-12 h-12 rounded-lg object-cover"
                 loading="lazy"
                 decoding="async"
-                @error="($event.target as HTMLImageElement).src = '/img/cover.png'"
+                @error="
+                  ($event.target as HTMLImageElement).src = '/img/cover.png'
+                "
               />
               <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-medium text-white truncate">{{ music.title }}</h3>
+                <h3 class="text-sm font-medium text-white truncate">
+                  {{ music.title }}
+                </h3>
                 <p class="text-xs text-gray-500 truncate">
                   {{ music.artist
                   }}<span v-if="music.album"> - {{ music.album }}</span>
