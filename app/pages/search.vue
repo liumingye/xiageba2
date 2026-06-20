@@ -30,16 +30,13 @@ const {
   status,
 } = await useFetch<PaginatedResponse>(
   () => {
-    const q = searchKeyword.value;
-    if (!q) return null;
-    return `/api/music/search?q=${encodeURIComponent(q)}&page=${currentPage.value}&pageSize=20`;
+    return `/api/music/search?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}&pageSize=20`;
   },
   {
     key: () => `search-${searchKeyword.value}-${currentPage.value}`,
     server: true,
     lazy: true,
     watch: [searchKeyword, currentPage],
-    default: () => null,
   },
 );
 

@@ -61,10 +61,10 @@ const rebuildSearch = async () => {
       },
     });
     const data = await res.json();
-    if (res.ok) {
-      rebuildMsg.value = `已处理 ${data.total} 项`;
-    } else {
+    if (data.message) {
       rebuildMsg.value = data.message || "重建失败";
+    } else {
+      rebuildMsg.value = `已处理 ${data.total} 项，成功 ${data.updated} 项，失败 ${data.errors} 项`;
     }
   } catch {
     rebuildMsg.value = "请求失败";

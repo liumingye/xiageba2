@@ -15,7 +15,6 @@ const { data: music, pending: loading } = await useFetch<Music>(
   {
     key: () => `music-${musicId}`,
     lazy: true,
-    default: () => null,
     server: true,
   },
 );
@@ -178,7 +177,9 @@ const closeDownloadModal = () => {
               <div class="flex-1 w-full space-y-3">
                 <div class="h-6 bg-gray-700 rounded w-3/4 mx-auto sm:mx-0" />
                 <div class="h-4 bg-gray-700 rounded w-1/2 mx-auto sm:mx-0" />
-                <div class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4">
+                <div
+                  class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4"
+                >
                   <div class="h-10 bg-gray-700 rounded-lg w-28" />
                   <div class="h-10 bg-gray-700 rounded-lg w-28" />
                 </div>
@@ -189,7 +190,11 @@ const closeDownloadModal = () => {
           <section class="card p-6 animate-pulse">
             <div class="h-5 bg-gray-700 rounded w-1/4 mb-4" />
             <div class="space-y-2">
-              <div v-for="i in 5" :key="i" class="h-4 bg-gray-700 rounded w-3/4" />
+              <div
+                v-for="i in 5"
+                :key="i"
+                class="h-4 bg-gray-700 rounded w-3/4"
+              />
             </div>
           </section>
         </div>
@@ -215,7 +220,9 @@ const closeDownloadModal = () => {
                   class="w-48 h-48 rounded-xl object-cover"
                   loading="lazy"
                   decoding="async"
-                  @error="($event.target as HTMLImageElement).src = '/img/cover.png'"
+                  @error="
+                    ($event.target as HTMLImageElement).src = '/img/cover.png'
+                  "
                 />
                 <div
                   v-if="music.playUrl"
@@ -226,14 +233,18 @@ const closeDownloadModal = () => {
                   aria-label="播放/暂停"
                   @keydown.enter="togglePlay"
                 >
-                  <div class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center">
+                  <div
+                    class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center"
+                  >
                     <Play v-if="!isPlaying" class="w-8 h-8 text-white ml-1" />
                     <Pause v-else class="w-8 h-8 text-white" />
                   </div>
                 </div>
               </div>
 
-              <div class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
+              <div
+                class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left"
+              >
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">
                   {{ music.title }}
                 </h1>
@@ -285,7 +296,11 @@ const closeDownloadModal = () => {
               class="space-y-2 text-gray-300"
               itemprop="lyrics"
             >
-              <p v-for="(line, index) in formattedLyrics" :key="index" class="py-1">
+              <p
+                v-for="(line, index) in formattedLyrics"
+                :key="index"
+                class="py-1"
+              >
                 {{ line }}
               </p>
             </div>

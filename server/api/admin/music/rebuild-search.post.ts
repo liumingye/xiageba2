@@ -1,6 +1,5 @@
 import { Pool } from "pg";
 import { buildTokens } from "#server/utils/jieba";
-import { prisma } from "#server/lib/prisma";
 
 /**
  * 批量重建所有 Music 记录的 searchVector（使用 jieba 分词）
@@ -13,17 +12,24 @@ export default defineEventHandler(async (event) => {
 
   try {
     // 取出所有记录
-    const musics = await prisma.music.findMany({
-      select: { id: true, title: true, artist: true, album: true },
-    });
+    const { rows } = await pool.query(`
+      SELECT id, title, artist, album
+      FROM "Music"
+      WHERE "searchVector" IS NULL`);
+    const musics = rows as Array<{
+      id: string;
+      title: string;
+      artist: string;
+      album: string;
+    }>;
 
     if (musics.length === 0) {
-      return { success: true, updated: 0, message: "没有音乐记录" };
+      return { success: true, updated: 0, message: "没有需要重建的记录" };
     }
 
     // 逐条重建 searchVector
     let updated = 0;
-    const errors: string[] = [];
+    let errors = 0;
 
     for (const m of musics) {
       const tokens = buildTokens(m.title || "", m.artist || "", m.album || "");
@@ -34,7 +40,7 @@ export default defineEventHandler(async (event) => {
         );
         updated++;
       } catch (err: any) {
-        errors.push(`[${m.id}] ${err?.message || err}`);
+        errors++;
       }
     }
 
@@ -45,7 +51,7 @@ export default defineEventHandler(async (event) => {
       success: true,
       updated,
       total: musics.length,
-      errors: errors.length > 0 ? errors : undefined,
+      errors,
     };
   } finally {
     await pool.end();

@@ -9,6 +9,7 @@ const musicStore = useMusicStore();
 const { data: hotMusic, pending: loading } = await useFetch<Music[]>(
   "/api/music/recent",
   {
+    method: "POST",
     key: "home-music",
     server: true,
     lazy: true,
