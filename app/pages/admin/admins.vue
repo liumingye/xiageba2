@@ -10,6 +10,7 @@ import {
   Trash2,
   User,
   Edit3,
+  Settings,
 } from "lucide-vue-next";
 
 interface Admin {
@@ -222,6 +223,13 @@ const handleLogout = () => {
         >
           <Users class="w-5 h-5" />
           管理员管理
+        </a>
+        <a
+          href="/admin/maintain"
+          class="flex items-center gap-2 text-gray-400 hover:text-gray-200 transition-colors"
+        >
+          <Settings class="w-5 h-5" />
+          系统维护
         </a>
       </div>
     </nav>

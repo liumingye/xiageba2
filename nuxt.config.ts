@@ -84,7 +84,7 @@ export default defineNuxtConfig({
       target: "es2020",
     },
     optimizeDeps: {
-      include: ["lucide-vue-next", "pinia"],
+      include: ["lucide-vue-next", "pinia", "qrcode"],
     },
   },
 });

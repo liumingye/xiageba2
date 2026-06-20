@@ -1,6 +1,6 @@
 import { usePrisma } from "#server/lib/prisma";
 import { Pool } from "pg";
-import { buildTokens, tokenize } from "#server/utils/jieba";
+import { buildTokens, buildSearchTsQuery } from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
   const prisma = usePrisma();
@@ -17,10 +17,10 @@ export default defineEventHandler(async (event) => {
     const search = (query.search as string)?.trim() || "";
 
     if (search) {
-      // 在应用层用 jieba 分词，然后 plainto_tsquery 查询
-      const tokens = tokenize(search);
+      // 搜索端：jieba 精确分词，CJK 词做 "(词|字1|字2|...)" OR 兜底
+      const tsQuery = buildSearchTsQuery(search);
 
-      if (!tokens) {
+      if (!tsQuery) {
         return { data: [], total: 0, page, pageSize, totalPages: 0 };
       }
 
@@ -30,16 +30,16 @@ export default defineEventHandler(async (event) => {
         pool.query<any[]>(
           `SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
            FROM "Music"
-           WHERE "searchVector" @@ plainto_tsquery('simple', $1)
+           WHERE "searchVector" @@ to_tsquery('simple', $1)
            ORDER BY "createdAt" DESC
            LIMIT $2 OFFSET $3`,
-          [tokens, pageSize, skip],
+          [tsQuery, pageSize, skip],
         ),
         pool.query<[{ count: string }]>(
           `SELECT COUNT(*) as count
            FROM "Music"
-           WHERE "searchVector" @@ plainto_tsquery('simple', $1)`,
-          [tokens],
+           WHERE "searchVector" @@ to_tsquery('simple', $1)`,
+          [tsQuery],
         ),
       ]);
 

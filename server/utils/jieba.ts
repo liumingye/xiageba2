@@ -1,50 +1,42 @@
-import nodejieba from "nodejieba";
+import { Jieba } from "@node-rs/jieba";
+import { dict } from "@node-rs/jieba/dict.js";
 
-/**
- * 使用 nodejieba 进行中文分词
- * - 会做基本的清洗（保留字母/数字/CJK 汉字）
- * - 输出用空格分隔的 tokens，便于后续 plainto_tsquery 使用
- *
- * 示例：
- *   tokenize("周杰伦") -> "周杰伦 周 杰 伦"
- *   tokenize("I love you") -> "I love you"
- */
-export const tokenize = (input: string): string => {
-  if (!input) return "";
+// load jieba with the default dict
+const jieba = Jieba.withDict(dict);
 
+const cut = (input: string): string[] => {
+  if (!input) return [];
   const text = String(input).trim();
-  if (!text) return "";
+  if (!text) return [];
 
-  // 用 jieba 做词级别的精确分词
-  const wordTokens = nodejieba.cut(text, true);
+  const jiebaTokens = jieba.cutForSearch(text, true);
+  const groups: string[] = [];
 
-  // 为每个 token 再做单字补充，确保单字匹配也能命中（可选增强）
-  const singleTokens: string[] = [];
-  for (const token of wordTokens) {
-    singleTokens.push(token);
-    if (token.length > 1) {
-      for (const ch of token) {
-        singleTokens.push(ch);
-      }
-    }
+  for (const token of jiebaTokens) {
+    if (!token.trim()) continue;
+    // 过滤纯符号 token
+    if (
+      !/[A-Za-z0-9\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff\uac00-\ud7a3]/.test(
+        token,
+      )
+    )
+      continue;
+    groups.push(token);
   }
 
-  // 去空白、去纯符号 token，避免污染 tsvector
-  const filtered = singleTokens
-    .map((t) => t.trim())
-    .filter((t) => {
-      if (!t) return false;
-      // 排除纯标点符号 token（非字母/数字/汉字）
-      const hasWordChar = /[A-Za-z0-9\u4e00-\u9fff]/.test(t);
-      return hasWordChar;
-    });
+  return groups;
+};
 
-  return filtered.join(" ");
+export const buildSearchTsQuery = (input: string): string => {
+  return cut(input).join(" & ");
+};
+
+export const tokenizeIndex = (input: string): string => {
+  return cut(input).join(" ");
 };
 
 /**
- * 拼接 title / artist / album 为一组用于 searchVector 的 tokens 字符串
- * searchVector = to_tsvector('simple', <tokens>)
+ * [写入/索引端用] 合并 title/artist/album 的 tokens
  */
 export const buildTokens = (
   title: string,
@@ -52,9 +44,9 @@ export const buildTokens = (
   album: string,
 ): string => {
   const parts = [title, artist, album]
-    .map((s) => tokenize(s || ""))
+    .map((s) => tokenizeIndex(s || ""))
     .filter(Boolean);
   return parts.join(" ");
 };
 
-export default { tokenize, buildTokens };
+export default { buildSearchTsQuery, tokenizeIndex, buildTokens };
