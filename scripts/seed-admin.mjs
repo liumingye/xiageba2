@@ -2,7 +2,19 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
-import { createHash } from "crypto";
+// 注意：此处直接 inline 一个与 server/utils/password.ts 一致的简化版 scrypt 哈希，
+// 避免在独立脚本中依赖 #server 命名空间 alias。
+import { randomBytes, scryptSync } from "crypto";
+
+function hashPassword(plain) {
+  if (!plain) throw new Error("密码不能为空");
+  const N = 2 ** 14;
+  const salt = randomBytes(4).toString("hex");
+  const derived = scryptSync(plain, salt, 16, { N, r: 8, p: 1 }).toString(
+    "hex",
+  );
+  return `${salt}$${derived}`;
+}
 
 const connectionString = process.env.DATABASE_URL || "";
 if (!connectionString) {
@@ -27,7 +39,7 @@ async function main() {
     process.exit(0);
   }
 
-  const hashedPassword = createHash("sha256").update(password).digest("hex");
+  const hashedPassword = hashPassword(password);
 
   await prisma.admin.create({
     data: { username, password: hashedPassword },
