@@ -35,7 +35,7 @@ export default defineNuxtConfig({
     "/admin/**": { ssr: false },
     "/": {
       ssr: true,
-      isr: 60 * 60, // 小时级增量静态再生成
+      isr: 60,
       // cache: {
       //   maxAge: 60 * 60,
       // },
@@ -45,7 +45,7 @@ export default defineNuxtConfig({
     },
     "/music/**": {
       ssr: true,
-      isr: 60 * 30,
+      isr: 60 * 60,
       // cache: {
       //   maxAge: 60 * 30,
       // },

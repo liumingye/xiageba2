@@ -164,7 +164,7 @@ const handleClose = () => {
                     v-if="selectedDownload?.url"
                     :href="selectedDownload.url"
                     target="_blank"
-                    class="text-gray-300 text-sm mt-2 text-center block"
+                    class="text-gray-200 text-sm mt-2 text-center block"
                   >
                     直接下载
                   </a>

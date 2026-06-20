@@ -16,16 +16,14 @@ export default defineEventHandler(async (event) => {
     const search = (query.search as string)?.trim() || "";
 
     if (search) {
-      // 直接用 pg Pool 查询，绕过 Prisma 参数绑定限制
-      // 与公开搜索 API 保持一致：通过 chinese_bigram() + unnest + string_agg 在 SQL 中构造 tsquery
+      // 与公开搜索 API 保持一致：plainto_tsquery 自动处理标点
       const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-      const tsqueryExpr = `(SELECT string_agg(token, ' & ') FROM unnest(string_to_array(chinese_bigram($1), ' ')) AS token)`;
 
       const [musics, total] = await Promise.all([
         pool.query<any[]>(
           `SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
            FROM "Music"
-           WHERE "searchVector" @@ to_tsquery('simple', ${tsqueryExpr})
+           WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))
            ORDER BY "createdAt" DESC
            LIMIT $2 OFFSET $3`,
           [search, pageSize, skip],
@@ -33,7 +31,7 @@ export default defineEventHandler(async (event) => {
         pool.query<[{ count: string }]>(
           `SELECT COUNT(*) as count
            FROM "Music"
-           WHERE "searchVector" @@ to_tsquery('simple', ${tsqueryExpr})`,
+           WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))`,
           [search],
         ),
       ]);

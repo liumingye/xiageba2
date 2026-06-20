@@ -21,15 +21,14 @@ export default defineEventHandler(async (event) => {
     connectionString: process.env.DATABASE_URL,
   });
 
-  // chinese_bigram() + unnest + string_agg 在 SQL 中构造 tsquery：
-  // 'lij' → chinese_bigram('lij') → 'l i j li ij' → string_agg → 'l & i & j & li & ij'
-  const tsqueryExpr = `(SELECT string_agg(token, ' & ') FROM unnest(string_to_array(chinese_bigram($1), ' ')) AS token)`;
-
+  // 用 plainto_tsquery 替代手工构造 tsquery：
+  // - plainto_tsquery 把输入当纯文本，自动按空白/标点分词并用 AND 连接
+  // - 彻底避免 chinese_bigram 产生的标点字符（，()& 等）破坏 tsquery 语法
   const [musics, total] = await Promise.all([
     pool.query<any[]>(
       `SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
        FROM "Music"
-       WHERE "searchVector" @@ to_tsquery('simple', ${tsqueryExpr})
+       WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))
        ORDER BY "createdAt" DESC
        LIMIT $2 OFFSET $3`,
       [term, pageSize, skip],
@@ -37,7 +36,7 @@ export default defineEventHandler(async (event) => {
     pool.query<[{ count: string }]>(
       `SELECT COUNT(*) as count
        FROM "Music"
-       WHERE "searchVector" @@ to_tsquery('simple', ${tsqueryExpr})`,
+       WHERE "searchVector" @@ plainto_tsquery('simple', chinese_bigram($1))`,
       [term],
     ),
   ]);
