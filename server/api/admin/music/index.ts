@@ -108,10 +108,6 @@ export default defineEventHandler(async (event) => {
       await prisma.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens}) WHERE id = ${music.id}`;
     }
 
-    // 清理isr缓存
-    // const storage = useStorage("cache:nitro:routes:isr");
-    // await storage.removeItem(`/music/${music.id}`);
-
     return music;
   }
 
@@ -150,6 +146,16 @@ export default defineEventHandler(async (event) => {
       [searchVectorTokens || "", music.id],
     );
     await pool.end();
+
+    // 清理isr缓存
+    const storage = useStorage(`cache:nuxt:payload:`);
+    const keys = await storage.getKeys();
+    console.log(keys);
+    for (const k of keys) {
+      if (k.startsWith(`music_${id}`)) {
+        await storage.removeItem(k);
+      }
+    }
 
     return music;
   }
