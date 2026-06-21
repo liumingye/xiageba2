@@ -9,13 +9,15 @@ export default defineEventHandler(async (event) => {
   // 仅管理员可用（admin-auth 中间件已统一校验）
 
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const { all } = await readBody(event);
 
   try {
     // 取出所有记录
+    const allSql = `WHERE "searchVector" IS NULL OR "searchVector" = ''`;
     const { rows } = await pool.query(`
       SELECT id, title, artist, album
       FROM "Music"
-      WHERE "searchVector" IS NULL OR "searchVector" = '';`);
+      ${all ? "" : allSql};`);
     const musics = rows as Array<{
       id: string;
       title: string;

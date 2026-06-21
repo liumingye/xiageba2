@@ -41,11 +41,11 @@ const handleLogout = () => {
   router.push("/admin/login");
 };
 
-const rebuildSearch = async () => {
+const rebuildSearch = async (all: boolean) => {
   if (isRebuilding.value) return;
   if (
     !confirm(
-      "确定要重建所有音乐的搜索索引吗？\n这将使用 jieba 分词重新生成搜索向量。",
+      `确定要重建${all ? "所有音乐" : "没有索引的音乐"}的搜索向量吗？\n这将使用 jieba 分词重新生成搜索向量。`,
     )
   )
     return;
@@ -55,6 +55,7 @@ const rebuildSearch = async () => {
   try {
     const res = await fetch("/api/admin/music/rebuild-search", {
       method: "POST",
+      body: JSON.stringify({ all }),
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeaders(),
@@ -162,24 +163,37 @@ const clearISRCache = async (route?: string) => {
           <h2 class="text-lg font-medium text-white">搜索索引</h2>
         </div>
         <div class="card p-6 space-y-4">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div class="text-white">重建搜索向量</div>
               <div class="text-sm text-gray-400 mt-1">
                 使用 jieba 分词重新生成所有音乐的搜索向量，用于全文搜索
               </div>
             </div>
-            <button
-              class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
-              :disabled="isRebuilding"
-              @click="rebuildSearch"
-            >
-              <RefreshCw
-                class="w-4 h-4"
-                :class="{ 'animate-spin': isRebuilding }"
-              />
-              {{ isRebuilding ? "重建中..." : "重建索引" }}
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                :disabled="isRebuilding"
+                @click="rebuildSearch(false)"
+              >
+                <RefreshCw
+                  class="w-4 h-4"
+                  :class="{ 'animate-spin': isRebuilding }"
+                />
+                {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
+              </button>
+              <button
+                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                :disabled="isRebuilding"
+                @click="rebuildSearch(true)"
+              >
+                <RefreshCw
+                  class="w-4 h-4"
+                  :class="{ 'animate-spin': isRebuilding }"
+                />
+                {{ isRebuilding ? "重建中..." : "重建所有索引" }}
+              </button>
+            </div>
           </div>
           <div v-if="rebuildMsg" class="text-sm text-primary-400">
             {{ rebuildMsg }}
@@ -193,7 +207,7 @@ const clearISRCache = async (route?: string) => {
           <h2 class="text-lg font-medium text-white">ISR 缓存</h2>
         </div>
         <div class="card p-6 space-y-4">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div class="text-white">清理全部 ISR 缓存</div>
               <div class="text-sm text-gray-400 mt-1">
