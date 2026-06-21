@@ -324,7 +324,7 @@ const handleLogout = () => {
           ></div>
 
           <div
-            class="relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
+            class="modal-content relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
           >
             <h3 class="text-xl font-medium text-white mb-6">添加管理员</h3>
 
