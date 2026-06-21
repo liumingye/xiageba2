@@ -1,3 +1,5 @@
+import legacy from "@vitejs/plugin-legacy";
+
 export default defineNuxtConfig({
   compatibilityDate: "2026-06-01",
   devtools: { enabled: true },
@@ -36,14 +38,14 @@ export default defineNuxtConfig({
     "/admin/**": { ssr: false },
     "/": {
       ssr: true,
-      isr: 60,
+      isr: 300,
       headers: {
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       },
     },
     "/music/**": {
       ssr: true,
-      isr: 60 * 60,
+      isr: 60 * 60 * 24 * 30,
       headers: {
         "Cache-Control": "public, max-age=1800, stale-while-revalidate=86400",
       },
@@ -56,7 +58,7 @@ export default defineNuxtConfig({
     },
     "/api/music/**": {
       headers: {
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        "Cache-Control": "public, max-age=1800, stale-while-revalidate=86400",
       },
     },
     "/api/music/search": {
@@ -77,8 +79,15 @@ export default defineNuxtConfig({
   },
   vite: {
     build: {
-      target: "es2020",
+      target: ["es2015"], // 指定目标浏览器版本
     },
+    plugins: [
+      legacy({
+        targets: "last 3 years, not dead", // 兼容的浏览器版本
+        renderLegacyChunks: false,
+        modernPolyfills: true,
+      }),
+    ],
     optimizeDeps: {
       include: ["lucide-vue-next", "pinia", "qrcode"],
     },

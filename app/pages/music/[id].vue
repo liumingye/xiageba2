@@ -16,6 +16,18 @@ const { data: music, pending: loading } = await useFetch<Music>(
     key: () => `music-${musicId}`,
     lazy: true,
     server: true,
+    default: () => {
+      return {
+        id: musicId,
+        title: "",
+        artist: "",
+        album: "",
+        cover: "",
+        lyrics: "",
+        playUrl: "",
+        downloads: [],
+      };
+    },
   },
 );
 
