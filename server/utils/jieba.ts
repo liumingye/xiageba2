@@ -14,13 +14,6 @@ const cut = (input: string): string[] => {
 
   for (const token of jiebaTokens) {
     if (!token.trim()) continue;
-    // 过滤纯符号 token
-    if (
-      !/[A-Za-z0-9\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff\uac00-\ud7a3]/.test(
-        token,
-      )
-    )
-      continue;
     groups.push(token);
   }
 
@@ -46,6 +39,10 @@ export const buildTokens = (
   const parts = [title, artist, album]
     .map((s) => tokenizeIndex(s || ""))
     .filter(Boolean);
+  if (parts.length === 0) {
+    let arr = [title, artist, album];
+    return arr.join(" ");
+  }
   return parts.join(" ");
 };
 
