@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     const { rows } = await pool.query(`
       SELECT id, title, artist, album
       FROM "Music"
-      WHERE "searchVector" IS NULL`);
+      WHERE "searchVector" IS NULL OR "searchVector" = '';`);
     const musics = rows as Array<{
       id: string;
       title: string;
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // 重建 GIN 索引（searchVector 内容变了，索引需要重新生成）
-    await pool.query(`REINDEX INDEX idx_music_search_vector;`);
+    await pool.query(`REINDEX INDEX "Music_searchVector_idx";`);
 
     return {
       success: true,

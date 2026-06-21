@@ -24,6 +24,7 @@ model Music {
   searchVector Unsupported("tsvector")?
   
   @@index([searchVector], type: Gin)
+  @@index([createdAt])
 }
 
 model Admin {
