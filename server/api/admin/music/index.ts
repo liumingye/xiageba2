@@ -25,10 +25,10 @@ export default defineEventHandler(async (event) => {
 
       const [musics, total] = await Promise.all([
         prisma.$queryRaw<any[]>`
-      SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt"
-      FROM "Music"
-      WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
-      ORDER BY "createdAt" DESC
+      SELECT id, title, artist, album, cover, lyrics, "playUrl", downloads, "createdAt", "updatedAt", ts_rank("searchVector", query) as rank
+      FROM "Music", to_tsquery('simple', ${tsQuery}) AS query
+      WHERE "searchVector" @@ query
+      ORDER BY "rank" DESC, "createdAt" DESC
       LIMIT ${pageSize} OFFSET ${skip}
     `,
         prisma.$queryRaw<[{ count: string }]>`

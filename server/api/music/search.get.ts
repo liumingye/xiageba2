@@ -2,6 +2,7 @@ import { buildSearchTsQuery } from "#server/utils/jieba";
 import { prisma } from "#server/lib/prisma";
 
 const MAX_PAGE = 100;
+const MAX_KEYWORD_LENGTH = 30;
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -20,6 +21,14 @@ export default defineEventHandler(async (event) => {
     return { data: [], total: 0, page: 1, pageSize, totalPages: 0 };
   }
 
+  if (term.length > MAX_KEYWORD_LENGTH) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "关键词过长",
+      message: `搜索关键词最多 ${MAX_KEYWORD_LENGTH} 个字符`,
+    });
+  }
+
   const tsQuery = buildSearchTsQuery(term);
 
   if (!tsQuery) {
@@ -28,10 +37,10 @@ export default defineEventHandler(async (event) => {
 
   const [musics, total] = await Promise.all([
     prisma.$queryRaw<any[]>`
-      SELECT id, title, artist, album, cover
-      FROM "Music"
-      WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
-      ORDER BY "createdAt" DESC
+      SELECT id, title, artist, album, cover, ts_rank("searchVector", query) as rank
+      FROM "Music", to_tsquery('simple', ${tsQuery}) AS query
+      WHERE "searchVector" @@ query
+      ORDER BY "rank" DESC, "createdAt" DESC
       LIMIT ${pageSize} OFFSET ${skip}
     `,
     prisma.$queryRaw<[{ count: string }]>`

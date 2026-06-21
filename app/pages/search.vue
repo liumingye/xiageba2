@@ -46,7 +46,7 @@ const totalPages = computed(() => pageData.value?.totalPages || 0);
 
 // 错误分类：rate-limit / server / network
 interface ErrorInfo {
-  type: "rate-limit" | "server" | "network";
+  type: "rate-limit" | "server" | "network" | "param";
   title: string;
   message: string;
   canRetry: boolean;
@@ -67,6 +67,14 @@ const errorInfo = computed<ErrorInfo | null>(() => {
       message: `请在 ${retryAfter} 秒后再次尝试。`,
       canRetry: false,
     };
+  }
+  if (code === 400) {
+    return {
+      type: "param",
+      title: err?.statusMessage || err?.message || "参数错误",
+      message: "搜索关键词最多 30 个字符，请精简后重试。",
+      canRetry: false,
+    } as ErrorInfo;
   }
   if (code >= 500 && code < 600) {
     return {
@@ -218,7 +226,7 @@ const skeletonList = Array.from({ length: 8 });
           <div
             class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
             :class="
-              errorInfo.type === 'rate-limit'
+              errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
                 ? 'bg-yellow-900/50 text-yellow-400'
                 : 'bg-red-900/50 text-red-400'
             "

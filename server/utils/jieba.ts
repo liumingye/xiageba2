@@ -28,7 +28,7 @@ const cut = (input: string): string[] => {
 };
 
 export const buildSearchTsQuery = (input: string): string => {
-  return cut(input).join(" & ");
+  return cut(input).join(" | ");
 };
 
 export const tokenizeIndex = (input: string): string => {

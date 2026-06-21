@@ -25,17 +25,24 @@ watch(
   },
 );
 
+const MAX_KEYWORD_LENGTH = 30;
+
 const updateSearchQuery = (e: Event) => {
-  const value = (e.target as HTMLInputElement).value;
+  let value = (e.target as HTMLInputElement).value;
+  if (value.length > MAX_KEYWORD_LENGTH) {
+    value = value.slice(0, MAX_KEYWORD_LENGTH);
+  }
   searchQuery.value = value;
   emit("update:modelValue", value);
 };
 
 const handleSearch = () => {
-  if (!searchQuery.value.trim()) return;
-  musicStore.addSearchHistory(searchQuery.value);
-  emit("search", searchQuery.value);
-  router.push(`/search?q=${encodeURIComponent(searchQuery.value)}`);
+  const q = searchQuery.value.trim();
+  if (!q) return;
+  if (q.length > MAX_KEYWORD_LENGTH) return;
+  musicStore.addSearchHistory(q);
+  emit("search", q);
+  router.push(`/search?q=${encodeURIComponent(q)}`);
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -54,6 +61,7 @@ const clearInput = () => {
   <div class="flex items-center w-full relative">
     <input
       :value="searchQuery"
+      :maxlength="MAX_KEYWORD_LENGTH"
       type="text"
       placeholder="请输入搜索内容"
       class="input-search pl-3 pr-20"

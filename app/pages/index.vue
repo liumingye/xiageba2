@@ -198,7 +198,7 @@ const skeletonItems = Array.from({ length: 6 });
           &copy; {{ new Date().getFullYear() }} 下歌吧 - 免费音乐下载平台
         </p>
         <a
-          href="/admin/login"
+          href="/admin"
           class="text-sm text-gray-600 hover:text-gray-400 transition-colors mt-2 inline-block"
         >
           管理员登录
