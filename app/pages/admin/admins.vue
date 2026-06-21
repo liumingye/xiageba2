@@ -248,7 +248,7 @@ const handleLogout = () => {
         </div>
       </div>
 
-      <div class="card overflow-hidden">
+      <div class="card overflow-x-auto">
         <table class="w-full">
           <thead class="bg-gray-800">
             <tr>
@@ -386,7 +386,7 @@ const handleLogout = () => {
           ></div>
 
           <div
-            class="relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
+            class="modal-content relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
           >
             <h3 class="text-xl font-medium text-white mb-6">编辑管理员</h3>
 
@@ -443,9 +443,13 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
-.modal-enter-active,
 .modal-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+}
+
+.modal-content {
+  transition: transform 0.25s ease;
+  transform: translateY(-10px);
 }
 
 .modal-enter-from,
@@ -453,8 +457,8 @@ const handleLogout = () => {
   opacity: 0;
 }
 
-.modal-enter-from .relative,
-.modal-leave-to .relative {
-  transform: scale(0.9);
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: scale(0.9) translateY(0);
 }
 </style>
