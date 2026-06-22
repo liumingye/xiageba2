@@ -14,7 +14,7 @@ const cut = (input: string): string[] => {
 
   for (const token of jiebaTokens) {
     if (!token.trim()) continue;
-    groups.push(token);
+    groups.push(`'${token}'`);
   }
 
   return groups;
