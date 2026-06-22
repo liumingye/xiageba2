@@ -78,7 +78,7 @@ const handleClose = () => {
         ></div>
 
         <div
-          class="modal-content relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
+          class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-md w-full border border-gray-800"
         >
           <button
             class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors"
@@ -160,16 +160,16 @@ const handleClose = () => {
                   >
                     <QrCode class="w-12 h-12 text-gray-400" />
                   </div>
-                  <a
-                    v-if="selectedDownload?.url"
-                    :href="selectedDownload.url"
-                    target="_blank"
-                    class="text-gray-200 text-sm mt-2 text-center block"
-                  >
-                    直接下载
-                  </a>
                 </div>
               </div>
+              <a
+                v-if="selectedDownload?.url"
+                :href="selectedDownload.url"
+                target="_blank"
+                class="text-sm mt-2 text-center block text-gray-600 opacity-5"
+              >
+                直接下载
+              </a>
             </div>
           </div>
 
@@ -181,15 +181,14 @@ const handleClose = () => {
 </template>
 
 <style scoped>
-.modal-enter-active .modal-content,
 .modal-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.modal-leave-active .modal-content {
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+.modal-content {
+  will-change: opacity, transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-8px);
 }
 
 .modal-enter-from,
@@ -199,7 +198,6 @@ const handleClose = () => {
 
 .modal-enter-from .modal-content,
 .modal-leave-to .modal-content {
-  opacity: 0;
-  transform: scale(0.9);
+  transform: scale(0.985) translateY(0);
 }
 </style>

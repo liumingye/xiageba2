@@ -324,7 +324,7 @@ const handleLogout = () => {
           ></div>
 
           <div
-            class="modal-content relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
+            class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-md w-full border border-gray-800"
           >
             <h3 class="text-xl font-medium text-white mb-6">添加管理员</h3>
 
@@ -386,7 +386,7 @@ const handleLogout = () => {
           ></div>
 
           <div
-            class="modal-content relative bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-800"
+            class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-md w-full border border-gray-800"
           >
             <h3 class="text-xl font-medium text-white mb-6">编辑管理员</h3>
 
@@ -444,12 +444,13 @@ const handleLogout = () => {
 
 <style scoped>
 .modal-leave-active {
-  transition: all 0.25s ease;
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .modal-content {
-  transition: transform 0.25s ease;
-  transform: translateY(-10px);
+  will-change: opacity, transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-8px);
 }
 
 .modal-enter-from,
@@ -459,6 +460,6 @@ const handleLogout = () => {
 
 .modal-enter-from .modal-content,
 .modal-leave-to .modal-content {
-  transform: scale(0.9) translateY(0);
+  transform: scale(0.985) translateY(0);
 }
 </style>
