@@ -17,6 +17,7 @@ import {
 } from "lucide-vue-next";
 import type { Music as MusicType } from "~/stores/music";
 
+const config = useRuntimeConfig();
 const router = useRouter();
 const {
   isLoggedIn,
@@ -283,7 +284,7 @@ const getPageNumbers = () => {
             >
               <td class="px-4 py-4">
                 <img
-                  :src="music.cover || '/img/cover.png'"
+                  :src="music.cover || config.app.baseURL + 'img/cover.png'"
                   :alt="music.title"
                   class="w-12 h-12 rounded object-cover"
                 />

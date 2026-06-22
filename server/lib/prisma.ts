@@ -1,13 +1,15 @@
+import "dotenv/config";
 import { PrismaClient } from "@@/prisma/generated";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { env } from "@prisma/config";
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = env("DATABASE_URL");
 if (!connectionString) {
   throw new Error("DATABASE_URL 环境变量未设置 — 请在 .env 或部署环境中配置");
 }
 
 const prismaClientSingleton = () => {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+  const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({ adapter });
 };
 

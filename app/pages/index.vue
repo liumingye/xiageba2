@@ -4,6 +4,7 @@ import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 import { Music as MusicIcon, ArrowRight } from "lucide-vue-next";
 
+const config = useRuntimeConfig();
 const router = useRouter();
 const musicStore = useMusicStore();
 
@@ -45,8 +46,8 @@ useHead({
         "下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。",
     },
     { property: "og:site_name", content: "下歌吧" },
-    { property: "og:url", content: "/" },
-    { property: "og:image", content: "/og-image.png" },
+    { property: "og:url", content: config.app.baseURL },
+    { property: "og:image", content: config.app.baseURL + "img/og-image.png" },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: "下歌吧 - 免费下载高品质音乐" },
     {
@@ -54,7 +55,7 @@ useHead({
       content: "免费高品质音乐下载，MP3与FLAC无损格式。",
     },
   ],
-  link: [{ rel: "canonical", href: "/" }],
+  link: [{ rel: "canonical", href: config.app.baseURL }],
 });
 
 onMounted(() => {
@@ -171,12 +172,15 @@ const skeletonItems = Array.from({ length: 6 });
           >
             <div class="flex gap-4">
               <img
-                :src="music.cover || '/img/cover.png'"
+                :src="music.cover || config.app.baseURL + 'img/cover.png'"
                 :alt="music.title"
                 class="w-20 h-20 rounded-lg object-cover"
                 loading="lazy"
                 decoding="async"
-                @error="($event.target as HTMLImageElement).src = '/img/cover.png'"
+                @error="
+                  ($event.target as HTMLImageElement).src =
+                    config.app.baseURL + 'img/cover.png'
+                "
               />
               <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
                 <div>

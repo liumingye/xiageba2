@@ -7,6 +7,7 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt"],
   css: ["~/assets/css/main.css"],
   app: {
+    baseURL: "/",
     head: {
       htmlAttrs: { lang: "zh-CN" },
       title: "下歌吧 - 免费下载高品质MP3与FLAC无损音乐",

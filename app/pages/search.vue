@@ -13,6 +13,7 @@ interface PaginatedResponse {
   totalPages: number;
 }
 
+const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
 const musicStore = useMusicStore();
@@ -290,13 +291,14 @@ const skeletonList = Array.from({ length: 8 });
           >
             <div class="flex items-center gap-3">
               <img
-                :src="music.cover || '/img/cover.png'"
+                :src="music.cover || config.app.baseURL + 'img/cover.png'"
                 :alt="music.title"
                 class="w-12 h-12 rounded-lg object-cover"
                 loading="lazy"
                 decoding="async"
                 @error="
-                  ($event.target as HTMLImageElement).src = '/img/cover.png'
+                  ($event.target as HTMLImageElement).src =
+                    config.app.baseURL + 'img/cover.png'
                 "
               />
               <div class="flex-1 min-w-0">

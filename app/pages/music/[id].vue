@@ -6,6 +6,7 @@ import DownloadModal from "~/components/DownloadModal.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 
+const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
 
@@ -228,13 +229,14 @@ const closeDownloadModal = () => {
             <div class="flex flex-col sm:flex-row gap-6 items-center">
               <div class="relative flex-shrink-0">
                 <img
-                  :src="music.cover || '/img/cover.png'"
+                  :src="music.cover || config.app.baseURL + 'img/cover.png'"
                   :alt="music.title"
                   class="w-48 h-48 rounded-xl object-cover"
                   loading="lazy"
                   decoding="async"
                   @error="
-                    ($event.target as HTMLImageElement).src = '/img/cover.png'
+                    ($event.target as HTMLImageElement).src =
+                      config.app.baseURL + 'img/cover.png'
                   "
                 />
                 <div
