@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SearchBar from "~/components/SearchBar.vue";
+import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 import { Music as MusicIcon, ArrowRight } from "lucide-vue-next";
 
@@ -193,17 +194,7 @@ const skeletonItems = Array.from({ length: 6 });
         </div>
       </section>
 
-      <footer class="mt-8 text-center">
-        <p class="text-sm text-gray-600">
-          &copy; {{ new Date().getFullYear() }} 下歌吧 - 免费音乐下载平台
-        </p>
-        <a
-          href="/admin"
-          class="text-sm text-gray-600 hover:text-gray-400 transition-colors mt-2 inline-block"
-        >
-          管理员登录
-        </a>
-      </footer>
+      <SiteFooter />
     </div>
   </div>
 </template>

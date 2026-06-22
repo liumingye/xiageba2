@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { Download, Play, Pause, Disc3 } from "lucide-vue-next";
 import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
+import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 
 const route = useRoute();
@@ -336,6 +337,8 @@ const closeDownloadModal = () => {
         :music="music"
         @close="closeDownloadModal"
       />
+
+      <SiteFooter />
     </div>
   </div>
 </template>

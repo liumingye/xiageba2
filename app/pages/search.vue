@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CircleSlash, AlertTriangle, RotateCcw, Search } from "lucide-vue-next";
 import TopBar from "~/components/TopBar.vue";
+import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 import { ArrowRight } from "lucide-vue-next";
 
@@ -369,6 +370,8 @@ const skeletonList = Array.from({ length: 8 });
           <p class="text-gray-500">请输入搜索关键词</p>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   </div>
 </template>
