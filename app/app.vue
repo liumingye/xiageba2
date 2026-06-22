@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useMusicStore } from '~/stores/music'
-import { useAdminStore } from '~/stores/admin'
+import { onMounted } from "vue";
+import { useMusicStore } from "~/stores/music";
+import { useAdminStore } from "~/stores/admin";
 
-const musicStore = useMusicStore()
-const adminStore = useAdminStore()
+const musicStore = useMusicStore();
+const adminStore = useAdminStore();
 
 onMounted(() => {
-  musicStore.loadSearchHistory()
-  adminStore.checkLogin()
-})
+  musicStore.loadSearchHistory();
+  adminStore.checkLogin();
+});
 </script>
 
 <template>

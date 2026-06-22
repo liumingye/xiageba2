@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
+import { debounce } from "~/utils";
 import {
   Music,
   Users,
@@ -50,6 +51,8 @@ onMounted(async () => {
   await loadMusic();
 });
 
+let controller: AbortController | null = null;
+
 const loadMusic = async () => {
   isLoading.value = true;
   try {
@@ -57,14 +60,25 @@ const loadMusic = async () => {
       page: currentPage.value.toString(),
       pageSize: pageSize.value.toString(),
     });
-    if (searchQuery.value) {
-      params.set("search", searchQuery.value);
+
+    const wordkey = searchQuery.value.trim();
+    if (wordkey) {
+      params.set("search", wordkey);
     }
+
+    if (controller) {
+      controller.abort();
+    }
+    controller = new AbortController();
 
     const res = await fetch(`/api/admin/music?${params}`, {
       headers: getAuthHeaders(),
+      signal: controller.signal,
     });
     const data = await res.json();
+
+    if (wordkey !== searchQuery.value.trim()) return;
+
     musics.value = data.data;
     total.value = data.total;
     totalPages.value = data.totalPages;
@@ -73,9 +87,11 @@ const loadMusic = async () => {
   }
 };
 
+const debounceLoadMusic = debounce(loadMusic, 300);
+
 watch(searchQuery, () => {
   currentPage.value = 1;
-  loadMusic();
+  debounceLoadMusic();
 });
 
 const handleLogout = () => {
