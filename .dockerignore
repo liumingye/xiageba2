@@ -6,3 +6,6 @@ node_modules
 *.log
 .env
 .env.*
+.dockerignore
+.gitignore
+README.md
