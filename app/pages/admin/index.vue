@@ -103,7 +103,7 @@ const goToAddMusic = () => {
 };
 
 const editMusic = (id: string) => {
-  router.push(`/admin/music/edit/${id}`);
+  window.open(`/admin/music/edit/${id}`, "_blank");
 };
 
 const deleteMusic = async (id: string) => {
