@@ -174,9 +174,9 @@ const openFeedbackModal = () => {
               v-if="music?.id"
               @click="openFeedbackModal"
               aria-label="反馈问题"
-              class="flex items-center gap-2 mx-auto"
+              class="flex items-center gap-2 mx-auto text-gray-600"
             >
-              <MessageSquare class="w-5 h-5 mt-1" />
+              <MessageSquare class="w-5 h-5 mt-0.5" />
               反馈问题
             </button>
 
