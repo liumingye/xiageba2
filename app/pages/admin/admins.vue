@@ -3,14 +3,13 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import {
-  Music,
-  LogOut,
   Plus,
   Trash2,
   User,
   Edit3,
 } from "lucide-vue-next";
 import AdminNav from "~/components/admin/AdminNav.vue";
+import AdminHeader from "~/components/admin/AdminHeader.vue";
 
 interface Admin {
   id: string;
@@ -21,7 +20,6 @@ interface Admin {
 const router = useRouter();
 const {
   isLoggedIn,
-  username: currentUsername,
   logout,
   checkLogin,
   initialized,
@@ -174,38 +172,11 @@ const deleteAdmin = async (id: string) => {
     router.push("/admin/login");
   }
 };
-
-const handleLogout = () => {
-  logout();
-  router.push("/admin/login");
-};
 </script>
 
 <template>
   <div class="min-h-screen bg-dark-300">
-    <header class="bg-gray-900 border-b border-gray-800 px-6 py-4">
-      <div class="flex items-center justify-between max-w-7xl mx-auto">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
-          >
-            <Music class="w-5 h-5 text-white" />
-          </div>
-          <h1 class="text-xl font-bold text-white">下歌吧管理后台</h1>
-        </div>
-
-        <div class="flex items-center gap-4">
-          <span class="text-gray-400">{{ currentUsername }}</span>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
-            @click="handleLogout"
-          >
-            <LogOut class="w-4 h-4" />
-            退出
-          </button>
-        </div>
-      </div>
-    </header>
+    <AdminHeader />
 
     <AdminNav />
 
