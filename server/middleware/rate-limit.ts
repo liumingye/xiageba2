@@ -18,7 +18,8 @@ interface RateLimitRule {
 const RULES: RateLimitRule[] = [
   { prefix: "/api/music/search", windowSeconds: 60, maxRequests: 30 },
   { prefix: "/api/music/recent", windowSeconds: 60, maxRequests: 15 },
-  { prefix: "/api/admin/login", windowSeconds: 60, maxRequests: 3 },
+  { prefix: "/api/music/feedback", windowSeconds: 300, maxRequests: 10 },
+  { prefix: "/api/admin/login", windowSeconds: 60, maxRequests: 5 },
   { prefix: "/music/", windowSeconds: 300, maxRequests: 120 },
 ];
 

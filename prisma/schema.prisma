@@ -8,29 +8,58 @@ datasource db {
   provider = "postgresql"
 }
 
-model Music {
-  id           String   @id @default(cuid(2))
-  title        String
-  artist       String
-  album        String
-  cover        String
-  lyrics       String
-  playUrl      String
-  downloads    String   @default("[]")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // 生成 tsvector 虚拟列，存储三个字段合并文本
-  searchVector Unsupported("tsvector")?
-  
-  @@index([searchVector], type: Gin)
-  @@index([createdAt])
-}
-
 model Admin {
   id        String   @id @default(cuid(2))
   username  String   @unique
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Feedback {
+  id          String         @id @default(cuid(2))
+  musicId     String
+  musicTitle  String
+  musicArtist String
+  type        FeedbackType
+  description String         @default("")
+  status      FeedbackStatus @default(PENDING)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([createdAt])
+  @@index([musicId])
+  @@index([status])
+}
+
+model Music {
+  id           String                   @id @default(cuid(2))
+  title        String
+  artist       String
+  album        String
+  cover        String
+  lyrics       String
+  playUrl      String
+  downloads    String                   @default("[]")
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  searchVector Unsupported("tsvector")?
+
+  @@index([createdAt])
+  @@index([searchVector], type: Gin)
+}
+
+enum FeedbackStatus {
+  PENDING
+  DONE
+}
+
+enum FeedbackType {
+  BROKEN_LINK
+  WRONG_CONTENT
+  WRONG_CODE
+  WRONG_QUALITY
+  WRONG_INFO
 }

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from "vue";
-import { X, Download, QrCode } from "lucide-vue-next";
+import { X, Download, QrCode, MessageSquare } from "lucide-vue-next";
 import type { Music, DownloadOption } from "~/stores/music";
+import FeedbackModal from "~/components/FeedbackModal.vue";
 
 const props = defineProps<{
   show: boolean;
@@ -12,6 +13,7 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
+const showFeedbackModal = ref(false);
 const isMobile = ref(false);
 const qrCodeUrl = ref("");
 const selectedDownload = ref<DownloadOption | null>(null);
@@ -62,6 +64,10 @@ const selectDownload = async (download: DownloadOption) => {
 
 const handleClose = () => {
   emit("close");
+};
+
+const openFeedbackModal = () => {
+  showFeedbackModal.value = true;
 };
 </script>
 
@@ -162,19 +168,37 @@ const handleClose = () => {
                   </div>
                 </div>
               </div>
-              <a
-                v-if="selectedDownload?.url"
-                :href="selectedDownload.url"
-                target="_blank"
-                class="text-sm mt-2 text-center block text-gray-600 opacity-5"
-              >
-                直接下载
-              </a>
             </div>
+
+            <button
+              v-if="music?.id"
+              @click="openFeedbackModal"
+              aria-label="反馈问题"
+              class="flex items-center gap-2 mx-auto"
+            >
+              <MessageSquare class="w-5 h-5 mt-1" />
+              反馈问题
+            </button>
+
+            <!-- <a
+              v-if="selectedDownload?.url"
+              :href="selectedDownload.url"
+              target="_blank"
+              class="text-sm mt-2 text-center block text-gray-600 opacity-5"
+            >
+              直接下载
+            </a> -->
           </div>
 
           <div v-else class="text-center text-gray-500 py-8">暂无下载链接</div>
         </div>
+
+        <FeedbackModal
+          v-if="music?.id"
+          :show="showFeedbackModal"
+          :music-id="music.id"
+          @close="showFeedbackModal = false"
+        />
       </div>
     </Transition>
   </Teleport>

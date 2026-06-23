@@ -4,8 +4,6 @@ import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { debounce } from "~/utils";
 import {
-  Music,
-  Users,
   LogOut,
   Plus,
   Search,
@@ -13,8 +11,8 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
-  Settings,
 } from "lucide-vue-next";
+import AdminNav from "~/components/admin/AdminNav.vue";
 import type { Music as MusicType } from "~/stores/music";
 
 const config = useRuntimeConfig();
@@ -191,31 +189,7 @@ const getPageNumbers = () => {
       </div>
     </header>
 
-    <nav class="bg-gray-900/50 border-b border-gray-800 px-6 py-3">
-      <div class="flex items-center gap-4 max-w-7xl mx-auto">
-        <a
-          href="/admin"
-          class="flex items-center gap-2 text-primary-500 font-medium"
-        >
-          <Music class="w-5 h-5" />
-          音乐管理
-        </a>
-        <a
-          href="/admin/admins"
-          class="flex items-center gap-2 text-gray-400 hover:text-gray-200 transition-colors"
-        >
-          <Users class="w-5 h-5" />
-          管理员管理
-        </a>
-        <a
-          href="/admin/maintain"
-          class="flex items-center gap-2 text-gray-400 hover:text-gray-200 transition-colors"
-        >
-          <Settings class="w-5 h-5" />
-          系统维护
-        </a>
-      </div>
-    </nav>
+    <AdminNav />
 
     <main class="max-w-7xl mx-auto px-6 py-6">
       <div class="flex items-center justify-between mb-6">
