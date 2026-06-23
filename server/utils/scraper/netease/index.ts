@@ -90,14 +90,6 @@ export class NetEaseScraper extends MusicScraper {
         // 歌词获取失败不影响主流程
       }
 
-      // 获取播放链接
-      let playUrl = "";
-      try {
-        playUrl = await this.getPlayUrl(sourceId);
-      } catch {
-        // 播放链接获取失败不影响主流程
-      }
-
       return {
         source: "netease",
         sourceId,
@@ -141,87 +133,6 @@ export class NetEaseScraper extends MusicScraper {
 
     const info = parseTools.parse("", "", "", data.lrc?.lyric, "", "");
 
-    console.log(info);
-
     return this.lrcToTxt(info.lyric);
-  }
-
-  private mergeLyricWithTranslation(
-    lrcText: string,
-    tlyricText: string,
-  ): string {
-    const parseLyricLines = (text: string) => {
-      const lyricDict: Record<
-        number,
-        { original: string; translation: string }
-      > = {};
-      const noTimestampLines: string[] = [];
-      const pattern = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
-
-      for (const line of text.trim().split("\n")) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        const match = trimmed.match(pattern);
-        if (match) {
-          const minutes = parseInt(match[1], 10);
-          const seconds = parseInt(match[2], 10);
-          const ms = parseInt(match[3].padEnd(3, "0").slice(0, 3), 10);
-          const timestamp = minutes * 60000 + seconds * 1000 + ms;
-          const content = match[4].trim();
-          if (!(timestamp in lyricDict)) {
-            lyricDict[timestamp] = { original: "", translation: "" };
-          }
-          lyricDict[timestamp].original = content;
-        } else {
-          noTimestampLines.push(trimmed);
-        }
-      }
-      return { lyricDict, noTimestampLines };
-    };
-
-    const formatTimestamp = (ms: number): string => {
-      const minutes = Math.floor(ms / 60000);
-      const seconds = Math.floor((ms % 60000) / 1000);
-      const millis = ms % 1000;
-      return `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}]`;
-    };
-
-    const { lyricDict: lrcDict, noTimestampLines: lrcNoTs } =
-      parseLyricLines(lrcText);
-    const { lyricDict: tlyricDict } = parseLyricLines(tlyricText);
-
-    for (const [timestamp, content] of Object.entries(tlyricDict)) {
-      const ts = Number(timestamp);
-      if (ts in lrcDict && content.original) {
-        lrcDict[ts].translation = content.original;
-      }
-    }
-
-    const resultLines: string[] = [...lrcNoTs];
-    for (const timestamp of Object.keys(lrcDict)
-      .map(Number)
-      .sort((a, b) => a - b)) {
-      const content = lrcDict[timestamp];
-      if (content.original) {
-        resultLines.push(`${formatTimestamp(timestamp)}${content.original}`);
-      }
-      if (content.translation) {
-        resultLines.push(`${formatTimestamp(timestamp)}${content.translation}`);
-      }
-    }
-
-    return resultLines.join("\n");
-  }
-
-  private async getPlayUrl(songId: string): Promise<string> {
-    const url = `https://music.163.com/api/song/enhance/player/url?id=${songId}&ids=[${songId}]&br=320000`;
-
-    const data = await $fetch<any>(url, {
-      method: "GET",
-      headers: HEADERS,
-    });
-
-    const urlResult = data?.data?.[0]?.url || "";
-    return urlResult;
   }
 }
