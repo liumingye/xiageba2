@@ -1,83 +1,103 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '~/composables/useAuth'
-import { ArrowLeft, Save, Plus, X } from 'lucide-vue-next'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "~/composables/useAuth";
+import { ArrowLeft, Save, Plus, X, Search } from "lucide-vue-next";
+import ScrapeModal from "~/components/admin/ScrapeModal.vue";
 
 interface DownloadOption {
-  quality: string
-  url: string
+  quality: string;
+  url: string;
+  source?: string;
+  sourceId?: string;
 }
 
-const router = useRouter()
-const { isLoggedIn, checkLogin, initialized, getAuthHeaders, logout } = useAuth()
+const router = useRouter();
+const { isLoggedIn, checkLogin, initialized, getAuthHeaders, logout } =
+  useAuth();
 
 const form = ref({
-  title: '',
-  artist: '',
-  album: '',
-  cover: '',
-  lyrics: '',
-  playUrl: '',
-  downloads: [] as DownloadOption[]
-})
+  title: "",
+  artist: "",
+  album: "",
+  cover: "",
+  lyrics: "",
+  playUrl: "",
+  downloads: [] as DownloadOption[],
+});
 
-const error = ref('')
+const error = ref("");
+const showScrapeModal = ref(false);
 
 onMounted(async () => {
   if (!initialized.value) {
-    checkLogin()
+    checkLogin();
   }
-  
-  await new Promise(resolve => setTimeout(resolve, 100))
-  
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
   if (!isLoggedIn.value) {
-    router.push('/admin/login')
+    router.push("/admin/login");
   }
-})
+});
 
 const goBack = () => {
-  router.push('/admin')
-}
+  router.push("/admin");
+};
 
 const addDownload = () => {
-  form.value.downloads.push({ quality: '', url: '' })
-}
+  form.value.downloads.push({ quality: "", url: "" });
+};
 
 const removeDownload = (index: number) => {
-  form.value.downloads.splice(index, 1)
-}
+  form.value.downloads.splice(index, 1);
+};
+
+const openScrapeModal = () => {
+  showScrapeModal.value = true;
+};
+
+const handleScrapeSelect = (data: any) => {
+  form.value.title = data.title || form.value.title;
+  form.value.artist = data.artist || form.value.artist;
+  form.value.album = data.album || form.value.album;
+  form.value.cover = data.cover || form.value.cover;
+  form.value.lyrics = data.lyrics || form.value.lyrics;
+  showScrapeModal.value = false;
+};
 
 const handleSubmit = async () => {
   if (!form.value.title.trim() || !form.value.artist.trim()) {
-    error.value = '歌名和歌手不能为空'
-    return
+    error.value = "歌名和歌手不能为空";
+    return;
   }
-  
-  const downloads = form.value.downloads.filter(d => d.quality.trim() && d.url.trim())
-  
-  const res = await fetch('/api/admin/music', {
-    method: 'POST',
+
+  const downloads = form.value.downloads.filter(
+    (d) => d.quality.trim() && d.url.trim(),
+  );
+
+  const res = await fetch("/api/admin/music", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders()
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify({
       ...form.value,
-      downloads
-    })
-  })
-  
+      downloads,
+    }),
+  });
+
   if (res.ok) {
-    router.push('/admin')
+    router.push("/admin");
   } else if (res.status === 401) {
-    logout()
-    router.push('/admin/login')
+    logout();
+    router.push("/admin/login");
   } else {
-    const err = await res.json()
-    error.value = err.message || '保存失败'
+    const err = await res.json();
+    error.value = err.message || "保存失败";
   }
-}
+};
 </script>
 
 <template>
@@ -93,7 +113,26 @@ const handleSubmit = async () => {
           </button>
           <h1 class="text-xl font-bold text-white">添加音乐</h1>
         </div>
-        
+      </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-6 py-6">
+      <div
+        v-if="error"
+        class="mb-6 p-4 bg-red-900/50 border border-red-800 rounded-lg text-red-400"
+      >
+        {{ error }}
+      </div>
+
+      <div class="flex items-center justify-end mb-4 gap-2">
+        <button
+          class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          @click="openScrapeModal"
+        >
+          <Search class="w-4 h-4" />
+          刮削
+        </button>
+
         <button
           class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
           @click="handleSubmit"
@@ -102,13 +141,7 @@ const handleSubmit = async () => {
           保存
         </button>
       </div>
-    </header>
-    
-    <main class="max-w-4xl mx-auto px-6 py-6">
-      <div v-if="error" class="mb-6 p-4 bg-red-900/50 border border-red-800 rounded-lg text-red-400">
-        {{ error }}
-      </div>
-      
+
       <div class="card p-6 space-y-6">
         <div>
           <label class="block text-gray-400 text-sm mb-2">歌名 *</label>
@@ -119,7 +152,7 @@ const handleSubmit = async () => {
             class="input-search"
           />
         </div>
-        
+
         <div>
           <label class="block text-gray-400 text-sm mb-2">歌手 *</label>
           <input
@@ -129,7 +162,7 @@ const handleSubmit = async () => {
             class="input-search"
           />
         </div>
-        
+
         <div>
           <label class="block text-gray-400 text-sm mb-2">专辑</label>
           <input
@@ -139,7 +172,7 @@ const handleSubmit = async () => {
             class="input-search"
           />
         </div>
-        
+
         <div>
           <label class="block text-gray-400 text-sm mb-2">封面图片URL</label>
           <input
@@ -149,7 +182,7 @@ const handleSubmit = async () => {
             class="input-search"
           />
         </div>
-        
+
         <div>
           <label class="block text-gray-400 text-sm mb-2">歌词</label>
           <textarea
@@ -159,7 +192,7 @@ const handleSubmit = async () => {
             class="input-search resize-none"
           ></textarea>
         </div>
-        
+
         <div>
           <label class="block text-gray-400 text-sm mb-2">播放地址</label>
           <input
@@ -169,7 +202,7 @@ const handleSubmit = async () => {
             class="input-search"
           />
         </div>
-        
+
         <div>
           <div class="flex items-center justify-between mb-4">
             <label class="text-gray-400 text-sm">下载链接</label>
@@ -181,14 +214,17 @@ const handleSubmit = async () => {
               添加音质
             </button>
           </div>
-          
-          <div v-if="form.downloads.length === 0" class="text-center py-8 text-gray-600">
+
+          <div
+            v-if="form.downloads.length === 0"
+            class="text-center py-8 text-gray-600"
+          >
             暂无下载链接，点击上方按钮添加
           </div>
-          
+
           <div v-else class="space-y-3">
-            <div 
-              v-for="(download, index) in form.downloads" 
+            <div
+              v-for="(download, index) in form.downloads"
               :key="index"
               class="flex gap-3 items-start"
             >
@@ -217,5 +253,12 @@ const handleSubmit = async () => {
         </div>
       </div>
     </main>
+
+    <ScrapeModal
+      :show="showScrapeModal"
+      :initial-keyword="`${form.title} ${form.artist}`.trim()"
+      @close="showScrapeModal = false"
+      @select="handleScrapeSelect"
+    />
   </div>
 </template>
