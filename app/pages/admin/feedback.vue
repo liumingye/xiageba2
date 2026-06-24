@@ -168,7 +168,11 @@ const pollSubmission = async (musicId: string, submissionId: number) => {
     };
 
     // 当 status 为 checked 且没有 pending_links 时停止轮询
-    if (data.status === "checked" || (!data.pending_links || data.pending_links.length === 0)) {
+    if (
+      data.status === "checked" ||
+      !data.pending_links ||
+      data.pending_links.length === 0
+    ) {
       stopPolling(musicId);
     }
   } catch {
@@ -219,7 +223,11 @@ const checkLinks = async (musicId: string) => {
       downloadsRaw,
     };
 
-    if (data.pending_links && data.pending_links.length > 0 && data.submission_id) {
+    if (
+      data.pending_links &&
+      data.pending_links.length > 0 &&
+      data.submission_id
+    ) {
       startPolling(musicId, data.submission_id);
     }
   } finally {
@@ -364,7 +372,9 @@ const typeColor: Record<string, string> = {
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 状态
               </th>
-              <th class="px-4 py-3 text-center text-gray-400 text-sm font-medium">
+              <th
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
+              >
                 网盘检测
               </th>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
@@ -448,7 +458,9 @@ const typeColor: Record<string, string> = {
               <td class="px-4 py-4">
                 <div class="flex items-center justify-center">
                   <button
-                    v-if="!checkResults[fb.musicId] && checkingId !== fb.musicId"
+                    v-if="
+                      !checkResults[fb.musicId] && checkingId !== fb.musicId
+                    "
                     class="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
                     @click="checkLinks(fb.musicId)"
                   >
@@ -456,7 +468,7 @@ const typeColor: Record<string, string> = {
                     检测
                   </button>
                   <button
-                    v-else-if="checkingId === fb.musicId || checkResults[fb.musicId]?.status === 'checking'"
+                    v-else-if="checkingId === fb.musicId"
                     class="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed"
                     disabled
                   >
@@ -529,7 +541,11 @@ const typeColor: Record<string, string> = {
                   </button>
                   <span v-else class="text-gray-600 text-sm">
                     {{ fb.resolvedBy ? `by ${fb.resolvedBy}` : "" }}
-                    {{ fb.resolvedAt ? new Date(fb.resolvedAt).toLocaleDateString("zh-CN") : "" }}
+                    {{
+                      fb.resolvedAt
+                        ? new Date(fb.resolvedAt).toLocaleDateString("zh-CN")
+                        : ""
+                    }}
                   </span>
                 </div>
               </td>
