@@ -188,23 +188,23 @@ const getPageNumbers = () => {
       </div>
 
       <div class="card overflow-x-auto">
-        <table class="w-full">
+        <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-16">
                 封面
               </th>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 歌名
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-32">
                 歌手
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40">
                 专辑
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24"
               >
                 操作
               </th>
@@ -234,9 +234,9 @@ const getPageNumbers = () => {
                   class="w-12 h-12 rounded object-cover"
                 />
               </td>
-              <td class="px-4 py-4 text-white">{{ music.title }}</td>
-              <td class="px-4 py-4 text-gray-400">{{ music.artist }}</td>
-              <td class="px-4 py-4 text-gray-400">{{ music.album || "-" }}</td>
+              <td class="px-4 py-4 text-white truncate max-w-[200px]" :title="music.title">{{ music.title }}</td>
+              <td class="px-4 py-4 text-gray-400 truncate" :title="music.artist">{{ music.artist }}</td>
+              <td class="px-4 py-4 text-gray-400 truncate" :title="music.album || '-'">{{ music.album || "-" }}</td>
               <td class="px-4 py-4">
                 <div class="flex items-center justify-center gap-2">
                   <button

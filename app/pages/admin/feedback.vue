@@ -357,31 +357,31 @@ const typeColor: Record<string, string> = {
       </div>
 
       <div class="card overflow-x-auto">
-        <table class="w-full">
+        <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[200px]">
                 歌曲
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-28">
                 类型
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[150px]">
                 描述
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-24">
                 状态
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-28"
               >
                 网盘检测
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40">
                 时间
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-28"
               >
                 操作
               </th>

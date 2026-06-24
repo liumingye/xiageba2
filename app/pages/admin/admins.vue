@@ -195,17 +195,17 @@ const deleteAdmin = async (id: string) => {
       </div>
 
       <div class="card overflow-x-auto">
-        <table class="w-full">
+        <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 用户名
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-48">
                 创建时间
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24"
               >
                 操作
               </th>
