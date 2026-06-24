@@ -32,6 +32,8 @@ setInterval(() => {
   const now = Date.now();
   for (const [routeKey, ipMap] of counters) {
     const [_, windowSeconds] = routeKey.split(":").map(Number);
+    if (!windowSeconds) continue;
+
     const cutoff = now - windowSeconds * 1000;
     for (const [ip, timestamps] of ipMap) {
       const filtered = timestamps.filter((ts) => ts > cutoff);
@@ -50,7 +52,12 @@ setInterval(() => {
 function getClientIp(event: H3Event): string {
   const headers = event.node?.req?.headers || (event as any).headers || {};
   const fwd = headers["x-forwarded-for"] as string | undefined;
-  if (fwd) return fwd.split(",")[0].trim();
+  if (fwd) {
+    const ips = fwd.split(",")[0];
+    if (ips) {
+      return ips.trim();
+    }
+  }
   const realIp = headers["x-real-ip"] as string | undefined;
   if (realIp) return realIp.trim();
   return (event.node?.req?.socket?.remoteAddress as string) || "unknown";

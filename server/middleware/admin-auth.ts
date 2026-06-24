@@ -8,6 +8,13 @@ export default defineEventHandler((event) => {
   if (url.startsWith("/api/admin/login")) return;
 
   const token = getTokenFromEvent(event);
+  if (!token) {
+    throw createError({
+      statusCode: 401,
+      message: "未登录或登录已过期",
+    });
+  }
+
   const decoded = verifyToken(token);
   if (!decoded) {
     throw createError({
