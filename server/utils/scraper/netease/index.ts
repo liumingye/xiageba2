@@ -135,4 +135,8 @@ export class NetEaseScraper extends MusicScraper {
 
     return this.lrcToTxt(info.lyric);
   }
+
+  async getUrl(sourceId: string) {
+    return "";
+  }
 }

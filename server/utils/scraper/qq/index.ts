@@ -1,4 +1,4 @@
-import { MusicScraper, type ScrapeResult, type SearchResult } from "./index";
+import { MusicScraper, type ScrapeResult, type SearchResult } from "../index";
 
 const MUSICU_URL = "https://u.y.qq.com/cgi-bin/musicu.fcg";
 
@@ -175,5 +175,9 @@ export class QQScraper extends MusicScraper {
         cover: "",
       };
     }
+  }
+
+  async getUrl(sourceId: string) {
+    return "";
   }
 }

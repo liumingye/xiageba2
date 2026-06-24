@@ -31,6 +31,8 @@ export abstract class MusicScraper {
 
   abstract detail(sourceId: string): Promise<ScrapeResult>;
 
+  abstract getUrl(sourceId: string): Promise<string>;
+
   protected async fetchJson<T>(
     url: string,
     headers?: Record<string, string>,

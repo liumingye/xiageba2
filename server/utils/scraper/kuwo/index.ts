@@ -1,4 +1,4 @@
-import { MusicScraper, type ScrapeResult, type SearchResult } from "./index";
+import { MusicScraper, type ScrapeResult, type SearchResult } from "../index";
 import { inflate } from "zlib";
 import iconv from "iconv-lite";
 
@@ -216,5 +216,9 @@ export class KuwoScraper extends MusicScraper {
       cover,
       lyrics,
     };
+  }
+
+  async getUrl(sourceId: string) {
+    return "";
   }
 }
