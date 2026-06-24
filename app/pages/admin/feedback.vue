@@ -67,6 +67,7 @@ watch(
     statusFilter.value = status === "PENDING" || status === "DONE" ? status : "";
     loadFeedback();
   },
+  { immediate: false },
 );
 
 const loadFeedback = async () => {

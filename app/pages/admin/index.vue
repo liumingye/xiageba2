@@ -65,6 +65,7 @@ watch(
     searchQuery.value = q;
     loadMusic();
   },
+  { immediate: false },
 );
 
 let controller: AbortController | null = null;
