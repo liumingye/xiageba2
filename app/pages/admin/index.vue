@@ -47,6 +47,10 @@ onMounted(async () => {
   if (page && page > 0) {
     currentPage.value = page;
   }
+  const q = route.query.q as string;
+  if (q) {
+    searchQuery.value = q;
+  }
 
   await loadMusic();
 });
@@ -91,6 +95,13 @@ const debounceLoadMusic = debounce(loadMusic, 300);
 
 watch(searchQuery, () => {
   currentPage.value = 1;
+  router.push({
+    query: {
+      ...route.query,
+      page: "1",
+      ...(searchQuery.value ? { q: searchQuery.value } : {}),
+    },
+  });
   debounceLoadMusic();
 });
 

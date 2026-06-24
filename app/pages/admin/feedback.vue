@@ -49,6 +49,10 @@ onMounted(async () => {
   if (page && page > 0) {
     currentPage.value = page;
   }
+  const status = route.query.status as string;
+  if (status === "PENDING" || status === "DONE") {
+    statusFilter.value = status;
+  }
 
   await loadFeedback();
 });
@@ -84,6 +88,13 @@ const loadFeedback = async () => {
 const handleStatusFilter = (status: "" | "PENDING" | "DONE") => {
   statusFilter.value = status;
   currentPage.value = 1;
+  router.push({
+    query: {
+      ...route.query,
+      page: "1",
+      ...(status ? { status } : {}),
+    },
+  });
   loadFeedback();
 };
 
