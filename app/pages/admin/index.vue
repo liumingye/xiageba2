@@ -3,12 +3,7 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { debounce } from "~/utils";
-import {
-  Plus,
-  Search,
-  Trash2,
-  Edit3,
-} from "lucide-vue-next";
+import { Plus, Search, Trash2, Edit3 } from "lucide-vue-next";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -55,19 +50,6 @@ onMounted(async () => {
   await loadMusic();
 });
 
-// 监听URL参数变化，统一处理数据加载
-watch(
-  () => route.query,
-  (query) => {
-    const page = parseInt(query.page as string) || 1;
-    const q = (query.q as string) || "";
-    currentPage.value = page;
-    searchQuery.value = q;
-    loadMusic();
-  },
-  { immediate: false },
-);
-
 let controller: AbortController | null = null;
 
 const loadMusic = async () => {
@@ -104,17 +86,28 @@ const loadMusic = async () => {
   }
 };
 
-const debounceUpdateUrl = debounce((val: string) => {
+const debounceLoadMusic = debounce(loadMusic, 300);
+
+// 监听浏览器前进/后退
+watch(
+  () => route.query,
+  (query) => {
+    const page = parseInt(query.page as string) || 1;
+    const q = (query.q as string) || "";
+    currentPage.value = page;
+    searchQuery.value = q;
+    debounceLoadMusic();
+  },
+);
+
+watch(searchQuery, () => {
+  currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
-  if (val.trim()) {
-    query.q = val.trim();
+  if (searchQuery.value.trim()) {
+    query.q = searchQuery.value;
   }
   router.push({ query });
-}, 300);
-
-watch(searchQuery, (val) => {
-  currentPage.value = 1;
-  debounceUpdateUrl(val);
+  // debounceLoadMusic();
 });
 
 const goToAddMusic = () => {
@@ -147,12 +140,12 @@ const deleteMusic = async (id: string) => {
 
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
   router.push({
     query: { ...route.query, page: page.toString() },
   });
+  // loadMusic();
 };
-
-
 </script>
 
 <template>

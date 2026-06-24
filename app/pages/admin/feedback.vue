@@ -57,7 +57,7 @@ onMounted(async () => {
   await loadFeedback();
 });
 
-// 监听URL参数变化，统一处理数据加载
+// 监听浏览器前进/后退
 watch(
   () => route.query,
   (query) => {
@@ -67,7 +67,6 @@ watch(
     statusFilter.value = status === "PENDING" || status === "DONE" ? status : "";
     loadFeedback();
   },
-  { immediate: false },
 );
 
 const loadFeedback = async () => {
@@ -99,18 +98,23 @@ const loadFeedback = async () => {
 };
 
 const handleStatusFilter = (status: "" | "PENDING" | "DONE") => {
+  statusFilter.value = status;
+  currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
   if (status) {
     query.status = status;
   }
   router.push({ query });
+  loadFeedback();
 };
 
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
   router.push({
     query: { ...route.query, page: page.toString() },
   });
+  loadFeedback();
 };
 
 const checkResults = ref<Record<string, any>>({});
