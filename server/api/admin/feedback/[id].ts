@@ -41,5 +41,12 @@ export default defineEventHandler(async (event) => {
     return feedback;
   }
 
+  if (method === "DELETE") {
+    await prisma.feedback.delete({
+      where: { id },
+    });
+    return { success: true };
+  }
+
   throw createError({ statusCode: 405, message: "不支持的请求方法" });
 });

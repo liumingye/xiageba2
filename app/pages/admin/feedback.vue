@@ -64,7 +64,8 @@ watch(
     const page = parseInt(query.page as string) || 1;
     const status = (query.status as string) || "";
     currentPage.value = page;
-    statusFilter.value = status === "PENDING" || status === "DONE" ? status : "";
+    statusFilter.value =
+      status === "PENDING" || status === "DONE" ? status : "";
     loadFeedback();
   },
 );
@@ -251,6 +252,24 @@ const resolveFeedback = async (id: string) => {
       ...getAuthHeaders(),
     },
     body: JSON.stringify({ resolvedBy: username.value }),
+  });
+
+  if (res.ok) {
+    await loadFeedback();
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
+const deleteFeedback = async (id: string) => {
+  if (!confirm("确定要删除这条反馈吗？")) return;
+
+  const res = await fetch(`/api/admin/feedback/${id}`, {
+    method: "DELETE",
+    headers: {
+      ...getAuthHeaders(),
+    },
   });
 
   if (res.ok) {
@@ -557,7 +576,7 @@ const typeColor: Record<string, string> = {
                     @click="resolveFeedback(fb.id)"
                   >
                     <CheckCircle class="w-3.5 h-3.5" />
-                    标记完成
+                    完成
                   </button>
                   <span v-else class="text-gray-600 text-sm">
                     {{ fb.resolvedBy ? `by ${fb.resolvedBy}` : "" }}
@@ -567,6 +586,13 @@ const typeColor: Record<string, string> = {
                         : ""
                     }}
                   </span>
+                  <button
+                    class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    title="删除"
+                    @click="deleteFeedback(fb.id)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
                 </div>
               </td>
             </tr>
