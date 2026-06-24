@@ -19,6 +19,8 @@ const year = new Date().getFullYear();
       <a
         href="/admin"
         class="text-sm text-gray-600 hover:text-gray-400 transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
       >
         管理员登录
       </a>
