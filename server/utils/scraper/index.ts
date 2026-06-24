@@ -36,7 +36,7 @@ export abstract class MusicScraper {
   protected async fetchJson<T>(
     url: string,
     headers?: Record<string, string>,
-  ): Promise<TypedInternalResponse<NitroFetchRequest, T, "get">> {
+  ): Promise<T> {
     const res = await $fetch<
       TypedInternalResponse<NitroFetchRequest, T, "get">
     >(url, {
