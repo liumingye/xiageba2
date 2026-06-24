@@ -55,7 +55,7 @@ onMounted(async () => {
   await loadMusic();
 });
 
-// 监听浏览器前进/后退
+// 监听URL参数变化，统一处理数据加载
 watch(
   () => route.query,
   (query) => {
@@ -69,7 +69,6 @@ watch(
 );
 
 let controller: AbortController | null = null;
-let isPushing = false;
 
 const loadMusic = async () => {
   isLoading.value = true;
@@ -105,19 +104,17 @@ const loadMusic = async () => {
   }
 };
 
-const debounceLoadMusic = debounce(loadMusic, 300);
-
-watch(searchQuery, () => {
-  currentPage.value = 1;
+const debounceUpdateUrl = debounce((val: string) => {
   const query: Record<string, string> = { page: "1" };
-  if (searchQuery.value.trim()) {
-    query.q = searchQuery.value;
+  if (val.trim()) {
+    query.q = val.trim();
   }
-  isPushing = true;
-  router.push({ query }).then(() => {
-    isPushing = false;
-  });
-  debounceLoadMusic();
+  router.push({ query });
+}, 300);
+
+watch(searchQuery, (val) => {
+  currentPage.value = 1;
+  debounceUpdateUrl(val);
 });
 
 const goToAddMusic = () => {
@@ -150,14 +147,9 @@ const deleteMusic = async (id: string) => {
 
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
-  currentPage.value = page;
-  isPushing = true;
   router.push({
     query: { ...route.query, page: page.toString() },
-  }).then(() => {
-    isPushing = false;
   });
-  loadMusic();
 };
 
 
