@@ -6,8 +6,6 @@ import {
   CheckCircle,
   ExternalLink,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   Search,
   AlertCircle,
   Loader2,
@@ -15,6 +13,7 @@ import {
 } from "lucide-vue-next";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import AdminPagination from "~/components/admin/AdminPagination.vue";
 
 const router = useRouter();
 const {
@@ -84,36 +83,6 @@ const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
   loadFeedback();
-};
-
-const getPageNumbers = () => {
-  const pages: (number | string)[] = [];
-  const maxVisible = 5;
-  const current = currentPage.value;
-  const total = totalPages.value;
-
-  if (total <= maxVisible) {
-    for (let i = 1; i <= total; i++) pages.push(i);
-  } else {
-    if (current <= 3) {
-      for (let i = 1; i <= 4; i++) pages.push(i);
-      pages.push("...");
-      pages.push(total);
-    } else if (current >= total - 2) {
-      pages.push(1);
-      pages.push("...");
-      for (let i = total - 3; i <= total; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      pages.push("...");
-      pages.push(current - 1);
-      pages.push(current);
-      pages.push(current + 1);
-      pages.push("...");
-      pages.push(total);
-    }
-  }
-  return pages;
 };
 
 const checkResults = ref<Record<string, any>>({});
@@ -574,45 +543,13 @@ const typeColor: Record<string, string> = {
       </div>
 
       <!-- 分页 -->
-      <div
-        v-if="totalPages > 1"
-        class="flex items-center justify-between px-4 py-3"
-      >
-        <div class="text-sm text-gray-400">
-          共 {{ total }} 条反馈，第 {{ currentPage }} / {{ totalPages }} 页
-        </div>
-        <div class="flex items-center gap-1">
-          <button
-            :disabled="currentPage === 1"
-            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="goToPage(currentPage - 1)"
-          >
-            <ChevronLeft class="w-4 h-4" />
-          </button>
-          <button
-            v-for="p in getPageNumbers()"
-            :key="p"
-            :class="[
-              'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
-              p === currentPage
-                ? 'bg-primary-500 text-white'
-                : p === '...'
-                  ? 'text-gray-500 cursor-default'
-                  : 'text-gray-400 hover:text-white',
-            ]"
-            @click="typeof p === 'number' && goToPage(p)"
-          >
-            {{ p }}
-          </button>
-          <button
-            :disabled="currentPage === totalPages"
-            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="goToPage(currentPage + 1)"
-          >
-            <ChevronRight class="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total="total"
+        item-label="条反馈"
+        @page-change="goToPage"
+      />
     </main>
   </div>
 </template>
