@@ -16,6 +16,7 @@ import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 
 const router = useRouter();
+const route = useRoute();
 const {
   isLoggedIn,
   username,
@@ -42,6 +43,13 @@ onMounted(async () => {
     router.push("/admin/login");
     return;
   }
+
+  // 从 URL 读取分页参数
+  const page = parseInt(route.query.page as string);
+  if (page && page > 0) {
+    currentPage.value = page;
+  }
+
   await loadFeedback();
 });
 
@@ -82,6 +90,9 @@ const handleStatusFilter = (status: "" | "PENDING" | "DONE") => {
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  router.push({
+    query: { ...route.query, page: page.toString() },
+  });
   loadFeedback();
 };
 

@@ -16,6 +16,7 @@ import type { Music as MusicType } from "~/stores/music";
 
 const config = useRuntimeConfig();
 const router = useRouter();
+const route = useRoute();
 const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
   useAuth();
 
@@ -40,6 +41,13 @@ onMounted(async () => {
     router.push("/admin/login");
     return;
   }
+
+  // 从 URL 读取分页参数
+  const page = parseInt(route.query.page as string);
+  if (page && page > 0) {
+    currentPage.value = page;
+  }
+
   await loadMusic();
 });
 
@@ -117,6 +125,9 @@ const deleteMusic = async (id: string) => {
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  router.push({
+    query: { ...route.query, page: page.toString() },
+  });
   loadMusic();
 };
 
