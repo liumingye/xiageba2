@@ -456,7 +456,7 @@ const typeColor: Record<string, string> = {
                     检测
                   </button>
                   <button
-                    v-else-if="checkingId === fb.musicId"
+                    v-else-if="checkingId === fb.musicId || checkResults[fb.musicId]?.status === 'checking'"
                     class="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed"
                     disabled
                   >
