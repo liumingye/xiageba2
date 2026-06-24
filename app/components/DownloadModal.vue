@@ -43,6 +43,31 @@ const isBaiduPan = computed(() => {
   return /pan\.baidu\.com/i.test(selectedDownload.value.url);
 });
 
+const pwdList = computed(() => {
+  if (!props.music?.downloads) return [];
+  return props.music.downloads
+    .filter((d) => d.url && extractPwd(d.url))
+    .map((d) => ({
+      quality: d.quality,
+      pwd: extractPwd(d.url),
+      url: d.url,
+    }));
+});
+
+const copiedIndex = ref<number | null>(null);
+
+const copyPwdByIndex = async (index: number, pwd: string) => {
+  try {
+    await navigator.clipboard.writeText(pwd);
+    copiedIndex.value = index;
+    setTimeout(() => {
+      copiedIndex.value = null;
+    }, 2000);
+  } catch {
+    // 复制失败静默处理
+  }
+};
+
 const cleanUrl = (url: string): string => {
   try {
     const u = new URL(url);
@@ -170,19 +195,28 @@ const openFeedbackModal = () => {
               </div>
 
               <div
-                v-if="selectedPwd && isBaiduPan"
-                class="flex items-center justify-center gap-2 p-3 bg-gray-800 rounded-lg"
+                v-if="pwdList.length > 0"
+                class="space-y-2 p-3 bg-gray-800 rounded-lg"
               >
-                <span class="text-gray-400 text-sm">提取码：</span>
-                <span class="text-white font-mono font-medium">{{ selectedPwd }}</span>
-                <button
-                  class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
-                  @click.stop="copyPwd"
-                  title="复制提取码"
+                <p class="text-gray-400 text-sm text-center mb-2">提取码</p>
+                <div
+                  v-for="(item, index) in pwdList"
+                  :key="index"
+                  class="flex items-center justify-between"
                 >
-                  <Check v-if="copiedCode" class="w-4 h-4 text-green-400" />
-                  <Copy v-else class="w-4 h-4" />
-                </button>
+                  <span class="text-gray-300 text-sm">{{ item.quality }}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-white font-mono font-medium">{{ item.pwd }}</span>
+                    <button
+                      class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
+                      @click.stop="copyPwdByIndex(index, item.pwd)"
+                      title="复制提取码"
+                    >
+                      <Check v-if="copiedIndex === index" class="w-4 h-4 text-green-400" />
+                      <Copy v-else class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div class="text-center text-gray-500 text-sm">
