@@ -264,7 +264,12 @@ const closeDownloadModal = () => {
                   {{ music.title }}
                 </h1>
                 <p class="text-gray-400 mb-4" itemprop="byArtist">
-                  {{ music.artist }}
+                  <button
+                    class="hover:text-primary-400 transition-colors"
+                    @click="router.push(`/search?q=${encodeURIComponent(music.artist)}`)"
+                  >
+                    {{ music.artist }}
+                  </button>
                 </p>
 
                 <div class="flex flex-wrap gap-3 justify-center">
