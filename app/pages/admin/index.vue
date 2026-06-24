@@ -2,7 +2,6 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { debounce } from "~/utils";
 import { Plus, Search, Trash2, Edit3 } from "lucide-vue-next";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -86,8 +85,6 @@ const loadMusic = async () => {
   }
 };
 
-const debounceLoadMusic = debounce(loadMusic, 300);
-
 // 监听浏览器前进/后退
 watch(
   () => route.query,
@@ -96,19 +93,18 @@ watch(
     const q = (query.q as string) || "";
     currentPage.value = page;
     searchQuery.value = q;
-    debounceLoadMusic();
+    loadMusic();
   },
 );
 
-watch(searchQuery, () => {
+const inputSearch = () => {
   currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
   if (searchQuery.value.trim()) {
     query.q = searchQuery.value;
   }
   router.push({ query });
-  // debounceLoadMusic();
-});
+};
 
 const goToAddMusic = () => {
   router.push("/admin/music/add");
@@ -144,7 +140,6 @@ const goToPage = (page: number) => {
   router.push({
     query: { ...route.query, page: page.toString() },
   });
-  // loadMusic();
 };
 </script>
 
@@ -166,7 +161,7 @@ const goToPage = (page: number) => {
           </button>
         </div>
       </div>
-      <div class="relative mb-4 max-w-md">
+      <form @submit.prevent="inputSearch" class="relative mb-4 max-w-md">
         <Search
           class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500"
         />
@@ -176,7 +171,7 @@ const goToPage = (page: number) => {
           placeholder="搜索歌名或歌手..."
           class="input-search pl-10"
         />
-      </div>
+      </form>
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
