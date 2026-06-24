@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { debounce } from "~/utils";
 import {
@@ -54,6 +54,18 @@ onMounted(async () => {
 
   await loadMusic();
 });
+
+// 监听浏览器前进/后退
+watch(
+  () => route.query,
+  (query) => {
+    const page = parseInt(query.page as string) || 1;
+    const q = (query.q as string) || "";
+    currentPage.value = page;
+    searchQuery.value = q;
+    loadMusic();
+  },
+);
 
 let controller: AbortController | null = null;
 

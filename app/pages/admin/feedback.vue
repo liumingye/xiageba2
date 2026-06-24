@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import {
   CheckCircle,
@@ -56,6 +56,18 @@ onMounted(async () => {
 
   await loadFeedback();
 });
+
+// 监听浏览器前进/后退
+watch(
+  () => route.query,
+  (query) => {
+    const page = parseInt(query.page as string) || 1;
+    const status = (query.status as string) || "";
+    currentPage.value = page;
+    statusFilter.value = status === "PENDING" || status === "DONE" ? status : "";
+    loadFeedback();
+  },
+);
 
 const loadFeedback = async () => {
   isLoading.value = true;
