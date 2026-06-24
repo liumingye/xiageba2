@@ -167,7 +167,8 @@ const pollSubmission = async (musicId: string, submissionId: number) => {
       downloads: resultWithDetails,
     };
 
-    if (!data.pending_links || data.pending_links.length === 0) {
+    // 当 status 为 checked 且没有 pending_links 时停止轮询
+    if (data.status === "checked" || (!data.pending_links || data.pending_links.length === 0)) {
       stopPolling(musicId);
     }
   } catch {
