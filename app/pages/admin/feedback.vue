@@ -61,6 +61,7 @@ onMounted(async () => {
 watch(
   () => route.query,
   (query) => {
+    if (isPushing) return;
     const page = parseInt(query.page as string) || 1;
     const status = (query.status as string) || "";
     currentPage.value = page;
@@ -69,6 +70,8 @@ watch(
   },
   { immediate: false },
 );
+
+let isPushing = false;
 
 const loadFeedback = async () => {
   isLoading.value = true;
@@ -105,15 +108,21 @@ const handleStatusFilter = (status: "" | "PENDING" | "DONE") => {
   if (status) {
     query.status = status;
   }
-  router.push({ query });
+  isPushing = true;
+  router.push({ query }).then(() => {
+    isPushing = false;
+  });
   loadFeedback();
 };
 
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  isPushing = true;
   router.push({
     query: { ...route.query, page: page.toString() },
+  }).then(() => {
+    isPushing = false;
   });
   loadFeedback();
 };

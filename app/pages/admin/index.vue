@@ -69,6 +69,7 @@ watch(
 );
 
 let controller: AbortController | null = null;
+let isPushing = false;
 
 const loadMusic = async () => {
   isLoading.value = true;
@@ -112,7 +113,10 @@ watch(searchQuery, () => {
   if (searchQuery.value.trim()) {
     query.q = searchQuery.value;
   }
-  router.push({ query });
+  isPushing = true;
+  router.push({ query }).then(() => {
+    isPushing = false;
+  });
   debounceLoadMusic();
 });
 
@@ -147,8 +151,11 @@ const deleteMusic = async (id: string) => {
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  isPushing = true;
   router.push({
     query: { ...route.query, page: page.toString() },
+  }).then(() => {
+    isPushing = false;
   });
   loadMusic();
 };
