@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 export default defineEventHandler(async (event) => {
   const submissionId = getRouterParam(event, "sid");
 

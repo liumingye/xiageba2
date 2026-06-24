@@ -187,7 +187,7 @@ const getPageNumbers = () => {
           <thead class="bg-gray-800">
             <tr>
               <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[80px]"
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-[80px] min-w-[80px]"
               >
                 封面
               </th>

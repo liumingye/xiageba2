@@ -361,7 +361,7 @@ const typeColor: Record<string, string> = {
           <thead class="bg-gray-800">
             <tr>
               <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[250px]"
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[220px]"
               >
                 歌曲
               </th>
@@ -376,12 +376,12 @@ const typeColor: Record<string, string> = {
                 描述
               </th>
               <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[100px]"
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[80px]"
               >
                 状态
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium min-w-[110px]"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium min-w-[120px]"
               >
                 网盘检测
               </th>
@@ -391,7 +391,7 @@ const typeColor: Record<string, string> = {
                 时间
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium min-w-[200px]"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium min-w-[190px]"
               >
                 操作
               </th>

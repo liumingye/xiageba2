@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { prisma } from "#server/lib/prisma";
 
 export default defineEventHandler(async (event) => {
@@ -48,7 +49,7 @@ export default defineEventHandler(async (event) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ links, selectedPlatforms: ["quark", "baidu"] }),
+        body: JSON.stringify({ links }),
       },
     );
 

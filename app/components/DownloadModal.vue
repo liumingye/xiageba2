@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from "vue";
-import { X, Download, QrCode, MessageSquare } from "lucide-vue-next";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { X, Download, QrCode, MessageSquare, Copy, Check } from "lucide-vue-next";
 import type { Music, DownloadOption } from "~/stores/music";
 import FeedbackModal from "~/components/FeedbackModal.vue";
 
@@ -17,6 +17,54 @@ const showFeedbackModal = ref(false);
 const isMobile = ref(false);
 const qrCodeUrl = ref("");
 const selectedDownload = ref<DownloadOption | null>(null);
+const copiedCode = ref(false);
+
+const extractPwd = (url: string): string => {
+  try {
+    const u = new URL(url);
+    const pwd = u.searchParams.get("pwd");
+    if (pwd) return pwd;
+
+    const match = url.match(/[?&]pwd=([^&]+)/);
+    if (match) return match[1];
+  } catch {
+    // 忽略URL解析错误
+  }
+  return "";
+};
+
+const selectedPwd = computed(() => {
+  if (!selectedDownload.value?.url) return "";
+  return extractPwd(selectedDownload.value.url);
+});
+
+const isBaiduPan = computed(() => {
+  if (!selectedDownload.value?.url) return false;
+  return /pan\.baidu\.com/i.test(selectedDownload.value.url);
+});
+
+const cleanUrl = (url: string): string => {
+  try {
+    const u = new URL(url);
+    u.searchParams.delete("pwd");
+    return u.toString();
+  } catch {
+    return url;
+  }
+};
+
+const copyPwd = async () => {
+  if (!selectedPwd.value) return;
+  try {
+    await navigator.clipboard.writeText(selectedPwd.value);
+    copiedCode.value = true;
+    setTimeout(() => {
+      copiedCode.value = false;
+    }, 2000);
+  } catch {
+    // 复制失败静默处理
+  }
+};
 
 const checkMobile = () => {
   isMobile.value =
@@ -32,7 +80,7 @@ onMounted(() => {
 
 const generateQrCode = async (url: string) => {
   const qrcode = await import("qrcode");
-  qrCodeUrl.value = await qrcode.toDataURL(url, {
+  qrCodeUrl.value = await qrcode.toDataURL(cleanUrl(url), {
     margin: 0,
   });
 };
@@ -114,10 +162,27 @@ const openFeedbackModal = () => {
                   :href="download.url"
                   target="_blank"
                   rel="noopener noreferrer"
+                  @click="selectedDownload = download"
                 >
                   <Download class="w-8 h-8 text-primary-500" />
                   <span class="font-medium">{{ download.quality }}</span>
                 </a>
+              </div>
+
+              <div
+                v-if="selectedPwd && isBaiduPan"
+                class="flex items-center justify-center gap-2 p-3 bg-gray-800 rounded-lg"
+              >
+                <span class="text-gray-400 text-sm">提取码：</span>
+                <span class="text-white font-mono font-medium">{{ selectedPwd }}</span>
+                <button
+                  class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
+                  @click.stop="copyPwd"
+                  title="复制提取码"
+                >
+                  <Check v-if="copiedCode" class="w-4 h-4 text-green-400" />
+                  <Copy v-else class="w-4 h-4" />
+                </button>
               </div>
 
               <div class="text-center text-gray-500 text-sm">
@@ -167,6 +232,22 @@ const openFeedbackModal = () => {
                     <QrCode class="w-12 h-12 text-gray-400" />
                   </div>
                 </div>
+              </div>
+
+              <div
+                v-if="selectedPwd && isBaiduPan"
+                class="flex items-center justify-center gap-2"
+              >
+                <span class="text-gray-400 text-sm">提取码：</span>
+                <span class="text-white font-mono font-medium">{{ selectedPwd }}</span>
+                <button
+                  class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
+                  @click="copyPwd"
+                  title="复制提取码"
+                >
+                  <Check v-if="copiedCode" class="w-4 h-4 text-green-400" />
+                  <Copy v-else class="w-4 h-4" />
+                </button>
               </div>
             </div>
 
