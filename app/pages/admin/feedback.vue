@@ -11,7 +11,6 @@ import {
   Search,
   AlertCircle,
   Loader2,
-  Edit3,
 } from "lucide-vue-next";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -542,13 +541,14 @@ const typeColor: Record<string, string> = {
               </td>
               <td class="px-4 py-4">
                 <div class="flex items-center justify-center gap-2">
-                  <button
+                  <a
+                    :href="`/admin/music/edit/${fb.musicId}`"
+                    target="_blank"
                     class="p-2 text-gray-400 hover:text-primary-500 transition-colors"
                     title="编辑音乐"
-                    @click="window.open(`/admin/music/edit/${fb.musicId}`, '_blank')"
                   >
                     <Edit3 class="w-4 h-4" />
-                  </button>
+                  </a>
                   <button
                     v-if="fb.status === 'PENDING'"
                     class="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-700 hover:bg-green-600 text-white rounded-lg transition-colors"
