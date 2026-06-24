@@ -21,6 +21,7 @@ const feedbackTypes = [
 
 const selectedType = ref("");
 const description = ref("");
+const email = ref("");
 const isSubmitting = ref(false);
 const submitted = ref(false);
 const errorMsg = ref("");
@@ -31,6 +32,7 @@ watch(
     if (show) {
       selectedType.value = "";
       description.value = "";
+      email.value = "";
       submitted.value = false;
       errorMsg.value = "";
     }
@@ -41,6 +43,15 @@ const handleSubmit = async () => {
   if (!selectedType.value) {
     errorMsg.value = "请选择反馈类型";
     return;
+  }
+
+  // 验证邮箱格式（如果填写）
+  if (email.value.trim()) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.value.trim())) {
+      errorMsg.value = "请输入正确的邮箱地址";
+      return;
+    }
   }
 
   isSubmitting.value = true;
@@ -54,6 +65,7 @@ const handleSubmit = async () => {
         musicId: props.musicId,
         type: selectedType.value,
         description: description.value.trim(),
+        email: email.value.trim(),
       }),
     });
 
@@ -154,6 +166,15 @@ const handleClose = () => {
               <span class="absolute bottom-2 right-3 text-xs text-gray-600">
                 {{ description.length }}/100
               </span>
+            </div>
+
+            <div class="mt-3">
+              <input
+                v-model="email"
+                type="email"
+                placeholder="邮箱（选填，用于接收处理通知）"
+                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500/50"
+              />
             </div>
 
             <p v-if="errorMsg" class="text-red-400 text-sm mt-2">

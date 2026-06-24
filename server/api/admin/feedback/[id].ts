@@ -1,4 +1,5 @@
 import { prisma } from "#server/lib/prisma";
+import { sendFeedbackResolvedEmail } from "#server/lib/email";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
@@ -20,6 +21,21 @@ export default defineEventHandler(async (event) => {
         resolvedAt: new Date(),
       },
     });
+
+    // 如果用户提供了邮箱，发送通知邮件
+    if (feedback.email) {
+      try {
+        await sendFeedbackResolvedEmail(
+          feedback.email,
+          feedback.musicTitle,
+          feedback.musicArtist,
+          feedback.type,
+        );
+      } catch (error) {
+        // 邮件发送失败不影响反馈标记完成
+        console.error("发送反馈通知邮件失败:", error);
+      }
+    }
 
     return feedback;
   }

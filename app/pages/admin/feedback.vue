@@ -11,6 +11,7 @@ import {
   Search,
   AlertCircle,
   Loader2,
+  Edit3,
 } from "lucide-vue-next";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";

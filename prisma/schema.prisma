@@ -23,6 +23,7 @@ model Feedback {
   musicArtist String
   type        FeedbackType
   description String         @default("")
+  email       String         @default("")
   status      FeedbackStatus @default(PENDING)
   resolvedAt  DateTime?
   resolvedBy  String?

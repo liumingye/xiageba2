@@ -10,7 +10,7 @@ const FEEDBACK_TYPES = [
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { musicId, type, description } = body;
+  const { musicId, type, description, email } = body;
 
   if (!musicId) {
     throw createError({ statusCode: 400, message: "缺少音乐ID" });
@@ -30,6 +30,17 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // 验证邮箱格式（如果提供）
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw createError({
+        statusCode: 400,
+        message: "邮箱格式不正确",
+      });
+    }
+  }
+
   const music = await prisma.music.findUnique({
     where: { id: musicId },
     select: { id: true, title: true, artist: true },
@@ -46,6 +57,7 @@ export default defineEventHandler(async (event) => {
       musicArtist: music.artist,
       type,
       description: description || "",
+      email: email || "",
     },
   });
 
