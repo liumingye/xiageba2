@@ -30,6 +30,8 @@ export const verifyToken = (token: string): { username: string } | null => {
   if (parts.length !== 2) return null;
 
   const [encoded, signature] = parts;
+  if (!encoded || !signature) return null;
+
   const expectedSignature = createHmac("sha256", SECRET)
     .update(encoded)
     .digest("hex");
