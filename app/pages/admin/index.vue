@@ -95,13 +95,11 @@ const debounceLoadMusic = debounce(loadMusic, 300);
 
 watch(searchQuery, () => {
   currentPage.value = 1;
-  router.push({
-    query: {
-      ...route.query,
-      page: "1",
-      ...(searchQuery.value ? { q: searchQuery.value } : {}),
-    },
-  });
+  const query: Record<string, string> = { page: "1" };
+  if (searchQuery.value.trim()) {
+    query.q = searchQuery.value;
+  }
+  router.push({ query });
   debounceLoadMusic();
 });
 

@@ -88,13 +88,11 @@ const loadFeedback = async () => {
 const handleStatusFilter = (status: "" | "PENDING" | "DONE") => {
   statusFilter.value = status;
   currentPage.value = 1;
-  router.push({
-    query: {
-      ...route.query,
-      page: "1",
-      ...(status ? { status } : {}),
-    },
-  });
+  const query: Record<string, string> = { page: "1" };
+  if (status) {
+    query.status = status;
+  }
+  router.push({ query });
   loadFeedback();
 };
 
