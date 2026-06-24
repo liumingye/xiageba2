@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import {
@@ -8,6 +8,9 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Search,
+  AlertCircle,
+  Loader2,
 } from "lucide-vue-next";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -111,6 +114,121 @@ const getPageNumbers = () => {
   }
   return pages;
 };
+
+const checkResults = ref<Record<string, any>>({});
+const checkingId = ref<string | null>(null);
+const pollTimers = ref<Record<string, ReturnType<typeof setInterval>>>({});
+
+const stopPolling = (musicId: string) => {
+  if (pollTimers.value[musicId]) {
+    clearInterval(pollTimers.value[musicId]);
+    delete pollTimers.value[musicId];
+  }
+};
+
+const pollSubmission = async (musicId: string, submissionId: number) => {
+  try {
+    const res = await fetch(
+      `/api/admin/music/check-links/submission/${submissionId}`,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+    if (res.status === 401) {
+      logout();
+      router.push("/admin/login");
+      stopPolling(musicId);
+      return;
+    }
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    const current = checkResults.value[musicId];
+    if (!current) return;
+
+    const downloads = JSON.parse(current.downloadsRaw || "[]") as Array<{
+      quality: string;
+      url: string;
+    }>;
+
+    const resultWithDetails = downloads.map((d) => ({
+      ...d,
+      status: data.invalid_links?.includes(d.url)
+        ? "invalid"
+        : data.valid_links?.includes(d.url)
+          ? "valid"
+          : "pending",
+    }));
+
+    checkResults.value[musicId] = {
+      ...current,
+      ...data,
+      downloads: resultWithDetails,
+    };
+
+    if (!data.pending_links || data.pending_links.length === 0) {
+      stopPolling(musicId);
+    }
+  } catch {
+    // 忽略轮询错误
+  }
+};
+
+const startPolling = (musicId: string, submissionId: number) => {
+  stopPolling(musicId);
+  pollTimers.value[musicId] = setInterval(() => {
+    pollSubmission(musicId, submissionId);
+  }, 3000);
+};
+
+const checkLinks = async (musicId: string) => {
+  if (checkingId.value) return;
+
+  checkingId.value = musicId;
+  try {
+    const res = await fetch(`/api/admin/music/${musicId}/check-links`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (res.status === 401) {
+      logout();
+      router.push("/admin/login");
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.message || "检测失败");
+      return;
+    }
+    const data = await res.json();
+
+    const current = checkResults.value[musicId];
+    const downloadsRaw = current?.downloadsRaw
+      ? current.downloadsRaw
+      : JSON.stringify(
+          data.downloads?.map((d: any) => ({
+            quality: d.quality,
+            url: d.url,
+          })) || [],
+        );
+
+    checkResults.value[musicId] = {
+      ...data,
+      downloadsRaw,
+    };
+
+    if (data.pending_links && data.pending_links.length > 0 && data.submission_id) {
+      startPolling(musicId, data.submission_id);
+    }
+  } finally {
+    checkingId.value = null;
+  }
+};
+
+onUnmounted(() => {
+  Object.keys(pollTimers.value).forEach((id) => stopPolling(id));
+});
 
 const resolveFeedback = async (id: string) => {
   if (!confirm("确定要将此反馈标记为已完成吗？")) return;
@@ -245,6 +363,9 @@ const typeColor: Record<string, string> = {
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 状态
               </th>
+              <th class="px-4 py-3 text-center text-gray-400 text-sm font-medium">
+                网盘检测
+              </th>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 时间
               </th>
@@ -257,12 +378,12 @@ const typeColor: Record<string, string> = {
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+              <td colspan="7" class="px-4 py-8 text-center text-gray-500">
                 加载中...
               </td>
             </tr>
             <tr v-else-if="feedbacks.length === 0">
-              <td colspan="6" class="px-4 py-12 text-center">
+              <td colspan="7" class="px-4 py-12 text-center">
                 <p class="text-gray-500">暂无反馈</p>
               </td>
             </tr>
@@ -322,6 +443,67 @@ const typeColor: Record<string, string> = {
                   <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
                   待处理
                 </span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center">
+                  <button
+                    v-if="!checkResults[fb.musicId] && checkingId !== fb.musicId"
+                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                    @click="checkLinks(fb.musicId)"
+                  >
+                    <Search class="w-3.5 h-3.5" />
+                    检测
+                  </button>
+                  <button
+                    v-else-if="checkingId === fb.musicId"
+                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed"
+                    disabled
+                  >
+                    <Loader2 class="w-3.5 h-3.5 animate-spin" />
+                    检测中
+                  </button>
+                  <div
+                    v-else
+                    class="flex items-center gap-2 text-sm"
+                    :title="
+                      checkResults[fb.musicId]?.downloads
+                        ?.map(
+                          (d: any) =>
+                            `${d.quality}: ${d.status === 'valid' ? '有效' : d.status === 'invalid' ? '失效' : '待检测'}`,
+                        )
+                        .join('\n')
+                    "
+                  >
+                    <span
+                      v-if="checkResults[fb.musicId]?.valid_links?.length > 0"
+                      class="inline-flex items-center gap-1 text-green-400"
+                    >
+                      <CheckCircle class="w-3.5 h-3.5" />
+                      {{ checkResults[fb.musicId].valid_links.length }}
+                    </span>
+                    <span
+                      v-if="checkResults[fb.musicId]?.invalid_links?.length > 0"
+                      class="inline-flex items-center gap-1 text-red-400"
+                    >
+                      <AlertCircle class="w-3.5 h-3.5" />
+                      {{ checkResults[fb.musicId].invalid_links.length }}
+                    </span>
+                    <span
+                      v-if="checkResults[fb.musicId]?.pending_links?.length > 0"
+                      class="inline-flex items-center gap-1 text-yellow-400"
+                    >
+                      <Loader2 class="w-3.5 h-3.5" />
+                      {{ checkResults[fb.musicId].pending_links.length }}
+                    </span>
+                    <button
+                      class="p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                      title="重新检测"
+                      @click="checkLinks(fb.musicId)"
+                    >
+                      <Search class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </td>
               <td class="px-4 py-4 text-gray-500 text-sm">
                 {{
