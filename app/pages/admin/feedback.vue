@@ -360,28 +360,38 @@ const typeColor: Record<string, string> = {
         <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[200px]">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[250px]"
+              >
                 歌曲
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-28">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[180px]"
+              >
                 类型
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[150px]">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[200px]"
+              >
                 描述
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-24">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[100px]"
+              >
                 状态
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-28"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium min-w-[110px]"
               >
                 网盘检测
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[150px]"
+              >
                 时间
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-28"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium min-w-[200px]"
               >
                 操作
               </th>
@@ -552,46 +562,46 @@ const typeColor: Record<string, string> = {
             </tr>
           </tbody>
         </table>
+      </div>
 
-        <!-- 分页 -->
-        <div
-          v-if="totalPages > 1"
-          class="flex items-center justify-between px-4 py-3 border-t border-gray-800"
-        >
-          <div class="text-sm text-gray-400">
-            共 {{ total }} 条反馈，第 {{ currentPage }} / {{ totalPages }} 页
-          </div>
-          <div class="flex items-center gap-1">
-            <button
-              :disabled="currentPage === 1"
-              class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              @click="goToPage(currentPage - 1)"
-            >
-              <ChevronLeft class="w-4 h-4" />
-            </button>
-            <button
-              v-for="p in getPageNumbers()"
-              :key="p"
-              :class="[
-                'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
-                p === currentPage
-                  ? 'bg-primary-500 text-white'
-                  : p === '...'
-                    ? 'text-gray-500 cursor-default'
-                    : 'text-gray-400 hover:text-white',
-              ]"
-              @click="typeof p === 'number' && goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button
-              :disabled="currentPage === totalPages"
-              class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              @click="goToPage(currentPage + 1)"
-            >
-              <ChevronRight class="w-4 h-4" />
-            </button>
-          </div>
+      <!-- 分页 -->
+      <div
+        v-if="totalPages > 1"
+        class="flex items-center justify-between px-4 py-3"
+      >
+        <div class="text-sm text-gray-400">
+          共 {{ total }} 条反馈，第 {{ currentPage }} / {{ totalPages }} 页
+        </div>
+        <div class="flex items-center gap-1">
+          <button
+            :disabled="currentPage === 1"
+            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="goToPage(currentPage - 1)"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          <button
+            v-for="p in getPageNumbers()"
+            :key="p"
+            :class="[
+              'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
+              p === currentPage
+                ? 'bg-primary-500 text-white'
+                : p === '...'
+                  ? 'text-gray-500 cursor-default'
+                  : 'text-gray-400 hover:text-white',
+            ]"
+            @click="typeof p === 'number' && goToPage(p)"
+          >
+            {{ p }}
+          </button>
+          <button
+            :disabled="currentPage === totalPages"
+            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="goToPage(currentPage + 1)"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </button>
         </div>
       </div>
     </main>

@@ -17,13 +17,8 @@ import type { Music as MusicType } from "~/stores/music";
 
 const config = useRuntimeConfig();
 const router = useRouter();
-const {
-  isLoggedIn,
-  logout,
-  checkLogin,
-  initialized,
-  getAuthHeaders,
-} = useAuth();
+const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
+  useAuth();
 
 const musics = ref<MusicType[]>([]);
 const searchQuery = ref("");
@@ -191,16 +186,22 @@ const getPageNumbers = () => {
         <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-16">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium min-w-[80px]"
+              >
                 封面
               </th>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 歌名
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-32">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-32"
+              >
                 歌手
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40"
+              >
                 专辑
               </th>
               <th
@@ -234,9 +235,24 @@ const getPageNumbers = () => {
                   class="w-12 h-12 rounded object-cover"
                 />
               </td>
-              <td class="px-4 py-4 text-white truncate max-w-[200px]" :title="music.title">{{ music.title }}</td>
-              <td class="px-4 py-4 text-gray-400 truncate" :title="music.artist">{{ music.artist }}</td>
-              <td class="px-4 py-4 text-gray-400 truncate" :title="music.album || '-'">{{ music.album || "-" }}</td>
+              <td
+                class="px-4 py-4 text-white truncate max-w-[200px]"
+                :title="music.title"
+              >
+                {{ music.title }}
+              </td>
+              <td
+                class="px-4 py-4 text-gray-400 truncate"
+                :title="music.artist"
+              >
+                {{ music.artist }}
+              </td>
+              <td
+                class="px-4 py-4 text-gray-400 truncate"
+                :title="music.album || '-'"
+              >
+                {{ music.album || "-" }}
+              </td>
               <td class="px-4 py-4">
                 <div class="flex items-center justify-center gap-2">
                   <button
@@ -258,46 +274,45 @@ const getPageNumbers = () => {
             </tr>
           </tbody>
         </table>
-
-        <!-- 分页 -->
-        <div
-          v-if="totalPages > 1"
-          class="flex items-center justify-between px-4 py-3 border-t border-gray-800"
-        >
-          <div class="text-sm text-gray-400">
-            共 {{ total }} 首音乐，第 {{ currentPage }} / {{ totalPages }} 页
-          </div>
-          <div class="flex items-center gap-1">
-            <button
-              :disabled="currentPage === 1"
-              class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              @click="goToPage(currentPage - 1)"
-            >
-              <ChevronLeft class="w-4 h-4" />
-            </button>
-            <button
-              v-for="p in getPageNumbers()"
-              :key="p"
-              :class="[
-                'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
-                p === currentPage
-                  ? 'bg-primary-500 text-white'
-                  : p === '...'
-                    ? 'text-gray-500 cursor-default'
-                    : 'text-gray-400 hover:text-white',
-              ]"
-              @click="typeof p === 'number' && goToPage(p)"
-            >
-              {{ p }}
-            </button>
-            <button
-              :disabled="currentPage === totalPages"
-              class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              @click="goToPage(currentPage + 1)"
-            >
-              <ChevronRight class="w-4 h-4" />
-            </button>
-          </div>
+      </div>
+      <!-- 分页 -->
+      <div
+        v-if="totalPages > 1"
+        class="flex items-center justify-between px-4 py-3"
+      >
+        <div class="text-sm text-gray-400">
+          共 {{ total }} 首音乐，第 {{ currentPage }} / {{ totalPages }} 页
+        </div>
+        <div class="flex items-center gap-1">
+          <button
+            :disabled="currentPage === 1"
+            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="goToPage(currentPage - 1)"
+          >
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          <button
+            v-for="p in getPageNumbers()"
+            :key="p"
+            :class="[
+              'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
+              p === currentPage
+                ? 'bg-primary-500 text-white'
+                : p === '...'
+                  ? 'text-gray-500 cursor-default'
+                  : 'text-gray-400 hover:text-white',
+            ]"
+            @click="typeof p === 'number' && goToPage(p)"
+          >
+            {{ p }}
+          </button>
+          <button
+            :disabled="currentPage === totalPages"
+            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="goToPage(currentPage + 1)"
+          >
+            <ChevronRight class="w-4 h-4" />
+          </button>
         </div>
       </div>
     </main>
