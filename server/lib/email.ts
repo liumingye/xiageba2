@@ -76,6 +76,7 @@ export const sendEmail = async (options: SendEmailOptions): Promise<boolean> => 
 
 export const sendFeedbackResolvedEmail = async (
   email: string,
+  musicId: string,
   musicTitle: string,
   musicArtist: string,
   feedbackType: string,
@@ -89,6 +90,8 @@ export const sendFeedbackResolvedEmail = async (
   };
 
   const typeLabel = typeLabels[feedbackType] || feedbackType;
+  const siteHost = process.env.SITE_HOST || "";
+  const musicUrl = siteHost ? `${siteHost.replace(/\/$/, "")}/music/${musicId}` : "";
 
   const subject = `您反馈的问题已处理 - ${musicTitle}`;
   const html = `
@@ -103,6 +106,14 @@ export const sendFeedbackResolvedEmail = async (
         <p style="margin: 0 0 10px 0;"><strong>反馈类型：</strong>${typeLabel}</p>
         <p style="margin: 0;"><strong>处理状态：</strong><span style="color: #22c55e;">已处理</span></p>
       </div>
+      ${musicUrl ? `
+      <p style="color: #666; line-height: 1.6;">
+        点击下方链接查看歌曲详情：
+      </p>
+      <p style="margin: 10px 0 20px 0;">
+        <a href="${musicUrl}" style="color: #6366f1; text-decoration: none; word-break: break-all;">${musicUrl}</a>
+      </p>
+      ` : ""}
       <p style="color: #666; line-height: 1.6;">
         如果您还有其他问题，欢迎继续向我们反馈。
       </p>

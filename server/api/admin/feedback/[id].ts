@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
       try {
         await sendFeedbackResolvedEmail(
           feedback.email,
+          feedback.musicId,
           feedback.musicTitle,
           feedback.musicArtist,
           feedback.type,
