@@ -15,14 +15,17 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "音乐不存在" });
   }
 
-  await prisma.music.update({
-    where: { id },
-    data: { viewCount: { increment: 1 } },
-  });
+  prisma.music
+    .update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+    })
+    .catch((e) => {
+      console.log(e);
+    });
 
   return {
     ...music,
-    viewCount: (music.viewCount || 0) + 1,
     downloads: JSON.parse(music.downloads || "[]"),
   };
 });
