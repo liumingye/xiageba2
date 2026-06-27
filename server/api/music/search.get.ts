@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
       SELECT m.id, m.title, m.artist, m.album, m.cover
       FROM hit_rows h
       JOIN "Music" m USING(id)
-      ORDER BY h.rank DESC, m."createdAt" DESC
+      ORDER BY h.rank DESC, m."viewCount" DESC, m."createdAt" DESC
       LIMIT ${pageSize} OFFSET ${skip};
     `,
     prisma.$queryRaw<[{ count: string }]>`
