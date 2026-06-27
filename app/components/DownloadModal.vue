@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from "vue";
-import { X, Download, QrCode, MessageSquare, Copy, Check } from "lucide-vue-next";
+import {
+  X,
+  Download,
+  QrCode,
+  MessageSquare,
+  Copy,
+  Check,
+} from "lucide-vue-next";
 import type { Music, DownloadOption } from "~/stores/music";
 import FeedbackModal from "~/components/FeedbackModal.vue";
 
@@ -36,11 +43,6 @@ const extractPwd = (url: string): string => {
 const selectedPwd = computed(() => {
   if (!selectedDownload.value?.url) return "";
   return extractPwd(selectedDownload.value.url);
-});
-
-const isBaiduPan = computed(() => {
-  if (!selectedDownload.value?.url) return false;
-  return /pan\.baidu\.com/i.test(selectedDownload.value.url);
 });
 
 const pwdList = computed(() => {
@@ -206,13 +208,18 @@ const openFeedbackModal = () => {
                 >
                   <span class="text-gray-300 text-sm">{{ item.quality }}</span>
                   <div class="flex items-center gap-2">
-                    <span class="text-white font-mono font-medium">{{ item.pwd }}</span>
+                    <span class="text-white font-mono font-medium">{{
+                      item.pwd
+                    }}</span>
                     <button
                       class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
                       @click.stop="copyPwdByIndex(index, item.pwd)"
                       title="复制提取码"
                     >
-                      <Check v-if="copiedIndex === index" class="w-4 h-4 text-green-400" />
+                      <Check
+                        v-if="copiedIndex === index"
+                        class="w-4 h-4 text-green-400"
+                      />
                       <Copy v-else class="w-4 h-4" />
                     </button>
                   </div>
@@ -269,11 +276,13 @@ const openFeedbackModal = () => {
               </div>
 
               <div
-                v-if="selectedPwd && isBaiduPan"
+                v-if="selectedPwd"
                 class="flex items-center justify-center gap-2"
               >
                 <span class="text-gray-400 text-sm">提取码：</span>
-                <span class="text-white font-mono font-medium">{{ selectedPwd }}</span>
+                <span class="text-white font-mono font-medium">{{
+                  selectedPwd
+                }}</span>
                 <button
                   class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
                   @click="copyPwd"
@@ -285,24 +294,26 @@ const openFeedbackModal = () => {
               </div>
             </div>
 
-            <button
-              v-if="music?.id"
-              @click="openFeedbackModal"
-              aria-label="反馈问题"
-              class="flex items-center gap-2 mx-auto text-gray-600"
-            >
-              <MessageSquare class="w-5 h-5 mt-0.5" />
-              反馈问题
-            </button>
+            <div class="text-center">
+              <button
+                v-if="music?.id"
+                @click="openFeedbackModal"
+                aria-label="反馈问题"
+                class="text-gray-600"
+              >
+                反馈问题
+              </button>
 
-            <!-- <a
-              v-if="selectedDownload?.url"
-              :href="selectedDownload.url"
-              target="_blank"
-              class="text-sm mt-2 text-center block text-gray-600 opacity-5"
-            >
-              直接下载
-            </a> -->
+              <a
+                v-if="!isMobile"
+                aria-label="直接下载"
+                class="text-gray-600 ml-2"
+                :href="selectedDownload.url"
+                target="_blank"
+              >
+                直接下载
+              </a>
+            </div>
           </div>
 
           <div v-else class="text-center text-gray-500 py-8">暂无下载链接</div>
