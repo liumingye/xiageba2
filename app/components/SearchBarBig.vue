@@ -2,7 +2,8 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore } from "~/stores/music";
-import { Search, X } from "lucide-vue-next";
+import { Search, X, Music, Video } from "lucide-vue-next";
+import { on } from "events";
 
 const props = defineProps<{
   modelValue?: string;
@@ -17,6 +18,7 @@ const router = useRouter();
 const musicStore = useMusicStore();
 
 const searchQuery = ref(props.modelValue || "");
+const isFocused = ref(false);
 
 watch(
   () => props.modelValue,
@@ -40,9 +42,14 @@ const handleSearch = () => {
   const q = searchQuery.value.trim();
   if (!q) return;
   if (q.length > MAX_KEYWORD_LENGTH) return;
-  musicStore.addSearchHistory(q);
-  emit("search", q);
-  router.push(`/search?q=${encodeURIComponent(q)}`);
+  if (currentSearchType.value === "music") {
+    musicStore.addSearchHistory(q);
+    emit("search", q);
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+  } else {
+    // https://pan.liumingye.cn/s/${q}
+    window.open(`https://pan.liumingye.cn/s/${q}`);
+  }
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -55,41 +62,109 @@ const clearInput = () => {
   searchQuery.value = "";
   emit("update:modelValue", "");
 };
+
+const currentSearchType = ref("music");
+
+const searchInput = ref<HTMLInputElement>();
+
+onMounted(() => {
+  if (searchInput.value?.focus) {
+    isFocused.value = true;
+  }
+});
 </script>
 
 <template>
-  <div class="flex w-full relative max-w-[720px] h-[125px] mx-auto">
-    <input
-      :value="searchQuery"
-      :maxlength="MAX_KEYWORD_LENGTH"
-      type="text"
-      placeholder="请输入搜索内容"
-      class="input-search pl-3 pr-20 h-[46px]"
-      @input="updateSearchQuery"
-      @keydown="handleKeydown"
-      aria-label="搜索"
-    />
-    <button
-      v-if="searchQuery"
-      class="absolute right-14 py-2 text-gray-500 hover:text-white transition-colors"
-      @click="clearInput"
-      aria-label="清除"
-      type="button"
+  <div class="w-full max-w-[720px] mx-auto mb-6">
+    <div
+      class="border-2 rounded-3xl transition-all duration-300 h-32 relative bg-gray-800"
+      :class="
+        isFocused
+          ? 'border-primary-500 shadow-lg shadow-primary-500/20'
+          : 'border-white/20 hover:border-white/40'
+      "
+      @click.stop="searchInput?.focus()"
     >
-      <X class="w-4 h-4" />
-    </button>
-    <button
-      class="absolute right-1 px-2 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-      @click="handleSearch"
-      type="button"
-    >
-      <Search />
-    </button>
+      <div class="top-0 left-4 right-4 absolute flex items-center py-4">
+        <input
+          ref="searchInput"
+          :value="searchQuery"
+          :maxlength="MAX_KEYWORD_LENGTH"
+          type="text"
+          :placeholder="
+            currentSearchType === 'music' ? '搜你想要的歌' : '搜你想要的视频'
+          "
+          class="flex-1 bg-transparent text-white text-lg outline-none placeholder-white/50"
+          @input="updateSearchQuery"
+          @keydown="handleKeydown"
+          @focus="isFocused = true"
+          @blur="isFocused = false"
+          aria-label="搜索"
+          autofocus
+        />
+        <button
+          v-if="searchQuery"
+          class="px-3 text-white/60 hover:text-white transition-colors"
+          @click="clearInput"
+          aria-label="清除"
+          type="button"
+        >
+          <X class="w-5 h-5" />
+        </button>
+      </div>
+      <div
+        class="bottom-3 left-4 right-4 absolute flex items-center justify-center"
+      >
+        <div class="flex flex-1">
+          <button
+            class="icon-btn"
+            :class="{ primary: currentSearchType === 'music' }"
+            @click="currentSearchType = 'music'"
+            title="搜索音乐"
+          >
+            <Music class="w-5 h-5" />
+          </button>
+          <button
+            class="icon-btn ml-2"
+            :class="{ primary: currentSearchType === 'video' }"
+            @click="currentSearchType = 'video'"
+            title="搜索视频"
+          >
+            <Video class="w-5 h-5" />
+          </button>
+        </div>
+        <button
+          class="bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 transition-all duration-200"
+          @click="handleSearch"
+          type="button"
+        >
+          <Search class="mx-auto w-4 h-4" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.input-search {
-  height: 46px;
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s ease;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
+}
+.icon-btn.primary {
+  background-color: rgb(246, 248, 255);
+  color: #3b82f6;
 }
 </style>

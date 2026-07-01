@@ -274,12 +274,12 @@ const closeDownloadModal = () => {
 
                 <div class="flex flex-wrap gap-3 justify-center">
                   <button
-                    class="flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                    class="flex items-center gap-2 px-14 sm:px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
                     @click="openDownloadModal"
                     aria-label="下载歌曲"
                   >
                     <Download class="w-5 h-5" />
-                    下载
+                    点击下载
                   </button>
                   <button
                     v-if="music.playUrl"
