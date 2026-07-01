@@ -78,12 +78,26 @@ const clearHistory = () => {
 };
 
 const skeletonItems = Array.from({ length: 6 });
+
+const isMobile = ref<boolean | null>(null);
+
+const checkMobile = () => {
+  isMobile.value =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
+};
+
+onMounted(() => {
+  checkMobile();
+  window.addEventListener("resize", checkMobile);
+});
 </script>
 
 <template>
   <div class="min-h-screen bg-dark-300 py-8 px-4">
     <div class="max-w-4xl mx-auto">
-      <header class="text-center mb-12">
+      <header class="text-center mb-6">
         <div class="flex items-center justify-center gap-3 mb-6">
           <div
             class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center"
@@ -93,7 +107,12 @@ const skeletonItems = Array.from({ length: 6 });
           </div>
           <h1 class="text-4xl font-bold text-white">下歌吧</h1>
         </div>
-        <SearchBar />
+        <SearchBarBig />
+        <div class="text-sm text-gray-400 mt-3" v-if="isMobile !== null">
+          {{
+            isMobile ? "打开浏览器菜单，点击加入书签不迷路" : "按下Ctrl + D收藏网站不迷路"
+          }}
+        </div>
       </header>
 
       <section

@@ -68,6 +68,7 @@ const clearInput = () => {
       @input="updateSearchQuery"
       @keydown="handleKeydown"
       aria-label="搜索"
+      autofocus
     />
     <button
       v-if="searchQuery"

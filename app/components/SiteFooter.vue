@@ -9,6 +9,14 @@ const year = new Date().getFullYear();
     </p>
     <div class="flex items-center justify-center gap-4 mt-2">
       <a
+        href="https://pan.liumingye.cn"
+        class="text-sm text-gray-600 hover:text-gray-400 transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        影视资源搜索
+      </a>
+      <a
         href="https://github.com/liumingye/xiageba2"
         target="_blank"
         rel="noopener noreferrer"

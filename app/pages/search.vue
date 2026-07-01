@@ -374,6 +374,8 @@ const skeletonList = Array.from({ length: 8 });
         </div>
       </main>
 
+      <Qrcode />
+
       <SiteFooter />
     </div>
   </div>
