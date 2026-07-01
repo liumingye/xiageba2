@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import SearchBar from "~/components/SearchBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
+import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
 import { Music as MusicIcon, ArrowRight } from "lucide-vue-next";
 
@@ -197,6 +198,8 @@ const skeletonItems = Array.from({ length: 6 });
           </article>
         </div>
       </section>
+
+      <Qrcode />
 
       <SiteFooter />
     </div>

@@ -339,6 +339,8 @@ const closeDownloadModal = () => {
         </div>
       </main>
 
+      <Qrcode />
+
       <DownloadModal
         :show="showDownloadModal"
         :music="music"

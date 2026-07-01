@@ -2,6 +2,7 @@
 import { CircleSlash, AlertTriangle, RotateCcw, Search } from "lucide-vue-next";
 import TopBar from "~/components/TopBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
+import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
 import { ArrowRight } from "lucide-vue-next";
 
