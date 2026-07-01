@@ -1,0 +1,582 @@
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "~/composables/useAuth";
+import { Plus, Trash2, Edit3, Database, Search } from "@lucide/vue";
+import AdminNav from "~/components/admin/AdminNav.vue";
+import AdminHeader from "~/components/admin/AdminHeader.vue";
+import AdminPagination from "~/components/admin/AdminPagination.vue";
+
+interface Source {
+  id: string;
+  cid: string;
+  title: string;
+  url: string;
+  description: string;
+  menu: string;
+  categoryName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  sort: number;
+}
+
+const router = useRouter();
+const {
+  isLoggedIn,
+  logout,
+  checkLogin,
+  initialized,
+  getAuthHeaders,
+} = useAuth();
+
+const sources = ref<Source[]>([]);
+const categories = ref<Category[]>([]);
+const currentPage = ref(1);
+const totalPages = ref(1);
+const total = ref(0);
+const filterCid = ref("");
+const keyword = ref("");
+
+const showAddModal = ref(false);
+const showEditModal = ref(false);
+const newCid = ref("");
+const newTitle = ref("");
+const newUrl = ref("");
+const newDescription = ref("");
+const newMenu = ref("");
+const editId = ref("");
+const editCid = ref("");
+const editTitle = ref("");
+const editUrl = ref("");
+const editDescription = ref("");
+const editMenu = ref("");
+const error = ref("");
+
+const loadSources = async () => {
+  let url = `/api/admin/source?page=${currentPage.value}&pageSize=20`;
+  if (filterCid.value) url += `&cid=${encodeURIComponent(filterCid.value)}`;
+  if (keyword.value) url += `&keyword=${encodeURIComponent(keyword.value)}`;
+
+  const res = await fetch(url, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+    return;
+  }
+  const data = await res.json();
+  sources.value = data.data;
+  categories.value = data.categories;
+  totalPages.value = data.totalPages;
+  total.value = data.total;
+};
+
+onMounted(async () => {
+  if (!initialized.value) {
+    checkLogin();
+  }
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  if (!isLoggedIn.value) {
+    router.push("/admin/login");
+    return;
+  }
+  await loadSources();
+});
+
+const goToPage = (page: number) => {
+  currentPage.value = page;
+  loadSources();
+};
+
+const handleSearch = () => {
+  currentPage.value = 1;
+  loadSources();
+};
+
+const handleFilterChange = () => {
+  currentPage.value = 1;
+  loadSources();
+};
+
+const openAddModal = () => {
+  showAddModal.value = true;
+  newCid.value = categories.value[0]?.id || "";
+  newTitle.value = "";
+  newUrl.value = "";
+  newDescription.value = "";
+  newMenu.value = "";
+  error.value = "";
+};
+
+const closeAddModal = () => {
+  showAddModal.value = false;
+};
+
+const openEditModal = (item: Source) => {
+  showEditModal.value = true;
+  editId.value = item.id;
+  editCid.value = item.cid;
+  editTitle.value = item.title;
+  editUrl.value = item.url;
+  editDescription.value = item.description;
+  editMenu.value = item.menu;
+  error.value = "";
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+};
+
+const addSource = async () => {
+  if (!newCid.value) {
+    error.value = "请选择分类";
+    return;
+  }
+  if (!newTitle.value.trim()) {
+    error.value = "资源名称不能为空";
+    return;
+  }
+  if (!newUrl.value.trim()) {
+    error.value = "资源地址不能为空";
+    return;
+  }
+
+  const res = await fetch("/api/admin/source", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({
+      cid: newCid.value,
+      title: newTitle.value,
+      url: newUrl.value,
+      description: newDescription.value,
+      menu: newMenu.value,
+    }),
+  });
+
+  if (res.ok) {
+    await loadSources();
+    closeAddModal();
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  } else {
+    const err = await res.json();
+    error.value = err.message || "添加失败";
+  }
+};
+
+const saveEdit = async () => {
+  if (!editId.value) return;
+  if (!editCid.value) {
+    error.value = "请选择分类";
+    return;
+  }
+  if (!editTitle.value.trim()) {
+    error.value = "资源名称不能为空";
+    return;
+  }
+  if (!editUrl.value.trim()) {
+    error.value = "资源地址不能为空";
+    return;
+  }
+
+  const res = await fetch(`/api/admin/source/${editId.value}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({
+      cid: editCid.value,
+      title: editTitle.value,
+      url: editUrl.value,
+      description: editDescription.value,
+      menu: editMenu.value,
+    }),
+  });
+
+  if (res.ok) {
+    await loadSources();
+    closeEditModal();
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  } else {
+    const err = await res.json();
+    error.value = err.message || "保存失败";
+  }
+};
+
+const deleteSource = async (id: string) => {
+  if (!confirm("确定要删除该资源吗？")) return;
+
+  const res = await fetch(`/api/admin/source/${id}`, {
+    method: "DELETE",
+    headers: { ...getAuthHeaders() },
+  });
+
+  if (res.ok) {
+    await loadSources();
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+</script>
+
+<template>
+  <div class="min-h-screen bg-dark-300">
+    <AdminHeader />
+    <AdminNav />
+
+    <main class="max-w-7xl mx-auto px-6 py-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-medium text-white">资源管理</h2>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <select
+              v-model="filterCid"
+              class="input-search py-2 px-3 text-sm w-40"
+              @change="handleFilterChange"
+            >
+              <option value="">全部分类</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                {{ cat.name }}
+              </option>
+            </select>
+            <div class="relative">
+              <input
+                v-model="keyword"
+                type="text"
+                placeholder="搜索资源名称或链接"
+                class="input-search py-2 pl-9 pr-3 text-sm w-56"
+                @keyup.enter="handleSearch"
+              />
+              <Search
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
+              />
+            </div>
+          </div>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="openAddModal"
+          >
+            <Plus class="w-4 h-4" />
+            添加资源
+          </button>
+        </div>
+      </div>
+
+      <div class="card overflow-x-auto">
+        <table class="w-full table-auto">
+          <thead class="bg-gray-800">
+            <tr>
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20">
+                ID
+              </th>
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+                资源名称
+              </th>
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-28"
+              >
+                分类
+              </th>
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-48"
+              >
+                地址
+              </th>
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40"
+              >
+                入库时间
+              </th>
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40"
+              >
+                更新时间
+              </th>
+              <th
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24"
+              >
+                操作
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="item in sources"
+              :key="item.id"
+              class="border-t border-gray-800 hover:bg-gray-800/50"
+            >
+              <td
+                class="px-4 py-3 text-gray-400 text-xs font-mono truncate w-20"
+              >
+                <span :title="item.id">{{ item.id.slice(0, 8) }}</span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <Database class="w-5 h-5 text-gray-500" />
+                  </div>
+                  <span
+                    class="text-white truncate"
+                    :title="item.title"
+                  >{{ item.title }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-gray-300 w-28">
+                {{ item.categoryName || "-" }}
+              </td>
+              <td class="px-4 py-3 w-48">
+                <a
+                  :href="item.url"
+                  target="_blank"
+                  class="text-primary-400 hover:text-primary-300 text-sm truncate block"
+                  :title="item.url"
+                >
+                  {{ item.url }}
+                </a>
+              </td>
+              <td class="px-4 py-3 text-gray-400 text-sm w-40">
+                {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
+              </td>
+              <td class="px-4 py-3 text-gray-400 text-sm w-40">
+                {{ new Date(item.updatedAt).toLocaleString("zh-CN") }}
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center justify-center gap-2">
+                  <button
+                    class="p-2 text-gray-400 hover:text-primary-500 transition-colors"
+                    title="编辑"
+                    @click="openEditModal(item)"
+                  >
+                    <Edit3 class="w-4 h-4" />
+                  </button>
+                  <button
+                    class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    title="删除"
+                    @click="deleteSource(item.id)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <AdminPagination
+          v-if="totalPages > 1"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="total"
+          item-label="个资源"
+          @page-change="goToPage"
+        />
+
+        <div v-if="sources.length === 0" class="py-12 text-center">
+          <p class="text-gray-500">暂无资源</p>
+        </div>
+      </div>
+    </main>
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="showAddModal"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          <div
+            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            @click="closeAddModal"
+          ></div>
+          <div
+            class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800 max-h-[90vh] overflow-y-auto"
+          >
+            <h3 class="text-xl font-medium text-white mb-6">添加资源</h3>
+            <div
+              v-if="error"
+              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+            >
+              {{ error }}
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-gray-400 text-sm mb-2"
+                  >资源分类 *</label
+                >
+                <select v-model="newCid" class="input-search">
+                  <option value="">请选择分类</option>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-2"
+                  >资源名称 *</label
+                >
+                <input
+                  v-model="newTitle"
+                  type="text"
+                  placeholder="请输入资源名称"
+                  class="input-search"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-2"
+                  >资源地址 *</label
+                >
+                <input
+                  v-model="newUrl"
+                  type="text"
+                  placeholder="请输入网盘链接"
+                  class="input-search"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-2">资源介绍</label>
+                <textarea
+                  v-model="newDescription"
+                  rows="3"
+                  placeholder="资源说明，可选"
+                  class="input-search resize-none"
+                ></textarea>
+              </div>
+              <div class="flex gap-4 pt-2">
+                <button
+                  class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  @click="closeAddModal"
+                >
+                  取消
+                </button>
+                <button
+                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                  @click="addSource"
+                >
+                  添加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div
+          v-if="showEditModal"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          <div
+            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            @click="closeEditModal"
+          ></div>
+          <div
+            class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800 max-h-[90vh] overflow-y-auto"
+          >
+            <h3 class="text-xl font-medium text-white mb-6">编辑资源</h3>
+            <div
+              v-if="error"
+              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+            >
+              {{ error }}
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-gray-400 text-sm mb-2"
+                  >资源分类 *</label
+                >
+                <select v-model="editCid" class="input-search">
+                  <option value="">请选择分类</option>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-2"
+                  >资源名称 *</label
+                >
+                <input
+                  v-model="editTitle"
+                  type="text"
+                  placeholder="请输入资源名称"
+                  class="input-search"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-2"
+                  >资源地址 *</label
+                >
+                <input
+                  v-model="editUrl"
+                  type="text"
+                  placeholder="请输入网盘链接"
+                  class="input-search"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-2">资源介绍</label>
+                <textarea
+                  v-model="editDescription"
+                  rows="3"
+                  placeholder="资源说明，可选"
+                  class="input-search resize-none"
+                ></textarea>
+              </div>
+              <div class="flex gap-4 pt-2">
+                <button
+                  class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  @click="closeEditModal"
+                >
+                  取消
+                </button>
+                <button
+                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                  @click="saveEdit"
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+  </div>
+</template>
+
+<style scoped>
+.modal-leave-active {
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-content {
+  will-change: opacity, transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-8px);
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: scale(0.985) translateY(0);
+}
+</style>

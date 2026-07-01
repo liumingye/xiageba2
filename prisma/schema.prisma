@@ -54,6 +54,36 @@ model Music {
   @@index([searchVector], type: Gin)
 }
 
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  image     String   @default("")
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sort])
+}
+
+model Source {
+  id          String   @id @default(cuid(2))
+  cid         Int
+  title       String
+  url         String
+  description String   @default("")
+  menu        String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([cid])
+  @@index([createdAt])
+}
+
+model Config {
+  key   String @id
+  value String @default("")
+}
+
 enum FeedbackStatus {
   PENDING
   DONE
