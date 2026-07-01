@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { ArrowLeft, Save, Plus, X, Search } from "lucide-vue-next";
+import { ArrowLeft, Save, Plus, X, Search } from "@lucide/vue";
 import ScrapeModal from "~/components/admin/ScrapeModal.vue";
 
 interface DownloadOption {

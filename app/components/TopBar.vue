@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Home, Music } from "lucide-vue-next";
+import { ArrowLeft, Home, Music } from "@lucide/vue";
 import SearchBar from "~/components/SearchBar.vue";
 import { useBackHistory } from "~/composables/useBackHistory";
 

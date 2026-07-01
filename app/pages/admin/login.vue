@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
-import { Music, Lock, User } from 'lucide-vue-next'
+import { Music, Lock, User } from '@lucide/vue'
 
 const router = useRouter()
 const { login, isLoggedIn } = useAuth()

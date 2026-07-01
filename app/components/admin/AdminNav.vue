@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from "vue-router";
-import { Music, Users, Settings, MessageSquare } from "lucide-vue-next";
+import { Music, Users, Settings, MessageSquare } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();

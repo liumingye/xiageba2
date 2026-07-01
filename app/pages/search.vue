@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { CircleSlash, AlertTriangle, RotateCcw, Search } from "lucide-vue-next";
+import { CircleSlash, AlertTriangle, RotateCcw, Search } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
-import { ArrowRight } from "lucide-vue-next";
+import { ArrowRight } from "@lucide/vue";
 
 interface PaginatedResponse {
   data: Music[];

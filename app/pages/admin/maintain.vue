@@ -5,7 +5,7 @@ import { useAuth } from "~/composables/useAuth";
 import {
   RefreshCw,
   Eraser,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 

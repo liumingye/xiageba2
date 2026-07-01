@@ -128,12 +128,12 @@ MUSIC/
 
 - **Node.js** ≥ 20.0
 - **PostgreSQL** ≥ 15（推荐 16）
-- **npm** ≥ 9（Node 20 已自带）
+- **pnpm** ≥ 9（Node 20 已自带）
 
 ### 1. 安装依赖
 
 ```bash
-npm install
+pnpm install
 ```
 
 > `@node-rs/jieba` 是原生依赖，会自动下载对应平台的预编译二进制（Windows / macOS / Linux x64 & arm64），**无需额外安装编译工具**。
@@ -174,7 +174,7 @@ node scripts/seed-admin.mjs <username> <password>
 ### 4. 启动开发服务器
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 访问 <http://localhost:3000>
@@ -182,8 +182,8 @@ npm run dev
 ### 5. 构建生产版本
 
 ```bash
-npm run build
-npm run preview     # 本地预览
+pnpm run build
+pnpm run preview     # 本地预览
 ```
 
 生产运行方式：

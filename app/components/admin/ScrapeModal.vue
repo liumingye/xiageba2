@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { X, Search, ExternalLink, CheckCircle, Loader2 } from "lucide-vue-next";
+import { X, Search, ExternalLink, CheckCircle, Loader2 } from "@lucide/vue";
 
 interface SearchItem {
   sourceId: string;

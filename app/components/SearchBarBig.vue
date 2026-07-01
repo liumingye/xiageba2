@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore } from "~/stores/music";
-import { Search, X, Music, Video } from "lucide-vue-next";
+import { Search, X, Music, Video } from "@lucide/vue";
 import { on } from "events";
 
 const props = defineProps<{

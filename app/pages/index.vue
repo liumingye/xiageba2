@@ -3,7 +3,7 @@ import SearchBar from "~/components/SearchBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
-import { Music as MusicIcon, ArrowRight } from "lucide-vue-next";
+import { Music as MusicIcon, ArrowRight } from "@lucide/vue";
 
 const config = useRuntimeConfig();
 const router = useRouter();

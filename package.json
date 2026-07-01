@@ -12,20 +12,21 @@
     "prisma:migrate": "prisma migrate deploy"
   },
   "dependencies": {
+    "@lucide/vue": "^1.22.0",
     "@node-rs/jieba": "^2.0.1",
     "@pinia/nuxt": "^0.11.3",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/pg": "^8.20.0",
     "dotenv": "^17.4.2",
-    "lucide-vue-next": "^0.366.0",
     "nodemailer": "^9.0.1",
     "nuxt": "^4.4.8",
     "pg": "^8.21.0",
     "pinia": "^3.0.4",
     "prisma": "^7.8.0",
     "qrcode": "^1.5.4",
-    "vue": "^3.4.21"
+    "vue": "^3.4.21",
+    "@netdisk-sdk/quarkuc-sdk": "workspace:*"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.0",

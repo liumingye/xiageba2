@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from "vue";
-import {
-  X,
-  Download,
-  QrCode,
-  MessageSquare,
-  Copy,
-  Check,
-} from "lucide-vue-next";
+import { X, Download, QrCode, MessageSquare, Copy, Check } from "@lucide/vue";
 import type { Music, DownloadOption } from "~/stores/music";
 import FeedbackModal from "~/components/FeedbackModal.vue";
 

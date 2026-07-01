@@ -1,0 +1,14 @@
+{
+  "name": "@types/error",
+  "version": "10.4.0",
+  "types": "index.d.ts",
+  "private": true,
+  "scripts": {
+    "tsc": "tsc node_modules/error/index.js --declaration --allowJs --emitDeclarationOnly --outDir ."
+  },
+  "keywords": [],
+  "devDependencies": {
+    "error": "^10.4.0",
+    "typescript": "^5.4.5"
+  }
+}

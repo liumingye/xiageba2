@@ -90,7 +90,7 @@ export default defineNuxtConfig({
       }),
     ],
     optimizeDeps: {
-      include: ["lucide-vue-next", "pinia", "qrcode"],
+      include: ["@lucide/vue", "pinia", "qrcode"],
     },
   },
 });

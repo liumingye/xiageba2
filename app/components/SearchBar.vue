@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore } from "~/stores/music";
-import { Search, X } from "lucide-vue-next";
+import { Search, X } from "@lucide/vue";
 
 const props = defineProps<{
   modelValue?: string;

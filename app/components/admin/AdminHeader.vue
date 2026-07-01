@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Music, LogOut } from "lucide-vue-next";
+import { Music, LogOut } from "@lucide/vue";
 import { useAuth } from "~/composables/useAuth";
 import { useRouter } from "vue-router";
 

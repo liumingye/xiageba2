@@ -1,0 +1,45 @@
+{
+  "name": "@netdisk-sdk/baidu-sdk",
+  "version": "0.1.2",
+  "description": "baidu netdisk sdk",
+  "source": "src/index.ts",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs.js"
+    }
+  },
+  "scripts": {
+    "watch": "parcel watch",
+    "build": "parcel build"
+  },
+  "homepage": "https://github.com/foxxorcat/netdisk-sdk-js/tree/main/packages/baidu-sdk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/foxxorcat/netdisk-sdk-js"
+  },
+  "bugs": {
+    "url": "https://github.com/foxxorcat/netdisk-sdk-js/issues"
+  },
+  "keywords": [],
+  "author": "foxxorcat",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/error": "workspace:^",
+    "@types/node": "^20.14.1",
+    "@types/superagent": "^8.1.7",
+    "@types/superagent-prefix": "^0.0.6",
+    "parcel": "^2.12.0"
+  },
+  "dependencies": {
+    "@badgateway/oauth2-client": "^2.3.0",
+    "@netdisk-sdk/utils": "workspace:^",
+    "error": "^10.4.0",
+    "superagent": "^9.0.2",
+    "superagent-prefix": "^0.0.2"
+  }
+}
