@@ -66,22 +66,24 @@ model Category {
 }
 
 model Source {
-  id          String    @id @default(cuid(2))
-  cid         Int?
-  title       String
-  url         String
-  fid         String?
-  description String    @default("")
-  menu        String    @default("")
-  status      Int       @default(1)
-  invalidNum  Int       @default(0)
-  isTemp      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime? @updatedAt
+  id           String                   @id @default(cuid(2))
+  cid          Int?
+  title        String
+  url          String
+  fid          String?
+  description  String                   @default("")
+  menu         String                   @default("")
+  status       Int                      @default(1)
+  invalidNum   Int                      @default(0)
+  isTemp       Boolean                  @default(false)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime?                @updatedAt
+  searchVector Unsupported("tsvector")?
 
   @@index([cid])
   @@index([createdAt])
   @@index([status])
+  @@index([searchVector], type: Gin)
 }
 
 model Config {
