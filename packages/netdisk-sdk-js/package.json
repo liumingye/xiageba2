@@ -9,7 +9,7 @@
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
-    "@parcel/packager-ts": "2.12.0",
-    "@parcel/transformer-typescript-types": "2.12.0"
+    "@parcel/packager-ts": "2.16.4",
+    "@parcel/transformer-typescript-types": "2.16.4"
   }
 }

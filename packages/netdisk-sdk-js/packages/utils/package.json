@@ -29,8 +29,8 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.14.1",
-    "parcel": "^2.12.0"
+    "@types/node": "^26.1.0",
+    "parcel": "^2.16.4"
   },
   "dependencies": {
     "async-await-mutex-lock": "^1.0.11"
