@@ -9,7 +9,7 @@ import AdminPagination from "~/components/admin/AdminPagination.vue";
 
 interface Source {
   id: string;
-  cid: number | null;
+  cid?: number;
   title: string;
   url: string;
   description: string;
@@ -39,13 +39,13 @@ const keyword = ref("");
 
 const showAddModal = ref(false);
 const showEditModal = ref(false);
-const newCid = ref<string | null>(null);
+const newCid = ref<string>("");
 const newTitle = ref("");
 const newUrl = ref("");
 const newDescription = ref("");
 const newMenu = ref("");
 const editId = ref("");
-const editCid = ref<string | null>(null);
+const editCid = ref<string>("");
 const editTitle = ref("");
 const editUrl = ref("");
 const editDescription = ref("");
@@ -120,7 +120,7 @@ const closeAddModal = () => {
 const openEditModal = (item: Source) => {
   showEditModal.value = true;
   editId.value = item.id;
-  editCid.value = item.cid;
+  editCid.value = item.cid?.toString() || ""; // 转换为字符串
   editTitle.value = item.title;
   editUrl.value = item.url;
   editDescription.value = item.description;
@@ -279,11 +279,11 @@ const deleteSource = async (id: string) => {
         <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <th
+              <!-- <th
                 class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20"
               >
                 ID
-              </th>
+              </th> -->
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 资源名称
               </th>
@@ -320,25 +320,20 @@ const deleteSource = async (id: string) => {
               :key="item.id"
               class="border-t border-gray-800 hover:bg-gray-800/50"
             >
-              <td
+              <!-- <td
                 class="px-4 py-3 text-gray-400 text-xs font-mono truncate w-20"
               >
                 <span :title="item.id">{{ item.id.slice(0, 8) }}</span>
-              </td>
+              </td> -->
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
-                  <div
-                    class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
-                  >
-                    <Database class="w-5 h-5 text-gray-500" />
-                  </div>
                   <span class="text-white truncate" :title="item.title">{{
                     item.title
                   }}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-300 w-28">
-                {{ item.categoryName || "-" }}
+                {{ categories.find((cat) => cat.id === item.cid)?.name || "-" }}
               </td>
               <td class="px-4 py-3 w-48">
                 <a
@@ -417,7 +412,7 @@ const deleteSource = async (id: string) => {
               <div>
                 <label class="block text-gray-400 text-sm mb-2">资源分类</label>
                 <select v-model="newCid" class="input-search">
-                  <option value="">请选择分类</option>
+                  <option value="">无分类</option>
                   <option
                     v-for="cat in categories"
                     :key="cat.id"
@@ -502,7 +497,7 @@ const deleteSource = async (id: string) => {
                   >资源分类 *</label
                 >
                 <select v-model="editCid" class="input-search">
-                  <option value="">请选择分类</option>
+                  <option value="">无分类</option>
                   <option
                     v-for="cat in categories"
                     :key="cat.id"

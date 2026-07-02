@@ -50,11 +50,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <nav class="bg-gray-900/50 border-b border-gray-800 px-6 py-3">
+  <nav class="bg-gray-900/50 border-b border-gray-800 px-6">
     <div class="flex items-center gap-6 max-w-7xl mx-auto">
       <div ref="dropdownRef" class="relative">
         <button
-          class="flex items-center gap-2 transition-colors"
+          class="flex items-center gap-2 transition-colors py-3"
           :class="
             resourceOpen ||
             isActive('/admin/resource') ||
@@ -125,7 +125,7 @@ onUnmounted(() => {
       </div>
 
       <button
-        class="flex items-center gap-2 transition-colors"
+        class="flex items-center gap-2 transition-colors py-3"
         :class="
           isActive('/admin')
             ? 'text-primary-500 font-medium'
@@ -137,7 +137,7 @@ onUnmounted(() => {
         音乐管理
       </button>
       <button
-        class="flex items-center gap-2 transition-colors"
+        class="flex items-center gap-2 transition-colors py-3"
         :class="
           isActive('/admin/feedback')
             ? 'text-primary-500 font-medium'
@@ -150,7 +150,7 @@ onUnmounted(() => {
       </button>
 
       <button
-        class="flex items-center gap-2 transition-colors"
+        class="flex items-center gap-2 transition-colors py-3"
         :class="
           isActive('/admin/admins')
             ? 'text-primary-500 font-medium'
@@ -162,7 +162,7 @@ onUnmounted(() => {
         管理员管理
       </button>
       <button
-        class="flex items-center gap-2 transition-colors"
+        class="flex items-center gap-2 transition-colors py-3"
         :class="
           isActive('/admin/maintain')
             ? 'text-primary-500 font-medium'

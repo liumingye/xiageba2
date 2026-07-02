@@ -139,7 +139,7 @@ const saveConfig = async () => {
               <input
                 v-model="config.quark_temp_dir"
                 type="text"
-                placeholder="如：临时资源"
+                placeholder="输入目录 Id"
                 class="input-search"
               />
             </div>
@@ -173,7 +173,7 @@ const saveConfig = async () => {
               <input
                 v-model="config.baidu_temp_dir"
                 type="text"
-                placeholder="如：临时资源"
+                placeholder="输入目录"
                 class="input-search"
               />
             </div>
@@ -207,7 +207,7 @@ const saveConfig = async () => {
               <input
                 v-model="config.uc_temp_dir"
                 type="text"
-                placeholder="如：临时资源"
+                placeholder="输入目录 Id"
                 class="input-search"
               />
             </div>
@@ -241,7 +241,7 @@ const saveConfig = async () => {
               <input
                 v-model="config.xunlei_temp_dir"
                 type="text"
-                placeholder="如：临时资源"
+                placeholder="输入目录 Id"
                 class="input-search"
               />
             </div>

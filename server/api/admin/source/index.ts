@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
       Math.max(1, parseInt(query.pageSize as string) || 20),
     );
     const skip = (page - 1) * pageSize;
-    const cid = parseInt(query.cid as string);
+    const cid = Number(query.cid) || null;
     const keyword = query.keyword as string | undefined;
 
     const where: any = { isTemp: false, status: 1 };
@@ -34,14 +34,8 @@ export default defineEventHandler(async (event) => {
       prisma.category.findMany({ orderBy: { sort: "asc" } }),
     ]);
 
-    const categoryMap = new Map(categories.map((c) => [c.id, c.name]));
-    const data = sources.map((s) => ({
-      ...s,
-      categoryName: categoryMap.get(s.cid) || "",
-    }));
-
     return {
-      data,
+      data: sources,
       total,
       page,
       pageSize,
@@ -69,7 +63,7 @@ export default defineEventHandler(async (event) => {
 
     const source = await prisma.source.create({
       data: {
-        cid: Number(cid),
+        cid: Number(cid) || null,
         title: title.trim(),
         url: url.trim(),
         // fid,

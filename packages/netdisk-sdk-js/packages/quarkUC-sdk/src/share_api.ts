@@ -254,7 +254,7 @@ QuarkUCShareApi.prototype.share = async function (fid_list, title) {
   const {
     body: { data },
   } = await this.client.agentApi
-    .post("/share?pr=ucpro&fr=pc&uc_param_str=")
+    .post(`/share`)
     .send({
       fid_list,
       expired_type: 2,
@@ -268,7 +268,7 @@ QuarkUCShareApi.prototype.sharePassword = async function (share_id) {
   const {
     body: { data },
   } = await this.client.agentApi
-    .post("/share/password?pr=ucpro&fr=pc&uc_param_str=")
+    .post("/share/password")
     .send({
       share_id,
     });

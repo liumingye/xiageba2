@@ -11,6 +11,9 @@ importers:
       '@lucide/vue':
         specifier: ^1.22.0
         version: 1.22.0(vue@3.5.39(typescript@6.0.3))
+      '@netdisk-sdk/baidu-sdk':
+        specifier: workspace:*
+        version: link:packages/netdisk-sdk-js/packages/baidu-sdk
       '@netdisk-sdk/quarkuc-sdk':
         specifier: workspace:*
         version: link:packages/netdisk-sdk-js/packages/quarkUC-sdk
@@ -7670,7 +7673,7 @@ snapshots:
       '@parcel/types': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/utils': 2.12.0
       '@parcel/watcher': 2.5.6
-      '@parcel/workers': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))
+      '@parcel/workers': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
     transitivePeerDependencies:
       - '@swc/helpers'
 
@@ -7807,7 +7810,7 @@ snapshots:
       '@parcel/node-resolver-core': 3.3.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))
       '@parcel/types': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/utils': 2.12.0
-      '@parcel/workers': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))
+      '@parcel/workers': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@swc/core': 1.15.43(@swc/helpers@0.5.23)
       semver: 7.8.5
     transitivePeerDependencies:
@@ -8198,7 +8201,7 @@ snapshots:
       '@parcel/fs': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/package-manager': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/source-map': 2.1.1
-      '@parcel/workers': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))
+      '@parcel/workers': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       utility-types: 3.11.0
     transitivePeerDependencies:
       - '@parcel/core'
@@ -8301,7 +8304,7 @@ snapshots:
       '@parcel/watcher-win32-ia32': 2.5.6
       '@parcel/watcher-win32-x64': 2.5.6
 
-  '@parcel/workers@2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))':
+  '@parcel/workers@2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)':
     dependencies:
       '@parcel/core': 2.16.4(@swc/helpers@0.5.23)
       '@parcel/diagnostic': 2.12.0
@@ -8310,6 +8313,8 @@ snapshots:
       '@parcel/types': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/utils': 2.12.0
       nullthrows: 1.1.1
+    transitivePeerDependencies:
+      - '@swc/helpers'
 
   '@parcel/workers@2.16.4(@parcel/core@2.16.4(@swc/helpers@0.5.23))':
     dependencies:

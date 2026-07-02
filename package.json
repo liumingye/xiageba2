@@ -26,7 +26,8 @@
     "prisma": "^7.8.0",
     "qrcode": "^1.5.4",
     "vue": "^3.4.21",
-    "@netdisk-sdk/quarkuc-sdk": "workspace:*"
+    "@netdisk-sdk/quarkuc-sdk": "workspace:*",
+    "@netdisk-sdk/baidu-sdk": "workspace:*"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.0",
