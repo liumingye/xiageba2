@@ -1,22 +1,87 @@
 <script setup lang="ts">
-import { CircleSlash, AlertTriangle, RotateCcw, Search } from "@lucide/vue";
-import TopBar from "~/components/TopBar.vue";
-import SiteFooter from "~/components/SiteFooter.vue";
-import Qrcode from "~/components/Qrcode.vue";
-import type { Music } from "~/stores/music";
-import { ArrowRight } from "@lucide/vue";
+import {
+  CircleSlash,
+  AlertTriangle,
+  RotateCcw,
+  Search,
+  Music as MusicIcon,
+  FolderOpen,
+  ExternalLink,
+  ArrowRight,
+  Download,
+  QrCode,
+  Calendar,
+  X,
+} from "@lucide/vue";
+import { getTypeName, copyToClipboard } from "~/utils/index";
 
-interface PaginatedResponse {
-  data: Music[];
+interface PaginatedResponse<T = any> {
+  data: T[];
   total: number;
   page: number;
   pageSize: number;
   totalPages: number;
 }
 
+interface SourceItem {
+  id: string;
+  title: string;
+  type: string;
+  menu: string;
+  description: string;
+  createdAt: string;
+}
+
 const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
+
+const showModal = ref(false);
+const modalSource = ref<SourceItem | null>(null);
+const modalUrl = ref("");
+const modalQrCode = ref("");
+const modalFetching = ref(false);
+const modalError = ref("");
+
+const openModal = async (item: SourceItem) => {
+  modalSource.value = item;
+  modalUrl.value = "";
+  modalQrCode.value = "";
+  modalError.value = "";
+  modalFetching.value = true;
+  showModal.value = true;
+
+  try {
+    const res = await fetch("/api/source/geturl", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id }),
+    });
+    const data = await res.json();
+    if (res.ok && data) {
+      modalUrl.value = data.url;
+      const qrcode = await import("qrcode");
+      modalQrCode.value = await qrcode.toDataURL(modalUrl.value, {
+        width: 200,
+        margin: 2,
+        color: { dark: "#ffffff", light: "#1e293b" },
+      });
+    } else {
+      modalError.value = data.message || "获取下载链接失败";
+    }
+  } catch (e) {
+    modalError.value = "获取下载链接失败";
+  } finally {
+    modalFetching.value = false;
+  }
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  modalSource.value = null;
+  modalUrl.value = "";
+  modalQrCode.value = "";
+};
 const musicStore = useMusicStore();
 
 const searchQuery = ref("");
@@ -24,6 +89,11 @@ const currentPage = computed(() =>
   Math.max(1, parseInt(route.query.page as string) || 1),
 );
 const searchKeyword = computed(() => (route.query.q as string) || "");
+const searchType = computed(() => {
+  const t = route.query.type as string;
+  return t === "resource" ? "resource" : "music";
+});
+const isMusic = computed(() => searchType.value === "music");
 
 const {
   data: pageData,
@@ -33,13 +103,15 @@ const {
   status,
 } = await useFetch<PaginatedResponse>(
   () => {
-    return `/api/music/search?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}&pageSize=20`;
+    const base = isMusic.value ? "/api/music/search" : "/api/source/search";
+    return `${base}?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}&pageSize=20`;
   },
   {
-    key: () => `search-${searchKeyword.value}-${currentPage.value}`,
+    key: () =>
+      `search-${searchType.value}-${searchKeyword.value}-${currentPage.value}`,
     server: true,
     lazy: true,
-    watch: [searchKeyword, currentPage],
+    watch: [searchKeyword, currentPage, searchType],
   },
 );
 
@@ -118,24 +190,26 @@ const handleRetry = () => {
 
 const pageTitle = computed(() => {
   const q = searchKeyword.value;
+  const label = isMusic.value ? "歌曲" : "资源";
   if (q && results.value.length > 0) {
-    return `"${q}" - 第${currentPage.value}页 - 搜索结果 - 下歌吧`;
+    return `"${q}" - 第${currentPage.value}页 - 搜索${label} - 下歌吧`;
   }
   if (q) {
-    return `${q} - 搜索 - 下歌吧`;
+    return `${q} - 搜索${label} - 下歌吧`;
   }
-  return "搜索 - 下歌吧";
+  return `搜索${label} - 下歌吧`;
 });
 
 const pageDescription = computed(() => {
   const q = searchKeyword.value;
+  const label = isMusic.value ? "歌曲" : "网盘资源";
   if (q && total.value > 0) {
-    return `在下歌吧搜索"${q}"，共找到 ${total.value} 首相关歌曲，免费下载高品质MP3与FLAC无损音乐。`;
+    return `在下歌吧搜索"${q}"，共找到 ${total.value} 个相关${label}。`;
   }
   if (q) {
     return `在下歌吧搜索"${q}"的相关结果。`;
   }
-  return "下歌吧搜索 - 免费下载高品质音乐。";
+  return "下歌吧搜索 - 免费下载高品质音乐与网盘资源。";
 });
 
 useHead({
@@ -157,7 +231,7 @@ useHead({
     {
       rel: "canonical",
       href: () =>
-        `/search?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}`,
+        `/search?type=${searchType.value}&q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}`,
     },
   ],
 });
@@ -173,7 +247,19 @@ watch(
 const performSearch = (keyword: string) => {
   if (!keyword.trim()) return;
   musicStore.addSearchHistory(keyword);
-  router.push(`/search?q=${encodeURIComponent(keyword)}`);
+  router.push(
+    `/search?type=${searchType.value}&q=${encodeURIComponent(keyword)}`,
+  );
+};
+
+const switchType = (type: "music" | "resource") => {
+  if (type === searchType.value) return;
+  const q = searchKeyword.value;
+  if (q) {
+    router.push(`/search?type=${type}&q=${encodeURIComponent(q)}`);
+  } else {
+    router.push(`/search?type=${type}`);
+  }
 };
 
 const goToPage = (page: number) => {
@@ -182,6 +268,7 @@ const goToPage = (page: number) => {
   router.push({
     path: "/search",
     query: {
+      type: searchType.value,
       q: searchKeyword.value,
       page: page.toString(),
     },
@@ -211,7 +298,14 @@ const goToDetail = (music: Music) => {
   router.push(`/music/${music.id}`);
 };
 
-const skeletonList = Array.from({ length: 8 });
+const skeletonList = Array.from({ length: 4 });
+
+const { success } = useToast();
+
+const copyUrl = (url: string) => {
+  copyToClipboard(url);
+  success("复制成功");
+};
 </script>
 
 <template>
@@ -219,8 +313,35 @@ const skeletonList = Array.from({ length: 8 });
     <div class="max-w-4xl mx-auto">
       <TopBar :search-query="searchQuery" @search="performSearch" />
 
+      <!-- 搜索类型 tab -->
+      <div class="flex items-center gap-2 mb-4">
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
+          :class="
+            isMusic
+              ? 'bg-primary-500 text-white font-medium'
+              : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+          "
+          @click="switchType('music')"
+        >
+          <MusicIcon class="w-4 h-4" />
+          搜音乐
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
+          :class="
+            !isMusic
+              ? 'bg-primary-500 text-white font-medium'
+              : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+          "
+          @click="switchType('resource')"
+        >
+          <FolderOpen class="w-4 h-4" />
+          搜资源
+        </button>
+      </div>
+
       <main>
-        <!-- 错误提示 -->
         <div
           v-if="errorInfo && searchKeyword"
           class="card p-5 text-center mb-6"
@@ -251,7 +372,6 @@ const skeletonList = Array.from({ length: 8 });
           </button>
         </div>
 
-        <!-- 骨架屏 -->
         <div
           v-else-if="loading && searchKeyword"
           class="space-y-2"
@@ -277,43 +397,93 @@ const skeletonList = Array.from({ length: 8 });
         <div v-else-if="searchKeyword && results.length > 0" class="space-y-2">
           <h2 class="text-gray-500 text-sm mb-2">
             搜索"<span class="text-primary-400">{{ searchKeyword }}</span
-            >"找到 {{ total }} 首歌曲
+            >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
             <span v-if="totalPages > 1" class="ml-2"
               >（第 {{ currentPage }} / {{ totalPages }} 页）</span
             >
           </h2>
 
-          <article
-            v-for="music in results"
-            :key="music.id"
-            class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
-            @click="goToDetail(music)"
-            role="article"
-          >
-            <div class="flex items-center gap-3">
-              <img
-                :src="music.cover || config.app.baseURL + 'img/cover.png'"
-                :alt="music.title"
-                class="w-12 h-12 rounded-lg object-cover"
-                loading="lazy"
-                decoding="async"
-                @error="
-                  ($event.target as HTMLImageElement).src =
-                    config.app.baseURL + 'img/cover.png'
-                "
-              />
-              <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-medium text-white truncate">
-                  {{ music.title }}
-                </h3>
-                <p class="text-xs text-gray-500 truncate">
-                  {{ music.artist
-                  }}<span v-if="music.album"> - {{ music.album }}</span>
-                </p>
+          <template v-if="isMusic">
+            <article
+              v-for="music in results"
+              :key="music.id"
+              class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
+              @click="goToDetail(music)"
+              role="article"
+            >
+              <div class="flex items-center gap-3">
+                <img
+                  :src="music.cover || config.app.baseURL + 'img/cover.png'"
+                  :alt="music.title"
+                  class="w-12 h-12 rounded-lg object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  @error="
+                    ($event.target as HTMLImageElement).src =
+                      config.app.baseURL + 'img/cover.png'
+                  "
+                />
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-medium text-white truncate">
+                    {{ music.title }}
+                  </h3>
+                  <p class="text-xs text-gray-500 truncate">
+                    {{ music.artist
+                    }}<span v-if="music.album"> - {{ music.album }}</span>
+                  </p>
+                </div>
+                <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
               </div>
-              <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
-            </div>
-          </article>
+            </article>
+          </template>
+
+          <template v-else>
+            <article
+              v-for="item in results as SourceItem[]"
+              :key="item.id"
+              class="card p-3 hover:border-primary-500/50 transition-colors"
+              role="article"
+            >
+              <div class="flex flex-col">
+                <div
+                  class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
+                >
+                  <h3
+                    class="text-white truncate hover:text-primary-400 cursor-pointer"
+                    @click="router.push(`/source/${item.id}`)"
+                  >
+                    {{ item.title }}
+                  </h3>
+                  <div
+                    class="bg-primary-500 text-white p-1 rounded-sm text-sm self-start"
+                  >
+                    {{ getTypeName(item.type) }}
+                  </div>
+                </div>
+                <h4 class="mb-2 text-gray-300 font-bold">文件内容:</h4>
+                <pre
+                  v-if="item.menu"
+                  class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
+                  >{{ item.menu }}</pre
+                >
+              </div>
+              <div
+                class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
+              >
+                <span class="text-xs text-gray-500 flex items-center gap-1">
+                  <Calendar class="w-3 h-3" />
+                  {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
+                </span>
+                <button
+                  class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-lg transition-colors flex-shrink-0"
+                  @click.stop="openModal(item)"
+                >
+                  <Download class="w-3 h-3" />
+                  获取链接
+                </button>
+              </div>
+            </article>
+          </template>
 
           <div
             v-if="totalPages > 1"
@@ -377,6 +547,83 @@ const skeletonList = Array.from({ length: 8 });
       <Qrcode />
 
       <SiteFooter />
+
+      <Teleport to="body">
+        <Transition name="fade">
+          <div
+            v-if="showModal"
+            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            @click.self="closeModal"
+          >
+            <div
+              class="bg-dark-300 rounded-xl max-w-md w-full border border-gray-700 shadow-2xl"
+            >
+              <div
+                class="flex items-center justify-between p-4 border-b border-gray-800"
+              >
+                <h3 class="text-white font-medium">获取下载链接</h3>
+                <button
+                  class="text-gray-400 hover:text-white transition-colors"
+                  @click="closeModal"
+                >
+                  <X class="w-5 h-5" />
+                </button>
+              </div>
+              <div class="p-4">
+                <div v-if="modalFetching" class="text-center py-8">
+                  <div
+                    class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+                  />
+                  <p class="text-gray-400 text-sm">获取中...</p>
+                </div>
+                <div v-else-if="modalError" class="text-center py-8">
+                  <p class="text-red-400 text-sm">{{ modalError }}</p>
+                </div>
+                <div v-else-if="modalUrl" class="space-y-4">
+                  <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-xs text-gray-500">下载链接</span>
+                      <button
+                        class="text-xs text-primary-400 hover:text-primary-300"
+                        @click="copyUrl(modalUrl)"
+                      >
+                        复制链接
+                      </button>
+                    </div>
+                    <p class="text-sm text-gray-300 break-all font-mono">
+                      {{ modalUrl }}
+                    </p>
+                  </div>
+                  <div class="flex flex-col items-center gap-4">
+                    <div v-if="modalQrCode" class="flex-shrink-0">
+                      <img
+                        :src="modalQrCode"
+                        alt="下载链接二维码"
+                        class="w-28 h-28 rounded-lg"
+                      />
+                    </div>
+                    <div
+                      v-else
+                      class="w-28 h-28 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                    >
+                      <QrCode class="w-10 h-10 text-gray-600" />
+                    </div>
+                    <a
+                      :href="modalUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm"
+                    >
+                      <ExternalLink class="w-4 h-4" />
+                      打开网盘下载
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
     </div>
   </div>
 </template>

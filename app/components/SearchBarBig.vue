@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore } from "~/stores/music";
-import { Search, X, Music, Video } from "@lucide/vue";
+import { Search, X, Music, Video, FolderOpen } from "@lucide/vue";
 import { on } from "events";
 
 const props = defineProps<{
@@ -42,12 +42,14 @@ const handleSearch = () => {
   const q = searchQuery.value.trim();
   if (!q) return;
   if (q.length > MAX_KEYWORD_LENGTH) return;
+  musicStore.addSearchHistory(q);
+  emit("search", q);
   if (currentSearchType.value === "music") {
-    musicStore.addSearchHistory(q);
-    emit("search", q);
-    router.push(`/search?q=${encodeURIComponent(q)}`);
+    router.push(`/search?type=music&q=${encodeURIComponent(q)}`);
+  } else if (currentSearchType.value === "resource") {
+    router.push(`/search?type=resource&q=${encodeURIComponent(q)}`);
   } else {
-    // https://pan.liumingye.cn/s/${q}
+    // ponytail: video 仍走外部站点
     window.open(`https://pan.liumingye.cn/s/${q}`);
   }
 };
@@ -92,7 +94,11 @@ onMounted(() => {
           :maxlength="MAX_KEYWORD_LENGTH"
           type="text"
           :placeholder="
-            currentSearchType === 'music' ? '搜你想要的歌' : '搜你想要的视频'
+            currentSearchType === 'music'
+              ? '搜你想要的歌'
+              : currentSearchType === 'resource'
+                ? '搜你想要的网盘资源'
+                : '搜你想要的视频'
           "
           class="flex-1 bg-transparent text-white text-lg outline-none placeholder-white/50"
           @input="updateSearchQuery"
@@ -123,6 +129,14 @@ onMounted(() => {
             title="搜索音乐"
           >
             <Music class="w-5 h-5" />
+          </button>
+          <button
+            class="icon-btn ml-2"
+            :class="{ primary: currentSearchType === 'resource' }"
+            @click="currentSearchType = 'resource'"
+            title="搜索资源"
+          >
+            <FolderOpen class="w-5 h-5" />
           </button>
           <button
             class="icon-btn ml-2"

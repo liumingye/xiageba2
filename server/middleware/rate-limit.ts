@@ -22,6 +22,7 @@ const RULES: RateLimitRule[] = [
   { prefix: "/api/admin/login", windowSeconds: 60, maxRequests: 5 },
   { prefix: "/music/", windowSeconds: 300, maxRequests: 120 },
   { prefix: "/api/source/geturl", windowSeconds: 30, maxRequests: 10 },
+  { prefix: "/api/source/search", windowSeconds: 60, maxRequests: 30 },
 ];
 
 // 数据结构：Map<routeKey, Map<ip, number[]>>

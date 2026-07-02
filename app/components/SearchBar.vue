@@ -14,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const route = useRoute();
 const musicStore = useMusicStore();
 
 const searchQuery = ref(props.modelValue || "");
@@ -40,9 +41,10 @@ const handleSearch = () => {
   const q = searchQuery.value.trim();
   if (!q) return;
   if (q.length > MAX_KEYWORD_LENGTH) return;
+  const type = (route.query.type as string) || "music";
   musicStore.addSearchHistory(q);
   emit("search", q);
-  router.push(`/search?q=${encodeURIComponent(q)}`);
+  router.push(`/search?type=${type}&q=${encodeURIComponent(q)}`);
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
