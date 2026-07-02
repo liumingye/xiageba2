@@ -197,8 +197,12 @@ async function transferBaidu(shareUrl: string): Promise<string> {
 }
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  const id = query.id as string;
+  if (event.method !== "POST") {
+    throw createError({ statusCode: 405, message: "不支持的请求方法" });
+  }
+
+  const body = await readBody(event);
+  const id = body.id as string;
 
   if (!id) {
     throw createError({ statusCode: 400, message: "缺少参数 id" });
