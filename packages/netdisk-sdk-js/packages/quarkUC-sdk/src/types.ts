@@ -29,6 +29,8 @@ export type ITaskStateResult<Extend = {}> = {
     task_title: string
     /** 17:分享转存 */
     task_type: number
+
+    share_id: string
 } & Extend
 
 export type ISaveTaskStateResult = ITaskStateResult<{

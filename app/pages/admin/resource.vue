@@ -9,7 +9,7 @@ import AdminPagination from "~/components/admin/AdminPagination.vue";
 
 interface Source {
   id: string;
-  cid: string;
+  cid: number | null;
   title: string;
   url: string;
   description: string;
@@ -26,13 +26,8 @@ interface Category {
 }
 
 const router = useRouter();
-const {
-  isLoggedIn,
-  logout,
-  checkLogin,
-  initialized,
-  getAuthHeaders,
-} = useAuth();
+const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
+  useAuth();
 
 const sources = ref<Source[]>([]);
 const categories = ref<Category[]>([]);
@@ -44,13 +39,13 @@ const keyword = ref("");
 
 const showAddModal = ref(false);
 const showEditModal = ref(false);
-const newCid = ref("");
+const newCid = ref<string | null>(null);
 const newTitle = ref("");
 const newUrl = ref("");
 const newDescription = ref("");
 const newMenu = ref("");
 const editId = ref("");
-const editCid = ref("");
+const editCid = ref<string | null>(null);
 const editTitle = ref("");
 const editUrl = ref("");
 const editDescription = ref("");
@@ -59,8 +54,12 @@ const error = ref("");
 
 const loadSources = async () => {
   let url = `/api/admin/source?page=${currentPage.value}&pageSize=20`;
-  if (filterCid.value) url += `&cid=${encodeURIComponent(filterCid.value)}`;
-  if (keyword.value) url += `&keyword=${encodeURIComponent(keyword.value)}`;
+  if (filterCid.value) {
+    url += `&cid=${filterCid.value}`;
+  }
+  if (keyword.value) {
+    url += `&keyword=${encodeURIComponent(keyword.value)}`;
+  }
 
   const res = await fetch(url, {
     headers: { ...getAuthHeaders() },
@@ -106,7 +105,7 @@ const handleFilterChange = () => {
 
 const openAddModal = () => {
   showAddModal.value = true;
-  newCid.value = categories.value[0]?.id || "";
+  // newCid.value = categories.value[0]?.id || "";
   newTitle.value = "";
   newUrl.value = "";
   newDescription.value = "";
@@ -134,10 +133,10 @@ const closeEditModal = () => {
 };
 
 const addSource = async () => {
-  if (!newCid.value) {
-    error.value = "请选择分类";
-    return;
-  }
+  // if (!newCid.value) {
+  //   error.value = "请选择分类";
+  //   return;
+  // }
   if (!newTitle.value.trim()) {
     error.value = "资源名称不能为空";
     return;
@@ -176,10 +175,10 @@ const addSource = async () => {
 
 const saveEdit = async () => {
   if (!editId.value) return;
-  if (!editCid.value) {
-    error.value = "请选择分类";
-    return;
-  }
+  // if (!editCid.value) {
+  //   error.value = "请选择分类";
+  //   return;
+  // }
   if (!editTitle.value.trim()) {
     error.value = "资源名称不能为空";
     return;
@@ -280,7 +279,9 @@ const deleteSource = async (id: string) => {
         <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20"
+              >
                 ID
               </th>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
@@ -331,10 +332,9 @@ const deleteSource = async (id: string) => {
                   >
                     <Database class="w-5 h-5 text-gray-500" />
                   </div>
-                  <span
-                    class="text-white truncate"
-                    :title="item.title"
-                  >{{ item.title }}</span>
+                  <span class="text-white truncate" :title="item.title">{{
+                    item.title
+                  }}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-300 w-28">
@@ -415,12 +415,14 @@ const deleteSource = async (id: string) => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-gray-400 text-sm mb-2"
-                  >资源分类 *</label
-                >
+                <label class="block text-gray-400 text-sm mb-2">资源分类</label>
                 <select v-model="newCid" class="input-search">
                   <option value="">请选择分类</option>
-                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  <option
+                    v-for="cat in categories"
+                    :key="cat.id"
+                    :value="cat.id"
+                  >
                     {{ cat.name }}
                   </option>
                 </select>
@@ -501,7 +503,11 @@ const deleteSource = async (id: string) => {
                 >
                 <select v-model="editCid" class="input-search">
                   <option value="">请选择分类</option>
-                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  <option
+                    v-for="cat in categories"
+                    :key="cat.id"
+                    :value="cat.id"
+                  >
                     {{ cat.name }}
                   </option>
                 </select>

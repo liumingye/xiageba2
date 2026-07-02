@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Source" ALTER COLUMN "cid" DROP NOT NULL;
