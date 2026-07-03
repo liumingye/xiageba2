@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate deploy"
+    "prisma:migrate": "prisma migrate deploy",
+    "test": "vitest run"
   },
   "dependencies": {
     "@lucide/vue": "^1.22.0",
@@ -38,6 +39,7 @@
     "@types/qrcode": "^1.5.5",
     "@vitejs/plugin-legacy": "^8.0.2",
     "terser": "^5.48.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }
