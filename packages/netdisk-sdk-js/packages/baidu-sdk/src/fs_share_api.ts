@@ -257,7 +257,6 @@ BaiduShareFSApi.prototype.createShare = async function ({
     .type(ContentType.FormUrlencoded)
     .query({
       channel: "chunlei",
-      bdstoken: this.client.bduss,
       clienttype: 0,
       app_id: 250528,
       web: 1,

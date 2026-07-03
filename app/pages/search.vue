@@ -12,8 +12,18 @@ import {
   QrCode,
   Calendar,
   X,
+  Globe,
+  Loader2,
+  Folder,
 } from "@lucide/vue";
 import { getTypeName, copyToClipboard } from "~/utils/index";
+
+interface WebSearchResult {
+  title: string;
+  url: string;
+  source: string;
+  image?: string;
+}
 
 interface PaginatedResponse<T = any> {
   data: T[];
@@ -37,39 +47,112 @@ const route = useRoute();
 const router = useRouter();
 
 const showModal = ref(false);
-const modalSource = ref<SourceItem | null>(null);
+// const modalSource = ref<SourceItem | null>(null);
+const modalTitle = ref("");
 const modalUrl = ref("");
 const modalQrCode = ref("");
 const modalFetching = ref(false);
 const modalError = ref("");
 
-const openModal = async (item: SourceItem) => {
-  modalSource.value = item;
+const showTreeModal = ref(false);
+const treeModalTitle = ref("");
+const treeModalContent = ref("");
+const treeModalLoading = ref(false);
+const treeModalError = ref("");
+
+const openTreeModal = async ({
+  item,
+  type,
+}:
+  | {
+      item: SourceItem;
+      type: "id";
+    }
+  | {
+      item: WebSearchResult;
+      type: "url";
+    }) => {
+  treeModalTitle.value = item.title || "";
+  treeModalContent.value = "";
+  treeModalError.value = "";
+  treeModalLoading.value = true;
+  showTreeModal.value = true;
+
+  try {
+    const query =
+      type === "id"
+        ? `id=${(item as SourceItem).id}`
+        : `url=${encodeURIComponent(item.url)}`;
+    const res = await fetch(`/api/source/tree?${query}`);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      treeModalContent.value = data.tree || "（空目录）";
+    } else {
+      treeModalError.value = data.message || "获取目录失败";
+    }
+  } catch {
+    treeModalError.value = "获取目录失败";
+  } finally {
+    treeModalLoading.value = false;
+  }
+};
+
+const closeTreeModal = () => {
+  showTreeModal.value = false;
+  treeModalTitle.value = "";
+  treeModalContent.value = "";
+  treeModalError.value = "";
+};
+
+const setModalLoading = (title: string) => {
+  modalTitle.value = title;
   modalUrl.value = "";
   modalQrCode.value = "";
   modalError.value = "";
   modalFetching.value = true;
   showModal.value = true;
+};
+
+const setModalResult = async (url: string) => {
+  modalUrl.value = url;
+  const qrcode = await import("qrcode");
+  modalQrCode.value = await qrcode.toDataURL(url, {
+    width: 200,
+    margin: 2,
+    color: { dark: "#ffffff", light: "#1e293b" },
+  });
+};
+
+const openModal = async ({
+  item,
+  type,
+}:
+  | {
+      item: SourceItem;
+      type: "id";
+    }
+  | {
+      item: WebSearchResult;
+      type: "url";
+    }) => {
+  // modalSource.value = item;
+  setModalLoading(item.title || "");
 
   try {
     const res = await fetch("/api/source/geturl", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: item.id }),
+      body: JSON.stringify(
+        type === "url" ? { url: item.url } : { id: item.id },
+      ),
     });
     const data = await res.json();
-    if (res.ok && data) {
-      modalUrl.value = data.url;
-      const qrcode = await import("qrcode");
-      modalQrCode.value = await qrcode.toDataURL(modalUrl.value, {
-        width: 200,
-        margin: 2,
-        color: { dark: "#ffffff", light: "#1e293b" },
-      });
+    if (res.ok && data?.url) {
+      await setModalResult(data.url);
     } else {
       modalError.value = data.message || "获取下载链接失败";
     }
-  } catch (e) {
+  } catch {
     modalError.value = "获取下载链接失败";
   } finally {
     modalFetching.value = false;
@@ -78,7 +161,8 @@ const openModal = async (item: SourceItem) => {
 
 const closeModal = () => {
   showModal.value = false;
-  modalSource.value = null;
+  // modalSource.value = null;
+  modalTitle.value = "";
   modalUrl.value = "";
   modalQrCode.value = "";
 };
@@ -300,7 +384,72 @@ const goToDetail = (music: Music) => {
 
 const skeletonList = Array.from({ length: 4 });
 
-const { success } = useToast();
+const webSearchResults = ref<WebSearchResult[]>([]);
+const webSearching = ref(true);
+const webSearchError = ref("");
+let webSearchSource: EventSource | null = null;
+
+const startWebSearch = () => {
+  if (webSearchSource) {
+    webSearchSource.close();
+    webSearchSource = null;
+  }
+  webSearchResults.value = [];
+  webSearchError.value = "";
+
+  if (isMusic.value || !searchKeyword.value.trim()) {
+    webSearching.value = false;
+    return;
+  }
+
+  if (typeof EventSource === "undefined") return;
+
+  webSearching.value = true;
+  const es = new EventSource(
+    `/api/other/web_search?title=${encodeURIComponent(searchKeyword.value.trim())}`,
+  );
+  webSearchSource = es;
+
+  es.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "result" && msg.data) {
+        webSearchResults.value.push(msg.data);
+      } else if (msg.type === "done") {
+        webSearching.value = false;
+        es.close();
+        webSearchSource = null;
+      } else if (msg.type === "error") {
+        webSearchError.value = msg.message || "全网搜失败";
+        webSearching.value = false;
+        es.close();
+        webSearchSource = null;
+      }
+    } catch {
+      // 忽略解析失败的推送
+    }
+  };
+
+  es.onerror = () => {
+    webSearching.value = false;
+    es.close();
+    webSearchSource = null;
+  };
+};
+
+onMounted(() => {
+  if (!isMusic.value && searchKeyword.value) {
+    startWebSearch();
+  }
+});
+
+watch([searchKeyword, searchType], () => {
+  if (import.meta.client && !isMusic.value) {
+    startWebSearch();
+  }
+});
+
+const { success, error: showError } = useToast();
 
 const copyUrl = (url: string) => {
   copyToClipboard(url);
@@ -342,6 +491,77 @@ const copyUrl = (url: string) => {
       </div>
 
       <main>
+        <section
+          v-if="!isMusic && searchKeyword && currentPage === 1"
+          class="mt-8"
+        >
+          <div class="flex items-center gap-2 mb-3">
+            <Globe class="w-4 h-4 text-primary-400" />
+            <h2 class="text-gray-500 text-sm">全网搜</h2>
+          </div>
+
+          <div
+            v-if="webSearching && webSearchResults.length === 0"
+            class="card p-6 text-center"
+          >
+            <Loader2
+              class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2"
+            />
+            <p class="text-gray-400 text-sm">正在全网搜索中...</p>
+          </div>
+
+          <div
+            v-else-if="webSearchError && webSearchResults.length === 0"
+            class="card p-5 text-center"
+          >
+            <p class="text-red-400 text-sm">{{ webSearchError }}</p>
+          </div>
+
+          <div v-if="webSearchResults.length > 0" class="space-y-2">
+            <article
+              v-for="(item, idx) in webSearchResults"
+              :key="idx"
+              class="card p-3"
+            >
+              <div
+                class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
+              >
+                <h3 class="text-sm font-medium text-white truncate mb-1">
+                  {{ item.title }}
+                </h3>
+                <div
+                  class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
+                >
+                  {{ getTypeName(item.type) }}
+                </div>
+              </div>
+              <div
+                class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
+              >
+                <span class="text-xs text-gray-500 flex items-center gap-1"
+                  >来源: {{ item.source }}</span
+                >
+                <div class="flex items-center gap-2">
+                  <button
+                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                    @click.stop="openTreeModal({ item, type: 'url' })"
+                  >
+                    <Folder class="w-3 h-3" />
+                    目录
+                  </button>
+                  <button
+                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                    @click.stop="openModal({ item, type: 'url' })"
+                  >
+                    <Download class="w-3 h-3" />
+                    获取链接
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <div
           v-if="errorInfo && searchKeyword"
           class="card p-5 text-center mb-6"
@@ -375,6 +595,7 @@ const copyUrl = (url: string) => {
         <div
           v-else-if="loading && searchKeyword"
           class="space-y-2"
+          :class="{ 'mt-3': !isMusic }"
           aria-busy="true"
           aria-label="正在加载搜索结果"
         >
@@ -395,7 +616,7 @@ const copyUrl = (url: string) => {
         </div>
 
         <div v-else-if="searchKeyword && results.length > 0" class="space-y-2">
-          <h2 class="text-gray-500 text-sm mb-2">
+          <h2 class="text-gray-500 text-sm mb-3">
             搜索"<span class="text-primary-400">{{ searchKeyword }}</span
             >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
             <span v-if="totalPages > 1" class="ml-2"
@@ -438,6 +659,11 @@ const copyUrl = (url: string) => {
           </template>
 
           <template v-else>
+            <div v-if="currentPage === 1" class="flex items-center gap-2 !my-3">
+              <Folder class="w-4 h-4 text-primary-400" />
+              <h2 class="text-gray-500 text-sm">本地资源</h2>
+            </div>
+
             <article
               v-for="item in results as SourceItem[]"
               :key="item.id"
@@ -460,12 +686,15 @@ const copyUrl = (url: string) => {
                     {{ getTypeName(item.type) }}
                   </div>
                 </div>
-                <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
-                <pre
-                  v-if="item.menu"
-                  class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
-                  >{{ item.menu }}</pre
-                >
+                <template v-if="item.menu">
+                  <div class="text-sm mb-2 text-gray-300 font-bold">
+                    文件内容:
+                  </div>
+                  <pre
+                    class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
+                    >{{ item.menu }}</pre
+                  >
+                </template>
               </div>
               <div
                 class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
@@ -474,13 +703,25 @@ const copyUrl = (url: string) => {
                   <Calendar class="w-3 h-3" />
                   {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
                 </span>
-                <button
-                  class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                  @click.stop="openModal(item)"
-                >
-                  <Download class="w-3 h-3" />
-                  获取链接
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    v-if="
+                      !item.menu && ['quark', 'baidu', 'uc'].includes(item.type)
+                    "
+                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                    @click.stop="openTreeModal({ item, type: 'id' })"
+                  >
+                    <Folder class="w-3 h-3" />
+                    目录
+                  </button>
+                  <button
+                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                    @click.stop="openModal({ item, type: 'id' })"
+                  >
+                    <Download class="w-3 h-3" />
+                    获取链接
+                  </button>
+                </div>
               </div>
             </article>
           </template>
@@ -535,8 +776,7 @@ const copyUrl = (url: string) => {
           >
             <CircleSlash />
           </div>
-          <p class="text-gray-500">暂无搜索结果：{{ searchKeyword }}</p>
-          <p class="text-gray-600 text-sm mt-2">请尝试其他关键词</p>
+          <p class="text-gray-500">本地搜索暂无结果</p>
         </div>
 
         <div v-else class="text-center py-20">
@@ -570,6 +810,12 @@ const copyUrl = (url: string) => {
                 </button>
               </div>
               <div class="p-4">
+                <h4
+                  v-if="modalTitle"
+                  class="text-white text-sm font-medium truncate mb-3"
+                >
+                  {{ modalTitle }}
+                </h4>
                 <div v-if="modalFetching" class="text-center py-8">
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
@@ -619,6 +865,54 @@ const copyUrl = (url: string) => {
                     </a>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
+      <Teleport to="body">
+        <Transition name="fade">
+          <div
+            v-if="showTreeModal"
+            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            @click.self="closeTreeModal"
+          >
+            <div
+              class="bg-dark-300 rounded-xl max-w-lg w-full border border-gray-700 shadow-2xl"
+            >
+              <div
+                class="flex items-center justify-between p-4 border-b border-gray-800"
+              >
+                <h3 class="text-white font-medium">目录结构</h3>
+                <button
+                  class="text-gray-400 hover:text-white transition-colors"
+                  @click="closeTreeModal"
+                >
+                  <X class="w-5 h-5" />
+                </button>
+              </div>
+              <div class="p-4">
+                <h4
+                  v-if="treeModalTitle"
+                  class="text-white text-sm font-medium truncate mb-3"
+                >
+                  {{ treeModalTitle }}
+                </h4>
+                <div v-if="treeModalLoading" class="text-center py-8">
+                  <div
+                    class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+                  />
+                  <p class="text-gray-400 text-sm">获取中...</p>
+                </div>
+                <div v-else-if="treeModalError" class="text-center py-8">
+                  <p class="text-red-400 text-sm">{{ treeModalError }}</p>
+                </div>
+                <pre
+                  v-else
+                  class="bg-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
+                  >{{ treeModalContent }}</pre
+                >
               </div>
             </div>
           </div>

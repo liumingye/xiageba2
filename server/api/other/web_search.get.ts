@@ -24,13 +24,14 @@ export default defineEventHandler(async (event) => {
   send({ type: "start", keyword });
 
   try {
-    const results = await webSearch(keyword);
+    let count = 0;
 
-    for (const item of results) {
+    for await (const item of webSearch(keyword)) {
       send({ type: "result", data: item });
+      count++;
     }
 
-    send({ type: "done", count: results.length });
+    send({ type: "done", count });
   } catch (err: any) {
     send({ type: "error", message: err.message || "搜索失败" });
   } finally {

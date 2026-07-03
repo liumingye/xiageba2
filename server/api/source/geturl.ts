@@ -1,5 +1,6 @@
 import { prisma } from "#server/lib/prisma";
 import { getConfigValues } from "#server/lib/configCache";
+import { decryptUrl } from "#server/lib/crypto";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
 
@@ -15,7 +16,7 @@ interface ParsedShare {
 /**
  * 解析分享链接，识别网盘类型并提取 fid 和提取码
  */
-function parseShareUrl(url: string): ParsedShare {
+export function parseShareUrl(url: string): ParsedShare {
   const extractPwd = (u: string) => {
     const m = u.match(/[?&]pwd=([^&#]+)/);
     return m && m[1] ? m[1] : "";
@@ -64,11 +65,8 @@ async function transferQuarkUC(
   type: "quark" | "uc",
   pwdId: string,
   passcode: string,
-): Promise<string> {
-  const config = await getConfigValues([
-    `${type}_cookie`,
-    `${type}_temp_dir`,
-  ]);
+): Promise<{ shareUrl: string; fids: string[] }> {
+  const config = await getConfigValues([`${type}_cookie`, `${type}_temp_dir`]);
   const cookie = config[`${type}_cookie`];
   const tempDirId = config[`${type}_temp_dir`] || "";
 
@@ -132,13 +130,20 @@ async function transferQuarkUC(
     throw createError({ statusCode: 500, message: "获取分享密码失败" });
   }
 
-  return password_data.share_url;
+  const shareFid = share_task_data.save_as.save_as_top_fids;
+
+  return {
+    shareUrl: password_data.share_url,
+    fids: shareFid.length > 0 ? shareFid : [password_data.first_file.fid],
+  };
 }
 
 /**
  * 百度网盘转存：解析分享 → 获取文件列表 → 转存到临时目录 → 创建新分享
  */
-async function transferBaidu(shareUrl: string): Promise<string> {
+async function transferBaidu(
+  _shareUrl: string,
+): Promise<{ shareUrl: string; fids: string[] }> {
   const config = await getConfigValues(["baidu_cookie", "baidu_temp_dir"]);
   const cookie = config.baidu_cookie;
   const tempDir = config.baidu_temp_dir || "/";
@@ -150,7 +155,7 @@ async function transferBaidu(shareUrl: string): Promise<string> {
     });
   }
 
-  const shareParam = parseShareParam(shareUrl);
+  const shareParam = parseShareParam(_shareUrl);
   if (!shareParam) {
     throw createError({ statusCode: 500, message: "无效的百度分享链接" });
   }
@@ -162,7 +167,7 @@ async function transferBaidu(shareUrl: string): Promise<string> {
     ...shareParam,
     dir: "/",
     page: 1,
-    num: 100,
+    num: 1000,
     root: 1,
   });
 
@@ -181,43 +186,75 @@ async function transferBaidu(shareUrl: string): Promise<string> {
     ...fsids,
   );
 
-  const toFsid = result.extra.list[0]?.to_fs_id;
-  if (!toFsid) {
-    throw createError({ statusCode: 500, message: "转存失败，未获取到文件ID" });
+  if (!result.extra.list || result.extra.list.length === 0) {
+    throw createError({ statusCode: 500, message: "分享内容为空" });
   }
 
   const pwd = shareParam.pwd || "6666";
   const shareResult = await client.fsShareApi.createShare({
-    fsidList: [toFsid],
+    fsidList: result.extra.list.map((item) => item.to_fs_id),
     pwd,
     period: 1,
   });
 
-  return `${shareResult.link}&pwd=${pwd}`;
+  let shareUrl = shareResult.link;
+  if (pwd) {
+    shareUrl += `&pwd=${pwd}`;
+  }
+
+  let fids: string[] = [];
+  if (result.info) {
+    fids = result.info.map((item) => tempDir + "/" + item.path);
+  }
+
+  return {
+    shareUrl,
+    fids,
+  };
 }
 
 export default defineEventHandler(async (event) => {
-  if (event.method !== "POST") {
-    throw createError({ statusCode: 405, message: "不支持的请求方法" });
+  const query = getQuery(event);
+  let inputUrl = query.url as string | undefined;
+  let id = query.id as string | undefined;
+
+  if (event.method === "POST") {
+    const body = await readBody(event);
+    if (body.url) inputUrl = body.url;
+    if (body.id) id = body.id;
   }
 
-  const body = await readBody(event);
-  const id = body.id as string;
-
-  if (!id) {
-    throw createError({ statusCode: 400, message: "缺少参数 id" });
+  if (!inputUrl && !id) {
+    throw createError({ statusCode: 400, message: "缺少参数 url 或 id" });
   }
 
-  // 查询资源记录
-  const source = await prisma.source.findUnique({ where: { id } });
-  if (!source) {
-    throw createError({ statusCode: 404, message: "资源不存在" });
+  let sourceTitle = "临时资源";
+  let sourceUrl = "";
+
+  if (id) {
+    const source = await prisma.source.findUnique({ where: { id } });
+    if (!source) {
+      throw createError({ statusCode: 404, message: "资源不存在" });
+    }
+    sourceTitle = source.title;
+    sourceUrl = source.url;
+  } else if (inputUrl) {
+    const decryptedUrl = await decryptUrl(inputUrl);
+    if (decryptedUrl === null) {
+      throw createError({ statusCode: 400, message: "链接解密失败" });
+    }
+    sourceUrl = decryptedUrl;
   }
 
-  const { type, fid, passcode, url } = parseShareUrl(source.url);
+  if (!sourceUrl) {
+    throw createError({ statusCode: 400, message: "链接为空" });
+  }
+
+  const { type, fid, passcode, url: sharePageUrl } = parseShareUrl(sourceUrl);
 
   if (type === "unknown") {
-    throw createError({ statusCode: 400, message: "无法识别的网盘类型" });
+    return { url: sourceUrl };
+    // throw createError({ statusCode: 400, message: "无法识别的网盘类型" });
   }
   if (!fid) {
     throw createError({ statusCode: 400, message: "无法从URL中提取文件ID" });
@@ -233,11 +270,16 @@ export default defineEventHandler(async (event) => {
 
   // 根据网盘类型执行转存
   let shareUrl: string;
+  let _fid: string;
   try {
     if (type === "quark" || type === "uc") {
-      shareUrl = await transferQuarkUC(type, fid, passcode);
+      const data = await transferQuarkUC(type, fid, passcode);
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
     } else if (type === "baidu") {
-      shareUrl = await transferBaidu(url);
+      const data = await transferBaidu(sharePageUrl);
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
     } else {
       throw createError({
         statusCode: 501,
@@ -249,17 +291,16 @@ export default defineEventHandler(async (event) => {
     if (e.statusCode) throw e;
     throw createError({
       statusCode: 500,
-      message: `转存失败: ${e.message || "未知错误"}`,
+      message: `获取网盘链接失败: ${e.message || "未知错误"}`,
     });
   }
 
   // 保存转存记录，下次直接返回
   await prisma.source.create({
     data: {
-      // cid: source.cid,
-      title: source.title,
+      title: sourceTitle,
       url: shareUrl,
-      fid,
+      fid: _fid,
       isTemp: true,
     },
   });

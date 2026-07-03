@@ -1,12 +1,15 @@
 import { prisma } from "#server/lib/prisma";
 import * as cheerio from "cheerio";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
+import { encryptUrl } from "#server/lib/crypto";
+import { getStorageType, getRandomIp, getRandomUA } from "#server/utils/source";
 
 export interface WebSearchResult {
   title: string;
   url: string;
   image?: string;
   source: string;
+  type: string;
 }
 
 const getByPath = (obj: any, path: string) => {
@@ -60,10 +63,6 @@ const searchApi = async (
   const fixedParams = JSON.parse(config.fixed_params || "{}") as any;
   const fieldMap = JSON.parse(config.field_map || "{}") as any;
   const count = Math.max(1, config.count || 10);
-  const cacheKey = `${config.name}:${keyword}`;
-
-  const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
-  if (cached) return cached;
 
   let url = replaceKeyword(urlTemplate, keyword);
   const params = fillParams(fixedParams, keyword);
@@ -80,6 +79,16 @@ const searchApi = async (
     options.body = JSON.stringify(params);
   }
 
+  const randomIp = getRandomIp("14.16.0.0/12");
+  options.headers = {
+    "User-Agent": getRandomUA(),
+    "CF-Connecting-IP": randomIp,
+    "X-Real-IP": randomIp,
+    "X-Forwarded-For": randomIp,
+    "EO-Connecting-IP": randomIp,
+    ...options.headers,
+  };
+
   const res = await fetch(url, options);
   if (!res.ok) {
     throw new Error(`请求失败: ${res.status}`);
@@ -94,6 +103,7 @@ const searchApi = async (
       getByPath(item, fieldMap?.fields?.title || "title") || "",
     );
     const link = String(getByPath(item, fieldMap?.fields?.url || "url") || "");
+    const type = getStorageType(link);
     const image = extractImage(item, fieldMap);
     if (title && link) {
       results.push({
@@ -101,22 +111,12 @@ const searchApi = async (
         url: link,
         image,
         source: config.name,
+        type,
       });
     }
   }
 
-  await setRedisCache(cacheKey, results, 30 * 60);
   return results;
-};
-
-const parseSelector = (selector: string) => {
-  const trimmed = selector.trim();
-  // 支持 .class 格式
-  if (trimmed.startsWith(".")) {
-    return { tag: "", cls: trimmed.slice(1) };
-  }
-  const [tag, cls] = trimmed.split("+");
-  return { tag: tag?.trim() || "", cls: cls?.trim() || "" };
 };
 
 const extractPanUrl = (text: string) => {
@@ -134,10 +134,15 @@ const extractPanUrl = (text: string) => {
 };
 
 const fetchHtml = async (url: string) => {
+  const randomIp = getRandomIp("14.16.0.0/12");
+
   const res = await fetch(url, {
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "User-Agent": getRandomUA(),
+      "CF-Connecting-IP": randomIp,
+      "X-Real-IP": randomIp,
+      "X-Forwarded-For": randomIp,
+      "EO-Connecting-IP": randomIp,
     },
   });
   if (!res.ok) throw new Error(`请求失败: ${res.status}`);
@@ -148,11 +153,6 @@ const searchHtml = async (
   config: any,
   keyword: string,
 ): Promise<WebSearchResult[]> => {
-  const cacheKey = `${config.name}:${keyword}`;
-
-  const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
-  if (cached) return cached;
-
   const url = replaceKeyword(config.url || "", keyword);
   const html = await fetchHtml(url);
   const $ = cheerio.load(html);
@@ -210,36 +210,47 @@ const searchHtml = async (
         title,
         url: panUrl,
         source: config.name,
+        type: getStorageType(panUrl),
       });
     }
   }
 
-  await setRedisCache(cacheKey, results, 30 * 60);
   return results;
 };
 
-export const webSearch = async (
+export async function* webSearch(
   keyword: string,
-): Promise<WebSearchResult[]> => {
+): AsyncGenerator<WebSearchResult> {
   const configs = await prisma.apiList.findMany({
     where: { status: 1 },
     orderBy: { weight: "desc" },
   });
 
-  const results: WebSearchResult[] = [];
-
   for (const config of configs) {
+    const cacheKey = `webSearch:${config.name}:${keyword}`;
+
     try {
+      const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
+      if (cached) {
+        for (const item of cached) yield item;
+        continue;
+      }
+
       const items =
         config.type === "api"
           ? await searchApi(config, keyword)
           : await searchHtml(config, keyword);
-      results.push(...items);
+
+      for (const item of items) {
+        item.url = await encryptUrl(item.url);
+      }
+
+      await setRedisCache(cacheKey, items, 30 * 60);
+
+      for (const item of items) yield item;
     } catch (err: any) {
       console.error(err.message || "搜索失败");
       // 单个线路失败不影响其他线路
     }
   }
-
-  return results;
-};
+}

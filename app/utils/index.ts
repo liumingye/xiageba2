@@ -22,7 +22,7 @@ export const getTypeName = (type: string) => {
     case "xunlei":
       return "迅雷网盘";
     default:
-      return "网盘";
+      return "其他网盘";
   }
 };
 

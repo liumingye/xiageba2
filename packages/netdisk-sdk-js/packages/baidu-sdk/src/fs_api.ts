@@ -17,7 +17,11 @@ export class BaiduFSApi {
     const md = method.toLowerCase();
     if (url.startsWith("/")) url = this.prefix + url;
     const request = (this.client.agentApi as any)[md](url) as Request;
-    return request.query({ app_id: 250528, channel: "chunlei", web: 1 });
+    return request.query({
+      app_id: 250528,
+      channel: "chunlei",
+      web: 1,
+    });
   }
 
   /**
@@ -225,8 +229,16 @@ export type IFileManagerResult = {
 BaiduFSApi.prototype.filemanager = async function (opera, param) {
   // @ts-ignore
   if ("filelist" in param) param.filelist = JSON.stringify(param.filelist);
+  const { bdstoken } = await this.gettemplatevariable(["bdstoken"]);
   const { body } = await this.request(Method.POST, "/api/filemanager")
-    .query({ opera })
+    .query({
+      async: 2,
+      onnest: "fail",
+      opera,
+      bdstoken,
+      newVerify: 1,
+      clienttype: 0,
+    })
     .type(ContentType.FormUrlencoded)
     .send(param);
   return body;

@@ -8,6 +8,7 @@ import {
   Database,
   Save,
   Check,
+  Key,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -42,6 +43,18 @@ const redisConfig = ref<RedisConfig>({
 const savingRedis = ref(false);
 const savedRedis = ref(false);
 
+interface AesConfig {
+  aes_key: string;
+  aes_iv: string;
+}
+
+const aesConfig = ref<AesConfig>({
+  aes_key: "",
+  aes_iv: "",
+});
+const savingAes = ref(false);
+const savedAes = ref(false);
+
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -52,6 +65,7 @@ onMounted(async () => {
     return;
   }
   await loadRedisConfig();
+  await loadAesConfig();
 });
 
 const loadRedisConfig = async () => {
@@ -85,6 +99,44 @@ const saveRedisConfig = async () => {
     savedRedis.value = true;
     setTimeout(() => {
       savedRedis.value = false;
+    }, 2000);
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
+const loadAesConfig = async () => {
+  const res = await fetch("/api/admin/config/aes", {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+    return;
+  }
+  const data = await res.json();
+  aesConfig.value = { ...aesConfig.value, ...data.data };
+};
+
+const saveAesConfig = async () => {
+  savingAes.value = true;
+  savedAes.value = false;
+
+  const res = await fetch("/api/admin/config/aes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(aesConfig.value),
+  });
+
+  savingAes.value = false;
+  if (res.ok) {
+    savedAes.value = true;
+    setTimeout(() => {
+      savedAes.value = false;
     }, 2000);
   } else if (res.status === 401) {
     logout();
@@ -300,6 +352,59 @@ const clearISRCache = async (route?: string) => {
                 type="password"
                 placeholder="无密码可留空"
                 class="input-search"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AES 配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">加密配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedAes }"
+            :disabled="savingAes"
+            @click="saveAesConfig"
+          >
+            <Check v-if="savedAes" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedAes ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-yellow-900/50 rounded-lg flex items-center justify-center"
+            >
+              <Key class="w-5 h-5 text-yellow-400" />
+            </div>
+            <div>
+              <h3 class="text-white font-medium">AES-GCM 密钥</h3>
+              <p class="text-gray-500 text-sm">
+                Key 需为 16/24/32 字节 base64，IV 需为 12 字节 base64，空值表示不加密
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">Key (base64)</label>
+              <input
+                v-model="aesConfig.aes_key"
+                type="text"
+                placeholder="输入 base64 编码的 AES key"
+                class="input-search font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">IV (base64)</label>
+              <input
+                v-model="aesConfig.aes_iv"
+                type="text"
+                placeholder="输入 base64 编码的 12 字节 IV"
+                class="input-search font-mono text-xs"
               />
             </div>
           </div>
