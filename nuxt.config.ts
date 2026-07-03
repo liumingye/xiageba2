@@ -2,7 +2,13 @@ import legacy from "@vitejs/plugin-legacy";
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-06-01",
-  devtools: { enabled: true },
+  devtools: {
+    enabled: true,
+
+    timeline: {
+      enabled: true,
+    },
+  },
   sourcemap: false,
   modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt"],
   css: ["~/assets/css/main.css"],

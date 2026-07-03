@@ -455,12 +455,12 @@ const copyUrl = (url: string) => {
                     {{ item.title }}
                   </h3>
                   <div
-                    class="bg-primary-500 text-white p-1 rounded-sm text-sm self-start"
+                    class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
                   >
                     {{ getTypeName(item.type) }}
                   </div>
                 </div>
-                <h4 class="mb-2 text-gray-300 font-bold">文件内容:</h4>
+                <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
                 <pre
                   v-if="item.menu"
                   class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
@@ -475,7 +475,7 @@ const copyUrl = (url: string) => {
                   {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
                 </span>
                 <button
-                  class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-lg transition-colors flex-shrink-0"
+                  class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
                   @click.stop="openModal(item)"
                 >
                   <Download class="w-3 h-3" />

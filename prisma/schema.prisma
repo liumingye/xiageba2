@@ -91,6 +91,30 @@ model Config {
   value String @default("")
 }
 
+model ApiList {
+  id           String   @id @default(cuid(2))
+  name         String
+  type         String   @default("api")
+  url          String
+  method       String   @default("GET")
+  headers      String   @default("{}")
+  fixed_params String   @default("{}")
+  field_map    String   @default("{}")
+  count        Int      @default(10)
+  html_item    String   @default("")
+  html_title   String   @default("")
+  html_url     Int      @default(0)
+  html_type    String   @default("")
+  html_url2    String   @default("")
+  weight       Int      @default(0)
+  status       Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([weight])
+}
+
 enum FeedbackStatus {
   PENDING
   DONE

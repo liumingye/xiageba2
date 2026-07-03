@@ -95,7 +95,7 @@ onMounted(() => {
           type="text"
           :placeholder="
             currentSearchType === 'music'
-              ? '搜你想要的歌'
+              ? '搜你想要的音乐'
               : currentSearchType === 'resource'
                 ? '搜你想要的网盘资源'
                 : '搜你想要的视频'

@@ -10,6 +10,7 @@ import {
   Database,
   Tags,
   UserCog,
+  Webhook,
 } from "@lucide/vue";
 
 const route = useRoute();
@@ -59,7 +60,8 @@ onUnmounted(() => {
             resourceOpen ||
             isActive('/admin/resource') ||
             isActive('/admin/category') ||
-            isActive('/admin/account')
+            isActive('/admin/account') ||
+            isActive('/admin/apiList')
               ? 'text-primary-500 font-medium'
               : 'text-gray-400 hover:text-gray-200'
           "
@@ -120,6 +122,18 @@ onUnmounted(() => {
           >
             <UserCog class="w-4 h-4" />
             账号管理
+          </button>
+          <button
+            class="w-full flex items-center gap-2 px-4 py-2.5 text-left transition-colors"
+            :class="
+              isActive('/admin/apiList')
+                ? 'bg-primary-500/10 text-primary-500'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            "
+            @click="navigate('/admin/apiList')"
+          >
+            <Webhook class="w-4 h-4" />
+            接口配置
           </button>
         </div>
       </div>
