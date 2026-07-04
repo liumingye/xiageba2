@@ -22,16 +22,16 @@ const checkHistoryOverflow = () => {
 
 useResizeObserver(historyRef, checkHistoryOverflow);
 
-// const { data: hotMusic, pending: loading } = await useFetch<Music[]>(
-//   "/api/music/recent",
-//   {
-//     method: "POST",
-//     key: "home-music",
-//     server: true,
-//     lazy: true,
-//     default: () => [],
-//   },
-// );
+const { data: hotMusic, pending: loading } = await useFetch<Music[]>(
+  "/api/music/recent",
+  {
+    method: "POST",
+    key: "home-music",
+    server: true,
+    lazy: true,
+    default: () => [],
+  },
+);
 
 useHead({
   title: "下歌吧 - 免费下载高品质MP3与FLAC无损音乐",
@@ -87,7 +87,7 @@ const clearHistory = () => {
   musicStore.clearSearchHistory();
 };
 
-// const skeletonItems = Array.from({ length: 6 });
+const skeletonItems = Array.from({ length: 6 });
 
 const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -356,7 +356,7 @@ const getPic = (url: string) => {
         </div>
       </section>
 
-      <!-- <section aria-labelledby="hot-title">
+      <section aria-labelledby="hot-title">
         <h2 id="hot-title" class="text-lg font-medium text-gray-300 mb-4">
           最新音乐
         </h2>
@@ -393,21 +393,21 @@ const getPic = (url: string) => {
 
         <div
           v-else
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          class="grid grid-cols-2 lg:grid-cols-3 gap-4"
         >
           <article
             v-for="music in hotMusic"
             :key="music.id"
-            class="card p-4 cursor-pointer hover:border-primary-500/50 transition-colors"
+            class="card p-2 md:4 cursor-pointer hover:border-primary-500/50 transition-colors"
             @click="goToDetail(music)"
             role="article"
             :aria-label="music.title"
           >
-            <div class="flex gap-4">
+            <div class="flex gap-4 items-center">
               <img
                 :src="music.cover || config.app.baseURL + 'img/cover.png'"
                 :alt="music.title"
-                class="w-20 h-20 rounded-lg object-cover"
+                class="w-10 h-10 md:w-20 md:h-20 rounded-lg object-cover"
                 loading="lazy"
                 decoding="async"
                 @error="
@@ -424,16 +424,16 @@ const getPic = (url: string) => {
                     {{ music.artist }}
                   </p>
                 </div>
-                <ArrowRight class="w-5 h-5 text-gray-600 self-end" />
+                <ArrowRight class="w-5 h-5 text-gray-600 self-end hidden md:block" />
               </div>
             </div>
           </article>
         </div>
-      </section> -->
+      </section>
 
       <section aria-labelledby="douban-title" class="mt-10">
         <h2 id="douban-title" class="text-lg font-medium text-gray-300 mb-4">
-          热门榜单
+          热门影视
         </h2>
 
         <div class="space-y-3 mb-4">

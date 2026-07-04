@@ -4,13 +4,14 @@ export default defineNuxtConfig({
   compatibilityDate: "2026-06-01",
   devtools: {
     enabled: true,
-
-    timeline: {
-      enabled: true,
-    },
   },
   sourcemap: false,
-  modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt", "nuxt-api-shield"],
+  modules: [
+    "@nuxtjs/tailwindcss",
+    "@pinia/nuxt",
+    "nuxt-api-shield",
+    "@teages/nuxt-legacy",
+  ],
   css: ["~/assets/css/main.css"],
   app: {
     baseURL: "/",
@@ -146,7 +147,7 @@ export default defineNuxtConfig({
     },
     plugins: [
       legacy({
-        targets: "last 3 years, not dead", // 兼容的浏览器版本
+        modernTargets: "last 3 years, not dead", // 兼容的浏览器版本
         renderLegacyChunks: false,
         modernPolyfills: true,
       }),
