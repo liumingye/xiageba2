@@ -61,3 +61,8 @@ export const getRandomUA = () => {
   ];
   return userAgents[Math.floor(Math.random() * userAgents.length)] || "";
 };
+
+// 清空文件结构树的├、└、─ 符号
+export const clearTreeSymbols = (str: string) => {
+  return str.replace(/\├|└|─/g, "");
+};

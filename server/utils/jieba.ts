@@ -31,16 +31,10 @@ export const tokenizeIndex = (input: string): string => {
 /**
  * [写入/索引端用] 合并 title/artist/album 的 tokens
  */
-export const buildTokens = (
-  title: string,
-  artist: string,
-  album: string,
-): string => {
-  const parts = [title, artist, album]
-    .map((s) => tokenizeIndex(s || ""))
-    .filter(Boolean);
+export const buildTokens = (...terms: string[]): string => {
+  const parts = terms.map((s) => tokenizeIndex(s || "")).filter(Boolean);
   if (parts.length === 0) {
-    let arr = [title, artist, album];
+    let arr = terms;
     return arr.join(" ");
   }
   return parts.join(" ");

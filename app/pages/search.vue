@@ -220,7 +220,7 @@ const errorInfo = computed<ErrorInfo | null>(() => {
 
   if (code === 429) {
     const retryAfter =
-      (err?.data?.data?.retryAfter as number | undefined) || 15;
+      (err?.data?.retryAfter as number | undefined) || 15;
     return {
       type: "rate-limit",
       title: "搜索请求过于频繁",
@@ -646,7 +646,7 @@ const copyUrl = (url: string) => {
                     <button
                       v-if="
                         !item.menu &&
-                        ['quark', 'baidu', 'uc'].includes(item.type)
+                        ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)
                       "
                       class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
                       @click.stop="openTreeModal({ item, type: 'id' })"
@@ -666,10 +666,10 @@ const copyUrl = (url: string) => {
               </article>
             </template>
 
-            <section v-if="currentPage === 1" class="mt-8">
+            <template v-if="currentPage === 1">
               <div
                 v-if="webSearchResults.length !== 0 || webSearching"
-                class="flex items-center gap-2 mb-3"
+                class="flex items-center gap-2 !my-3"
               >
                 <Globe class="w-4 h-4 text-primary-400" />
                 <h2 class="text-gray-500 text-sm">全网搜</h2>
@@ -692,7 +692,7 @@ const copyUrl = (url: string) => {
                 <p class="text-red-400 text-sm">{{ webSearchError }}</p>
               </div>
 
-              <div v-if="webSearchResults.length > 0" class="space-y-2">
+              <template v-if="webSearchResults.length > 0">
                 <article
                   v-for="(item, idx) in webSearchResults"
                   :key="idx"
@@ -723,6 +723,9 @@ const copyUrl = (url: string) => {
                     >
                     <div class="flex items-center gap-2">
                       <button
+                        v-if="
+                          ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)
+                        "
                         class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
                         @click.stop="openTreeModal({ item, type: 'url' })"
                       >
@@ -739,8 +742,8 @@ const copyUrl = (url: string) => {
                     </div>
                   </div>
                 </article>
-              </div>
-            </section>
+              </template>
+            </template>
           </template>
 
           <div

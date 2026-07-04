@@ -1,5 +1,6 @@
 import { prisma } from "#server/lib/prisma";
 import { tokenizeIndex } from "#server/utils/jieba";
+import { clearTreeSymbols } from "#server/utils/source";
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id as string;
@@ -32,11 +33,14 @@ export default defineEventHandler(async (event) => {
     });
 
     // jieba 分词后更新 searchVector
-    const tokens = [title, description, menu]
-      .map((s) => tokenizeIndex(s || ""))
-      .filter(Boolean)
-      .join(" ");
-    await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
+    const tokens = buildTokens(
+      source.title || "",
+      source.description || "",
+      clearTreeSymbols(source.menu || ""),
+    );
+    if (tokens) {
+      await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
+    }
 
     return { success: true, data: source };
   }

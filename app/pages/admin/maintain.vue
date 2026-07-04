@@ -2,25 +2,13 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import {
-  RefreshCw,
-  Eraser,
-  Database,
-  Save,
-  Check,
-  Key,
-} from "@lucide/vue";
+import { RefreshCw, Eraser, Database, Save, Check, Key } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 
 const router = useRouter();
-const {
-  isLoggedIn,
-  logout,
-  checkLogin,
-  initialized,
-  getAuthHeaders,
-} = useAuth();
+const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
+  useAuth();
 
 const isRebuilding = ref(false);
 const rebuildMsg = ref("");
@@ -144,11 +132,12 @@ const saveAesConfig = async () => {
   }
 };
 
-const rebuildSearch = async (all: boolean) => {
+const rebuildSearch = async (all: boolean, type: "music" | "source") => {
   if (isRebuilding.value) return;
+  const name = type === "music" ? "音乐" : "资源";
   if (
     !confirm(
-      `确定要重建${all ? "所有音乐" : "没有索引的音乐"}的搜索向量吗？\n这将使用 jieba 分词重新生成搜索向量。`,
+      `确定要重建${all ? "所有" : "没有索引的"}${name}的搜索向量吗？\n这将使用 jieba 分词重新生成搜索向量。`,
     )
   )
     return;
@@ -156,7 +145,7 @@ const rebuildSearch = async (all: boolean) => {
   isRebuilding.value = true;
   rebuildMsg.value = "";
   try {
-    const res = await fetch("/api/admin/music/rebuild-search", {
+    const res = await fetch(`/api/admin/${type}/rebuild-search`, {
       method: "POST",
       body: JSON.stringify({ all }),
       headers: {
@@ -220,9 +209,12 @@ const clearISRCache = async (route?: string) => {
           <h2 class="text-lg font-medium text-white">搜索索引</h2>
         </div>
         <div class="card p-6 space-y-4">
+          <div v-if="rebuildMsg" class="text-sm text-primary-400">
+            {{ rebuildMsg }}
+          </div>
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <div class="text-white">重建搜索向量</div>
+              <div class="text-white">重建音乐搜索向量</div>
               <div class="text-sm text-gray-400 mt-1">
                 使用 jieba 分词重新生成所有音乐的搜索向量，用于全文搜索
               </div>
@@ -231,7 +223,7 @@ const clearISRCache = async (route?: string) => {
               <button
                 class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
-                @click="rebuildSearch(false)"
+                @click="rebuildSearch(false, 'music')"
               >
                 <RefreshCw
                   class="w-4 h-4"
@@ -242,7 +234,7 @@ const clearISRCache = async (route?: string) => {
               <button
                 class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
-                @click="rebuildSearch(true)"
+                @click="rebuildSearch(true, 'music')"
               >
                 <RefreshCw
                   class="w-4 h-4"
@@ -252,8 +244,37 @@ const clearISRCache = async (route?: string) => {
               </button>
             </div>
           </div>
-          <div v-if="rebuildMsg" class="text-sm text-primary-400">
-            {{ rebuildMsg }}
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div class="text-white">重建资源搜索向量</div>
+              <div class="text-sm text-gray-400 mt-1">
+                使用 jieba 分词重新生成所有资源的搜索向量，用于全文搜索
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                :disabled="isRebuilding"
+                @click="rebuildSearch(false, 'source')"
+              >
+                <RefreshCw
+                  class="w-4 h-4"
+                  :class="{ 'animate-spin': isRebuilding }"
+                />
+                {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
+              </button>
+              <button
+                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                :disabled="isRebuilding"
+                @click="rebuildSearch(true, 'source')"
+              >
+                <RefreshCw
+                  class="w-4 h-4"
+                  :class="{ 'animate-spin': isRebuilding }"
+                />
+                {{ isRebuilding ? "重建中..." : "重建所有索引" }}
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -383,14 +404,16 @@ const clearISRCache = async (route?: string) => {
             <div>
               <h3 class="text-white font-medium">AES-GCM 密钥</h3>
               <p class="text-gray-500 text-sm">
-                Key 需为 16/24/32 字节 base64，IV 需为 12 字节 base64，空值表示不加密
+                Key 需为 16/24/32 字节 base64，IV 需为 12 字节 base64
               </p>
             </div>
           </div>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Key (base64)</label>
+              <label class="block text-gray-400 text-sm mb-2"
+                >Key (base64)</label
+              >
               <input
                 v-model="aesConfig.aes_key"
                 type="text"
@@ -399,7 +422,9 @@ const clearISRCache = async (route?: string) => {
               />
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">IV (base64)</label>
+              <label class="block text-gray-400 text-sm mb-2"
+                >IV (base64)</label
+              >
               <input
                 v-model="aesConfig.aes_iv"
                 type="text"

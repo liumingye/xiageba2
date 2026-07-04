@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { Plus, Trash2, Edit3, Database, Search } from "@lucide/vue";
+import { Plus, Trash2, Edit3, Database, Search, Folder } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -50,6 +50,7 @@ const editTitle = ref("");
 const editUrl = ref("");
 const editDescription = ref("");
 const editMenu = ref("");
+const menuLoading = ref(false);
 const error = ref("");
 
 const loadSources = async () => {
@@ -130,6 +131,24 @@ const openEditModal = (item: Source) => {
 
 const closeEditModal = () => {
   showEditModal.value = false;
+};
+
+const fetchMenu = async () => {
+  if (!editId.value) return;
+  menuLoading.value = true;
+  try {
+    const res = await fetch(`/api/source/tree?id=${editId.value}`);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      editMenu.value = data.tree || "";
+    } else {
+      error.value = data.message || "获取目录失败";
+    }
+  } catch {
+    error.value = "获取目录失败";
+  } finally {
+    menuLoading.value = false;
+  }
 };
 
 const addSource = async () => {
@@ -536,6 +555,26 @@ const deleteSource = async (id: string) => {
                   rows="3"
                   placeholder="资源说明，可选"
                   class="input-search resize-none"
+                ></textarea>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-gray-400 text-sm">目录</label>
+                  <button
+                    type="button"
+                    class="flex items-center gap-1 px-2 py-1 text-xs bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 rounded transition-colors disabled:opacity-50"
+                    :disabled="menuLoading"
+                    @click="fetchMenu"
+                  >
+                    <Folder class="w-3 h-3" />
+                    {{ menuLoading ? "获取中..." : "获取目录" }}
+                  </button>
+                </div>
+                <textarea
+                  v-model="editMenu"
+                  rows="5"
+                  placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
+                  class="input-search resize-none font-mono text-xs"
                 ></textarea>
               </div>
               <div class="flex gap-4 pt-2">

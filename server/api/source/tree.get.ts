@@ -10,6 +10,7 @@ import {
   IShareParam,
 } from "@netdisk-sdk/baidu-sdk";
 import { IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
+import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 
 const MAX_DEPTH = 20;
 
@@ -61,6 +62,8 @@ export default defineEventHandler(async (event) => {
     tree = await buildQuarkUCTree(parsed.type, parsed.fid, parsed.passcode);
   } else if (parsed.type === "baidu") {
     tree = await buildBaiduTree(url);
+  } else if (parsed.type === "xunlei") {
+    tree = await buildXunleiTree(url);
   } else {
     return { message: "不支持的该网盘类型", success: false };
   }
@@ -242,6 +245,89 @@ async function walkBaidu(
         depth + 1,
         lines,
       );
+    }
+  }
+}
+
+async function buildXunleiTree(shareUrl: string): Promise<string> {
+  const config = await getConfigValues(["xunlei_refresh_token"]);
+  const refreshToken = config.xunlei_refresh_token;
+
+  if (!refreshToken) {
+    throw createError({
+      statusCode: 500,
+      message: "未配置迅雷网盘 Cookie（refresh_token）",
+    });
+  }
+
+  const parsed = parseShareUrl(shareUrl);
+  if (!parsed.fid) {
+    throw createError({ statusCode: 400, message: "无效的迅雷分享链接" });
+  }
+
+  const client = new XunleiClient({ refreshToken });
+
+  const detail = await client.shareApi.getShare({
+    shareId: parsed.fid,
+    passCode: parsed.passcode,
+    limit: 1000,
+  });
+
+  if (detail.files.length === 0) {
+    return "（空目录）";
+  }
+
+  const lines: string[] = [];
+  await walkXunlei(
+    client,
+    parsed.fid,
+    detail.passCodeToken,
+    detail.files,
+    "",
+    0,
+    lines,
+  );
+  return lines.join("\n");
+}
+
+async function walkXunlei(
+  client: XunleiClient,
+  shareId: string,
+  passCodeToken: string,
+  items: { id: string; name: string; is_dir?: boolean }[],
+  prefix: string,
+  depth: number,
+  lines: string[],
+): Promise<void> {
+  if (depth >= MAX_DEPTH) return;
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item) continue;
+    const isLast = i === items.length - 1;
+    const connector = isLast ? "└─ " : "├─ ";
+    lines.push(`${prefix}${connector}${item.name}`);
+
+    if (item.is_dir) {
+      const extension = isLast ? "   " : "│  ";
+      const res = await client.shareApi.detail({
+        shareId,
+        passCodeToken,
+        parentId: item.id,
+        limit: 1000,
+      });
+
+      if (res.files.length > 0) {
+        await walkXunlei(
+          client,
+          shareId,
+          passCodeToken,
+          res.files.map((f) => ({ id: f.id, name: f.name, is_dir: f.is_dir })),
+          prefix + extension,
+          depth + 1,
+          lines,
+        );
+      }
     }
   }
 }

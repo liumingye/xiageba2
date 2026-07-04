@@ -16,6 +16,14 @@ export interface IGetShareParam {
   pageToken?: string;
 }
 
+export interface IGetShareDetailParam {
+  shareId: string;
+  passCodeToken: string;
+  parentId?: string;
+  limit?: number;
+  pageToken?: string;
+}
+
 export interface IShareDetailData {
   share_status?: string;
   share_status_text?: string;
@@ -69,6 +77,64 @@ export class XunleiShareApi {
     if (data.share_status && data.share_status !== "OK") {
       throw ApiError.create(
         "xunlei share status is {share_status}, text={share_status_text}",
+        data as unknown as Record<string, unknown>,
+      );
+    }
+
+    const files: IXunleiShareFile[] = [];
+    for (const file of data.files ?? []) {
+      const id = file.id ?? file.file_id;
+      if (!id) continue;
+      files.push({
+        id,
+        file_id: id,
+        name: file.name ?? "",
+        kind: file.kind,
+        is_dir: file.is_dir ?? file.kind === "drive#folder",
+        size: file.size,
+      });
+    }
+
+    return {
+      shareId,
+      title: data.title ?? "",
+      passCodeToken: data.pass_code_token ?? "",
+      files,
+      share_status: data.share_status,
+      share_status_text: data.share_status_text,
+    };
+  }
+
+  /**
+   * 获取分享子目录详情（用于子目录递归列表）
+   */
+  async detail(param: IGetShareDetailParam): Promise<IXunleiShareDetail> {
+    const {
+      shareId,
+      passCodeToken,
+      parentId = "",
+      limit = 100,
+      pageToken = "",
+    } = param;
+
+    const data = await this.client.request<IShareDetailData>(
+      "GET",
+      "/drive/v1/share/detail",
+      {
+        query: {
+          share_id: shareId,
+          pass_code_token: passCodeToken,
+          parent_id: parentId,
+          limit,
+          page_token: pageToken,
+          thumbnail_size: "SIZE_SMALL",
+        },
+      },
+    );
+
+    if (data.share_status && data.share_status !== "OK") {
+      throw ApiError.create(
+        "xunlei share detail status is {share_status}, text={share_status_text}",
         data as unknown as Record<string, unknown>,
       );
     }

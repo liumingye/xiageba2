@@ -113,9 +113,9 @@ export default defineEventHandler(async (event) => {
 
     // 2) 然后用 jieba 构造 tokens，通过原始 SQL 更新 searchVector
     const searchVectorTokens = buildTokens(
-      title || "",
-      artist || "",
-      album || "",
+      music.title || "",
+      music.artist || "",
+      music.album || "",
     );
 
     if (searchVectorTokens) {
@@ -150,16 +150,11 @@ export default defineEventHandler(async (event) => {
 
     // 2) 用 jieba 构造 tokens 更新 searchVector
     const searchVectorTokens = buildTokens(
-      title || "",
-      artist || "",
-      album || "",
+      music.title || "",
+      music.artist || "",
+      music.album || "",
     );
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    await pool.query(
-      `UPDATE "Music" SET "searchVector" = to_tsvector('simple', $1) WHERE id = $2`,
-      [searchVectorTokens || "", music.id],
-    );
-    await pool.end();
+    await prisma.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens}) WHERE id = ${music.id}`;
 
     // 清理isr缓存
     const storage = useStorage(`cache:nuxt:payload:`);

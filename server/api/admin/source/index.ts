@@ -1,5 +1,7 @@
 import { prisma } from "#server/lib/prisma";
 import { tokenizeIndex } from "#server/utils/jieba";
+import { clearTreeSymbols } from "#server/utils/source";
+import { buildTokens } from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
@@ -59,25 +61,22 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "资源地址不能为空" });
     }
 
-    // 从分享链接中提取 fid（网盘文件ID）
-    // const fid = url.match(/\/s\/([^/?#]+)/)?.[1] || "";
-
     const source = await prisma.source.create({
       data: {
         cid: Number(cid) || null,
         title: title.trim(),
         url: url.trim(),
-        // fid,
         description: description || "",
         menu: menu || "",
       },
     });
 
     // jieba 分词后更新 searchVector
-    const tokens = [title, description]
-      .map((s) => tokenizeIndex(s || ""))
-      .filter(Boolean)
-      .join(" ");
+    const tokens = buildTokens(
+      source.title || "",
+      source.description || "",
+      clearTreeSymbols(source.menu || ""),
+    );
     if (tokens) {
       await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
     }

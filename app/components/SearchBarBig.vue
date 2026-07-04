@@ -3,7 +3,6 @@ import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore } from "~/stores/music";
 import { Search, X, Music, Video, FolderOpen } from "@lucide/vue";
-import { on } from "events";
 
 const props = defineProps<{
   modelValue?: string;
@@ -38,10 +37,12 @@ const updateSearchQuery = (e: Event) => {
   emit("update:modelValue", value);
 };
 
-const handleSearch = () => {
-  const q = searchQuery.value.trim();
+const handleSearch = (keywords?: string) => {
+  let q = keywords?.trim() || searchQuery.value.trim();
   if (!q) return;
-  if (q.length > MAX_KEYWORD_LENGTH) return;
+  if (q.length > MAX_KEYWORD_LENGTH) {
+    q = q.slice(0, MAX_KEYWORD_LENGTH);
+  }
   musicStore.addSearchHistory(q);
   emit("search", q);
   if (currentSearchType.value === "music") {
@@ -52,6 +53,7 @@ const handleSearch = () => {
     // ponytail: video 仍走外部站点
     window.open(`https://pan.liumingye.cn/s/${q}`);
   }
+  musicStore.searchType = currentSearchType.value;
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -65,7 +67,7 @@ const clearInput = () => {
   emit("update:modelValue", "");
 };
 
-const currentSearchType = ref("music");
+const currentSearchType = ref(musicStore.searchType);
 
 const searchInput = ref<HTMLInputElement>();
 
@@ -73,6 +75,10 @@ onMounted(() => {
   if (searchInput.value?.focus) {
     isFocused.value = true;
   }
+});
+
+defineExpose({
+  handleSearch,
 });
 </script>
 

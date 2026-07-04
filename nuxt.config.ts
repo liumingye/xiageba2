@@ -10,7 +10,7 @@ export default defineNuxtConfig({
     },
   },
   sourcemap: false,
-  modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt"],
+  modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt", "nuxt-api-shield"],
   css: ["~/assets/css/main.css"],
   app: {
     baseURL: "/",
@@ -53,25 +53,9 @@ export default defineNuxtConfig({
     "/music/**": {
       ssr: true,
       isr: 60 * 60 * 24 * 30,
-      headers: {
-        "Cache-Control": "public, max-age=1800, stale-while-revalidate=86400",
-      },
     },
     "/search": {
       ssr: true,
-      headers: {
-        "Cache-Control": "public, max-age=600, stale-while-revalidate=3600",
-      },
-    },
-    "/api/music/**": {
-      headers: {
-        "Cache-Control": "public, max-age=1800, stale-while-revalidate=86400",
-      },
-    },
-    "/api/music/search": {
-      headers: {
-        "Cache-Control": "public, max-age=120, stale-while-revalidate=600",
-      },
     },
     "/img/**": {
       static: true,
@@ -81,8 +65,80 @@ export default defineNuxtConfig({
       },
     },
   },
+  nuxtApiShield: {
+    limit: {
+      max: 30,
+      duration: 60,
+      ban: 60,
+    },
+    delayOnBan: true,
+    errorMessage: "请求过于频繁，请稍后再试",
+    retryAfterHeader: false,
+    routes: [
+      {
+        path: "/api/music/search",
+        max: 30,
+        duration: 60,
+        ban: 120,
+      },
+      {
+        path: "/api/music/recent",
+        max: 15,
+        duration: 60,
+        ban: 30,
+      },
+      {
+        path: "/api/music/feedback",
+        max: 10,
+        duration: 300,
+        ban: 60,
+      },
+      {
+        path: "/api/admin/login",
+        max: 5,
+        duration: 60,
+        ban: 60,
+      },
+      {
+        path: "/music/*",
+        max: 120,
+        duration: 300,
+        ban: 90,
+      },
+      {
+        path: "/api/source/geturl",
+        max: 10,
+        duration: 30,
+        ban: 60,
+      },
+      {
+        path: "/api/source/tree",
+        max: 10,
+        duration: 30,
+        ban: 60,
+      },
+      {
+        path: "/api/source/search",
+        max: 30,
+        duration: 60,
+        ban: 120,
+      },
+    ],
+    log: {
+      path: "",
+      attempts: 0,
+    },
+    security: {
+      trustXForwardedFor: true,
+    },
+  },
   nitro: {
     compressPublicAssets: true,
+    storage: {
+      shield: {
+        driver: "memory",
+      },
+    },
   },
   vite: {
     build: {

@@ -29,7 +29,7 @@ onMounted(async () => {
       <p class="text-gray-300 text-xs mb-2 text-center leading-relaxed">
         手机扫码浏览保存更方便
       </p>
-      <div class="w-32 h-32">
+      <div class="w-32 h-32 mx-auto">
         <img
           v-if="qrCodeUrl"
           :src="qrCodeUrl"

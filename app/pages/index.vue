@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import SearchBar from "~/components/SearchBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
 import { Music as MusicIcon, ArrowRight } from "@lucide/vue";
+import SearchBarBig from "~/components/SearchBarBig.vue";
 
 const config = useRuntimeConfig();
 const router = useRouter();
 const musicStore = useMusicStore();
+const searchBarRef = ref<typeof SearchBarBig>();
 
 const { data: hotMusic, pending: loading } = await useFetch<Music[]>(
   "/api/music/recent",
@@ -68,11 +69,6 @@ const goToDetail = (music: Music) => {
   router.push(`/music/${music.id}`);
 };
 
-const searchFromHistory = (keyword: string) => {
-  musicStore.addSearchHistory(keyword);
-  router.push(`/search?q=${encodeURIComponent(keyword)}`);
-};
-
 const clearHistory = () => {
   musicStore.clearSearchHistory();
 };
@@ -107,10 +103,12 @@ onMounted(() => {
           </div>
           <h1 class="text-4xl font-bold text-white">下歌吧</h1>
         </div>
-        <SearchBarBig />
+        <SearchBarBig ref="searchBarRef" />
         <div class="text-sm text-gray-400 mt-3" v-if="isMobile !== null">
           {{
-            isMobile ? "打开浏览器菜单，点击加入书签不迷路" : "按下Ctrl + D收藏网站不迷路"
+            isMobile
+              ? "打开浏览器菜单，点击加入书签不迷路"
+              : "按下Ctrl + D收藏网站不迷路"
           }}
         </div>
       </header>
@@ -128,7 +126,7 @@ onMounted(() => {
             v-for="keyword in musicStore.searchHistory"
             :key="keyword"
             class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full text-sm transition-colors"
-            @click="searchFromHistory(keyword)"
+            @click="searchBarRef?.handleSearch(keyword)"
           >
             {{ keyword }}
           </button>
