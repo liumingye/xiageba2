@@ -1,5 +1,4 @@
 import { prisma } from "#server/lib/prisma";
-import { tokenizeIndex } from "#server/utils/jieba";
 import { clearTreeSymbols } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
 

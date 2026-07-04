@@ -38,7 +38,7 @@ const updateSearchQuery = (e: Event) => {
 };
 
 const handleSearch = (keywords?: string) => {
-  let q = keywords?.trim() || searchQuery.value.trim();
+  let q = keywords ? keywords.trim() : searchQuery.value.trim();
   if (!q) return;
   if (q.length > MAX_KEYWORD_LENGTH) {
     q = q.slice(0, MAX_KEYWORD_LENGTH);
@@ -53,7 +53,7 @@ const handleSearch = (keywords?: string) => {
     // ponytail: video 仍走外部站点
     window.open(`https://pan.liumingye.cn/s/${q}`);
   }
-  musicStore.searchType = currentSearchType.value;
+  // musicStore.searchType = currentSearchType.value;
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -68,6 +68,13 @@ const clearInput = () => {
 };
 
 const currentSearchType = ref(musicStore.searchType);
+
+watch(
+  () => musicStore.searchType,
+  (val) => {
+    currentSearchType.value = val;
+  },
+);
 
 const searchInput = ref<HTMLInputElement>();
 
@@ -155,7 +162,7 @@ defineExpose({
         </div>
         <button
           class="bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 transition-all duration-200"
-          @click="handleSearch"
+          @click="handleSearch()"
           type="button"
         >
           <Search class="mx-auto w-4 h-4" />

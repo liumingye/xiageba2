@@ -47,7 +47,15 @@ const CLASSES = [
   { type_id: "show_filter", type_name: "综艺筛选" },
 ];
 
-const FILTERS: Record<string, Array<{ key: string; name: string; init: string; value: { name: string; value: string }[] }>> = {
+const FILTERS: Record<
+  string,
+  Array<{
+    key: string;
+    name: string;
+    init: string;
+    value: { name: string; value: string }[];
+  }>
+> = {
   movie: [
     {
       key: "category",
@@ -431,7 +439,8 @@ function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
   const vod_pic = item.pic?.large || item.pic?.normal || "";
 
   const parts = cardSubtitle.split(" / ");
-  const vod_subtitle = parts.length > 1 ? parts.slice(1).join(" / ") : cardSubtitle;
+  const vod_subtitle =
+    parts.length > 1 ? parts.slice(1).join(" / ") : cardSubtitle;
 
   return {
     vod_id: item.id || `douban_${item.uri}`,
@@ -448,7 +457,11 @@ function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
   };
 }
 
-function buildCategoryUrl(categoryId: string, page: number, filters: Record<string, string>): string {
+function buildCategoryUrl(
+  categoryId: string,
+  page: number,
+  filters: Record<string, string>,
+): string {
   const limit = 20;
   const start = (page - 1) * limit;
 
@@ -482,24 +495,38 @@ function buildCategoryUrl(categoryId: string, page: number, filters: Record<stri
     const year = filters.year || "";
     const platform = filters.platform || "";
     const sort = filters.sort || "U";
-    const selectedCategories: Record<string, string> = { 形式: categoryId === "tv_filter" ? "电视剧" : "综艺" };
+    const selectedCategories: Record<string, string> = {
+      形式: categoryId === "tv_filter" ? "电视剧" : "综艺",
+    };
     if (genre) selectedCategories["类型"] = genre;
     if (region) selectedCategories["地区"] = region;
     const tags = [genre, region, year, platform].filter(Boolean).join(",");
     return `https://m.douban.com/rexxar/api/v2/tv/recommend?refresh=0&start=${start}&count=${limit}&selected_categories=${encodeURIComponent(JSON.stringify(selectedCategories))}&uncollect=false&score_range=0,10&tags=${encodeURIComponent(tags)}&sort=${sort}`;
   }
 
-  throw createError({ statusCode: 400, message: `未知的分类ID: ${categoryId}` });
+  throw createError({
+    statusCode: 400,
+    message: `未知的分类ID: ${categoryId}`,
+  });
 }
 
 function getReferer(categoryId: string): string {
-  if (categoryId === "tv" || categoryId === "show" || categoryId.startsWith("tv_") || categoryId.startsWith("show_")) {
+  if (
+    categoryId === "tv" ||
+    categoryId === "show" ||
+    categoryId.startsWith("tv_") ||
+    categoryId.startsWith("show_")
+  ) {
     return "https://movie.douban.com/tv/";
   }
   return "https://movie.douban.com/explore";
 }
 
-async function fetchCategory(categoryId: string, page: number, filters: Record<string, string>) {
+async function fetchCategory(
+  categoryId: string,
+  page: number,
+  filters: Record<string, string>,
+) {
   const url = buildCategoryUrl(categoryId, page, filters);
   const referer = getReferer(categoryId);
 
@@ -508,13 +535,17 @@ async function fetchCategory(categoryId: string, page: number, filters: Record<s
       Accept: "*/*",
       "Accept-Encoding": "gzip, deflate, br",
       Connection: "keep-alive",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       referer,
     },
   });
 
   if (!res.ok) {
-    throw createError({ statusCode: 502, message: `豆瓣接口请求失败: ${res.status}` });
+    throw createError({
+      statusCode: 502,
+      message: `豆瓣接口请求失败: ${res.status}`,
+    });
   }
 
   const data = (await res.json()) as DoubanResponse;
@@ -522,7 +553,9 @@ async function fetchCategory(categoryId: string, page: number, filters: Record<s
     throw createError({ statusCode: 502, message: "豆瓣接口返回数据格式错误" });
   }
 
-  const list = data.items.map((item) => mapItem(item, categoryId));
+  const list = data.items
+    .map((item) => mapItem(item, categoryId))
+    .filter((v) => v.vod_pic);
   const total = data.total || data.count || list.length;
   const limit = 20;
 
@@ -542,11 +575,16 @@ export default defineEventHandler(async (event) => {
 
   if (query.filters) {
     try {
-      filters = typeof query.filters === "string" ? JSON.parse(query.filters) : (query.filters as Record<string, string>);
+      filters =
+        typeof query.filters === "string"
+          ? JSON.parse(query.filters)
+          : (query.filters as Record<string, string>);
     } catch {
       throw createError({ statusCode: 400, message: "filters 参数格式错误" });
     }
   }
+
+  setResponseHeader(event, "Cache-Control", "public, max-age=3600");
 
   if (!categoryId) {
     return {

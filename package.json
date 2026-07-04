@@ -22,6 +22,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/pg": "^8.20.0",
+    "@vueuse/core": "^14.3.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",
     "ioredis": "^5.11.1",

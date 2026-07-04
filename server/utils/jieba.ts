@@ -12,10 +12,18 @@ const cut = (input: string): string[] => {
   const jiebaTokens = jieba.cutForSearch(text, true);
   const groups: string[] = [];
 
+  console.log(jiebaTokens);
+
   for (const token of jiebaTokens) {
-    if (!token.trim()) continue;
-    groups.push(`'${token}'`);
+    let t = token.trim();
+    // // 过滤不可见特殊字符
+    // .replace(/[\x00-\x1F\x7F]/g, "")
+    // .replace("\\", "");
+
+    if (t.trim() === "") continue;
+    groups.push(`"${t}"`);
   }
+  console.log(groups);
 
   return groups;
 };
