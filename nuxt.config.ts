@@ -143,7 +143,10 @@ export default defineNuxtConfig({
   },
   vite: {
     build: {
-      target: ["es2015"], // 指定目标浏览器版本
+      // target: ["es2015"], // 指定目标浏览器版本
+    },
+    ssr: {
+      external: ["superagent"],
     },
     plugins: [
       legacy({
@@ -153,7 +156,7 @@ export default defineNuxtConfig({
       }),
     ],
     optimizeDeps: {
-      include: ["@lucide/vue", "pinia", "qrcode"],
+      include: ["@lucide/vue", "@vueuse/core", "pinia", "qrcode"],
     },
   },
 });

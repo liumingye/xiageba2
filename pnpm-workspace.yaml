@@ -1,2 +1,2 @@
 packages:
-  - "packages/netdisk-sdk-js/**"
+  - packages/netdisk-sdk-js/**

@@ -14,14 +14,13 @@ const cut = (input: string): string[] => {
 
   for (const token of jiebaTokens) {
     let t = token.trim();
-    // // 过滤不可见特殊字符
-    // .replace(/[\x00-\x1F\x7F]/g, "")
-    // .replace("\\", "");
-
     if (t.trim() === "") continue;
-    groups.push(`"${t}"`);
+    const escapeSet = new Set(["\\", "'"]);
+    if (escapeSet.has(t)) {
+      t = "\\" + t;
+    }
+    groups.push(`'${t}'`);
   }
-
   return groups;
 };
 

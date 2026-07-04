@@ -4,6 +4,7 @@ import { decryptUrl } from "#server/lib/crypto";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { getRedisCache, setRedisCache } from "#server/lib/redis";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -269,7 +270,6 @@ async function transferXunlei(
     task.params?.trace_file_ids,
   );
 
-  
   if (fileIds.length === 0) {
     throw createError({
       statusCode: 500,
@@ -335,6 +335,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "链接为空" });
   }
 
+  const cacheKey = `source:${sourceUrl}`;
+
+  const cached = await getRedisCache<SearchResult[]>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const { type, fid, passcode, url: sharePageUrl } = parseShareUrl(sourceUrl);
 
   if (type === "unknown") {
@@ -346,12 +353,12 @@ export default defineEventHandler(async (event) => {
   }
 
   // 检查是否已存在转存记录（isTemp=true 且 fid 匹配）
-  const tempRecord = await prisma.source.findFirst({
-    where: { fid, isTemp: true },
-  });
-  if (tempRecord) {
-    return { url: tempRecord.url };
-  }
+  // const tempRecord = await prisma.source.findFirst({
+  //   where: { fid, isTemp: true },
+  // });
+  // if (tempRecord) {
+  //   return { url: tempRecord.url };
+  // }
 
   // 根据网盘类型执行转存
   let shareUrl: string;
@@ -384,7 +391,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // 保存转存记录，下次直接返回
+  // 保存转存记录，用于定期删除
   await prisma.source.create({
     data: {
       title: sourceTitle,
@@ -393,6 +400,10 @@ export default defineEventHandler(async (event) => {
       isTemp: true,
     },
   });
+
+  if (shareUrl) {
+    await setRedisCache(cacheKey, { url: shareUrl }, 60 * 30);
+  }
 
   return { url: shareUrl };
 });

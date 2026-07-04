@@ -8,8 +8,8 @@ import {
   BaiduClient,
   parseShareParam,
   IShareParam,
+  IFile as IBaiduFile,
 } from "@netdisk-sdk/baidu-sdk";
-import { IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 
 const MAX_DEPTH = 20;
