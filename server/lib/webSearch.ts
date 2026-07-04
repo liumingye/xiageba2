@@ -26,13 +26,20 @@ const extractList = (data: any, listPath: string): any[] => {
   return Array.isArray(list) ? list : [];
 };
 
-const replaceKeyword = (template: string, keyword: string) => {
-  return template.replace(/\{keyword\}|\{kw\}/g, keyword);
+const replaceFields = (
+  template: string,
+  searchFields: string[],
+  keyword: string,
+) => {
+  if (!searchFields || searchFields.length === 0) return template;
+  if (!keyword) return template;
+  const searchFieldsStr = searchFields.map((field) => `{${field}}`).join("|");
+  return template.replace(new RegExp(searchFieldsStr, "g"), keyword);
 };
 
 const fillParams = (params: any, keyword: string): any => {
   const str = JSON.stringify(params);
-  const filled = replaceKeyword(str, keyword);
+  const filled = replaceFields(str, ["keyword", "kw"], keyword);
   return JSON.parse(filled);
 };
 
@@ -54,6 +61,19 @@ const extractImage = (item: any, fieldMap: any): string | undefined => {
   return undefined;
 };
 
+const buildBaseHeaders = (headers?: Record<string, string>) => {
+  const randomIp = getRandomIp("14.16.0.0/12");
+  if (headers) {
+    for (const [k, v] of Object.entries(headers)) {
+      headers[k] = replaceFields(v, ["randomip"], randomIp);
+    }
+  }
+  return {
+    "User-Agent": getRandomUA(),
+    ...headers,
+  };
+};
+
 const searchApi = async (
   config: any,
   keyword: string,
@@ -65,7 +85,7 @@ const searchApi = async (
   const fieldMap = JSON.parse(config.field_map || "{}") as any;
   const count = Math.max(1, config.count || 10);
 
-  let url = replaceKeyword(urlTemplate, keyword);
+  let url = replaceFields(urlTemplate, ["keyword", "kw"], keyword);
   const params = fillParams(fixedParams, keyword);
 
   const options: RequestInit = { method, headers };
@@ -80,14 +100,8 @@ const searchApi = async (
     options.body = JSON.stringify(params);
   }
 
-  const randomIp = getRandomIp("14.16.0.0/12");
   options.headers = {
-    "User-Agent": getRandomUA(),
-    "CF-Connecting-IP": randomIp,
-    "X-Real-IP": randomIp,
-    "X-Forwarded-For": randomIp,
-    "EO-Connecting-IP": randomIp,
-    ...options.headers,
+    ...buildBaseHeaders(headers),
   };
 
   const res = await fetch(url, options);
@@ -120,6 +134,104 @@ const searchApi = async (
   return results;
 };
 
+interface PanSouMergedItem {
+  title?: string;
+  name?: string;
+  url?: string;
+  link?: string;
+  image?: string;
+  pic?: string;
+  cover?: string;
+  [key: string]: any;
+}
+
+const searchPanSou = async (
+  config: any,
+  keyword: string,
+): Promise<WebSearchResult[]> => {
+  const url = config.url;
+  const method = (config.method || "POST").toUpperCase();
+  const fixedParams = JSON.parse(config.fixed_params || "{}") as any;
+  const token = fixedParams.token || "";
+  const imageProxy = fixedParams.image_proxy || "";
+  const count = Math.max(1, config.count || 10);
+
+  const headers: Record<string, string> = {
+    ...buildBaseHeaders(),
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const options: RequestInit = {
+    method,
+    headers,
+  };
+  const body = {
+    kw: keyword,
+    cloud_types: ["quark", "baidu", "uc", "xunlei"],
+    src: "all",
+    res: "merged_by_type",
+    ext: { is_all: true },
+  };
+  if (method === "GET") {
+    const urlObj = new URL(url);
+
+    Object.entries(body).forEach(([k, v]) => {
+      if (typeof v === "string") {
+        urlObj.searchParams.set(k, v);
+      } else {
+        urlObj.searchParams.set(k, JSON.stringify(v));
+      }
+    });
+    options.body = undefined;
+  } else {
+    options.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    throw new Error(`请求失败: ${res.status}`);
+  }
+
+  const data = (await res.json()) as {
+    merged_by_type?: Record<string, PanSouMergedItem[]>;
+  };
+
+  const merged = data?.merged_by_type || {};
+
+  const results: WebSearchResult[] = [];
+  for (const items of Object.values(merged)) {
+    if (!Array.isArray(items)) continue;
+    for (const item of items) {
+      if (results.length >= count) break;
+      const title = String(item.note || item.name || "");
+      const link = String(item.url || item.link || "");
+      let image = extractImage(item, {
+        fields: {
+          image: "image",
+          images: "images",
+        },
+      });
+      if (image && imageProxy) {
+        image = imageProxy + image;
+      }
+      if (title && link) {
+        results.push({
+          title,
+          url: link,
+          image,
+          source: config.name,
+          type: getStorageType(link),
+        });
+      }
+    }
+  }
+
+  return results;
+};
+
 const extractPanUrl = (text: string) => {
   const patterns = [
     /https:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]+)?/g,
@@ -134,16 +246,10 @@ const extractPanUrl = (text: string) => {
   return "";
 };
 
-const fetchHtml = async (url: string) => {
-  const randomIp = getRandomIp("14.16.0.0/12");
-
+const fetchHtml = async (url: string, headers?: Record<string, string>) => {
   const res = await fetch(url, {
     headers: {
-      "User-Agent": getRandomUA(),
-      "CF-Connecting-IP": randomIp,
-      "X-Real-IP": randomIp,
-      "X-Forwarded-For": randomIp,
-      "EO-Connecting-IP": randomIp,
+      ...buildBaseHeaders(headers),
     },
   });
   if (!res.ok) throw new Error(`请求失败: ${res.status}`);
@@ -154,8 +260,9 @@ const searchHtml = async (
   config: any,
   keyword: string,
 ): Promise<WebSearchResult[]> => {
-  const url = replaceKeyword(config.url || "", keyword);
-  const html = await fetchHtml(url);
+  const url = replaceFields(config.url || "", ["keyword", "kw"], keyword);
+  const headers = JSON.parse(config.headers || "{}") as Record<string, string>;
+  const html = await fetchHtml(url, headers || {});
   const $ = cheerio.load(html);
 
   const itemSelector = config.html_item || "";
@@ -186,6 +293,7 @@ const searchHtml = async (
             detailUrl.startsWith("http")
               ? detailUrl
               : new URL(detailUrl, url).href,
+            headers || {},
           );
           panUrl = extractPanUrl(detailHtml);
         } catch {
@@ -237,10 +345,14 @@ export async function* webSearch(
         continue;
       }
 
-      const items =
-        config.type === "api"
-          ? await searchApi(config, keyword)
-          : await searchHtml(config, keyword);
+      let items: WebSearchResult[] = [];
+      if (config.type === "api") {
+        items = await searchApi(config, keyword);
+      } else if (config.type === "pansou") {
+        items = await searchPanSou(config, keyword);
+      } else {
+        items = await searchHtml(config, keyword);
+      }
 
       for (const item of items) {
         item.url = await encryptUrl(item.url);
@@ -250,7 +362,7 @@ export async function* webSearch(
 
       for (const item of items) yield item;
     } catch (err: any) {
-      console.error(err.message || "搜索失败");
+      console.error(err || "搜索失败");
       // 单个线路失败不影响其他线路
     }
   }

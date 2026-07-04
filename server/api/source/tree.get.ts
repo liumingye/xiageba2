@@ -135,7 +135,7 @@ async function walkQuarkUC(
   let page = 1;
   const pageSize = 200;
 
-  while (page <= 100) {
+  while (page <= 5) {
     const res = await client.shareApi.detail(pwdId, stoken, {
       pdir_fid: pdirFid,
       _page: page,
@@ -159,7 +159,7 @@ async function walkQuarkUC(
     lines.push(`${prefix}${connector}${item.file_name}`);
 
     if (item.file_type === 0) {
-      const extension = isLast ? "   " : "│  ";
+      const extension = isLast ? "  " : "│  ";
       await walkQuarkUC(
         client,
         pwdId,
@@ -235,7 +235,7 @@ async function walkBaidu(
     lines.push(`${prefix}${connector}${item.server_filename}`);
 
     if (item.isdir) {
-      const extension = isLast ? "   " : "│  ";
+      const extension = isLast ? "  " : "│  ";
       await walkBaidu(
         client,
         shareParam,
@@ -270,7 +270,7 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
   const detail = await client.shareApi.getShare({
     shareId: parsed.fid,
     passCode: parsed.passcode,
-    limit: 1000,
+    limit: 200,
   });
 
   if (detail.files.length === 0) {
@@ -309,12 +309,12 @@ async function walkXunlei(
     lines.push(`${prefix}${connector}${item.name}`);
 
     if (item.is_dir) {
-      const extension = isLast ? "   " : "│  ";
+      const extension = isLast ? "  " : "│  ";
       const res = await client.shareApi.detail({
         shareId,
         passCodeToken,
         parentId: item.id,
-        limit: 1000,
+        limit: 200,
       });
 
       if (res.files.length > 0) {

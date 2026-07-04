@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { Plus, Trash2, Edit3, Webhook, Globe, Search, X } from "@lucide/vue";
@@ -10,7 +10,7 @@ import AdminPagination from "~/components/admin/AdminPagination.vue";
 interface ApiItem {
   id: string;
   name: string;
-  type: "api" | "html";
+  type: "api" | "html" | "pansou";
   url: string;
   method: string;
   headers: string;
@@ -44,7 +44,7 @@ const isEdit = ref(false);
 const editId = ref("");
 const form = ref({
   name: "",
-  type: "api" as "api" | "html",
+  type: "api" as "api" | "html" | "pansou",
   url: "",
   method: "GET",
   headers: "{}",
@@ -60,6 +60,34 @@ const form = ref({
   status: 1,
 });
 const error = ref("");
+
+const parseFixedParams = () => {
+  try {
+    return JSON.parse(form.value.fixed_params || "{}") as Record<string, string>;
+  } catch {
+    return {} as Record<string, string>;
+  }
+};
+
+const panSouToken = computed({
+  get: () => parseFixedParams().token || "",
+  set: (val: string) => {
+    const params = parseFixedParams();
+    if (val) params.token = val;
+    else delete params.token;
+    form.value.fixed_params = JSON.stringify(params);
+  },
+});
+
+const panSouImageProxy = computed({
+  get: () => parseFixedParams().image_proxy || "",
+  set: (val: string) => {
+    const params = parseFixedParams();
+    if (val) params.image_proxy = val;
+    else delete params.image_proxy;
+    form.value.fixed_params = JSON.stringify(params);
+  },
+});
 
 const loadApis = async () => {
   let url = `/api/admin/apiList?page=${currentPage.value}&pageSize=20`;
@@ -214,7 +242,11 @@ const search = async () => {
   await goPage(1);
 };
 
-const typeLabel = (type: string) => (type === "api" ? "API接口" : "网页爬虫");
+const typeLabel = (type: string) => {
+  if (type === "api") return "API接口";
+  if (type === "pansou") return "PanSou";
+  return "网页爬虫";
+};
 const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 </script>
 
@@ -279,11 +311,13 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   :class="
                     item.type === 'api'
                       ? 'bg-blue-500/20 text-blue-400'
-                      : 'bg-green-500/20 text-green-400'
+                      : item.type === 'pansou'
+                        ? 'bg-violet-500/20 text-violet-400'
+                        : 'bg-green-500/20 text-green-400'
                   "
                 >
                   <component
-                    :is="item.type === 'api' ? Webhook : Globe"
+                    :is="item.type === 'html' ? Globe : Webhook"
                     class="w-3 h-3"
                   />
                   {{ typeLabel(item.type) }}
@@ -389,6 +423,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 <label class="block text-gray-400 text-sm mb-1">类型</label>
                 <select v-model="form.type" class="input-search w-full">
                   <option value="api">API接口</option>
+                  <option value="pansou">PanSou</option>
                   <option value="html">网页爬虫</option>
                 </select>
               </div>
@@ -396,7 +431,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 
             <div>
               <label class="block text-gray-400 text-sm mb-1">{{
-                form.type === "api" ? "接口地址" : "目标网址"
+                form.type === "html" ? "目标网址" : "接口地址"
               }}</label>
               <input
                 v-model="form.url"
@@ -406,7 +441,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
               />
             </div>
 
-            <template v-if="form.type === 'api'">
+            <template v-if="form.type === 'api' || form.type === 'pansou'">
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-gray-400 text-sm mb-1"
@@ -429,36 +464,64 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   />
                 </div>
               </div>
-              <div>
-                <label class="block text-gray-400 text-sm mb-1"
-                  >请求头 (JSON)</label
-                >
-                <textarea
-                  v-model="form.headers"
-                  rows="3"
-                  class="input-search w-full font-mono text-xs resize-none"
-                ></textarea>
-              </div>
-              <div>
-                <label class="block text-gray-400 text-sm mb-1"
-                  >接口参数 (JSON)</label
-                >
-                <textarea
-                  v-model="form.fixed_params"
-                  rows="4"
-                  class="input-search w-full font-mono text-xs resize-none"
-                ></textarea>
-              </div>
-              <div>
-                <label class="block text-gray-400 text-sm mb-1"
-                  >字段映射 (JSON)</label
-                >
-                <textarea
-                  v-model="form.field_map"
-                  rows="5"
-                  class="input-search w-full font-mono text-xs resize-none"
-                ></textarea>
-              </div>
+
+              <template v-if="form.type === 'pansou'">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1"
+                    >认证令牌（可选）</label
+                  >
+                  <input
+                    v-model="panSouToken"
+                    type="text"
+                    class="input-search w-full font-mono text-xs"
+                    placeholder="启用认证时填写，自动附加 Bearer"
+                  />
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1"
+                    >图片加速域名（可选）</label
+                  >
+                  <input
+                    v-model="panSouImageProxy"
+                    type="text"
+                    class="input-search w-full font-mono text-xs"
+                    placeholder="留空则直接使用原图，如 https://proxyd.picpi.top/"
+                  />
+                </div>
+              </template>
+
+              <template v-if="form.type === 'api'">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1"
+                    >请求头 (JSON)</label
+                  >
+                  <textarea
+                    v-model="form.headers"
+                    rows="3"
+                    class="input-search w-full font-mono text-xs resize-none"
+                  ></textarea>
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1"
+                    >接口参数 (JSON)</label
+                  >
+                  <textarea
+                    v-model="form.fixed_params"
+                    rows="4"
+                    class="input-search w-full font-mono text-xs resize-none"
+                  ></textarea>
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-1"
+                    >字段映射 (JSON)</label
+                  >
+                  <textarea
+                    v-model="form.field_map"
+                    rows="5"
+                    class="input-search w-full font-mono text-xs resize-none"
+                  ></textarea>
+                </div>
+              </template>
             </template>
 
             <template v-else>

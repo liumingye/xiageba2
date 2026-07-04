@@ -12,7 +12,7 @@ const parseJson = (value: any, fallback = {}) => {
 
 const normalizeBody = (body: any) => ({
   name: String(body.name || "").trim(),
-  type: body.type === "html" ? "html" : "api",
+  type: ["api", "html", "pansou"].includes(body.type) ? body.type : "api",
   url: String(body.url || "").trim(),
   method: String(body.method || "GET").toUpperCase(),
   headers: JSON.stringify(parseJson(body.headers)),

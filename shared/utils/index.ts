@@ -1,7 +1,6 @@
 export const getStorageType = (url: string) => {
   try {
     const urlObj = new URL(url || "");
-    console.log(urlObj);
     if (urlObj.hostname === "pan.quark.cn") return "quark";
     if (urlObj.hostname === "pan.baidu.com") return "baidu";
     if (urlObj.hostname === "pan.uc.cn" || urlObj.hostname === "drive.uc.cn")

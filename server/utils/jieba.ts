@@ -12,8 +12,6 @@ const cut = (input: string): string[] => {
   const jiebaTokens = jieba.cutForSearch(text, true);
   const groups: string[] = [];
 
-  console.log(jiebaTokens);
-
   for (const token of jiebaTokens) {
     let t = token.trim();
     // // 过滤不可见特殊字符
@@ -23,7 +21,6 @@ const cut = (input: string): string[] => {
     if (t.trim() === "") continue;
     groups.push(`"${t}"`);
   }
-  console.log(groups);
 
   return groups;
 };

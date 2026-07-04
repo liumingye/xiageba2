@@ -495,7 +495,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
           @click="switchType('resource')"
         >
           <FolderOpen class="w-4 h-4" />
-          搜资源
+          搜资源Beta
         </button>
       </div>
 
@@ -623,7 +623,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       {{ item.title }}
                     </h3>
                     <div
-                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
                     >
                       <img
                         v-if="item.type !== 'other'"
@@ -696,7 +696,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       {{ item.title }}
                     </h3>
                     <div
-                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
                     >
                       <img
                         v-if="item.type !== 'other'"

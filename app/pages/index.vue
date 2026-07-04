@@ -591,6 +591,9 @@ const getPic = (url: string) => {
           v-if="doubanList.length > 0 && doubanPage < doubanPageCount"
           @infinite-load="loadMoreDouban"
         />
+        <div v-else class="text-center py-4 text-sm text-gray-500">
+          — 已经到底了 —
+        </div>
       </section>
 
       <Qrcode />
