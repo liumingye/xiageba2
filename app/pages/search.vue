@@ -23,6 +23,7 @@ interface WebSearchResult {
   url: string;
   source: string;
   image?: string;
+  type: string;
 }
 
 interface PaginatedResponse<T = any> {
@@ -188,7 +189,7 @@ const {
 } = await useFetch<PaginatedResponse>(
   () => {
     const base = isMusic.value ? "/api/music/search" : "/api/source/search";
-    return `${base}?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}&pageSize=20`;
+    return `${base}?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}&pageSize=10`;
   },
   {
     key: () =>
@@ -614,8 +615,13 @@ const copyUrl = (url: string) => {
                       {{ item.title }}
                     </h3>
                     <div
-                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
+                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
                     >
+                      <img
+                        v-if="item.type !== 'other'"
+                        :src="`/img/pan/${item.type}.png`"
+                        class="w-4 h-4 mr-1"
+                      />
                       {{ getTypeName(item.type) }}
                     </div>
                   </div>
@@ -699,8 +705,13 @@ const copyUrl = (url: string) => {
                       {{ item.title }}
                     </h3>
                     <div
-                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
+                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
                     >
+                      <img
+                        v-if="item.type !== 'other'"
+                        :src="`/img/pan/${item.type}.png`"
+                        class="w-4 h-4 mr-1"
+                      />
                       {{ getTypeName(item.type) }}
                     </div>
                   </div>
