@@ -41,10 +41,58 @@ export const setConfigCache = (configs: { key: string; value: string }[]) => {
 };
 
 /**
- * 清空配置缓存（更新数据时调用）
+ * 清空配置缓存
  */
 export const clearConfigCache = () => {
   memoryCache = null;
+};
+
+/**
+ * 设置单个配置值
+ */
+export const setConfigValue = async (key: string, value: string) => {
+  await prisma.config.upsert({
+    where: { key },
+    update: { value: String(value || "") },
+    create: { key, value: String(value || "") },
+  });
+
+  const newCached = getConfigCache();
+  if (newCached) {
+    newCached.set(key, value);
+  }
+  return { success: true };
+};
+
+/**
+ * 设置多个配置值
+ */
+export const setConfigValues = async (
+  configs: { key: string; value: string }[],
+) => {
+  const upserts = [];
+  for (const config of configs) {
+    if (config.value !== undefined) {
+      upserts.push(
+        prisma.config.upsert({
+          where: { key: config.key },
+          update: { value: String(config.value || "") },
+          create: { key: config.key, value: String(config.value || "") },
+        }),
+      );
+    }
+  }
+  if (upserts.length > 0) {
+    await Promise.all(upserts);
+
+    const newCached = getConfigCache();
+    if (newCached) {
+      for (const c of configs) {
+        newCached.set(c.key, c.value);
+      }
+    }
+  }
+  return { success: true };
 };
 
 /**

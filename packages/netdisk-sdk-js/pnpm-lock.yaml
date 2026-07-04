@@ -121,6 +121,31 @@ importers:
         specifier: ^2.16.4
         version: 2.16.4(@swc/helpers@0.5.23)
 
+  packages/xunlei-sdk:
+    dependencies:
+      '@netdisk-sdk/utils':
+        specifier: workspace:^
+        version: link:../utils
+      error:
+        specifier: ^10.4.0
+        version: 10.4.0
+      superagent:
+        specifier: ^10.3.0
+        version: 10.3.0
+    devDependencies:
+      '@types/error':
+        specifier: workspace:^
+        version: link:../../types/error
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
+      '@types/superagent':
+        specifier: ^8.1.10
+        version: 8.1.10
+      parcel:
+        specifier: ^2.16.4
+        version: 2.16.4(@swc/helpers@0.5.23)
+
   types/error:
     devDependencies:
       error:

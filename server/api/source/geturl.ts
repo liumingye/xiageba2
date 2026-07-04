@@ -3,6 +3,7 @@ import { getConfigValues } from "#server/lib/configCache";
 import { decryptUrl } from "#server/lib/crypto";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
+import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -36,6 +37,11 @@ export function parseShareUrl(url: string): ParsedShare {
   match = url.match(/pan\.baidu\.com\/s\/([^/?#]+)/);
   if (match && match[1])
     return { type: "baidu", fid: match[1], passcode: extractPwd(url), url };
+
+  // 迅雷: https://pan.xunlei.com/s/xxxx?pwd=yyyy
+  match = url.match(/pan\.xunlei\.com\/s\/([^/?#]+)/);
+  if (match && match[1])
+    return { type: "xunlei", fid: match[1], passcode: extractPwd(url), url };
 
   return { type: "unknown", fid: "", passcode: "", url };
 }
@@ -213,6 +219,85 @@ async function transferBaidu(
   };
 }
 
+/**
+ * 迅雷网盘转存：获取分享详情 → 转存到临时目录 → 等待任务 → 创建新分享
+ */
+async function transferXunlei(
+  shareId: string,
+  passCode: string,
+): Promise<{ shareUrl: string; fids: string[] }> {
+  const config = await getConfigValues([
+    "xunlei_refresh_token",
+    "xunlei_temp_dir",
+  ]);
+  const refreshToken = config.xunlei_refresh_token;
+  const tempDirId = config.xunlei_temp_dir || "";
+
+  if (!refreshToken) {
+    throw createError({
+      statusCode: 500,
+      message: "未配置迅雷网盘 Cookie（refresh_token），请先在账号管理中配置",
+    });
+  }
+
+  const client = new XunleiClient({ refreshToken });
+
+  const detail = await client.shareApi.getShare({ shareId, passCode });
+
+  console.log(detail);
+
+  if (detail.files.length === 0) {
+    throw createError({
+      statusCode: 500,
+      message: "分享内容为空",
+    });
+  }
+
+  const restoreResult = await client.shareApi.restore({
+    shareId,
+    passCodeToken: detail.passCodeToken,
+    parentId: tempDirId,
+    fileIds: detail.files.map((file) => file.id),
+  });
+
+  const task = await client.shareApi.waitTask(restoreResult.restore_task_id, {
+    maxAttempts: 30,
+    intervalMs: 1000,
+  });
+
+  const fileIds = client.shareApi.extractTraceFileIds(
+    task.params?.trace_file_ids,
+  );
+
+  
+  if (fileIds.length === 0) {
+    throw createError({
+      statusCode: 500,
+      message: "xunlei task has no trace_file_ids",
+    });
+  }
+
+  const shareResult = await client.shareApi.createShare({
+    fileIds,
+    title: detail.title,
+    expirationDays: 7,
+  });
+
+  if (!shareResult.share_url) {
+    throw createError({
+      statusCode: 500,
+      message: "获取分享链接失败",
+    });
+  }
+
+  return {
+    shareUrl:
+      shareResult.share_url +
+      (shareResult.pass_code ? "?pwd=" + shareResult.pass_code : ""),
+    fids: fileIds,
+  };
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   let inputUrl = query.url as string | undefined;
@@ -278,6 +363,10 @@ export default defineEventHandler(async (event) => {
       _fid = JSON.stringify(data.fids);
     } else if (type === "baidu") {
       const data = await transferBaidu(sharePageUrl);
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
+    } else if (type === "xunlei") {
+      const data = await transferXunlei(fid, passcode);
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else {

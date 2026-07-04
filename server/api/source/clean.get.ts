@@ -3,6 +3,7 @@ import { getConfigValues } from "#server/lib/configCache";
 import { getStorageType } from "#server/utils/source";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
+import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 
 const THIRTY_MINUTES = 30 * 60 * 1000;
 
@@ -25,6 +26,7 @@ export default defineEventHandler(async (event) => {
   let fidsQuark: string[] = [];
   let fidsUc: string[] = [];
   let fidsBaidu: string[] = [];
+  let fidsXunlei: string[] = [];
 
   for (const source of sources) {
     const type = getStorageType(source.url);
@@ -37,6 +39,8 @@ export default defineEventHandler(async (event) => {
       fidsUc.push(source.fid);
     } else if (type === "baidu") {
       fidsBaidu.push(source.fid);
+    } else if (type === "xunlei") {
+      fidsXunlei.push(source.fid);
     }
   }
 
@@ -50,6 +54,9 @@ export default defineEventHandler(async (event) => {
     }
     if (fidsBaidu.length > 0) {
       await deleteBaiduResource(fidsBaidu);
+    }
+    if (fidsXunlei.length > 0) {
+      await deleteXunleiResource(fidsXunlei);
     }
   } catch (e: any) {
     results.errors.push(`${e.message || "删除网盘资源失败"}`);
@@ -122,6 +129,25 @@ async function deleteBaiduResource(fids: string[]): Promise<string[]> {
   await client.fsApi.filemanager("delete", {
     filelist: _fids,
   } as any);
+
+  return _fids;
+}
+
+async function deleteXunleiResource(fids: string[]): Promise<string[]> {
+  const config = await getConfigValues([
+    "xunlei_refresh_token",
+    "xunlei_temp_dir",
+  ]);
+  const refreshToken = config.xunlei_refresh_token;
+  if (!refreshToken) {
+    throw new Error("未配置 xunlei 网盘 Refresh Token");
+  }
+
+  const client = new XunleiClient({ refreshToken });
+
+  const _fids = fids.flatMap((item) => JSON.parse(item));
+
+  await client.fsApi.delete(_fids);
 
   return _fids;
 }

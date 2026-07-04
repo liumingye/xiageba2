@@ -16,6 +16,7 @@
     "@lucide/vue": "^1.22.0",
     "@netdisk-sdk/baidu-sdk": "workspace:*",
     "@netdisk-sdk/quarkuc-sdk": "workspace:*",
+    "@netdisk-sdk/xunlei-sdk": "workspace:*",
     "@node-rs/jieba": "^2.0.1",
     "@pinia/nuxt": "^0.11.3",
     "@prisma/adapter-pg": "^7.8.0",

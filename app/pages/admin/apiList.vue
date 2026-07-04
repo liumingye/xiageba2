@@ -258,7 +258,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
         <table class="table-auto w-full text-sm text-left">
           <thead class="bg-gray-800 text-gray-400">
             <tr>
-              <th class="px-4 py-3 w-16">类型</th>
+              <th class="px-4 py-3 w-32">类型</th>
               <th class="px-4 py-3">线路名称</th>
               <th class="px-4 py-3">地址</th>
               <th class="px-4 py-3 w-20">数量</th>

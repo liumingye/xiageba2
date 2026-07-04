@@ -491,77 +491,6 @@ const copyUrl = (url: string) => {
       </div>
 
       <main>
-        <section
-          v-if="!isMusic && searchKeyword && currentPage === 1"
-          class="mt-8"
-        >
-          <div class="flex items-center gap-2 mb-3">
-            <Globe class="w-4 h-4 text-primary-400" />
-            <h2 class="text-gray-500 text-sm">全网搜</h2>
-          </div>
-
-          <div
-            v-if="webSearching && webSearchResults.length === 0"
-            class="card p-6 text-center"
-          >
-            <Loader2
-              class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2"
-            />
-            <p class="text-gray-400 text-sm">正在全网搜索中...</p>
-          </div>
-
-          <div
-            v-else-if="webSearchError && webSearchResults.length === 0"
-            class="card p-5 text-center"
-          >
-            <p class="text-red-400 text-sm">{{ webSearchError }}</p>
-          </div>
-
-          <div v-if="webSearchResults.length > 0" class="space-y-2">
-            <article
-              v-for="(item, idx) in webSearchResults"
-              :key="idx"
-              class="card p-3"
-            >
-              <div
-                class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
-              >
-                <h3 class="text-sm font-medium text-white truncate mb-1">
-                  {{ item.title }}
-                </h3>
-                <div
-                  class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
-                >
-                  {{ getTypeName(item.type) }}
-                </div>
-              </div>
-              <div
-                class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
-              >
-                <span class="text-xs text-gray-500 flex items-center gap-1"
-                  >来源: {{ item.source }}</span
-                >
-                <div class="flex items-center gap-2">
-                  <button
-                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                    @click.stop="openTreeModal({ item, type: 'url' })"
-                  >
-                    <Folder class="w-3 h-3" />
-                    目录
-                  </button>
-                  <button
-                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                    @click.stop="openModal({ item, type: 'url' })"
-                  >
-                    <Download class="w-3 h-3" />
-                    获取链接
-                  </button>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-
         <div
           v-if="errorInfo && searchKeyword"
           class="card p-5 text-center mb-6"
@@ -615,8 +544,8 @@ const copyUrl = (url: string) => {
           </article>
         </div>
 
-        <div v-else-if="searchKeyword && results.length > 0" class="space-y-2">
-          <h2 class="text-gray-500 text-sm mb-3">
+        <div v-else-if="searchKeyword" class="space-y-2">
+          <h2 v-if="results.length > 0" class="text-gray-500 text-sm mb-3">
             搜索"<span class="text-primary-400">{{ searchKeyword }}</span
             >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
             <span v-if="totalPages > 1" class="ml-2"
@@ -659,72 +588,168 @@ const copyUrl = (url: string) => {
           </template>
 
           <template v-else>
-            <div v-if="currentPage === 1" class="flex items-center gap-2 !my-3">
-              <Folder class="w-4 h-4 text-primary-400" />
-              <h2 class="text-gray-500 text-sm">本地资源</h2>
-            </div>
-
-            <article
-              v-for="item in results as SourceItem[]"
-              :key="item.id"
-              class="card p-3 hover:border-primary-500/50 transition-colors"
-              role="article"
-            >
-              <div class="flex flex-col">
-                <div
-                  class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
-                >
-                  <h3
-                    class="text-white truncate hover:text-primary-400 cursor-pointer"
-                    @click="router.push(`/source/${item.id}`)"
-                  >
-                    {{ item.title }}
-                  </h3>
-                  <div
-                    class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
-                  >
-                    {{ getTypeName(item.type) }}
-                  </div>
-                </div>
-                <template v-if="item.menu">
-                  <div class="text-sm mb-2 text-gray-300 font-bold">
-                    文件内容:
-                  </div>
-                  <pre
-                    class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
-                    >{{ item.menu }}</pre
-                  >
-                </template>
-              </div>
+            <template v-if="results.length > 0">
               <div
-                class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
+                v-if="currentPage === 1"
+                class="flex items-center gap-2 !my-3"
               >
-                <span class="text-xs text-gray-500 flex items-center gap-1">
-                  <Calendar class="w-3 h-3" />
-                  {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
-                </span>
-                <div class="flex items-center gap-2">
-                  <button
-                    v-if="
-                      !item.menu && ['quark', 'baidu', 'uc'].includes(item.type)
-                    "
-                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                    @click.stop="openTreeModal({ item, type: 'id' })"
-                  >
-                    <Folder class="w-3 h-3" />
-                    目录
-                  </button>
-                  <button
-                    class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                    @click.stop="openModal({ item, type: 'id' })"
-                  >
-                    <Download class="w-3 h-3" />
-                    获取链接
-                  </button>
-                </div>
+                <Folder class="w-4 h-4 text-primary-400" />
+                <h2 class="text-gray-500 text-sm">本地资源</h2>
               </div>
-            </article>
+
+              <article
+                v-for="item in results as SourceItem[]"
+                :key="item.id"
+                class="card p-3 hover:border-primary-500/50 transition-colors"
+                role="article"
+              >
+                <div class="flex flex-col">
+                  <div
+                    class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
+                  >
+                    <h3
+                      class="text-white truncate hover:text-primary-400 cursor-pointer"
+                      @click="router.push(`/source/${item.id}`)"
+                    >
+                      {{ item.title }}
+                    </h3>
+                    <div
+                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
+                    >
+                      {{ getTypeName(item.type) }}
+                    </div>
+                  </div>
+                  <template v-if="item.menu">
+                    <div class="text-sm mb-2 text-gray-300 font-bold">
+                      文件内容:
+                    </div>
+                    <pre
+                      class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
+                      >{{ item.menu }}</pre
+                    >
+                  </template>
+                </div>
+                <div
+                  class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
+                >
+                  <span class="text-xs text-gray-500 flex items-center gap-1">
+                    <Calendar class="w-3 h-3" />
+                    {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <button
+                      v-if="
+                        !item.menu &&
+                        ['quark', 'baidu', 'uc'].includes(item.type)
+                      "
+                      class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                      @click.stop="openTreeModal({ item, type: 'id' })"
+                    >
+                      <Folder class="w-3 h-3" />
+                      目录
+                    </button>
+                    <button
+                      class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                      @click.stop="openModal({ item, type: 'id' })"
+                    >
+                      <Download class="w-3 h-3" />
+                      获取链接
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </template>
+
+            <section v-if="currentPage === 1" class="mt-8">
+              <div
+                v-if="webSearchResults.length !== 0 || webSearching"
+                class="flex items-center gap-2 mb-3"
+              >
+                <Globe class="w-4 h-4 text-primary-400" />
+                <h2 class="text-gray-500 text-sm">全网搜</h2>
+              </div>
+
+              <div
+                v-if="webSearching && webSearchResults.length === 0"
+                class="card p-6 text-center"
+              >
+                <Loader2
+                  class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2"
+                />
+                <p class="text-gray-400 text-sm">正在全网搜索中...</p>
+              </div>
+
+              <div
+                v-else-if="webSearchError && webSearchResults.length === 0"
+                class="card p-5 text-center"
+              >
+                <p class="text-red-400 text-sm">{{ webSearchError }}</p>
+              </div>
+
+              <div v-if="webSearchResults.length > 0" class="space-y-2">
+                <article
+                  v-for="(item, idx) in webSearchResults"
+                  :key="idx"
+                  class="card p-3"
+                >
+                  <div
+                    class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
+                  >
+                    <h3 class="text-sm font-medium text-white truncate mb-1">
+                      {{ item.title }}
+                    </h3>
+                    <div
+                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start"
+                    >
+                      {{ getTypeName(item.type) }}
+                    </div>
+                  </div>
+                  <div
+                    class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
+                  >
+                    <span class="text-xs text-gray-500 flex items-center gap-1"
+                      >来源: {{ item.source }}</span
+                    >
+                    <div class="flex items-center gap-2">
+                      <button
+                        class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                        @click.stop="openTreeModal({ item, type: 'url' })"
+                      >
+                        <Folder class="w-3 h-3" />
+                        目录
+                      </button>
+                      <button
+                        class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
+                        @click.stop="openModal({ item, type: 'url' })"
+                      >
+                        <Download class="w-3 h-3" />
+                        获取链接
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </section>
           </template>
+
+          <div
+            v-if="
+              isMusic
+                ? !results.length
+                : !webSearching && !webSearchResults.length && !results.length
+            "
+            class="text-center py-20"
+          >
+            <div
+              class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+              aria-hidden="true"
+            >
+              <CircleSlash />
+            </div>
+            <p class="text-gray-500">
+              {{ isMusic ? "本地搜索暂无结果" : "全网搜索暂无结果" }}
+            </p>
+          </div>
 
           <div
             v-if="totalPages > 1"
@@ -769,17 +794,13 @@ const copyUrl = (url: string) => {
           </div>
         </div>
 
-        <div v-else-if="searchKeyword" class="text-center py-20">
+        <div v-else class="text-center py-20">
           <div
             class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
             aria-hidden="true"
           >
             <CircleSlash />
           </div>
-          <p class="text-gray-500">本地搜索暂无结果</p>
-        </div>
-
-        <div v-else class="text-center py-20">
           <p class="text-gray-500">请输入搜索关键词</p>
         </div>
       </main>
