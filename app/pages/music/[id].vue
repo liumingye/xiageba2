@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useEventListener } from "@vueuse/core";
 import { Download, Play, Pause, Disc3 } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
@@ -127,6 +128,15 @@ const showDownloadModal = ref(false);
 const isPlaying = ref(false);
 const audioElement = ref<HTMLAudioElement | null>(null);
 
+useEventListener(audioElement, "ended", () => {
+  isPlaying.value = false;
+});
+
+useEventListener(audioElement, "error", () => {
+  isPlaying.value = false;
+  alert("播放失败，请检查网络或播放地址");
+});
+
 onUnmounted(() => {
   if (audioElement.value) {
     audioElement.value.pause();
@@ -150,13 +160,6 @@ const togglePlay = () => {
     if (!audioElement.value) {
       audioElement.value = new Audio(music.value.playUrl);
       audioElement.value.preload = "metadata";
-      audioElement.value.addEventListener("ended", () => {
-        isPlaying.value = false;
-      });
-      audioElement.value.addEventListener("error", () => {
-        isPlaying.value = false;
-        alert("播放失败，请检查网络或播放地址");
-      });
     }
     audioElement.value.play();
     isPlaying.value = true;

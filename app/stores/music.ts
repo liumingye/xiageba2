@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { useLocalStorage } from "@vueuse/core";
 
 export interface DownloadOption {
   quality: string;
@@ -18,7 +19,7 @@ export interface Music {
 }
 
 export const useMusicStore = defineStore("music", () => {
-  const searchHistory = ref<string[]>([]);
+  const searchHistory = useLocalStorage<string[]>("searchHistory", []);
   const currentMusic = ref<Music | null>(null);
 
   const addSearchHistory = (keyword: string) => {
@@ -31,19 +32,14 @@ export const useMusicStore = defineStore("music", () => {
     if (searchHistory.value.length > 20) {
       searchHistory.value.pop();
     }
-    localStorage.setItem("searchHistory", JSON.stringify(searchHistory.value));
   };
 
   const loadSearchHistory = () => {
-    const saved = localStorage.getItem("searchHistory");
-    if (saved) {
-      searchHistory.value = JSON.parse(saved);
-    }
+    // useLocalStorage 已在初始化时读取
   };
 
   const clearSearchHistory = () => {
     searchHistory.value = [];
-    localStorage.removeItem("searchHistory");
   };
 
   const setCurrentMusic = (music: Music) => {

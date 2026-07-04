@@ -36,9 +36,11 @@ const CATEGORY_NAMES: Record<string, string> = {
   movie_filter: "电影筛选",
   tv_filter: "电视剧筛选",
   show_filter: "综艺筛选",
+  short_drama: "选短剧",
 };
 
 const CLASSES = [
+  { type_id: "short_drama", type_name: "选短剧" },
   { type_id: "movie", type_name: "选电影" },
   { type_id: "tv", type_name: "选剧集" },
   { type_id: "show", type_name: "选综艺" },
@@ -418,6 +420,20 @@ const FILTERS: Record<
       ],
     },
   ],
+  short_drama: [
+    {
+      key: "category",
+      name: "类型",
+      init: "1287",
+      value: [
+        { name: "甜宠", value: "1287" },
+        { name: "逆袭", value: "1288" },
+        { name: "热血", value: "1289" },
+        { name: "现代", value: "1290" },
+        { name: "古代", value: "1291" },
+      ],
+    },
+  ],
 };
 
 function buildDoubanSubjectLink(vodId: string): string {
@@ -567,6 +583,93 @@ async function fetchCategory(
   };
 }
 
+const SHORT_DRAMA_HOST = "http://read.api.duodutek.com";
+const SHORT_DRAMA_COMMON_PARAMS = {
+  productId: "2a8c14d1-72e7-498b-af23-381028eb47c0",
+  vestId: "2be070e0-c824-4d0e-a67a-8f688890cadb",
+  channel: "oppo19",
+  osType: "android",
+  version: "20",
+  token: "202509271001001446030204698626",
+};
+
+function text(v: unknown): string {
+  return String(v == null ? "" : v).trim();
+}
+
+async function fetchShortDrama(
+  categoryId: string,
+  page: number,
+  filters: Record<string, string>,
+) {
+  const resourceId = filters.category || "1287";
+  const pageSize = 10;
+  const url = `${SHORT_DRAMA_HOST}/novel-api/app/pageModel/getResourceById?${new URLSearchParams(
+    {
+      ...SHORT_DRAMA_COMMON_PARAMS,
+      resourceId,
+      pageNum: String(page),
+      pageSize: String(pageSize),
+    },
+  ).toString()}`;
+
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.87 Safari/537.36",
+    },
+  });
+
+  if (!res.ok) {
+    throw createError({
+      statusCode: 502,
+      message: `短剧接口请求失败: ${res.status}`,
+    });
+  }
+
+  const json = (await res.json()) as {
+    data?: {
+      datalist?: Array<{
+        id?: string;
+        name?: string;
+        introduction?: string;
+        icon?: string;
+        heat?: string;
+      }>;
+      total?: string | number;
+      totalCount?: string | number;
+    };
+    total?: string | number;
+  };
+
+  const list = (json?.data?.datalist || []).map((v) => ({
+    vod_id: `${text(v.id)}@@${text(v.name)}@@${text(v.introduction)}`,
+    link: "",
+    vod_name: text(v.name),
+    search: true,
+    vod_pic: text(v.icon),
+    type_id: categoryId,
+    type_name: CATEGORY_NAMES[categoryId] || "未知分类",
+    vod_remarks: `${text(v.heat)}万播放`,
+    vod_year: "",
+    vod_douban_score: "",
+    vod_subtitle: text(v.introduction),
+  }));
+
+  const total =
+    Number(json?.data?.total) ||
+    Number(json?.data?.totalCount) ||
+    Number(json?.total) ||
+    list.length;
+
+  return {
+    page,
+    pagecount: 999,
+    total,
+    list,
+  };
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const categoryId = (query.categoryId as string) || "";
@@ -595,6 +698,10 @@ export default defineEventHandler(async (event) => {
       pagecount: 0,
       total: 0,
     };
+  }
+
+  if (categoryId === "short_drama") {
+    return fetchShortDrama(categoryId, page, filters);
   }
 
   return fetchCategory(categoryId, page, filters);

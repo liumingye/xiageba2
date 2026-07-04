@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getStorageType } from "#shared/utils";
 import {
   CircleSlash,
   AlertTriangle,
@@ -16,7 +17,8 @@ import {
   Loader2,
   Folder,
 } from "@lucide/vue";
-import { getTypeName, copyToClipboard } from "~/utils/index";
+import { getTypeName } from "~/utils/index";
+import { useClipboard, useMediaQuery } from "@vueuse/core";
 
 interface WebSearchResult {
   title: string;
@@ -219,8 +221,7 @@ const errorInfo = computed<ErrorInfo | null>(() => {
   const code = err?.statusCode || err?.status || err?.response?.status || 0;
 
   if (code === 429) {
-    const retryAfter =
-      (err?.data?.retryAfter as number | undefined) || 15;
+    const retryAfter = (err?.data?.retryAfter as number | undefined) || 15;
     return {
       type: "rate-limit",
       title: "搜索请求过于频繁",
@@ -451,11 +452,18 @@ watch([searchKeyword, searchType], () => {
 });
 
 const { success, error: showError } = useToast();
+const { copy } = useClipboard();
 
-const copyUrl = (url: string) => {
-  copyToClipboard(url);
-  success("复制成功");
+const copyUrl = async (url: string) => {
+  try {
+    await copy(url);
+    success("复制成功");
+  } catch {
+    showError("复制失败");
+  }
 };
+
+const isMobile = useMediaQuery("(max-width: 768px)");
 </script>
 
 <template>
@@ -675,23 +683,6 @@ const copyUrl = (url: string) => {
                 <h2 class="text-gray-500 text-sm">全网搜</h2>
               </div>
 
-              <div
-                v-if="webSearching && webSearchResults.length === 0"
-                class="card p-6 text-center"
-              >
-                <Loader2
-                  class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2"
-                />
-                <p class="text-gray-400 text-sm">正在全网搜索中...</p>
-              </div>
-
-              <div
-                v-else-if="webSearchError && webSearchResults.length === 0"
-                class="card p-5 text-center"
-              >
-                <p class="text-red-400 text-sm">{{ webSearchError }}</p>
-              </div>
-
               <template v-if="webSearchResults.length > 0">
                 <article
                   v-for="(item, idx) in webSearchResults"
@@ -743,6 +734,20 @@ const copyUrl = (url: string) => {
                   </div>
                 </article>
               </template>
+
+              <div v-if="webSearching" class="card p-6 text-center">
+                <Loader2
+                  class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2"
+                />
+                <p class="text-gray-400 text-sm">正在全网搜索中...</p>
+              </div>
+
+              <div
+                v-else-if="webSearchError && webSearchResults.length === 0"
+                class="card p-5 text-center"
+              >
+                <p class="text-red-400 text-sm">{{ webSearchError }}</p>
+              </div>
             </template>
           </template>
 
@@ -824,14 +829,14 @@ const copyUrl = (url: string) => {
       <SiteFooter />
 
       <Teleport to="body">
-        <Transition name="fade">
+        <Transition name="modal">
           <div
             v-if="showModal"
             class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
             @click.self="closeModal"
           >
             <div
-              class="bg-dark-300 rounded-xl max-w-md w-full border border-gray-700 shadow-2xl"
+              class="modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl"
             >
               <div
                 class="flex items-center justify-between p-4 border-b border-gray-800"
@@ -863,24 +868,39 @@ const copyUrl = (url: string) => {
                 <div v-else-if="modalUrl" class="space-y-4">
                   <div class="bg-gray-800 rounded-lg p-4">
                     <div class="flex items-center justify-between mb-2">
-                      <span class="text-xs text-gray-500">下载链接</span>
-                      <button
-                        class="text-xs text-primary-400 hover:text-primary-300"
-                        @click="copyUrl(modalUrl)"
-                      >
-                        复制链接
-                      </button>
+                      <span class="text-gray-500">下载链接</span>
+                      <div>
+                        <button
+                          class="text-sm px-2 py-2 border border-primary-400 hover:border-primary-300 rounded-md transition-colors"
+                          @click="copyUrl(modalUrl)"
+                        >
+                          复制链接
+                        </button>
+                        <a
+                          v-if="!isMobile"
+                          class="text-sm ml-2 px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition-colors"
+                          :href="modalUrl"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          打开链接
+                        </a>
+                      </div>
                     </div>
                     <p class="text-sm text-gray-300 break-all font-mono">
                       {{ modalUrl }}
                     </p>
                   </div>
                   <div class="flex flex-col items-center gap-4">
+                    <span
+                      >可使用{{ getTypeName(getStorageType(modalUrl)) }} APP
+                      扫码获取</span
+                    >
                     <div v-if="modalQrCode" class="flex-shrink-0">
                       <img
                         :src="modalQrCode"
                         alt="下载链接二维码"
-                        class="w-28 h-28 rounded-lg"
+                        class="w-60 h-auto rounded-lg"
                       />
                     </div>
                     <div
@@ -890,14 +910,19 @@ const copyUrl = (url: string) => {
                       <QrCode class="w-10 h-10 text-gray-600" />
                     </div>
                     <a
+                      v-if="isMobile"
                       :href="modalUrl"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm"
+                      class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
                     >
-                      <ExternalLink class="w-4 h-4" />
+                      <ExternalLink class="w-5 h-5" />
                       打开网盘下载
                     </a>
+                    <p class="text-xs text-gray-400 mt-2">
+                      本站链接由程序自动收集自公开网盘，不存储、不传播任何文件，跳转链接指向网盘官网。<br />
+                      文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。
+                    </p>
                   </div>
                 </div>
               </div>
@@ -907,14 +932,14 @@ const copyUrl = (url: string) => {
       </Teleport>
 
       <Teleport to="body">
-        <Transition name="fade">
+        <Transition name="modal">
           <div
             v-if="showTreeModal"
             class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
             @click.self="closeTreeModal"
           >
             <div
-              class="bg-dark-300 rounded-xl max-w-lg w-full border border-gray-700 shadow-2xl"
+              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-gray-700 shadow-2xl"
             >
               <div
                 class="flex items-center justify-between p-4 border-b border-gray-800"
@@ -956,3 +981,25 @@ const copyUrl = (url: string) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.modal-leave-active {
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-content {
+  will-change: opacity, transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-8px);
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: scale(0.985) translateY(0);
+}
+</style>

@@ -1,5 +1,5 @@
 import { prisma } from "#server/lib/prisma";
-import { getStorageType } from "#server/utils/source";
+import { getStorageType } from "#shared/utils";
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id as string;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useClipboard, useMediaQuery } from "@vueuse/core";
 import {
   Download,
   ExternalLink,
@@ -7,11 +8,23 @@ import {
   Clock,
   Link,
   QrCode,
+  Loader2,
 } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import { getTypeName } from "~/utils/index";
+
+const { copy } = useClipboard();
+
+const copyFetchedUrl = async () => {
+  if (!fetchedUrl.value) return;
+  try {
+    await copy(fetchedUrl.value);
+  } catch {
+    // 复制失败静默处理
+  }
+};
 
 const config = useRuntimeConfig();
 const route = useRoute();
@@ -51,7 +64,7 @@ const source = computed(() => sourceData.value?.data);
 
 const pageTitle = computed(() => {
   if (source.value) {
-    return `${source.value.title} - 网盘资源 - 下歌吧`;
+    return `${source.value.title} - ${getTypeName(source.value.type)}资源分享 - 下歌吧`;
   }
   return "资源详情 - 下歌吧";
 });
@@ -65,7 +78,7 @@ const pageDescription = computed(() => {
 
 const pageKeywords = computed(() => {
   if (source.value) {
-    return `${source.value.title}, ${source.value.description || ""}, 网盘资源, 夸克网盘, 百度网盘`;
+    return `${source.value.title}, 网盘资源, 夸克网盘, 百度网盘, 迅雷网盘, UC网盘`;
   }
   return "下歌吧, 网盘资源, 夸克网盘, 百度网盘";
 });
@@ -137,19 +150,7 @@ const goBack = () => {
   router.back();
 };
 
-const isMobile = ref<boolean | null>(null);
-
-const checkMobile = () => {
-  isMobile.value =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent,
-    );
-};
-
-onMounted(() => {
-  checkMobile();
-  window.addEventListener("resize", checkMobile);
-});
+const isMobile = useMediaQuery("(max-width: 768px)");
 </script>
 
 <template>
@@ -219,14 +220,12 @@ onMounted(() => {
                     点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存。
                   </p>
                   <button
-                    class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                    class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:bg-primary-400"
                     :disabled="fetchingUrl"
                     @click="fetchDirectUrl"
                   >
-                    <Download
-                      class="w-5 h-5"
-                      :class="{ 'animate-spin': fetchingUrl }"
-                    />
+                    <Loader2 v-if="fetchingUrl" class="w-5 h-5 animate-spin" />
+                    <Download v-else class="w-5 h-5" />
                     {{ fetchingUrl ? "获取中..." : "获取下载链接" }}
                   </button>
                   <p v-if="fetchError" class="text-xs text-red-400">
@@ -240,7 +239,7 @@ onMounted(() => {
                       <div>
                         <button
                           class="text-sm px-2 py-2 border border-primary-400 hover:border-primary-300 rounded-md transition-colors"
-                          @click="navigator.clipboard.writeText(fetchedUrl)"
+                          @click="copyFetchedUrl"
                         >
                           复制链接
                         </button>
@@ -267,7 +266,7 @@ onMounted(() => {
                       <img
                         :src="qrCodeUrl"
                         alt="下载链接二维码"
-                        class="w-32 h-32 rounded-lg mx-auto"
+                        class="w-60 h-auto rounded-lg mx-auto"
                       />
                     </div>
                     <div
@@ -286,6 +285,10 @@ onMounted(() => {
                       <ExternalLink class="w-5 h-5" />
                       打开网盘下载
                     </a>
+                    <p class="text-xs text-gray-400 mt-2">
+                      本站链接由程序自动收集自公开网盘，不存储、不传播任何文件，跳转链接指向网盘官网。<br />
+                      文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。
+                    </p>
                   </div>
                 </div>
               </div>

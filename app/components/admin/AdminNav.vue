@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { onClickOutside } from "@vueuse/core";
 import {
   Music,
   Users,
@@ -19,6 +20,10 @@ const router = useRouter();
 const resourceOpen = ref(false);
 const dropdownRef = ref<HTMLElement | null>(null);
 
+onClickOutside(dropdownRef, () => {
+  resourceOpen.value = false;
+});
+
 const isActive = (path: string) => {
   if (path === "/admin") {
     return route.path === "/admin";
@@ -35,19 +40,7 @@ const toggleResource = () => {
   resourceOpen.value = !resourceOpen.value;
 };
 
-const handleClickOutside = (event: MouseEvent) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
-    resourceOpen.value = false;
-  }
-};
 
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
 </script>
 
 <template>

@@ -1,39 +1,28 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useLocalStorage } from '@vueuse/core'
 
-const isLoggedIn = ref(false)
-const username = ref('')
-const token = ref('')
+const username = useLocalStorage('admin-username', '')
+const token = useLocalStorage('admin-token', '')
 const initialized = ref(false)
 
 export const useAuth = () => {
+  const isLoggedIn = computed(() => !!username.value && !!token.value)
+
   const checkLogin = () => {
-    if (typeof window === 'undefined') return
-    
-    const savedUsername = localStorage.getItem('admin-username')
-    const savedToken = localStorage.getItem('admin-token')
-    
-    if (savedUsername && savedToken) {
-      isLoggedIn.value = true
-      username.value = savedUsername
-      token.value = savedToken
-    }
+    // useLocalStorage 已在初始化时读取
     initialized.value = true
   }
 
   const login = (user: string, t: string) => {
-    isLoggedIn.value = true
     username.value = user
     token.value = t
-    localStorage.setItem('admin-username', user)
-    localStorage.setItem('admin-token', t)
+    initialized.value = true
   }
 
   const logout = () => {
-    isLoggedIn.value = false
     username.value = ''
     token.value = ''
-    localStorage.removeItem('admin-username')
-    localStorage.removeItem('admin-token')
+    initialized.value = true
     document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure'
   }
 
@@ -44,7 +33,7 @@ export const useAuth = () => {
     return {}
   }
 
-  if (!initialized.value && typeof window !== 'undefined') {
+  if (!initialized.value) {
     checkLogin()
   }
 

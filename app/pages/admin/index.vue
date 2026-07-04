@@ -233,13 +233,13 @@ const goToPage = (page: number) => {
                 {{ music.title }}
               </td>
               <td
-                class="px-4 py-4 text-gray-400 truncate"
+                class="px-4 py-4 text-gray-400 truncate max-w-[200px]"
                 :title="music.artist"
               >
                 {{ music.artist }}
               </td>
               <td
-                class="px-4 py-4 text-gray-400 truncate"
+                class="px-4 py-4 text-gray-400 truncate max-w-[200px]"
                 :title="music.album || '-'"
               >
                 {{ music.album || "-" }}

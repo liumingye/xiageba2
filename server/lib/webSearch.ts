@@ -2,7 +2,8 @@ import { prisma } from "#server/lib/prisma";
 import * as cheerio from "cheerio";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { encryptUrl } from "#server/lib/crypto";
-import { getStorageType, getRandomIp, getRandomUA } from "#server/utils/source";
+import { getRandomIp, getRandomUA } from "#server/utils/source";
+import { getStorageType } from "#shared/utils";
 
 export interface WebSearchResult {
   title: string;

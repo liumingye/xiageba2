@@ -4,6 +4,7 @@ import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
 import { Music as MusicIcon, ArrowRight, TrashIcon } from "@lucide/vue";
 import SearchBarBig from "~/components/SearchBarBig.vue";
+import { useMediaQuery, useResizeObserver } from "@vueuse/core";
 
 const config = useRuntimeConfig();
 const router = useRouter();
@@ -18,6 +19,8 @@ const checkHistoryOverflow = () => {
   historyOverflowing.value =
     historyRef.value.scrollHeight > historyRef.value.clientHeight;
 };
+
+useResizeObserver(historyRef, checkHistoryOverflow);
 
 // const { data: hotMusic, pending: loading } = await useFetch<Music[]>(
 //   "/api/music/recent",
@@ -73,7 +76,6 @@ onMounted(async () => {
   musicStore.loadSearchHistory();
   await nextTick();
   checkHistoryOverflow();
-  window.addEventListener("resize", checkHistoryOverflow);
 });
 
 const goToDetail = (music: Music) => {
@@ -87,19 +89,7 @@ const clearHistory = () => {
 
 // const skeletonItems = Array.from({ length: 6 });
 
-const isMobile = ref<boolean | null>(null);
-
-const checkMobile = () => {
-  isMobile.value =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent,
-    );
-};
-
-onMounted(() => {
-  checkMobile();
-  window.addEventListener("resize", checkMobile);
-});
+const isMobile = useMediaQuery("(max-width: 768px)");
 
 interface DoubanFilterOption {
   name: string;
@@ -138,7 +128,7 @@ interface DoubanListData {
 
 const doubanClasses = ref<DoubanClass[]>([]);
 const doubanFilters = ref<Record<string, DoubanFilter[]>>({});
-const activeCategoryId = ref("movie");
+const activeCategoryId = ref("short_drama");
 const activeFilters = ref<Record<string, string>>({});
 const doubanList = ref<DoubanItem[]>([]);
 const doubanLoading = ref(false);
@@ -244,7 +234,7 @@ const { data: doubanInitial } = await useAsyncData(
   async () => {
     try {
       const homeData = await $fetch<DoubanHomeData>("/api/douban");
-      const categoryId = "movie";
+      const categoryId = activeCategoryId.value;
       const filters: Record<string, string> = {};
       const categoryFilters = (homeData.filters || {})[categoryId] || [];
       for (const filter of categoryFilters) {
@@ -286,6 +276,15 @@ doubanList.value = doubanInitial.value?.list || [];
 doubanPage.value = doubanInitial.value?.page || 1;
 doubanPageCount.value = doubanInitial.value?.pagecount || 0;
 resetActiveFilters();
+
+const getPic = (url: string) => {
+  const urlObj = new URL(url);
+
+  if (urlObj.hostname.endsWith(".doubanio.com")) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=m.douban.com`;
+  }
+  return url;
+};
 </script>
 
 <template>
@@ -302,7 +301,7 @@ resetActiveFilters();
           <h1 class="text-4xl font-bold text-white">下歌吧</h1>
         </div>
         <SearchBarBig ref="searchBarRef" />
-        <div class="text-sm text-gray-400 mt-3" v-if="isMobile !== null">
+        <div class="text-sm text-gray-400 mt-3">
           {{
             isMobile
               ? "打开浏览器菜单，点击加入书签不迷路"
@@ -549,7 +548,7 @@ resetActiveFilters();
             >
               <img
                 v-if="item.vod_pic"
-                :src="`/api/image-proxy?url=${item.vod_pic}&referer=m.douban.com`"
+                :src="getPic(item.vod_pic)"
                 :alt="item.vod_name"
                 class="w-full h-full object-cover"
                 loading="lazy"

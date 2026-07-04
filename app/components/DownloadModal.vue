@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
+import { useClipboard, useTimeoutFn, useMediaQuery } from "@vueuse/core";
 import { X, Download, QrCode, MessageSquare, Copy, Check } from "@lucide/vue";
 import type { Music, DownloadOption } from "~/stores/music";
 import FeedbackModal from "~/components/FeedbackModal.vue";
@@ -14,10 +15,9 @@ const emit = defineEmits<{
 }>();
 
 const showFeedbackModal = ref(false);
-const isMobile = ref(false);
+const isMobile = useMediaQuery("(max-width: 768px)");
 const qrCodeUrl = ref("");
 const selectedDownload = ref<DownloadOption | null>(null);
-const copiedCode = ref(false);
 
 const extractPwd = (url: string): string => {
   try {
@@ -26,7 +26,7 @@ const extractPwd = (url: string): string => {
     if (pwd) return pwd;
 
     const match = url.match(/[?&]pwd=([^&]+)/);
-    if (match) return match[1];
+    if (match) return match[1] || "";
   } catch {
     // 忽略URL解析错误
   }
@@ -49,15 +49,23 @@ const pwdList = computed(() => {
     }));
 });
 
+const { copy } = useClipboard();
 const copiedIndex = ref<number | null>(null);
+const copiedCode = ref(false);
+
+const resetCopiedIndex = useTimeoutFn(() => {
+  copiedIndex.value = null;
+}, 2000);
+
+const resetCopiedCode = useTimeoutFn(() => {
+  copiedCode.value = false;
+}, 2000);
 
 const copyPwdByIndex = async (index: number, pwd: string) => {
   try {
-    await navigator.clipboard.writeText(pwd);
+    await copy(pwd);
     copiedIndex.value = index;
-    setTimeout(() => {
-      copiedIndex.value = null;
-    }, 2000);
+    resetCopiedIndex.start();
   } catch {
     // 复制失败静默处理
   }
@@ -76,27 +84,13 @@ const cleanUrl = (url: string): string => {
 const copyPwd = async () => {
   if (!selectedPwd.value) return;
   try {
-    await navigator.clipboard.writeText(selectedPwd.value);
+    await copy(selectedPwd.value);
     copiedCode.value = true;
-    setTimeout(() => {
-      copiedCode.value = false;
-    }, 2000);
+    resetCopiedCode.start();
   } catch {
     // 复制失败静默处理
   }
 };
-
-const checkMobile = () => {
-  isMobile.value =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent,
-    );
-};
-
-onMounted(() => {
-  checkMobile();
-  window.addEventListener("resize", checkMobile);
-});
 
 const generateQrCode = async (url: string) => {
   const qrcode = await import("qrcode");
@@ -301,7 +295,7 @@ const openFeedbackModal = () => {
                 v-if="!isMobile"
                 aria-label="直接下载"
                 class="text-gray-600 ml-2"
-                :href="selectedDownload.url"
+                :href="selectedDownload?.url"
                 target="_blank"
               >
                 直接下载

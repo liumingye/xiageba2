@@ -1,4 +1,5 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 export const useBackHistory = () => {
   const hasBackHistory = ref(false)
@@ -7,13 +8,10 @@ export const useBackHistory = () => {
     hasBackHistory.value = window.history.length > 1
   }
 
+  useEventListener(window, 'popstate', updateHistory)
+
   onMounted(() => {
     updateHistory()
-    window.addEventListener('popstate', updateHistory)
-  })
-
-  onUnmounted(() => {
-    window.removeEventListener('popstate', updateHistory)
   })
 
   return { hasBackHistory }

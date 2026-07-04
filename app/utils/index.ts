@@ -1,15 +1,8 @@
-export function debounce(fn: () => void, delay: number): () => void {
-  let timer: undefined | number;
-  return function () {
-    if (timer !== undefined) {
-      window.clearTimeout(timer);
-    }
-    timer = window.setTimeout(() => {
-      fn();
-      timer = undefined;
-    }, delay);
-  };
-}
+import { useDebounceFn } from "@vueuse/core";
+
+export const debounce = (fn: () => void, delay: number): (() => void) => {
+  return useDebounceFn(fn, delay);
+};
 
 export const getTypeName = (type: string) => {
   switch (type) {
@@ -26,11 +19,4 @@ export const getTypeName = (type: string) => {
   }
 };
 
-export const copyToClipboard = (text: string) => {
-  const input = document.createElement("input");
-  input.value = text;
-  document.body.appendChild(input);
-  input.select();
-  document.execCommand("copy");
-  document.body.removeChild(input);
-};
+

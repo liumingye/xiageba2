@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useIntervalFn } from "@vueuse/core";
 import { useAuth } from "~/composables/useAuth";
 import {
   CheckCircle,
@@ -120,12 +121,22 @@ const goToPage = (page: number) => {
 
 const checkResults = ref<Record<string, any>>({});
 const checkingId = ref<string | null>(null);
-const pollTimers = ref<Record<string, ReturnType<typeof setInterval>>>({});
+const activePolls = ref<Record<string, number>>({});
+
+const { pause: pausePolling, resume: resumePolling } = useIntervalFn(
+  async () => {
+    for (const [musicId, submissionId] of Object.entries(activePolls.value)) {
+      await pollSubmission(musicId, submissionId);
+    }
+  },
+  3000,
+  { immediate: false },
+);
 
 const stopPolling = (musicId: string) => {
-  if (pollTimers.value[musicId]) {
-    clearInterval(pollTimers.value[musicId]);
-    delete pollTimers.value[musicId];
+  delete activePolls.value[musicId];
+  if (Object.keys(activePolls.value).length === 0) {
+    pausePolling();
   }
 };
 
@@ -185,9 +196,8 @@ const pollSubmission = async (musicId: string, submissionId: number) => {
 
 const startPolling = (musicId: string, submissionId: number) => {
   stopPolling(musicId);
-  pollTimers.value[musicId] = setInterval(() => {
-    pollSubmission(musicId, submissionId);
-  }, 3000);
+  activePolls.value[musicId] = submissionId;
+  resumePolling();
 };
 
 const checkLinks = async (musicId: string) => {
@@ -239,7 +249,8 @@ const checkLinks = async (musicId: string) => {
 };
 
 onUnmounted(() => {
-  Object.keys(pollTimers.value).forEach((id) => stopPolling(id));
+  activePolls.value = {};
+  pausePolling();
 });
 
 const resolveFeedback = async (id: string) => {

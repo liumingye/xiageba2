@@ -1,6 +1,6 @@
 import { buildSearchTsQuery } from "#server/utils/jieba";
 import { prisma } from "#server/lib/prisma";
-import { getStorageType } from "#server/utils/source";
+import { getStorageType } from "#shared/utils";
 
 const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;

@@ -1,6 +1,6 @@
 import { prisma } from "#server/lib/prisma";
 import { getConfigValues } from "#server/lib/configCache";
-import { getStorageType } from "#server/utils/source";
+import { getStorageType } from "#shared/utils";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
