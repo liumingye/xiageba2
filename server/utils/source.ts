@@ -1,11 +1,15 @@
+import { URL } from "url";
+
 export const getStorageType = (url: string) => {
-  url = url || "";
-  if (url.includes("pan.quark.cn")) return "quark";
-  if (url.includes("pan.baidu.com")) return "baidu";
-  if (url.includes("pan.uc.cn") || url.includes("drive.uc.cn")) return "uc";
-  if (url.includes("pan.xunlei.com")) return "xunlei";
+  const urlObj = new URL(url || "");
+  if (urlObj.hostname === "pan.quark.cn") return "quark";
+  if (urlObj.hostname === "pan.baidu.com") return "baidu";
+  if (urlObj.hostname === "pan.uc.cn" || urlObj.hostname === "drive.uc.cn")
+    return "uc";
+  if (urlObj.hostname === "pan.xunlei.com") return "xunlei";
   return "other";
 };
+
 // IP字符串转数字
 function ipToNum(ip: string) {
   return ip.split(".").reduce((sum, part) => (sum << 8) + Number(part), 0);
