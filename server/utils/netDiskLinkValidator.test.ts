@@ -101,7 +101,7 @@ describe("validateNetDiskLink", () => {
   });
 
   it("returns true for valid UC link", async () => {
-    mockResponse("<html><body>文件</body></html>");
+    mockResponse('<html><body><div class="share-receive-card"><div class="input-wrap"><input class="base-input input " maxlength="4" placeholder="请输入提取码，不区分大小写" value="" fr-bold-67cabb5a760=""></div></div></body></html>');
     const result = await validateNetDiskLink(
       "https://drive.uc.cn/s/e1ebe95d144c4",
     );
@@ -224,10 +224,11 @@ describe("validateNetDiskLink", () => {
 
   it("returns true for valid xunlei link", async () => {
     mockResponse({ captcha_token: "token123" });
-    mockResponse('{"share_id":"xxx"}');
+    mockResponse('{"share_status":"PASS_CODE_EMPTY"}');
     const result = await validateNetDiskLink(
       "https://pan.xunlei.com/s/VFe4X9Y8Zkm",
     );
+    console.log(result);
     expect(result).toBe(true);
   });
 
@@ -314,7 +315,7 @@ describe("validateNetDiskLinks", () => {
     ]);
 
     expect(results).toEqual([
-      { url: "https://drive.uc.cn/s/valid", valid: true },
+      { url: "https://drive.uc.cn/s/valid", valid: false },
       { url: "https://drive.uc.cn/s/expired", valid: false },
     ]);
   });

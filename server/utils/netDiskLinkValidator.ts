@@ -45,12 +45,12 @@ const extractors: Record<string, { domains: string[]; pattern: RegExp }> = {
   },
   xunlei: {
     domains: ["pan.xunlei.com"],
-    pattern: /https?:\/\/(?:www\.)?pan\.xunlei\.com\/s\/([a-zA-Z0-9-]+)/,
+    pattern: /https?:\/\/(?:www\.)?pan\.xunlei\.com\/s\/([a-zA-Z0-9-_]+)/,
   },
   baidu: {
     domains: ["pan.baidu.com", "yun.baidu.com"],
     pattern:
-      /https?:\/\/(?:[a-z]+\.)?(?:pan|yun)\.baidu\.com\/(?:s\/|share\/init\?surl=)([a-zA-Z0-9_-]+)(?:\?|$)/,
+      /https?:\/\/(?:[a-z]+\.)?(?:pan|yun)\.baidu\.com\/(?:s\/|share\/init\?surl=)([a-zA-Z0-9_-]+)/,
   },
 };
 
@@ -93,6 +93,7 @@ async function checkUC(shareId: string): Promise<boolean> {
     const $ = cheerio.load(html);
     const pageText = $("body").text().trim();
 
+    // 包含错误关键词
     const errorKeywords = [
       "失效",
       "不存在",
@@ -103,14 +104,18 @@ async function checkUC(shareId: string): Promise<boolean> {
     ];
     if (errorKeywords.some((kw) => pageText.includes(kw))) return false;
 
-    if ($(".main-body .input-wrap input").length > 0) return true;
-    if (
-      pageText.includes("文件") ||
-      pageText.includes("分享") ||
-      $(".file-list").length > 0
-    ) {
+    // 包含提取码关键词
+    const passwordKeywords = ["提取码", "访问码", "请输入密码"];
+    if (passwordKeywords.some((kw) => pageText.includes(kw))) return true;
+
+    // 存在提取码输入框
+    if ($(".share-receive-card .input-wrap input").length > 0) return true;
+
+    // 包含文件列表关键词
+    if (pageText.includes("提取文件") || $(".mini-file-list").length > 0) {
       return true;
     }
+
     return false;
   } catch {
     return false;
@@ -270,14 +275,8 @@ async function checkXunlei(shareId: string): Promise<boolean> {
       },
     );
     const text = await res.text();
-    if (
-      ["NOT_FOUND", "SENSITIVE_RESOURCE", "EXPIRED"].some((kw) =>
-        text.includes(kw),
-      )
-    )
-      return false;
-    if (text.includes("PASS_CODE_EMPTY")) return true;
-    return true;
+    if (["PASS_CODE_EMPTY", "OK"].some((kw) => text.includes(kw))) return true;
+    return false;
   } catch {
     return false;
   }
@@ -296,7 +295,9 @@ async function checkBaidu(shareId: string): Promise<boolean> {
       "分享已过期",
       "你访问的页面不存在",
       "你所访问的页面",
+      "链接不存在",
     ];
+
     if (invalidKeywords.some((kw) => text.includes(kw))) return false;
     if (text.includes("请输入提取码") || text.includes("提取文件")) return true;
     if (text.includes("过期时间") || text.includes("文件列表")) return true;
