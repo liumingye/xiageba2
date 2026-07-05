@@ -286,7 +286,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
         </div>
       </div>
 
-      <div class="card overflow-hidden">
+      <div class="card overflow-x-auto">
         <table class="table-auto w-full text-sm text-left">
           <thead class="bg-gray-800 text-gray-400">
             <tr>
