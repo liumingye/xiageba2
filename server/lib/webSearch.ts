@@ -315,24 +315,72 @@ const searchHtml = async (
   return results;
 };
 
-export async function* webSearch(
+// export async function* webSearch(
+//   keyword: string,
+// ): AsyncGenerator<WebSearchResult> {
+//   const configs = await prisma.apiList.findMany({
+//     where: { status: 1 },
+//     orderBy: { weight: "desc" },
+//   });
+
+//   for (const config of configs) {
+//     const cacheKey = `webSearch:${config.name}:${keyword}`;
+
+//     try {
+//       const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
+//       if (cached) {
+//         for (const item of cached) yield item;
+//         continue;
+//       }
+
+//       let items: WebSearchResult[] = [];
+//       if (config.type === "api") {
+//         items = await searchApi(config, keyword);
+//       } else if (config.type === "pansou") {
+//         items = await searchPanSou(config, keyword);
+//       } else {
+//         items = await searchHtml(config, keyword);
+//       }
+
+//       for (const item of items) {
+//         item.url = await encryptUrl(item.url);
+//       }
+
+//       await setRedisCache(cacheKey, items, 30 * 60);
+
+//       for (const item of items) yield item;
+//     } catch (err: any) {
+//       console.error(err || "搜索失败");
+//       // 单个线路失败不影响其他线路
+//     }
+//   }
+// }
+
+export async function webSearchConcurrent(
   keyword: string,
-): AsyncGenerator<WebSearchResult> {
+  onResult: (results: WebSearchResult[]) => void,
+): Promise<number> {
   const configs = await prisma.apiList.findMany({
     where: { status: 1 },
     orderBy: { weight: "desc" },
   });
 
-  for (const config of configs) {
+  let totalCount = 0;
+
+  // 并发执行所有搜索源
+  const promises = configs.map(async (config) => {
     const cacheKey = `webSearch:${config.name}:${keyword}`;
 
     try {
-      // const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
-      // if (cached) {
-      //   for (const item of cached) yield item;
-      //   continue;
-      // }
+      // 先尝试获取缓存
+      const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
+      if (cached) {
+        totalCount += cached.length;
+        onResult(cached); // 立即返回缓存结果
+        return;
+      }
 
+      // 根据类型执行搜索
       let items: WebSearchResult[] = [];
       if (config.type === "api") {
         items = await searchApi(config, keyword);
@@ -342,16 +390,23 @@ export async function* webSearch(
         items = await searchHtml(config, keyword);
       }
 
+      // 加密 URL
       for (const item of items) {
         item.url = await encryptUrl(item.url);
       }
 
+      // 设置缓存
       await setRedisCache(cacheKey, items, 30 * 60);
 
-      for (const item of items) yield item;
+      totalCount += items.length;
+      onResult(items); // 立即返回搜索结果
     } catch (err: any) {
-      console.error(err || "搜索失败");
+      console.error(err || `搜索 ${config.name} 失败`);
       // 单个线路失败不影响其他线路
     }
-  }
+  });
+
+  // 等待所有搜索完成
+  await Promise.allSettled(promises);
+  return totalCount;
 }

@@ -1,4 +1,4 @@
-import { webSearch } from "#server/lib/webSearch";
+import { webSearch, webSearchConcurrent } from "#server/lib/webSearch";
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -24,14 +24,15 @@ export default defineEventHandler(async (event) => {
   send({ type: "start", keyword });
 
   try {
-    let count = 0;
+    // 使用并发搜索，实时返回结果
+    const totalCount = await webSearchConcurrent(keyword, (results) => {
+      // 每个搜索源完成后立即发送结果
+      for (const item of results) {
+        send({ type: "result", data: item });
+      }
+    });
 
-    for await (const item of webSearch(keyword)) {
-      send({ type: "result", data: item });
-      count++;
-    }
-
-    send({ type: "done", count });
+    send({ type: "done", count: totalCount });
   } catch (err: any) {
     send({ type: "error", message: err.message || "搜索失败" });
   } finally {
