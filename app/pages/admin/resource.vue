@@ -2,10 +2,19 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { Plus, Trash2, Edit3, Database, Search, Folder } from "@lucide/vue";
+import {
+  Plus,
+  Trash2,
+  Edit3,
+  Database,
+  Search,
+  Folder,
+  FileUp,
+} from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+import { useToast } from "~/composables/useToast";
 
 interface Source {
   id: string;
@@ -28,6 +37,7 @@ interface Category {
 const router = useRouter();
 const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
   useAuth();
+const toast = useToast();
 
 const sources = ref<Source[]>([]);
 const categories = ref<Category[]>([]);
@@ -52,6 +62,18 @@ const editDescription = ref("");
 const editMenu = ref("");
 const menuLoading = ref(false);
 const error = ref("");
+
+const showImportModal = ref(false);
+const importCid = ref<string>("");
+const importHasHeader = ref(true);
+const importFile = ref<File | null>(null);
+const importing = ref(false);
+const importResult = ref<{
+  total: number;
+  inserted: number;
+  duplicate: number;
+  failed: number;
+} | null>(null);
 
 const loadSources = async () => {
   let url = `/api/admin/source?page=${currentPage.value}&pageSize=20`;
@@ -249,6 +271,70 @@ const deleteSource = async (id: string) => {
     router.push("/admin/login");
   }
 };
+
+const openImportModal = () => {
+  showImportModal.value = true;
+  importCid.value = "";
+  importHasHeader.value = true;
+  importFile.value = null;
+  importResult.value = null;
+  error.value = "";
+};
+
+const closeImportModal = () => {
+  showImportModal.value = false;
+};
+
+const handleFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  importFile.value = target.files?.[0] || null;
+  importResult.value = null;
+};
+
+const importSources = async () => {
+  if (!importFile.value) {
+    error.value = "请选择要导入的 Excel 文件";
+    return;
+  }
+
+  importing.value = true;
+  error.value = "";
+  importResult.value = null;
+
+  try {
+    const formData = new FormData();
+    formData.append("file", importFile.value);
+    formData.append("cid", importCid.value);
+    formData.append("hasHeader", String(importHasHeader.value));
+
+    const res = await fetch("/api/admin/source/import", {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: formData,
+    });
+
+    if (res.status === 401) {
+      logout();
+      router.push("/admin/login");
+      return;
+    }
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      importResult.value = data;
+      toast.success(
+        `导入完成：成功 ${data.inserted} 条，重复 ${data.duplicate} 条，失败 ${data.failed} 条`,
+      );
+      await loadSources();
+    } else {
+      error.value = data.message || "导入失败";
+    }
+  } catch {
+    error.value = "导入失败，请重试";
+  } finally {
+    importing.value = false;
+  }
+};
 </script>
 
 <template>
@@ -284,6 +370,13 @@ const deleteSource = async (id: string) => {
               />
             </div>
           </div>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            @click="openImportModal"
+          >
+            <FileUp class="w-4 h-4" />
+            导入
+          </button>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
             @click="openAddModal"
@@ -578,6 +671,95 @@ const deleteSource = async (id: string) => {
                   @click="saveEdit"
                 >
                   保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="modal">
+        <div
+          v-if="showImportModal"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          <div
+            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            @click="closeImportModal"
+          ></div>
+          <div
+            class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800 max-h-[90vh] overflow-y-auto"
+          >
+            <h3 class="text-xl font-medium text-white mb-6">导入资源</h3>
+            <div
+              v-if="error"
+              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+            >
+              {{ error }}
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-gray-400 text-sm mb-2">资源分类</label>
+                <select v-model="importCid" class="input-search">
+                  <option value="">无分类</option>
+                  <option
+                    v-for="cat in categories"
+                    :key="cat.id"
+                    :value="cat.id"
+                  >
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-400 text-sm mb-2"
+                  >Excel 文件 *</label
+                >
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-700 file:text-white hover:file:bg-gray-600"
+                  @change="handleFileChange"
+                />
+                <p class="mt-2 text-gray-500 text-xs">
+                  第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  id="hasHeader"
+                  v-model="importHasHeader"
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                />
+                <label for="hasHeader" class="text-gray-300 text-sm"
+                  >第一行为表头，跳过不导入</label
+                >
+              </div>
+              <div
+                v-if="importResult"
+                class="p-3 bg-green-900/30 border border-green-800 rounded-lg text-green-400 text-sm"
+              >
+                <p>
+                  共解析 {{ importResult.total }} 条，成功导入
+                  {{ importResult.inserted }} 条，重复
+                  {{ importResult.duplicate }} 条，失败
+                  {{ importResult.failed }} 条。
+                </p>
+              </div>
+              <div class="flex gap-4 pt-2">
+                <button
+                  class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  @click="closeImportModal"
+                >
+                  取消
+                </button>
+                <button
+                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  :disabled="importing || !importFile"
+                  @click="importSources"
+                >
+                  {{ importing ? "导入中..." : "开始导入" }}
                 </button>
               </div>
             </div>

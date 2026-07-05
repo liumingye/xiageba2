@@ -33,7 +33,8 @@
     "pinia": "^3.0.4",
     "prisma": "^7.8.0",
     "qrcode": "^1.5.4",
-    "vue": "^3.4.21"
+    "vue": "^3.4.21",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.0",
