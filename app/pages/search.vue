@@ -447,8 +447,15 @@ onMounted(() => {
 });
 
 watch([searchKeyword, searchType], () => {
-  if (import.meta.client && !isMusic.value) {
+  if (import.meta.client) {
     startWebSearch();
+  }
+});
+
+onBeforeUnmount(() => {
+  if (webSearchSource) {
+    webSearchSource.close();
+    webSearchSource = null;
   }
 });
 
