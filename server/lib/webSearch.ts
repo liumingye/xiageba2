@@ -366,6 +366,14 @@ export async function webSearchConcurrent(
   });
 
   let totalCount = 0;
+  const timeoutMs = 30000; // 单个搜索源超时时间
+
+  const withTimeout = <T>(promise: Promise<T>): Promise<T | null> => {
+    const timeout = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), timeoutMs),
+    );
+    return Promise.race([promise, timeout]);
+  };
 
   // 并发执行所有搜索源
   const promises = configs.map(async (config) => {
@@ -381,13 +389,18 @@ export async function webSearchConcurrent(
       }
 
       // 根据类型执行搜索
-      let items: WebSearchResult[] = [];
+      let items: WebSearchResult[] | null = null;
       if (config.type === "api") {
-        items = await searchApi(config, keyword);
+        items = await withTimeout(searchApi(config, keyword));
       } else if (config.type === "pansou") {
-        items = await searchPanSou(config, keyword);
+        items = await withTimeout(searchPanSou(config, keyword));
       } else {
-        items = await searchHtml(config, keyword);
+        items = await withTimeout(searchHtml(config, keyword));
+      }
+
+      if (items === null) {
+        console.warn(`搜索 ${config.name} 超时`);
+        return;
       }
 
       // 加密 URL
