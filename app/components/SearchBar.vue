@@ -41,7 +41,7 @@ const handleSearch = () => {
   const q = searchQuery.value.trim();
   if (!q) return;
   if (q.length > MAX_KEYWORD_LENGTH) return;
-  const type = (route.query.type as string) || "music";
+  const type = (route.query.type as string) || musicStore.searchType || "music";
   musicStore.addSearchHistory(q);
   emit("search", q);
   router.push(`/search?type=${type}&q=${encodeURIComponent(q)}`);

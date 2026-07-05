@@ -30,7 +30,7 @@ const colors = {
 
 <template>
   <Teleport to="body">
-    <div class="fixed top-4 right-4 z-50 space-y-2">
+    <div class="fixed top-4 right-4 z-[999999] space-y-2">
       <TransitionGroup name="toast">
         <div
           v-for="toast in props.toasts"

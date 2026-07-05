@@ -6,6 +6,7 @@ import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
+import { useMusicStore } from "~/stores/music";
 
 const config = useRuntimeConfig();
 const route = useRoute();
@@ -173,6 +174,11 @@ const openDownloadModal = () => {
 const closeDownloadModal = () => {
   showDownloadModal.value = false;
 };
+
+const musicStore = useMusicStore();
+onMounted(() => {
+  musicStore.searchType = "music";
+});
 </script>
 
 <template>
@@ -269,7 +275,11 @@ const closeDownloadModal = () => {
                 <p class="text-gray-400 mb-4" itemprop="byArtist">
                   <button
                     class="hover:text-primary-400 transition-colors"
-                    @click="router.push(`/search?q=${encodeURIComponent(music.artist)}`)"
+                    @click="
+                      router.push(
+                        `/search?q=${encodeURIComponent(music.artist)}`,
+                      )
+                    "
                   >
                     {{ music.artist }}
                   </button>

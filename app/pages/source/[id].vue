@@ -9,20 +9,25 @@ import {
   Link,
   QrCode,
   Loader2,
+  Clipboard,
 } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import { getTypeName } from "~/utils/index";
+import { useMusicStore } from "~/stores/music";
 
 const { copy } = useClipboard();
+
+const toast = useToast();
 
 const copyFetchedUrl = async () => {
   if (!fetchedUrl.value) return;
   try {
     await copy(fetchedUrl.value);
+    toast.success("链接已复制");
   } catch {
-    // 复制失败静默处理
+    toast.error("复制链接失败");
   }
 };
 
@@ -134,7 +139,7 @@ const fetchDirectUrl = async () => {
       qrCodeUrl.value = await qrcode.toDataURL(fetchedUrl.value, {
         width: 200,
         margin: 2,
-        color: { dark: "#ffffff", light: "#1e293b" },
+        color: { dark: "#000", light: "#fff" },
       });
     } else {
       fetchError.value = data.message || "获取下载链接失败";
@@ -150,7 +155,10 @@ const goBack = () => {
   router.back();
 };
 
-const isMobile = useMediaQuery("(max-width: 768px)");
+const musicStore = useMusicStore();
+onMounted(() => {
+  musicStore.searchType = "resource";
+});
 </script>
 
 <template>
@@ -211,9 +219,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             </section>
 
             <footer class="border-t border-gray-800 pt-6">
-              <h3 class="text-sm font-medium text-gray-300 mb-4">
-                获取下载链接
-              </h3>
+              <h3 class="font-medium text-gray-300 mb-4">获取下载链接:</h3>
               <div class="space-y-3">
                 <div v-if="!fetchedUrl" class="space-y-3">
                   <p class="text-xs text-gray-500">
@@ -233,36 +239,15 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   </p>
                 </div>
                 <div v-else class="space-y-3">
-                  <div class="bg-gray-800 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-2">
-                      <span class="text-gray-500">下载链接</span>
-                      <div>
-                        <button
-                          class="text-sm px-2 py-2 border border-primary-400 hover:border-primary-300 rounded-md transition-colors"
-                          @click="copyFetchedUrl"
-                        >
-                          复制链接
-                        </button>
-                        <a
-                          v-if="!isMobile"
-                          class="text-sm ml-2 px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition-colors"
-                          :href="fetchedUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          打开链接
-                        </a>
-                      </div>
-                    </div>
-                    <p class="text-sm text-gray-300 break-all font-mono">
-                      {{ fetchedUrl }}
-                    </p>
-                  </div>
                   <div class="flex flex-col items-center gap-4">
+                    <span
+                      >可使用
+                      <span class="text-primary-500">{{
+                        getTypeName(source.type)
+                      }}</span>
+                      APP 扫码获取</span
+                    >
                     <div v-if="qrCodeUrl" class="flex-shrink-0">
-                      <p class="mb-2">
-                        可使用{{ getTypeName(source.type) }} APP 扫码获取
-                      </p>
                       <img
                         :src="qrCodeUrl"
                         alt="下载链接二维码"
@@ -275,16 +260,38 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                     >
                       <QrCode class="w-12 h-12 text-gray-600" />
                     </div>
-                    <a
-                      v-if="isMobile"
-                      :href="fetchedUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                    <p
+                      class="w-full text-white font-medium truncate text-center text-lg"
                     >
-                      <ExternalLink class="w-5 h-5" />
-                      打开网盘下载
-                    </a>
+                      {{ source.title }}
+                    </p>
+                    <p class="text-center break-all">
+                      资源地址：<a
+                        :href="fetchedUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-primary-500"
+                        >{{ fetchedUrl }}</a
+                      >
+                    </p>
+                    <div class="w-full flex items-center justify-center gap-2">
+                      <button
+                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600 hover:text-white"
+                        @click="copyFetchedUrl"
+                      >
+                        <Clipboard class="w-4 h-4" />
+                        复制链接
+                      </button>
+                      <a
+                        :href="fetchedUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all h-9 px-4 py-2 flex-1 bg-primary-600 hover:bg-primary-700 text-white"
+                      >
+                        <ExternalLink class="w-4 h-4" />
+                        打开链接
+                      </a>
+                    </div>
                     <p class="text-xs text-gray-400 mt-2">
                       本站链接由程序自动收集自公开网盘，不存储、不传播任何文件，跳转链接指向网盘官网。<br />
                       文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。

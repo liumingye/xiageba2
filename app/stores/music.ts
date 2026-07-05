@@ -46,7 +46,7 @@ export const useMusicStore = defineStore("music", () => {
     currentMusic.value = music;
   };
 
-  const searchType = ref("music");
+  const searchType = ref<"resource" | "music">("music");
 
   return {
     searchHistory,

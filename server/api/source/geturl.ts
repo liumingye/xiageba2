@@ -40,6 +40,16 @@ export function parseShareUrl(url: string): ParsedShare {
   if (match && match[1])
     return { type: "baidu", fid: match[1], passcode: extractPwd(url), url };
 
+  // 百度: 	https://pan.baidu.com/share/init?surl=xxxx&pwd=yyyy
+  match = url.match(/pan\.baidu\.com\/share\/init\?surl=([^&]+)/);
+  if (match && match[1])
+    return {
+      type: "baidu",
+      fid: "1" + match[1],
+      passcode: extractPwd(url),
+      url,
+    };
+
   // 迅雷: https://pan.xunlei.com/s/xxxx?pwd=yyyy
   match = url.match(/pan\.xunlei\.com\/s\/([^/?#]+)/);
   if (match && match[1])

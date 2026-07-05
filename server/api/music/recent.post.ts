@@ -1,7 +1,7 @@
 import { prisma } from "#server/lib/prisma";
 
 export default defineEventHandler(async () => {
-  const limit = 9;
+  const limit = 15;
 
   const musics = await prisma.music.findMany({
     orderBy: { createdAt: "desc" },

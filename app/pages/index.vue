@@ -2,9 +2,15 @@
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
-import { Music as MusicIcon, ArrowRight, TrashIcon } from "@lucide/vue";
+import {
+  Music as MusicIcon,
+  ArrowRight,
+  TrashIcon,
+  FolderKanban,
+} from "@lucide/vue";
 import SearchBarBig from "~/components/SearchBarBig.vue";
 import { useMediaQuery, useResizeObserver } from "@vueuse/core";
+import { getTypeName } from "~/utils";
 
 const config = useRuntimeConfig();
 const router = useRouter();
@@ -22,13 +28,44 @@ const checkHistoryOverflow = () => {
 
 useResizeObserver(historyRef, checkHistoryOverflow);
 
-const { data: hotMusic, pending: loading } = await useFetch<Music[]>(
-  "/api/music/recent",
+const { data: hotMusic } = await useFetch<Music[]>("/api/music/recent", {
+  method: "POST",
+  key: "home-music",
+  server: true,
+  lazy: true,
+  default: () => [],
+});
+
+interface CategoryLatestItem {
+  id: string;
+  title: string;
+  type: string;
+  createdAt: string;
+}
+
+interface CategoryWithLatest {
+  id: number;
+  name: string;
+  image: string;
+  sort: number;
+  latest: CategoryLatestItem[];
+}
+
+const { data: categoriesWithLatest } = await useAsyncData(
+  "home-categories",
+  async () => {
+    try {
+      const res = await $fetch<{ data: CategoryWithLatest[] }>(
+        "/api/category",
+        { query: { withLatest: "true" } },
+      );
+      return res.data || [];
+    } catch {
+      return [];
+    }
+  },
   {
-    method: "POST",
-    key: "home-music",
     server: true,
-    lazy: true,
     default: () => [],
   },
 );
@@ -86,8 +123,6 @@ const goToDetail = (music: Music) => {
 const clearHistory = () => {
   musicStore.clearSearchHistory();
 };
-
-const skeletonItems = Array.from({ length: 6 });
 
 const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -356,78 +391,110 @@ const getPic = (url: string) => {
         </div>
       </section>
 
-      <section aria-labelledby="hot-title">
-        <h2 id="hot-title" class="text-lg font-medium text-gray-300 mb-4">
-          最新音乐
+      <section
+        v-if="
+          (categoriesWithLatest && categoriesWithLatest.length > 0) ||
+          (hotMusic && hotMusic.length > 0)
+        "
+        aria-labelledby="categories-title"
+        class="mb-8"
+      >
+        <h2
+          id="categories-title"
+          class="text-lg font-medium text-gray-300 mb-4"
+        >
+          资源分类
         </h2>
 
-        <div
-          v-if="loading"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          aria-busy="true"
-          aria-label="正在加载最新音乐"
-        >
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <div
-            v-for="(_, i) in skeletonItems"
-            :key="i"
-            class="card p-4 animate-pulse"
+            v-if="hotMusic && hotMusic.length > 0"
+            class="card p-4 flex flex-col"
           >
-            <div class="flex gap-4">
-              <div class="w-20 h-20 bg-gray-700 rounded-lg" />
-              <div class="flex-1 space-y-3 py-1">
-                <div class="h-4 bg-gray-700 rounded w-3/4" />
-                <div class="h-3 bg-gray-700 rounded w-1/2" />
-                <div class="h-4 bg-gray-700 rounded w-1/3 mt-4 ml-auto" />
+            <div class="flex items-center gap-3 mb-3">
+              <div
+                class="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center flex-shrink-0"
+              >
+                <MusicIcon class="w-5 h-5 text-primary-400" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-medium text-white truncate">最新音乐</h3>
               </div>
             </div>
+
+            <ul class="flex-1 space-y-1.5 min-w-0">
+              <li
+                v-for="music in hotMusic.slice(0, 11)"
+                :key="music.id"
+                class="flex items-center gap-2 min-w-0 cursor-pointer group"
+                @click="goToDetail(music)"
+              >
+                <MusicIcon class="w-3 h-3 text-primary-400 flex-shrink-0" />
+                <span
+                  class="text-sm text-gray-400 group-hover:text-primary-400 truncate transition-colors"
+                  :title="music.title + ' - ' + music.artist"
+                >
+                  {{ music.title }} - {{ music.artist }}
+                </span>
+              </li>
+            </ul>
           </div>
-        </div>
 
-        <div
-          v-else-if="!hotMusic || hotMusic.length === 0"
-          class="text-center py-12"
-        >
-          <p class="text-gray-500">暂无最新音乐</p>
-          <p class="text-gray-600 text-sm mt-2">请通过管理员后台添加音乐</p>
-        </div>
-
-        <div
-          v-else
-          class="grid grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          <article
-            v-for="music in hotMusic"
-            :key="music.id"
-            class="card p-2 md:4 cursor-pointer hover:border-primary-500/50 transition-colors"
-            @click="goToDetail(music)"
-            role="article"
-            :aria-label="music.title"
+          <div
+            v-for="cat in categoriesWithLatest"
+            :key="cat.id"
+            class="card p-4 flex flex-col"
           >
-            <div class="flex gap-4 items-center">
-              <img
-                :src="music.cover || config.app.baseURL + 'img/cover.png'"
-                :alt="music.title"
-                class="w-10 h-10 md:w-20 md:h-20 rounded-lg object-cover"
-                loading="lazy"
-                decoding="async"
-                @error="
-                  ($event.target as HTMLImageElement).src =
-                    config.app.baseURL + 'img/cover.png'
-                "
-              />
-              <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
-                <div>
-                  <h3 class="font-medium text-white truncate">
-                    {{ music.title }}
-                  </h3>
-                  <p class="text-sm text-gray-500 truncate">
-                    {{ music.artist }}
-                  </p>
-                </div>
-                <ArrowRight class="w-5 h-5 text-gray-600 self-end hidden md:block" />
+            <NuxtLink
+              :to="`/categorie/${cat.id}`"
+              class="flex items-center gap-3 mb-3 group"
+            >
+              <div
+                class="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary-500/30 transition-colors"
+              >
+                <FolderKanban class="w-5 h-5 text-primary-400" />
               </div>
-            </div>
-          </article>
+              <div class="flex-1 min-w-0">
+                <h3
+                  class="font-medium text-white truncate group-hover:text-primary-400 transition-colors"
+                >
+                  {{ cat.name }}
+                </h3>
+              </div>
+            </NuxtLink>
+
+            <ul class="flex-1 space-y-1.5 min-w-0">
+              <li
+                v-for="item in cat.latest.slice(0, 10)"
+                :key="item.id"
+                class="flex items-center gap-2 min-w-0"
+              >
+                <img
+                  v-if="item.type !== 'other'"
+                  :src="`/img/pan/${item.type}.png`"
+                  class="w-3 h-3 flex-shrink-0"
+                />
+                <NuxtLink
+                  :to="`/source/${item.id}`"
+                  class="text-sm text-gray-400 hover:text-primary-400 truncate transition-colors"
+                  :title="item.title"
+                >
+                  {{ item.title }}
+                </NuxtLink>
+              </li>
+              <li v-if="cat.latest.length === 0" class="text-sm text-gray-600">
+                暂无资源
+              </li>
+            </ul>
+
+            <NuxtLink
+              :to="`/categorie/${cat.id}`"
+              class="flex items-center justify-center gap-1 mt-3 pt-3 border-t border-gray-800 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+            >
+              查看更多
+              <ArrowRight class="w-3 h-3" />
+            </NuxtLink>
+          </div>
         </div>
       </section>
 
@@ -572,7 +639,7 @@ const getPic = (url: string) => {
             </h3>
             <p
               class="text-xs text-gray-500 truncate mt-1"
-              :title="item.vod_subtitle"
+              :title="item.vod_subtitle.replaceAll(/\s/g, '')"
             >
               {{ item.vod_subtitle || "-" }}
             </p>

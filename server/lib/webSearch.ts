@@ -4,6 +4,7 @@ import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { encryptUrl } from "#server/lib/crypto";
 import { getRandomIp, getRandomUA } from "#server/utils/source";
 import { getStorageType } from "#shared/utils";
+import axios, { AxiosRequestConfig } from "axios";
 
 export interface WebSearchResult {
   title: string;
@@ -79,7 +80,7 @@ const searchApi = async (
   keyword: string,
 ): Promise<WebSearchResult[]> => {
   const urlTemplate = config.url || "";
-  const method = (config.method || "GET").toUpperCase();
+  const method = (config.method || "GET").toLowerCase();
   const headers = JSON.parse(config.headers || "{}") as Record<string, string>;
   const fixedParams = JSON.parse(config.fixed_params || "{}") as any;
   const fieldMap = JSON.parse(config.field_map || "{}") as any;
@@ -88,27 +89,21 @@ const searchApi = async (
   let url = replaceFields(urlTemplate, ["keyword", "kw"], keyword);
   const params = fillParams(fixedParams, keyword);
 
-  const options: RequestInit = { method, headers };
-  if (method === "GET") {
-    const urlObj = new URL(url);
-    for (const [k, v] of Object.entries(params)) {
-      urlObj.searchParams.set(k, typeof v === "string" ? v : JSON.stringify(v));
-    }
-    url = urlObj.toString();
-    options.body = undefined;
-  } else {
-    options.body = JSON.stringify(params);
-  }
-
-  options.headers = {
-    ...buildBaseHeaders(headers),
+  const requestConfig: AxiosRequestConfig = {
+    method,
+    url,
+    headers: buildBaseHeaders(headers),
+    timeout: 15000,
   };
 
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    throw new Error(`请求失败: ${res.status}`);
+  if (method === "get") {
+    requestConfig.params = params;
+  } else {
+    requestConfig.data = params;
   }
-  const data = await res.json();
+
+  const res = await axios(requestConfig);
+  const data = res.data;
 
   const list = extractList(data, fieldMap.list_path || "");
   const results: WebSearchResult[] = [];
@@ -150,7 +145,7 @@ const searchPanSou = async (
   keyword: string,
 ): Promise<WebSearchResult[]> => {
   const url = config.url;
-  const method = (config.method || "POST").toUpperCase();
+  const method = (config.method || "POST").toLowerCase();
   const fixedParams = JSON.parse(config.fixed_params || "{}") as any;
   const token = fixedParams.token || "";
   const imageProxy = fixedParams.image_proxy || "";
@@ -164,10 +159,6 @@ const searchPanSou = async (
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const options: RequestInit = {
-    method,
-    headers,
-  };
   const body = {
     kw: keyword,
     cloud_types: ["quark", "baidu", "uc", "xunlei"],
@@ -175,27 +166,23 @@ const searchPanSou = async (
     res: "merged_by_type",
     ext: { is_all: true },
   };
-  if (method === "GET") {
-    const urlObj = new URL(url);
 
-    Object.entries(body).forEach(([k, v]) => {
-      if (typeof v === "string") {
-        urlObj.searchParams.set(k, v);
-      } else {
-        urlObj.searchParams.set(k, JSON.stringify(v));
-      }
-    });
-    options.body = undefined;
+  const requestConfig: AxiosRequestConfig = {
+    method,
+    url,
+    headers,
+    timeout: 30000,
+  };
+
+  if (method === "get") {
+    requestConfig.params = body;
   } else {
-    options.body = JSON.stringify(body);
+    requestConfig.data = body;
   }
 
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    throw new Error(`请求失败: ${res.status}`);
-  }
+  const res = await axios(requestConfig);
 
-  const data = (await res.json()) as {
+  const data = res.data.data as {
     merged_by_type?: Record<string, PanSouMergedItem[]>;
   };
 
@@ -247,13 +234,14 @@ const extractPanUrl = (text: string) => {
 };
 
 const fetchHtml = async (url: string, headers?: Record<string, string>) => {
-  const res = await fetch(url, {
-    headers: {
-      ...buildBaseHeaders(headers),
-    },
+  const res = await axios({
+    url,
+    method: "get",
+    headers: buildBaseHeaders(headers),
+    responseType: "text",
+    timeout: 15000,
   });
-  if (!res.ok) throw new Error(`请求失败: ${res.status}`);
-  return res.text();
+  return res.data;
 };
 
 const searchHtml = async (
@@ -339,11 +327,11 @@ export async function* webSearch(
     const cacheKey = `webSearch:${config.name}:${keyword}`;
 
     try {
-      const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
-      if (cached) {
-        for (const item of cached) yield item;
-        continue;
-      }
+      // const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
+      // if (cached) {
+      //   for (const item of cached) yield item;
+      //   continue;
+      // }
 
       let items: WebSearchResult[] = [];
       if (config.type === "api") {

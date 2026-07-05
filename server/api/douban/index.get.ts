@@ -1,3 +1,5 @@
+import axios from "axios";
+
 interface DoubanItem {
   id?: string;
   uri?: string;
@@ -546,7 +548,7 @@ async function fetchCategory(
   const url = buildCategoryUrl(categoryId, page, filters);
   const referer = getReferer(categoryId);
 
-  const res = await fetch(url, {
+  const res = await axios.get(url, {
     headers: {
       Accept: "*/*",
       "Accept-Encoding": "gzip, deflate, br",
@@ -557,14 +559,7 @@ async function fetchCategory(
     },
   });
 
-  if (!res.ok) {
-    throw createError({
-      statusCode: 502,
-      message: `豆瓣接口请求失败: ${res.status}`,
-    });
-  }
-
-  const data = (await res.json()) as DoubanResponse;
+  const data = res.data as DoubanResponse;
   if (!data.items || !Array.isArray(data.items)) {
     throw createError({ statusCode: 502, message: "豆瓣接口返回数据格式错误" });
   }
@@ -613,21 +608,14 @@ async function fetchShortDrama(
     },
   ).toString()}`;
 
-  const res = await fetch(url, {
+  const res = await axios.get(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.87 Safari/537.36",
     },
   });
 
-  if (!res.ok) {
-    throw createError({
-      statusCode: 502,
-      message: `短剧接口请求失败: ${res.status}`,
-    });
-  }
-
-  const json = (await res.json()) as {
+  const json = res.data as {
     data?: {
       datalist?: Array<{
         id?: string;

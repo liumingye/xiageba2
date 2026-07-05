@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   RotateCcw,
   Search,
+  Clipboard,
   Music as MusicIcon,
   FolderOpen,
   ExternalLink,
@@ -122,7 +123,7 @@ const setModalResult = async (url: string) => {
   modalQrCode.value = await qrcode.toDataURL(url, {
     width: 200,
     margin: 2,
-    color: { dark: "#ffffff", light: "#1e293b" },
+    color: { dark: "#000", light: "#fff" },
   });
 };
 
@@ -850,51 +851,25 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                 </button>
               </div>
               <div class="p-4">
-                <h4
-                  v-if="modalTitle"
-                  class="text-white text-sm font-medium truncate mb-3"
-                >
-                  {{ modalTitle }}
-                </h4>
                 <div v-if="modalFetching" class="text-center py-8">
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-gray-400 text-sm">获取中...</p>
+                  <p class="text-gray-400 text-sm">
+                    正在获取资源链接...<br />请耐心等待，这可能需要几秒钟
+                  </p>
                 </div>
                 <div v-else-if="modalError" class="text-center py-8">
                   <p class="text-red-400 text-sm">{{ modalError }}</p>
                 </div>
                 <div v-else-if="modalUrl" class="space-y-4">
-                  <div class="bg-gray-800 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-2">
-                      <span class="text-gray-500">下载链接</span>
-                      <div>
-                        <button
-                          class="text-sm px-2 py-2 border border-primary-400 hover:border-primary-300 rounded-md transition-colors"
-                          @click="copyUrl(modalUrl)"
-                        >
-                          复制链接
-                        </button>
-                        <a
-                          v-if="!isMobile"
-                          class="text-sm ml-2 px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition-colors"
-                          :href="modalUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          打开链接
-                        </a>
-                      </div>
-                    </div>
-                    <p class="text-sm text-gray-300 break-all font-mono">
-                      {{ modalUrl }}
-                    </p>
-                  </div>
                   <div class="flex flex-col items-center gap-4">
                     <span
-                      >可使用{{ getTypeName(getStorageType(modalUrl)) }} APP
-                      扫码获取</span
+                      >可使用
+                      <span class="text-primary-500">{{
+                        getTypeName(getStorageType(modalUrl))
+                      }}</span>
+                      APP 扫码获取</span
                     >
                     <div v-if="modalQrCode" class="flex-shrink-0">
                       <img
@@ -909,18 +884,39 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                     >
                       <QrCode class="w-10 h-10 text-gray-600" />
                     </div>
-                    <a
-                      v-if="isMobile"
-                      :href="modalUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                    <p
+                      class="w-full text-white font-medium truncate text-center text-lg"
                     >
-                      <ExternalLink class="w-5 h-5" />
-                      打开网盘下载
-                    </a>
-                    <p class="text-xs text-gray-400 mt-2">
-                      本站链接由程序自动收集自公开网盘，不存储、不传播任何文件，跳转链接指向网盘官网。<br />
+                      {{ modalTitle }}
+                    </p>
+                    <p class="text-center break-all">
+                      资源地址：<a
+                        :href="modalUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-primary-500"
+                        >{{ modalUrl }}</a
+                      >
+                    </p>
+                    <div class="w-full flex items-center justify-center gap-2">
+                      <button
+                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600 hover:text-white"
+                        @click="copyUrl(modalUrl)"
+                      >
+                        <Clipboard class="w-4 h-4" />
+                        复制链接
+                      </button>
+                      <a
+                        :href="modalUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all h-9 px-4 py-2 flex-1 bg-primary-600 hover:bg-primary-700 text-white"
+                      >
+                        <ExternalLink class="w-4 h-4" />
+                        打开链接
+                      </a>
+                    </div>
+                    <p class="text-xs text-gray-400">
                       文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。
                     </p>
                   </div>
