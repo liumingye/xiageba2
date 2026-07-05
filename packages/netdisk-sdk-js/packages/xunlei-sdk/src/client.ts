@@ -157,7 +157,7 @@ export class XunleiClient {
     return data.captcha_token;
   }
 
-  private loadTokenFromFile(): void {
+  private async loadTokenFromFile(): Promise<void> {
     try {
       const raw = fs.readFileSync(this.config.tokenCachePath, "utf8");
       const data = JSON.parse(raw) as ICachedToken;

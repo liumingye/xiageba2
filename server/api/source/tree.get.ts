@@ -11,6 +11,7 @@ import {
   IFile as IBaiduFile,
 } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { updateXunleiRefreshToken } from "#server/utils/source";
 
 const MAX_DEPTH = 20;
 
@@ -265,7 +266,10 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
     throw createError({ statusCode: 404, message: "无效的迅雷分享链接" });
   }
 
-  const client = new XunleiClient({ refreshToken });
+  const client = new XunleiClient({
+    refreshToken,
+    onRefreshToken: updateXunleiRefreshToken,
+  });
 
   const detail = await client.shareApi.getShare({
     shareId: parsed.fid,

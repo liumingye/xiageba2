@@ -4,6 +4,7 @@ import { getStorageType } from "#shared/utils";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { updateXunleiRefreshToken } from "#server/utils/source";
 
 const THIRTY_MINUTES = 30 * 60 * 1000;
 
@@ -143,7 +144,10 @@ async function deleteXunleiResource(fids: string[]): Promise<string[]> {
     throw new Error("未配置 xunlei 网盘 Refresh Token");
   }
 
-  const client = new XunleiClient({ refreshToken });
+  const client = new XunleiClient({
+    refreshToken,
+    onRefreshToken: updateXunleiRefreshToken,
+  });
 
   const _fids = fids.flatMap((item) => JSON.parse(item));
 

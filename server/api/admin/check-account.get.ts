@@ -2,6 +2,7 @@ import { getConfigValues } from "#server/lib/configCache";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { updateXunleiRefreshToken } from "#server/utils/source";
 
 const TYPE_NAMES: Record<string, string> = {
   quark: "夸克网盘",
@@ -55,7 +56,10 @@ export default defineEventHandler(async (event) => {
         break;
       }
       case "xunlei": {
-        const client = new XunleiClient({ refreshToken: credential });
+        const client = new XunleiClient({
+          refreshToken: credential,
+          onRefreshToken: updateXunleiRefreshToken,
+        });
         await client.fsApi.listFiles({ parentId: "" });
         break;
       }

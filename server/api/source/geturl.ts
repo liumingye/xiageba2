@@ -5,6 +5,7 @@ import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
+import { updateXunleiRefreshToken } from "#server/utils/source";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -91,6 +92,7 @@ async function transferQuarkUC(
   let token:
     | {
         stoken: string;
+        title: string;
       }
     | undefined;
   try {
@@ -262,7 +264,10 @@ async function transferXunlei(
     });
   }
 
-  const client = new XunleiClient({ refreshToken });
+  const client = new XunleiClient({
+    refreshToken,
+    onRefreshToken: updateXunleiRefreshToken,
+  });
 
   let detail: any;
   try {

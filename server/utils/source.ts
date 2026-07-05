@@ -1,3 +1,14 @@
+import { setConfigValue } from "#server/lib/configCache";
+import { prisma } from "#server/lib/prisma";
+
+export const updateXunleiRefreshToken = async (refreshToken: string) => {
+  await prisma.config.update({
+    where: { key: "xunlei_refresh_token" },
+    data: { value: refreshToken },
+  });
+  setConfigValue("xunlei_refresh_token", refreshToken);
+};
+
 // IP字符串转数字
 function ipToNum(ip: string) {
   return ip.split(".").reduce((sum, part) => (sum << 8) + Number(part), 0);
