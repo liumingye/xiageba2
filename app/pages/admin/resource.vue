@@ -298,36 +298,26 @@ const deleteSource = async (id: string) => {
         <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <!-- <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20"
-              >
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 ID
-              </th> -->
+              </th>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 资源名称
               </th>
-              <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-28"
-              >
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 分类
               </th>
-              <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-48"
-              >
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 地址
               </th>
-              <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40"
-              >
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 入库时间
               </th>
-              <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40"
-              >
+              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 更新时间
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24"
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
               >
                 操作
               </th>
@@ -339,36 +329,35 @@ const deleteSource = async (id: string) => {
               :key="item.id"
               class="border-t border-gray-800 hover:bg-gray-800/50"
             >
-              <!-- <td
-                class="px-4 py-3 text-gray-400 text-xs font-mono truncate w-20"
-              >
-                <span :title="item.id">{{ item.id.slice(0, 8) }}</span>
-              </td> -->
-              <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
-                  <span class="text-white truncate" :title="item.title">{{
-                    item.title
-                  }}</span>
-                </div>
+              <td class="px-4 py-3 text-gray-400 text-xs">
+                <span :title="item.id">{{ item.id }}</span>
               </td>
-              <td class="px-4 py-3 text-gray-300 w-28">
+              <td class="px-4 py-3 max-w-60 break-words">
+                <span class="text-white" :title="item.title">{{
+                  item.title
+                }}</span>
+              </td>
+              <td class="px-4 py-3 text-gray-300">
                 {{ categories.find((cat) => cat.id === item.cid)?.name || "-" }}
               </td>
-              <td class="px-4 py-3 w-48">
+              <td class="px-4 py-3 max-w-60 break-words">
                 <a
                   :href="item.url"
                   target="_blank"
-                  class="text-primary-400 hover:text-primary-300 text-sm truncate block"
+                  class="text-primary-400 hover:text-primary-300 text-sm"
                   :title="item.url"
                 >
                   {{ item.url }}
                 </a>
               </td>
-              <td class="px-4 py-3 text-gray-400 text-sm w-40">
+              <td class="px-4 py-3 text-gray-400 text-sm">
                 {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
               </td>
-              <td class="px-4 py-3 text-gray-400 text-sm w-40">
-                {{ new Date(item.updatedAt).toLocaleString("zh-CN") }}
+              <td class="px-4 py-3 text-gray-400 text-sm">
+                <template v-if="item.updatedAt">
+                  {{ new Date(item.updatedAt).toLocaleString("zh-CN") }}
+                </template>
+                <span v-else>-</span>
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-2">
