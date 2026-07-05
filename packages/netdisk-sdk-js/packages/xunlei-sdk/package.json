@@ -3,16 +3,10 @@
   "version": "0.1.0",
   "description": "xunlei netdisk sdk",
   "source": "src/index.ts",
-  "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
-  },
+  "main": "dist/main.cjs",
+  "module": "dist/module.mjs",
+  "types": "dist/types.d.ts",
+  "type": "module",
   "scripts": {
     "watch": "parcel watch",
     "build": "parcel build"
