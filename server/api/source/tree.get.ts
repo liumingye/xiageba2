@@ -106,13 +106,13 @@ async function buildQuarkUCTree(
     stoken = tokenRes.stoken;
   } catch (e: any) {
     throw createError({
-      statusCode: 500,
+      statusCode: 404,
       message: `获取分享令牌失败: ${e.message || "未知错误"}`,
     });
   }
 
   if (!stoken) {
-    throw createError({ statusCode: 500, message: "获取分享令牌失败" });
+    throw createError({ statusCode: 404, message: "获取分享令牌失败" });
   }
 
   const lines: string[] = [];
@@ -186,7 +186,7 @@ async function buildBaiduTree(shareUrl: string): Promise<string> {
 
   const shareParam = parseShareParam(shareUrl);
   if (!shareParam) {
-    throw createError({ statusCode: 400, message: "无效的百度分享链接" });
+    throw createError({ statusCode: 404, message: "无效的百度分享链接" });
   }
 
   const client = new BaiduClient(cookie);
@@ -262,7 +262,7 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
 
   const parsed = parseShareUrl(shareUrl);
   if (!parsed.fid) {
-    throw createError({ statusCode: 400, message: "无效的迅雷分享链接" });
+    throw createError({ statusCode: 404, message: "无效的迅雷分享链接" });
   }
 
   const client = new XunleiClient({ refreshToken });
@@ -274,7 +274,7 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
   });
 
   if (detail.files.length === 0) {
-    return "（空目录）";
+    throw createError({ statusCode: 404, message: "分享内容为空" });
   }
 
   const lines: string[] = [];

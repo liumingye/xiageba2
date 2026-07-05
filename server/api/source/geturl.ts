@@ -88,15 +88,26 @@ async function transferQuarkUC(
   const shareApi = client.shareApi;
 
   // 步骤1: 获取stoken
-  const token = await shareApi.token(pwdId, passcode);
-  if (!token.stoken) {
+  let token:
+    | {
+        stoken: string;
+      }
+    | undefined;
+  try {
+    token = await shareApi.token(pwdId, passcode);
+  } catch (e: any) {
+    // 处理分享不存在的情况
+    throw createError({ statusCode: 404, message: e.message });
+  }
+
+  if (!token?.stoken) {
     throw createError({ statusCode: 500, message: "获取stoken失败" });
   }
 
   // 步骤2: 获取分享详情
   const detail = await shareApi.detail(pwdId, token.stoken);
   if (!detail.list || detail.list.length === 0) {
-    throw createError({ statusCode: 500, message: "分享内容为空" });
+    throw createError({ statusCode: 404, message: "分享内容为空" });
   }
 
   // 步骤3: 转存分享
@@ -167,22 +178,32 @@ async function transferBaidu(
     throw createError({ statusCode: 500, message: "无效的百度分享链接" });
   }
 
-  const client = new BaiduClient(cookie);
-  await client.init();
-
-  const shareInfo = await client.fsShareApi.wxlist({
-    ...shareParam,
-    dir: "/",
-    page: 1,
-    num: 1000,
-    root: 1,
-  });
-
-  if (!shareInfo.list || shareInfo.list.length === 0) {
-    throw createError({ statusCode: 500, message: "分享内容为空" });
+  let client: BaiduClient;
+  try {
+    client = new BaiduClient(cookie);
+    await client.init();
+  } catch (err) {
+    throw createError({ statusCode: 500, message: "初始化百度网盘客户端失败" });
   }
 
-  const fsids = shareInfo.list.map((f) => f.fs_id);
+  let shareInfo: any;
+  try {
+    shareInfo = await client.fsShareApi.wxlist({
+      ...shareParam,
+      dir: "/",
+      page: 1,
+      num: 1000,
+      root: 1,
+    });
+  } catch (err) {
+    throw createError({ statusCode: 404, message: "分享已过期" });
+  }
+
+  if (!shareInfo.list || shareInfo.list.length === 0) {
+    throw createError({ statusCode: 404, message: "分享内容为空" });
+  }
+
+  const fsids = shareInfo.list.map((f: { fs_id: any }) => f.fs_id);
   const result = await client.fsShareApi.transfer(
     {
       shareid: shareInfo.shareid,
@@ -243,13 +264,16 @@ async function transferXunlei(
 
   const client = new XunleiClient({ refreshToken });
 
-  const detail = await client.shareApi.getShare({ shareId, passCode });
-
-  console.log(detail);
+  let detail: any;
+  try {
+    detail = await client.shareApi.getShare({ shareId, passCode });
+  } catch (e) {
+    throw createError({ statusCode: 404, message: "分享已过期" });
+  }
 
   if (detail.files.length === 0) {
     throw createError({
-      statusCode: 500,
+      statusCode: 404,
       message: "分享内容为空",
     });
   }
@@ -352,14 +376,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "无法从URL中提取文件ID" });
   }
 
-  // 检查是否已存在转存记录（isTemp=true 且 fid 匹配）
-  // const tempRecord = await prisma.source.findFirst({
-  //   where: { fid, isTemp: true },
-  // });
-  // if (tempRecord) {
-  //   return { url: tempRecord.url };
-  // }
-
   // 根据网盘类型执行转存
   let shareUrl: string;
   let _fid: string;
@@ -383,10 +399,16 @@ export default defineEventHandler(async (event) => {
       });
     }
   } catch (e: any) {
+    // 404 表示分享不存在， 更新状态为 0
+    if (e.statusCode === 404) {
+      await prisma.source.update({
+        where: { id },
+        data: { status: 0 },
+      });
+    }
     // SDK 抛出的错误转换为友好提示
-    if (e.statusCode) throw e;
     throw createError({
-      statusCode: 500,
+      statusCode: e.statusCode || 500,
       message: `获取网盘链接失败: ${e.message || "未知错误"}`,
     });
   }

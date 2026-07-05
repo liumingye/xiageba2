@@ -2,9 +2,10 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { Save, UserCog, Check } from "@lucide/vue";
+import { Save, UserCog, Check, Loader2 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import { useToast } from "~/composables/useToast";
 
 interface AccountConfig {
   quark_cookie: string;
@@ -25,6 +26,7 @@ const {
   initialized,
   getAuthHeaders,
 } = useAuth();
+const toast = useToast();
 
 const config = ref<AccountConfig>({
   quark_cookie: "",
@@ -39,6 +41,47 @@ const config = ref<AccountConfig>({
 
 const saving = ref(false);
 const saved = ref(false);
+
+const TYPE_LABELS: Record<string, string> = {
+  quark: "夸克网盘",
+  baidu: "百度网盘",
+  uc: "UC 网盘",
+  xunlei: "迅雷云盘",
+};
+
+const checking = ref<Record<string, boolean>>({
+  quark: false,
+  baidu: false,
+  uc: false,
+  xunlei: false,
+});
+
+const checkAccount = async (type: string) => {
+  checking.value[type] = true;
+  try {
+    const res = await fetch(`/api/admin/check-account?type=${type}`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (res.status === 401) {
+      logout();
+      router.push("/admin/login");
+      return;
+    }
+
+    const data = await res.json();
+    const label = TYPE_LABELS[type];
+    if (data.success) {
+      toast.success(`${label}账号有效`);
+    } else {
+      toast.error(`${label}账号无效：${data.message || "未知错误"}`);
+    }
+  } catch (error) {
+    toast.error("检测失败，请重试");
+  } finally {
+    checking.value[type] = false;
+  }
+};
 
 const loadConfig = async () => {
   const res = await fetch("/api/admin/config/accounts", {
@@ -113,16 +156,26 @@ const saveConfig = async () => {
 
       <div class="space-y-6">
         <div class="card p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div
-              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+              >
+                <UserCog class="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 class="text-white font-medium">夸克网盘</h3>
+                <p class="text-gray-500 text-sm">配置夸克网盘 Cookie 和临时目录</p>
+              </div>
+            </div>
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="checking.quark"
+              @click="checkAccount('quark')"
             >
-              <UserCog class="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <h3 class="text-white font-medium">夸克网盘</h3>
-              <p class="text-gray-500 text-sm">配置夸克网盘 Cookie 和临时目录</p>
-            </div>
+              <Loader2 v-if="checking.quark" class="w-4 h-4 animate-spin" />
+              {{ checking.quark ? "检测中..." : "检测账号" }}
+            </button>
           </div>
           <div class="space-y-4">
             <div>
@@ -147,16 +200,26 @@ const saveConfig = async () => {
         </div>
 
         <div class="card p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div
-              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+              >
+                <UserCog class="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 class="text-white font-medium">百度网盘</h3>
+                <p class="text-gray-500 text-sm">配置百度网盘 Cookie 和临时目录</p>
+              </div>
+            </div>
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="checking.baidu"
+              @click="checkAccount('baidu')"
             >
-              <UserCog class="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <h3 class="text-white font-medium">百度网盘</h3>
-              <p class="text-gray-500 text-sm">配置百度网盘 Cookie 和临时目录</p>
-            </div>
+              <Loader2 v-if="checking.baidu" class="w-4 h-4 animate-spin" />
+              {{ checking.baidu ? "检测中..." : "检测账号" }}
+            </button>
           </div>
           <div class="space-y-4">
             <div>
@@ -181,16 +244,26 @@ const saveConfig = async () => {
         </div>
 
         <div class="card p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div
-              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+              >
+                <UserCog class="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 class="text-white font-medium">UC 网盘</h3>
+                <p class="text-gray-500 text-sm">配置 UC 网盘 Cookie 和临时目录</p>
+              </div>
+            </div>
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="checking.uc"
+              @click="checkAccount('uc')"
             >
-              <UserCog class="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <h3 class="text-white font-medium">UC 网盘</h3>
-              <p class="text-gray-500 text-sm">配置 UC 网盘 Cookie 和临时目录</p>
-            </div>
+              <Loader2 v-if="checking.uc" class="w-4 h-4 animate-spin" />
+              {{ checking.uc ? "检测中..." : "检测账号" }}
+            </button>
           </div>
           <div class="space-y-4">
             <div>
@@ -215,16 +288,26 @@ const saveConfig = async () => {
         </div>
 
         <div class="card p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div
-              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+              >
+                <UserCog class="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 class="text-white font-medium">迅雷云盘</h3>
+                <p class="text-gray-500 text-sm">配置迅雷云盘 Refresh Token 和临时目录</p>
+              </div>
+            </div>
+            <button
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="checking.xunlei"
+              @click="checkAccount('xunlei')"
             >
-              <UserCog class="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <h3 class="text-white font-medium">迅雷云盘</h3>
-              <p class="text-gray-500 text-sm">配置迅雷云盘 Refresh Token 和临时目录</p>
-            </div>
+              <Loader2 v-if="checking.xunlei" class="w-4 h-4 animate-spin" />
+              {{ checking.xunlei ? "检测中..." : "检测账号" }}
+            </button>
           </div>
           <div class="space-y-4">
             <div>
