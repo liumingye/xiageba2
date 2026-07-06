@@ -12,19 +12,17 @@ import {
   ArrowRight,
   Download,
   QrCode,
-  Calendar,
   X,
   Globe,
-  Loader2,
   Folder,
-  CheckCircle,
-  XCircle,
   AlertTriangle,
 } from "@lucide/vue";
 import { getTypeName } from "~/utils/index";
 import { useClipboard, useMediaQuery } from "@vueuse/core";
 import WebSearchResults from "~/components/WebSearchResults.vue";
 import type { WebSearchResult } from "~/components/WebSearchResults.vue";
+import LocalResourceItem from "~/components/LocalResourceItem.vue";
+import type { SourceItem } from "~/components/LocalResourceItem.vue";
 
 interface PaginatedResponse<T = any> {
   data: T[];
@@ -32,15 +30,6 @@ interface PaginatedResponse<T = any> {
   page: number;
   pageSize: number;
   totalPages: number;
-}
-
-interface SourceItem {
-  id: string;
-  title: string;
-  type: string;
-  menu: string;
-  description: string;
-  createdAt: string;
 }
 
 const config = useRuntimeConfig();
@@ -386,126 +375,19 @@ const skeletonList = Array.from({ length: 4 });
 
 const webSearchRef = ref<InstanceType<typeof WebSearchResults> | null>(null);
 
-onBeforeUnmount(() => {
-  if (pancheckPollTimer) {
-    clearInterval(pancheckPollTimer);
-    pancheckPollTimer = null;
-  }
+const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
+  enabled: !isMusic.value,
 });
-
-// PanCheck 链接有效性检测
-const pancheckSubmissionId = ref<number | null>(null);
-const pancheckServerIndex = ref<number | null>(null);
-const pancheckChecking = ref(false);
-const pancheckSkipCheck = ref(true);
-const pancheckValidIds = ref<Set<string>>(new Set());
-let pancheckPollTimer: ReturnType<typeof setInterval> | null = null;
-
-const submitPanCheck = async () => {
-  if (pancheckPollTimer) {
-    clearInterval(pancheckPollTimer);
-    pancheckPollTimer = null;
-  }
-
-  if (isMusic.value) return;
-  if (results.value.length === 0) return;
-
-  const ids = (results.value as SourceItem[]).map((item) => item.id);
-  if (ids.length === 0) return;
-
-  pancheckChecking.value = true;
-  pancheckValidIds.value.clear();
-
-  try {
-    const res = await fetch("/api/source/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    });
-    const data = await res.json();
-    console.log(data);
-    if (data.success && data.submission_id) {
-      pancheckSubmissionId.value = data.submission_id;
-      pancheckServerIndex.value = data.server_index;
-      startPanCheckPoll();
-    } else {
-      pancheckChecking.value = false;
-      // 检查失败，跳过
-      pancheckSkipCheck.value = true;
-    }
-  } catch {
-    pancheckChecking.value = true;
-  }
-};
-
-let pancheckPollCancel: AbortController | null = null;
-let pancheckSignal: AbortSignal | null = null;
-
-const startPanCheckPoll = () => {
-  pancheckPollCancel?.abort();
-  pancheckPollCancel = null;
-  if (pancheckPollTimer) clearInterval(pancheckPollTimer);
-  pancheckPollTimer = setInterval(async () => {
-    if (!pancheckSubmissionId.value) {
-      clearInterval(pancheckPollTimer!);
-      pancheckPollTimer = null;
-      return;
-    }
-    const checkType = searchType.value;
-    const checkPage = currentPage.value;
-    const checkKeyword = searchKeyword.value;
-    try {
-      pancheckPollCancel = new AbortController();
-      pancheckSignal = pancheckPollCancel.signal;
-      const res = await fetch(
-        `/api/source/check?page=${currentPage.value}&submission_id=${pancheckSubmissionId.value}${pancheckServerIndex.value !== null ? `&server_index=${pancheckServerIndex.value}` : ""}`,
-        {
-          signal: pancheckSignal,
-        },
-      );
-      const data = await res.json();
-      if (
-        data.success &&
-        checkType === searchType.value &&
-        checkPage === currentPage.value &&
-        checkKeyword === searchKeyword.value
-      ) {
-        pancheckSkipCheck.value = false;
-        pancheckValidIds.value.clear();
-        for (const id of data.validIds) pancheckValidIds.value.add(id);
-        if (data.pendingIds.length === 0) {
-          clearInterval(pancheckPollTimer!);
-          pancheckPollTimer = null;
-          pancheckChecking.value = false;
-        }
-      } else {
-        // 检查失败，跳过
-        pancheckSkipCheck.value = true;
-      }
-    } catch (error) {
-      // 轮询失败继续
-      console.error("PanCheck轮询失败", error);
-    }
-  }, 3000);
-};
-
-const getCheckStatus = (
-  id: string,
-): "valid" | "invalid" | "checking" | null => {
-  if (!import.meta.client) return null;
-  if (pancheckChecking.value) return "checking";
-  if (pancheckSkipCheck.value) return null;
-  if (pancheckValidIds.value.has(id)) return "valid";
-  return "invalid";
-};
 
 watch(
   [results],
   () => {
     if (import.meta.client) {
-      pancheckPollCancel?.abort();
-      pancheckPollCancel = null;
-      submitPanCheck();
+      stopPanCheck();
+      if (!isMusic.value && results.value.length > 0) {
+        const ids = (results.value as SourceItem[]).map((item) => item.id);
+        submitPanCheck(ids);
+      }
     }
   },
   { immediate: true },
@@ -522,8 +404,6 @@ const copyUrl = async (url: string) => {
     showError("复制失败");
   }
 };
-
-const isMobile = useMediaQuery("(max-width: 768px)");
 </script>
 
 <template>
@@ -666,98 +546,15 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                 <h2 class="text-gray-500 text-sm">本地资源</h2>
               </div>
 
-              <article
-                v-for="item in results as SourceItem[]"
+              <LocalResourceItem
+                v-for="item in results"
                 :key="item.id"
-                class="relative card p-3 hover:border-primary-500/50 transition-colors"
-                :class="{
-                  'pointer-events-none': getCheckStatus(item.id) === 'invalid',
-                }"
-                role="article"
-              >
-                <div
-                  v-if="getCheckStatus(item.id) === 'invalid'"
-                  class="absolute inset-0 flex items-center justify-center bg-red-900/50 text-red-400 flex-shrink-0"
-                  title="链接失效"
-                />
-                <div class="flex flex-col">
-                  <div
-                    class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
-                  >
-                    <h3
-                      class="text-white truncate hover:text-primary-400 cursor-pointer flex items-center gap-2"
-                      @click="router.push(`/source/${item.id}`)"
-                    >
-                      {{ item.title }}
-                      <CheckCircle
-                        v-if="getCheckStatus(item.id) === 'valid'"
-                        class="w-4 h-4 text-green-400 flex-shrink-0"
-                        title="链接有效"
-                      />
-                      <XCircle
-                        v-if="getCheckStatus(item.id) === 'invalid'"
-                        class="w-4 h-4 text-red-400 flex-shrink-0"
-                        title="链接失效"
-                      />
-                      <Loader2
-                        v-if="getCheckStatus(item.id) === 'checking'"
-                        class="w-4 h-4 text-gray-400 animate-spin flex-shrink-0"
-                        title="检测中"
-                      />
-                    </h3>
-                    <div
-                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
-                    >
-                      <img
-                        v-if="item.type !== 'other'"
-                        :src="`/img/pan/${item.type}.png`"
-                        class="w-4 h-4 mr-1"
-                      />
-                      {{ getTypeName(item.type) }}
-                    </div>
-                  </div>
-                  <template v-if="item.menu">
-                    <div class="text-sm mb-2 text-gray-300 font-bold">
-                      文件内容:
-                    </div>
-                    <pre
-                      class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
-                      >{{ item.menu }}</pre
-                    >
-                  </template>
-                </div>
-                <div
-                  class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
-                >
-                  <span class="text-xs text-gray-500 flex items-center gap-1">
-                    <Calendar class="w-3 h-3" />
-                    {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
-                  </span>
-                  <div
-                    class="flex items-center gap-2"
-                    v-if="getCheckStatus(item.id) !== 'invalid'"
-                  >
-                    <button
-                      v-if="
-                        !item.menu &&
-                        ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)
-                      "
-                      class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                      @click.stop="openTreeModal({ item, type: 'id' })"
-                    >
-                      <Folder class="w-3 h-3" />
-                      目录
-                    </button>
-                    <button
-                      class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                      @click.stop="openModal({ item, type: 'id' })"
-                    >
-                      <Download class="w-3 h-3" />
-                      获取链接
-                    </button>
-                  </div>
-                </div>
-              </article>
+                :item="item"
+                :check-status="getCheckStatus(item.id)"
+                @click-title="router.push(`/source/${item.id}`)"
+                @open-tree="openTreeModal({ item, type: 'id' })"
+                @open-modal="openModal({ item, type: 'id' })"
+              />
             </template>
 
             <template v-if="currentPage === 1">

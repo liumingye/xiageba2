@@ -128,7 +128,6 @@ const handleFilterChange = () => {
 
 const openAddModal = () => {
   showAddModal.value = true;
-  // newCid.value = categories.value[0]?.id || "";
   newTitle.value = "";
   newUrl.value = "";
   newDescription.value = "";
@@ -173,11 +172,9 @@ const fetchMenu = async () => {
   }
 };
 
+const addSourceing = ref(false);
 const addSource = async () => {
-  // if (!newCid.value) {
-  //   error.value = "请选择分类";
-  //   return;
-  // }
+  if (addSourceing.value) return;
   if (!newTitle.value.trim()) {
     error.value = "资源名称不能为空";
     return;
@@ -186,6 +183,8 @@ const addSource = async () => {
     error.value = "资源地址不能为空";
     return;
   }
+
+  addSourceing.value = true;
 
   const res = await fetch("/api/admin/source", {
     method: "POST",
@@ -205,21 +204,21 @@ const addSource = async () => {
   if (res.ok) {
     await loadSources();
     closeAddModal();
+    addSourceing.value = false;
   } else if (res.status === 401) {
     logout();
     router.push("/admin/login");
   } else {
     const err = await res.json();
     error.value = err.message || "添加失败";
+    addSourceing.value = false;
   }
 };
 
+const saveEditing = ref(false);
 const saveEdit = async () => {
+  if (saveEditing.value) return;
   if (!editId.value) return;
-  // if (!editCid.value) {
-  //   error.value = "请选择分类";
-  //   return;
-  // }
   if (!editTitle.value.trim()) {
     error.value = "资源名称不能为空";
     return;
@@ -229,6 +228,7 @@ const saveEdit = async () => {
     return;
   }
 
+  saveEditing.value = true;
   const res = await fetch(`/api/admin/source/${editId.value}`, {
     method: "PUT",
     headers: {
@@ -247,12 +247,14 @@ const saveEdit = async () => {
   if (res.ok) {
     await loadSources();
     closeEditModal();
+    saveEditing.value = false;
   } else if (res.status === 401) {
     logout();
     router.push("/admin/login");
   } else {
     const err = await res.json();
     error.value = err.message || "保存失败";
+    saveEditing.value = false;
   }
 };
 
@@ -564,6 +566,7 @@ const importSources = async () => {
                 <button
                   class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
                   @click="addSource"
+                  :disabled="addSourceing"
                 >
                   添加
                 </button>

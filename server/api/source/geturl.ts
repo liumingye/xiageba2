@@ -365,13 +365,14 @@ export default defineEventHandler(async (event) => {
       });
     }
   } catch (e: any) {
-    // 404 表示分享不存在， 更新状态为 0
-    // if (e.statusCode === 404) {
-    //   await prisma.source.update({
-    //     where: { id },
-    //     data: { status: 0 },
-    //   });
-    // }
+    // 404 表示分享不存在，
+    if (e.statusCode === 404) {
+      // invalidNum +1
+      await prisma.source.update({
+        where: { id },
+        data: { invalidNum: { increment: 1 } },
+      });
+    }
     // SDK 抛出的错误转换为友好提示
     throw createError({
       statusCode: e.statusCode || 500,
@@ -390,7 +391,7 @@ export default defineEventHandler(async (event) => {
   });
 
   if (shareUrl) {
-    await setRedisCache(cacheKey, { url: shareUrl }, 60 * 30);
+    await setRedisCache(cacheKey, { url: shareUrl }, 60 * 20);
   }
 
   return { url: shareUrl };
