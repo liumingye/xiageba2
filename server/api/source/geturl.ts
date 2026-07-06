@@ -208,7 +208,7 @@ async function transferBaidu(
 
   let fids: string[] = [];
   if (result.info) {
-    fids = result.info.map((item) => tempDir + "/" + item.path);
+    fids = result.info.map((item) => tempDir + item.path);
   }
 
   return {
