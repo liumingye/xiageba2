@@ -2,7 +2,7 @@
 import { getStorageType } from "#shared/utils";
 import {
   CircleSlash,
-  AlertTriangle,
+  AlertCircle,
   RotateCcw,
   Search,
   Clipboard,
@@ -17,17 +17,14 @@ import {
   Globe,
   Loader2,
   Folder,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
 } from "@lucide/vue";
 import { getTypeName } from "~/utils/index";
 import { useClipboard, useMediaQuery } from "@vueuse/core";
-
-interface WebSearchResult {
-  title: string;
-  url: string;
-  source: string;
-  image?: string;
-  type: string;
-}
+import WebSearchResults from "~/components/WebSearchResults.vue";
+import type { WebSearchResult } from "~/components/WebSearchResults.vue";
 
 interface PaginatedResponse<T = any> {
   data: T[];
@@ -387,77 +384,132 @@ const goToDetail = (music: Music) => {
 
 const skeletonList = Array.from({ length: 4 });
 
-const webSearchResults = ref<WebSearchResult[]>([]);
-const webSearching = ref(true);
-const webSearchError = ref("");
-let webSearchSource: EventSource | null = null;
-
-const startWebSearch = () => {
-  if (webSearchSource) {
-    webSearchSource.close();
-    webSearchSource = null;
-  }
-  webSearchResults.value = [];
-  webSearchError.value = "";
-
-  if (isMusic.value || !searchKeyword.value.trim()) {
-    webSearching.value = false;
-    return;
-  }
-
-  if (typeof EventSource === "undefined") return;
-
-  webSearching.value = true;
-  const es = new EventSource(
-    `/api/other/web_search?title=${encodeURIComponent(searchKeyword.value.trim())}`,
-  );
-  webSearchSource = es;
-
-  es.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data);
-      if (msg.type === "result" && msg.data) {
-        webSearchResults.value.push(msg.data);
-      } else if (msg.type === "done") {
-        webSearching.value = false;
-        es.close();
-        webSearchSource = null;
-      } else if (msg.type === "error") {
-        webSearchError.value = msg.message || "全网搜失败";
-        webSearching.value = false;
-        es.close();
-        webSearchSource = null;
-      }
-    } catch {
-      // 忽略解析失败的推送
-    }
-  };
-
-  es.onerror = () => {
-    webSearching.value = false;
-    es.close();
-    webSearchSource = null;
-  };
-};
-
-onMounted(() => {
-  if (!isMusic.value && searchKeyword.value) {
-    startWebSearch();
-  }
-});
-
-watch([searchKeyword, searchType], () => {
-  if (import.meta.client) {
-    startWebSearch();
-  }
-});
+const webSearchRef = ref<InstanceType<typeof WebSearchResults> | null>(null);
 
 onBeforeUnmount(() => {
-  if (webSearchSource) {
-    webSearchSource.close();
-    webSearchSource = null;
+  if (pancheckPollTimer) {
+    clearInterval(pancheckPollTimer);
+    pancheckPollTimer = null;
   }
 });
+
+// PanCheck 链接有效性检测
+const pancheckSubmissionId = ref<number | null>(null);
+const pancheckServerIndex = ref<number | null>(null);
+const pancheckChecking = ref(false);
+const pancheckSkipCheck = ref(true);
+const pancheckValidIds = ref<Set<string>>(new Set());
+let pancheckPollTimer: ReturnType<typeof setInterval> | null = null;
+
+const submitPanCheck = async () => {
+  if (pancheckPollTimer) {
+    clearInterval(pancheckPollTimer);
+    pancheckPollTimer = null;
+  }
+
+  if (isMusic.value) return;
+  if (results.value.length === 0) return;
+
+  const ids = (results.value as SourceItem[]).map((item) => item.id);
+  if (ids.length === 0) return;
+
+  pancheckChecking.value = true;
+  pancheckValidIds.value.clear();
+
+  try {
+    const res = await fetch("/api/source/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    const data = await res.json();
+    console.log(data);
+    if (data.success && data.submission_id) {
+      pancheckSubmissionId.value = data.submission_id;
+      pancheckServerIndex.value = data.server_index;
+      startPanCheckPoll();
+    } else {
+      pancheckChecking.value = false;
+      // 检查失败，跳过
+      pancheckSkipCheck.value = true;
+    }
+  } catch {
+    pancheckChecking.value = true;
+  }
+};
+
+let pancheckPollCancel: AbortController | null = null;
+let pancheckSignal: AbortSignal | null = null;
+
+const startPanCheckPoll = () => {
+  pancheckPollCancel?.abort();
+  pancheckPollCancel = null;
+  if (pancheckPollTimer) clearInterval(pancheckPollTimer);
+  pancheckPollTimer = setInterval(async () => {
+    if (!pancheckSubmissionId.value) {
+      clearInterval(pancheckPollTimer!);
+      pancheckPollTimer = null;
+      return;
+    }
+    const checkType = searchType.value;
+    const checkPage = currentPage.value;
+    const checkKeyword = searchKeyword.value;
+    try {
+      pancheckPollCancel = new AbortController();
+      pancheckSignal = pancheckPollCancel.signal;
+      const res = await fetch(
+        `/api/source/check?page=${currentPage.value}&submission_id=${pancheckSubmissionId.value}${pancheckServerIndex.value !== null ? `&server_index=${pancheckServerIndex.value}` : ""}`,
+        {
+          signal: pancheckSignal,
+        },
+      );
+      const data = await res.json();
+      if (
+        data.success &&
+        checkType === searchType.value &&
+        checkPage === currentPage.value &&
+        checkKeyword === searchKeyword.value
+      ) {
+        pancheckSkipCheck.value = false;
+        pancheckValidIds.value.clear();
+        for (const id of data.validIds) pancheckValidIds.value.add(id);
+        if (data.pendingIds.length === 0) {
+          clearInterval(pancheckPollTimer!);
+          pancheckPollTimer = null;
+          pancheckChecking.value = false;
+        }
+      } else {
+        // 检查失败，跳过
+        pancheckSkipCheck.value = true;
+      }
+    } catch (error) {
+      // 轮询失败继续
+      console.error("PanCheck轮询失败", error);
+    }
+  }, 3000);
+};
+
+const getCheckStatus = (
+  id: string,
+): "valid" | "invalid" | "checking" | null => {
+  if (!import.meta.client) return null;
+  if (pancheckChecking.value) return "checking";
+  if (pancheckSkipCheck.value) return null;
+  if (pancheckValidIds.value.has(id)) return "valid";
+  return "invalid";
+};
+
+watch(
+  [results],
+  () => {
+    if (import.meta.client) {
+      pancheckPollCancel?.abort();
+      pancheckPollCancel = null;
+      submitPanCheck();
+    }
+  },
+  { immediate: true },
+);
 
 const { success, error: showError } = useToast();
 const { copy } = useClipboard();
@@ -617,18 +669,41 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               <article
                 v-for="item in results as SourceItem[]"
                 :key="item.id"
-                class="card p-3 hover:border-primary-500/50 transition-colors"
+                class="relative card p-3 hover:border-primary-500/50 transition-colors"
+                :class="{
+                  'pointer-events-none': getCheckStatus(item.id) === 'invalid',
+                }"
                 role="article"
               >
+                <div
+                  v-if="getCheckStatus(item.id) === 'invalid'"
+                  class="absolute inset-0 flex items-center justify-center bg-red-900/50 text-red-400 flex-shrink-0"
+                  title="链接失效"
+                />
                 <div class="flex flex-col">
                   <div
                     class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
                   >
                     <h3
-                      class="text-white truncate hover:text-primary-400 cursor-pointer"
+                      class="text-white truncate hover:text-primary-400 cursor-pointer flex items-center gap-2"
                       @click="router.push(`/source/${item.id}`)"
                     >
                       {{ item.title }}
+                      <CheckCircle
+                        v-if="getCheckStatus(item.id) === 'valid'"
+                        class="w-4 h-4 text-green-400 flex-shrink-0"
+                        title="链接有效"
+                      />
+                      <XCircle
+                        v-if="getCheckStatus(item.id) === 'invalid'"
+                        class="w-4 h-4 text-red-400 flex-shrink-0"
+                        title="链接失效"
+                      />
+                      <Loader2
+                        v-if="getCheckStatus(item.id) === 'checking'"
+                        class="w-4 h-4 text-gray-400 animate-spin flex-shrink-0"
+                        title="检测中"
+                      />
                     </h3>
                     <div
                       class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
@@ -658,7 +733,10 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                     <Calendar class="w-3 h-3" />
                     {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
                   </span>
-                  <div class="flex items-center gap-2">
+                  <div
+                    class="flex items-center gap-2"
+                    v-if="getCheckStatus(item.id) !== 'invalid'"
+                  >
                     <button
                       v-if="
                         !item.menu &&
@@ -683,79 +761,15 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             </template>
 
             <template v-if="currentPage === 1">
-              <div
-                v-if="webSearchResults.length !== 0 || webSearching"
-                class="flex items-center gap-2 !my-3"
-              >
-                <Globe class="w-4 h-4 text-primary-400" />
-                <h2 class="text-gray-500 text-sm">全网搜</h2>
-              </div>
-
-              <template v-if="webSearchResults.length > 0">
-                <article
-                  v-for="(item, idx) in webSearchResults"
-                  :key="idx"
-                  class="card p-3"
-                >
-                  <div
-                    class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
-                  >
-                    <h3 class="text-sm font-medium text-white truncate mb-1">
-                      {{ item.title }}
-                    </h3>
-                    <div
-                      class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
-                    >
-                      <img
-                        v-if="item.type !== 'other'"
-                        :src="`/img/pan/${item.type}.png`"
-                        class="w-4 h-4 mr-1"
-                      />
-                      {{ getTypeName(item.type) }}
-                    </div>
-                  </div>
-                  <div
-                    class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
-                  >
-                    <span class="text-xs text-gray-500 flex items-center gap-1"
-                      >来源: {{ item.source }}</span
-                    >
-                    <div class="flex items-center gap-2">
-                      <button
-                        v-if="
-                          ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)
-                        "
-                        class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                        @click.stop="openTreeModal({ item, type: 'url' })"
-                      >
-                        <Folder class="w-3 h-3" />
-                        目录
-                      </button>
-                      <button
-                        class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                        @click.stop="openModal({ item, type: 'url' })"
-                      >
-                        <Download class="w-3 h-3" />
-                        获取链接
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              </template>
-
-              <div v-if="webSearching" class="card p-6 text-center">
-                <Loader2
-                  class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2"
-                />
-                <p class="text-gray-400 text-sm">正在全网搜索中...</p>
-              </div>
-
-              <div
-                v-else-if="webSearchError && webSearchResults.length === 0"
-                class="card p-5 text-center"
-              >
-                <p class="text-red-400 text-sm">{{ webSearchError }}</p>
-              </div>
+              <WebSearchResults
+                ref="webSearchRef"
+                :keyword="searchKeyword"
+                :disabled="isMusic"
+                @open-tree-modal="
+                  (item) => openTreeModal({ item, type: 'url' })
+                "
+                @open-modal="(item) => openModal({ item, type: 'url' })"
+              />
             </template>
           </template>
 
@@ -763,7 +777,9 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             v-if="
               isMusic
                 ? !results.length
-                : !webSearching && !webSearchResults.length && !results.length
+                : !webSearchRef?.searching &&
+                  !webSearchRef?.results.length &&
+                  !results.length
             "
             class="text-center py-20"
           >

@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { RefreshCw, Eraser, Database, Save, Check, Key } from "@lucide/vue";
+import { RefreshCw, Eraser, Database, Save, Check, Key, Link, Plus, Trash } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 
@@ -43,6 +43,15 @@ const aesConfig = ref<AesConfig>({
 const savingAes = ref(false);
 const savedAes = ref(false);
 
+interface PanCheckServer {
+  url: string;
+  password: string;
+}
+
+const pancheckServers = ref<PanCheckServer[]>([]);
+const savingPancheck = ref(false);
+const savedPancheck = ref(false);
+
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -54,6 +63,7 @@ onMounted(async () => {
   }
   await loadRedisConfig();
   await loadAesConfig();
+  await loadPancheckConfig();
 });
 
 const loadRedisConfig = async () => {
@@ -130,6 +140,52 @@ const saveAesConfig = async () => {
     logout();
     router.push("/admin/login");
   }
+};
+
+const loadPancheckConfig = async () => {
+  const res = await fetch("/api/admin/config/pancheck", {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+    return;
+  }
+  const data = await res.json();
+  pancheckServers.value = data.data?.servers || [];
+};
+
+const savePancheckConfig = async () => {
+  savingPancheck.value = true;
+  savedPancheck.value = false;
+
+  const res = await fetch("/api/admin/config/pancheck", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ servers: pancheckServers.value }),
+  });
+
+  savingPancheck.value = false;
+  if (res.ok) {
+    savedPancheck.value = true;
+    setTimeout(() => {
+      savedPancheck.value = false;
+    }, 2000);
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
+const addPancheckServer = () => {
+  pancheckServers.value.push({ url: "", password: "" });
+};
+
+const removePancheckServer = (index: number) => {
+  pancheckServers.value.splice(index, 1);
 };
 
 const rebuildSearch = async (all: boolean, type: "music" | "source") => {
@@ -431,6 +487,85 @@ const clearISRCache = async (route?: string) => {
                 placeholder="输入 base64 编码的 12 字节 IV"
                 class="input-search font-mono text-xs"
               />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PanCheck 配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">网盘检测配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedPancheck }"
+            :disabled="savingPancheck"
+            @click="savePancheckConfig"
+          >
+            <Check v-if="savedPancheck" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedPancheck ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+            >
+              <Link class="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 class="text-white font-medium">PanCheck 接口</h3>
+              <p class="text-gray-500 text-sm">
+                配置网盘链接检测服务接口，格式：接口地址 + 密码
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div
+              v-for="(server, index) in pancheckServers"
+              :key="index"
+              class="flex items-start gap-3"
+            >
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">接口地址</label>
+                  <input
+                    v-model="server.url"
+                    type="text"
+                    placeholder="http://localhost:6080"
+                    class="input-search"
+                  />
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">密码</label>
+                  <input
+                    v-model="server.password"
+                    type="text"
+                    placeholder="admin123"
+                    class="input-search"
+                  />
+                </div>
+              </div>
+              <button
+                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
+                @click="removePancheckServer(index)"
+              >
+                <Trash class="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              @click="addPancheckServer"
+            >
+              <Plus class="w-4 h-4" />
+              添加接口
+            </button>
+
+            <div v-if="pancheckServers.length === 0" class="text-gray-500 text-sm">
+              未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
             </div>
           </div>
         </div>

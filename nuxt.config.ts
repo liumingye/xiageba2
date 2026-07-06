@@ -52,7 +52,7 @@ export default defineNuxtConfig({
       ssr: true,
       isr: 300,
       headers: {
-        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=300",
       },
     },
     "/music/**": {
@@ -114,13 +114,13 @@ export default defineNuxtConfig({
         path: "/api/source/geturl",
         max: 10,
         duration: 30,
-        ban: 60,
+        ban: 120,
       },
       {
         path: "/api/source/tree",
         max: 10,
         duration: 30,
-        ban: 60,
+        ban: 120,
       },
       {
         path: "/api/source/search",

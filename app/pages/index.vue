@@ -10,7 +10,6 @@ import {
 } from "@lucide/vue";
 import SearchBarBig from "~/components/SearchBarBig.vue";
 import { useMediaQuery, useResizeObserver } from "@vueuse/core";
-import { getTypeName } from "~/utils";
 
 const config = useRuntimeConfig();
 const router = useRouter();
@@ -174,16 +173,26 @@ const currentFilters = computed(() => {
   return doubanFilters.value[activeCategoryId.value] || [];
 });
 
+let cancelToken: AbortController | null = null;
+let signal: AbortSignal | null = null;
+
 const fetchDoubanList = async (page: number = 1, append: boolean = false) => {
-  if (doubanLoading.value) return;
+  if (doubanLoading.value) {
+    cancelToken?.abort();
+    cancelToken = null;
+    signal = null;
+  }
   doubanLoading.value = true;
   try {
+    cancelToken = new AbortController();
+    signal = cancelToken.signal;
     const data = await $fetch<DoubanListData>("/api/douban", {
       query: {
         categoryId: activeCategoryId.value,
         page,
         filters: JSON.stringify(activeFilters.value),
       },
+      signal,
     });
     if (append) {
       doubanList.value.push(...(data.list || []));
