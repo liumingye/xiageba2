@@ -36,5 +36,27 @@ export default defineEventHandler(async (event) => {
     }),
   );
 
+  // 在最前面插入"最新资源"（不按分类筛选，全局最新 10 条）
+  const latestAll = await prisma.source.findMany({
+    where: { isTemp: false, status: 1 },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: { id: true, title: true, url: true, createdAt: true },
+  });
+  const latestAllItems = latestAll.map((item) => ({
+    id: item.id,
+    title: item.title,
+    type: getStorageType(item.url),
+    createdAt: item.createdAt,
+  }));
+
+  data.unshift({
+    id: 0,
+    name: "最新资源",
+    image: "",
+    sort: -1,
+    latest: latestAllItems,
+  } as any);
+
   return { data };
 });
