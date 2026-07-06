@@ -1,6 +1,5 @@
 import { prisma } from "#server/lib/prisma";
 import { decryptUrl } from "#server/lib/crypto";
-import { getConfigValues } from "#server/lib/configCache";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { parseShareUrl } from "./geturl";
 import { QuarkUCClient, IShareFile } from "@netdisk-sdk/quarkuc-sdk";
@@ -11,7 +10,12 @@ import {
   IFile as IBaiduFile,
 } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import { updateXunleiRefreshToken } from "#server/utils/source";
+import {
+  getQuarkClient,
+  getUCClient,
+  getBaiduClient,
+  getXunleiClient,
+} from "#server/lib/pan";
 
 const MAX_DEPTH = 20;
 
@@ -89,17 +93,8 @@ async function buildQuarkUCTree(
   pwdId: string,
   passcode: string,
 ): Promise<string> {
-  const config = await getConfigValues([`${type}_cookie`]);
-  const cookie = config[`${type}_cookie`];
-
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: `未配置 ${type} 网盘 Cookie`,
-    });
-  }
-
-  const client = new QuarkUCClient({ type, cookie });
+  const client =
+    type === "quark" ? await getQuarkClient() : await getUCClient();
 
   let stoken: string;
   try {
@@ -175,31 +170,25 @@ async function walkQuarkUC(
 }
 
 async function buildBaiduTree(shareUrl: string): Promise<string> {
-  const config = await getConfigValues(["baidu_cookie"]);
-  const cookie = config.baidu_cookie;
-
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置 baidu 网盘 Cookie",
-    });
-  }
-
   const shareParam = parseShareParam(shareUrl);
   if (!shareParam) {
     throw createError({ statusCode: 404, message: "无效的百度分享链接" });
   }
 
-  const client = new BaiduClient(cookie);
-  await client.init();
+  const client = await getBaiduClient();
 
-  const rootInfo = await client.fsShareApi.wxlist({
-    ...shareParam,
-    dir: "/",
-    page: 1,
-    num: 100,
-    root: 1,
-  });
+  let rootInfo: any;
+  try {
+    rootInfo = await client.fsShareApi.wxlist({
+      ...shareParam,
+      dir: "/",
+      page: 1,
+      num: 100,
+      root: 1,
+    });
+  } catch (err) {
+    throw createError({ statusCode: 404, message: "分享已过期" });
+  }
 
   const lines: string[] = [];
   await walkBaidu(client, shareParam, rootInfo.seckey || "", "/", "", 0, lines);
@@ -251,31 +240,23 @@ async function walkBaidu(
 }
 
 async function buildXunleiTree(shareUrl: string): Promise<string> {
-  const config = await getConfigValues(["xunlei_refresh_token"]);
-  const refreshToken = config.xunlei_refresh_token;
-
-  if (!refreshToken) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置迅雷网盘 Cookie（refresh_token）",
-    });
-  }
-
   const parsed = parseShareUrl(shareUrl);
   if (!parsed.fid) {
     throw createError({ statusCode: 404, message: "无效的迅雷分享链接" });
   }
 
-  const client = new XunleiClient({
-    refreshToken,
-    onRefreshToken: updateXunleiRefreshToken,
-  });
+  const client = await getXunleiClient();
 
-  const detail = await client.shareApi.getShare({
-    shareId: parsed.fid,
-    passCode: parsed.passcode,
-    limit: 200,
-  });
+  let detail: any;
+  try {
+    detail = await client.shareApi.getShare({
+      shareId: parsed.fid,
+      passCode: parsed.passcode,
+      limit: 200,
+    });
+  } catch (e) {
+    throw createError({ statusCode: 404, message: "分享已过期" });
+  }
 
   if (detail.files.length === 0) {
     throw createError({ statusCode: 404, message: "分享内容为空" });

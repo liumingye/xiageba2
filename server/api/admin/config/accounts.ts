@@ -1,4 +1,5 @@
 import { getConfigValues, setConfigValues } from "#server/lib/configCache";
+import { cleanClients } from "#server/lib/pan";
 
 const ACCOUNT_KEYS = [
   "quark_cookie",
@@ -30,6 +31,8 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await setConfigValues(configs);
+
+    cleanClients();
 
     return result;
   }

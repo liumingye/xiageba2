@@ -1,11 +1,14 @@
 import { prisma } from "#server/lib/prisma";
 import { getConfigValues } from "#server/lib/configCache";
 import { decryptUrl } from "#server/lib/crypto";
-import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
-import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
-import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { parseShareParam } from "@netdisk-sdk/baidu-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
-import { updateXunleiRefreshToken } from "#server/utils/source";
+import {
+  getQuarkClient,
+  getUCClient,
+  getBaiduClient,
+  getXunleiClient,
+} from "#server/lib/pan";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -59,23 +62,6 @@ export function parseShareUrl(url: string): ParsedShare {
 }
 
 /**
- * 查找或创建夸克网盘临时目录，返回目录 fid
- */
-async function findOrCreateQuarkDir(
-  client: QuarkUCClient,
-  dirName: string,
-): Promise<string> {
-  const result = await client.fsApi.sort({ pdir_fid: "0", _size: 200 });
-  const existing = result.list.find(
-    (f) => f.file_name === dirName && f.file_type === 0,
-  );
-  if (existing) return existing.fid;
-
-  const newDir = await client.fsApi.mkdir(dirName, { pdir_fid: "0" });
-  return newDir.fid;
-}
-
-/**
  * 夸克/UC网盘转存：获取分享token → 获取文件列表 → 转存到临时目录 → 创建新分享
  * ponytail: quark 与 uc 同 SDK 同流程，仅 type 与 config key 不同，合并实现
  */
@@ -84,18 +70,10 @@ async function transferQuarkUC(
   pwdId: string,
   passcode: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
-  const config = await getConfigValues([`${type}_cookie`, `${type}_temp_dir`]);
-  const cookie = config[`${type}_cookie`];
+  const config = await getConfigValues([`${type}_temp_dir`]);
   const tempDirId = config[`${type}_temp_dir`] || "";
-
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: `未配置${type === "quark" ? "夸克" : "UC"}网盘 Cookie，请先在账号管理中配置`,
-    });
-  }
-
-  const client = new QuarkUCClient({ type, cookie });
+  const client =
+    type === "quark" ? await getQuarkClient() : await getUCClient();
   const shareApi = client.shareApi;
 
   // 步骤1: 获取stoken
@@ -174,28 +152,14 @@ async function transferQuarkUC(
 async function transferBaidu(
   _shareUrl: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
-  const config = await getConfigValues(["baidu_cookie", "baidu_temp_dir"]);
-  const cookie = config.baidu_cookie;
+  const config = await getConfigValues(["baidu_temp_dir"]);
   const tempDir = config.baidu_temp_dir || "/";
 
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置百度网盘 Cookie，请先在账号管理中配置",
-    });
-  }
+  const client = await getBaiduClient();
 
   const shareParam = parseShareParam(_shareUrl);
   if (!shareParam) {
     throw createError({ statusCode: 500, message: "无效的百度分享链接" });
-  }
-
-  let client: BaiduClient;
-  try {
-    client = new BaiduClient(cookie);
-    await client.init();
-  } catch (err) {
-    throw createError({ statusCode: 500, message: "初始化百度网盘客户端失败" });
   }
 
   let shareInfo: any;
@@ -260,24 +224,10 @@ async function transferXunlei(
   shareId: string,
   passCode: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
-  const config = await getConfigValues([
-    "xunlei_refresh_token",
-    "xunlei_temp_dir",
-  ]);
-  const refreshToken = config.xunlei_refresh_token;
+  const config = await getConfigValues(["xunlei_temp_dir"]);
   const tempDirId = config.xunlei_temp_dir || "";
 
-  if (!refreshToken) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置迅雷网盘 Cookie（refresh_token），请先在账号管理中配置",
-    });
-  }
-
-  const client = new XunleiClient({
-    refreshToken,
-    onRefreshToken: updateXunleiRefreshToken,
-  });
+  const client = await getXunleiClient();
 
   let detail: any;
   try {

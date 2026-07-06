@@ -1,10 +1,12 @@
 import { prisma } from "#server/lib/prisma";
 import { getConfigValues } from "#server/lib/configCache";
 import { getStorageType } from "#shared/utils";
-import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
-import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
-import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import { updateXunleiRefreshToken } from "#server/utils/source";
+import {
+  getQuarkClient,
+  getUCClient,
+  getBaiduClient,
+  getXunleiClient,
+} from "#server/lib/pan";
 
 const THIRTY_MINUTES = 30 * 60 * 1000;
 
@@ -74,13 +76,8 @@ async function deleteQuarkUCResource(
   type: "quark" | "uc",
   fids: string[],
 ): Promise<string[]> {
-  const config = await getConfigValues([`${type}_cookie`]);
-  const cookie = config[`${type}_cookie`];
-  if (!cookie) {
-    throw new Error(`未配置 ${type} 网盘 Cookie`);
-  }
-
-  const client = new QuarkUCClient({ type, cookie });
+  const client =
+    type === "quark" ? await getQuarkClient() : await getUCClient();
 
   if (fids.length === 0) return [];
 
@@ -92,16 +89,13 @@ async function deleteQuarkUCResource(
 }
 
 async function deleteBaiduResource(fids: string[]): Promise<string[]> {
-  const config = await getConfigValues(["baidu_cookie", "baidu_temp_dir"]);
-  const cookie = config.baidu_cookie;
-  if (!cookie) {
-    throw new Error("未配置 baidu 网盘 Cookie");
+  const config = await getConfigValues(["baidu_temp_dir"]);
+  const tempDir = config.baidu_temp_dir;
+  if (!tempDir) {
+    throw new Error("未配置 baidu 网盘临时目录");
   }
 
-  const tempDir = config.baidu_temp_dir;
-
-  const client = new BaiduClient(cookie);
-  await client.init();
+  const client = await getBaiduClient();
 
   const _fids = fids
     .flatMap((item) => {
@@ -135,19 +129,7 @@ async function deleteBaiduResource(fids: string[]): Promise<string[]> {
 }
 
 async function deleteXunleiResource(fids: string[]): Promise<string[]> {
-  const config = await getConfigValues([
-    "xunlei_refresh_token",
-    "xunlei_temp_dir",
-  ]);
-  const refreshToken = config.xunlei_refresh_token;
-  if (!refreshToken) {
-    throw new Error("未配置 xunlei 网盘 Refresh Token");
-  }
-
-  const client = new XunleiClient({
-    refreshToken,
-    onRefreshToken: updateXunleiRefreshToken,
-  });
+  const client = await getXunleiClient();
 
   const _fids = fids.flatMap((item) => JSON.parse(item));
 
