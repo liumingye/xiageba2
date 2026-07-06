@@ -112,8 +112,9 @@ async function transferQuarkUC(
   }
 
   // 步骤4: 等待转存完成
-  const taskResult = await shareApi.saveTask(saveResult.task_id, true);
-  if (taskResult.status !== 2) {
+  let taskResult = await shareApi.saveTask(saveResult.task_id, true);
+  console.log(taskResult);
+  if (taskResult.status === 0) {
     throw createError({ statusCode: 500, message: "转存任务未完成" });
   }
 
@@ -365,12 +366,12 @@ export default defineEventHandler(async (event) => {
     }
   } catch (e: any) {
     // 404 表示分享不存在， 更新状态为 0
-    if (e.statusCode === 404) {
-      await prisma.source.update({
-        where: { id },
-        data: { status: 0 },
-      });
-    }
+    // if (e.statusCode === 404) {
+    //   await prisma.source.update({
+    //     where: { id },
+    //     data: { status: 0 },
+    //   });
+    // }
     // SDK 抛出的错误转换为友好提示
     throw createError({
       statusCode: e.statusCode || 500,
