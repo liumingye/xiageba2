@@ -4,6 +4,8 @@ import {
   Loader2,
   Folder,
   Download,
+  CheckCircle,
+  XCircle,
 } from "@lucide/vue";
 import { getTypeName } from "~/utils";
 
@@ -30,11 +32,16 @@ const searching = ref(false);
 const error = ref("");
 let eventSource: EventSource | null = null;
 
+const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
+  mode: "urls",
+});
+
 const startWebSearch = () => {
   if (eventSource) {
     eventSource.close();
     eventSource = null;
   }
+  stopPanCheck();
   results.value = [];
   error.value = "";
 
@@ -60,6 +67,10 @@ const startWebSearch = () => {
         searching.value = false;
         es.close();
         eventSource = null;
+        if (results.value.length > 0) {
+          const urls = results.value.map((item) => item.url);
+          submitPanCheck(urls);
+        }
       } else if (msg.type === "error") {
         error.value = msg.message || "全网搜失败";
         searching.value = false;
@@ -83,6 +94,7 @@ const stopWebSearch = () => {
     eventSource.close();
     eventSource = null;
   }
+  stopPanCheck();
   searching.value = false;
 };
 
@@ -128,13 +140,36 @@ defineExpose({ results, searching, error });
       <article
         v-for="(item, idx) in results"
         :key="idx"
-        class="card p-3"
+        class="card p-3 relative"
+        :class="{
+          'pointer-events-none': getCheckStatus(item.url) === 'invalid',
+        }"
       >
+        <div
+          v-if="getCheckStatus(item.url) === 'invalid'"
+          class="absolute inset-0 flex items-center justify-center bg-red-900/50 text-red-400 flex-shrink-0"
+          title="链接失效"
+        />
         <div
           class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
         >
-          <h3 class="text-sm font-medium text-white truncate mb-1">
+          <h3 class="text-sm font-medium text-white truncate mb-1 flex items-center gap-2">
             {{ item.title }}
+            <CheckCircle
+              v-if="getCheckStatus(item.url) === 'valid'"
+              class="w-4 h-4 text-green-400 flex-shrink-0"
+              title="链接有效"
+            />
+            <XCircle
+              v-if="getCheckStatus(item.url) === 'invalid'"
+              class="w-4 h-4 text-red-400 flex-shrink-0"
+              title="链接失效"
+            />
+            <Loader2
+              v-if="getCheckStatus(item.url) === 'checking'"
+              class="w-4 h-4 text-gray-400 animate-spin flex-shrink-0"
+              title="检测中"
+            />
           </h3>
           <div
             class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
@@ -153,7 +188,7 @@ defineExpose({ results, searching, error });
           <span class="text-xs text-gray-500 flex items-center gap-1"
             >来源: {{ item.source }}</span
           >
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2" v-if="getCheckStatus(item.url) !== 'invalid'">
             <button
               v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
               class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"

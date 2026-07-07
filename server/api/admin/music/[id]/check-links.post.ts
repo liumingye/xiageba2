@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { prisma } from "#server/lib/prisma";
+import { getPanCheckServers } from "#server/lib/pancheck";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -33,7 +34,20 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const pancheckApi = process.env.PANCHECK_API;
+  const servers = await getPanCheckServers();
+  if (
+    servers.length === 0 ||
+    !servers[0] ||
+    !servers[0].url ||
+    !servers[0].password
+  ) {
+    throw createError({
+      statusCode: 500,
+      message: "未配置 PanCheck 服务",
+    });
+  }
+
+  const pancheckApi = servers[0].url;
   if (!pancheckApi) {
     throw createError({
       statusCode: 500,

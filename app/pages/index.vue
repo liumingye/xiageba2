@@ -109,7 +109,7 @@ useHead({
 });
 
 onMounted(async () => {
-  musicStore.loadSearchHistory();
+  // musicStore.loadSearchHistory();
   await nextTick();
   checkHistoryOverflow();
 });

@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { defineStore, skipHydrate } from "pinia";
 import { ref } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 
@@ -34,10 +34,6 @@ export const useMusicStore = defineStore("music", () => {
     }
   };
 
-  const loadSearchHistory = () => {
-    // useLocalStorage 已在初始化时读取
-  };
-
   const clearSearchHistory = () => {
     searchHistory.value = [];
   };
@@ -49,10 +45,9 @@ export const useMusicStore = defineStore("music", () => {
   const searchType = ref<"resource" | "music">("music");
 
   return {
-    searchHistory,
+    searchHistory: skipHydrate(searchHistory),
     currentMusic,
     addSearchHistory,
-    loadSearchHistory,
     clearSearchHistory,
     searchType,
     setCurrentMusic,

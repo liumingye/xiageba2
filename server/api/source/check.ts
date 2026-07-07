@@ -7,14 +7,6 @@ import {
   getPanCheckServers,
 } from "#server/lib/pancheck";
 
-interface CheckSubmission {
-  serverUrl: string;
-  serverIndex: number;
-  password: string;
-  links: string[];
-  ids: string[];
-}
-
 const SUBMISSION_CACHE_TTL = 600; // 10 分钟
 
 export default defineEventHandler(async (event) => {
@@ -126,6 +118,8 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
+
+    event.headers.set("cache-control", "no-cache");
 
     return {
       success: true,

@@ -48,7 +48,7 @@ const emit = defineEmits<{
         class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
       >
         <h3
-          class="text-white truncate hover:text-primary-400 cursor-pointer flex items-center gap-2"
+          class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2"
           @click="emit('clickTitle', item)"
         >
           {{ item.title }}

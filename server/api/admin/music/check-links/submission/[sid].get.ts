@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { getPanCheckServers } from "#server/lib/pancheck";
 
 export default defineEventHandler(async (event) => {
   const submissionId = getRouterParam(event, "sid");
@@ -7,8 +8,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少 submission ID" });
   }
 
-  const pancheckApi = process.env.PANCHECK_API;
-  const pancheckPassword = process.env.PANCHECK_API_PASSWORD;
+  const servers = await getPanCheckServers();
+  if (
+    servers.length === 0 ||
+    !servers[0] ||
+    !servers[0].url ||
+    !servers[0].password
+  ) {
+    throw createError({
+      statusCode: 500,
+      message: "未配置 PanCheck 服务",
+    });
+  }
+  const pancheckApi = servers[0].url;
+  const pancheckPassword = servers[0].password;
 
   if (!pancheckApi) {
     throw createError({

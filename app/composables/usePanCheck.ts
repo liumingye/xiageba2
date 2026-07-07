@@ -2,38 +2,40 @@ import { ref, onBeforeUnmount } from "vue";
 
 interface UsePanCheckOptions {
   enabled?: boolean;
+  mode?: "ids" | "urls";
 }
 
 export function usePanCheck(options: UsePanCheckOptions = {}) {
-  const { enabled = true } = options;
+  const { enabled = true, mode = "ids" } = options;
 
   const submissionId = ref<number | null>(null);
   const serverIndex = ref<number | null>(null);
   const checking = ref(false);
   const skipCheck = ref(true);
-  const validIds = ref<Set<string>>(new Set());
+  const validItems = ref<Set<string>>(new Set());
 
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let pollCancel: AbortController | null = null;
 
-  const submitPanCheck = async (ids: string[]) => {
+  const submitPanCheck = async (items: string[]) => {
     if (!enabled) return;
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
     }
 
-    if (ids.length === 0) return;
+    if (items.length === 0) return;
 
     checking.value = true;
     skipCheck.value = true;
-    validIds.value.clear();
+    validItems.value.clear();
 
     try {
+      const body = mode === "ids" ? { ids: items } : { urls: items };
       const res = await fetch("/api/source/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (data.success && data.submission_id) {
@@ -73,8 +75,8 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
         const data = await res.json();
         if (data.success) {
           skipCheck.value = false;
-          validIds.value.clear();
-          for (const id of data.validIds) validIds.value.add(id);
+          validItems.value.clear();
+          for (const id of data.validIds) validItems.value.add(id);
           if (data.pendingIds.length === 0) {
             clearInterval(pollTimer!);
             pollTimer = null;
@@ -90,13 +92,13 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   };
 
   const getCheckStatus = (
-    id: string,
+    item: string,
   ): "valid" | "invalid" | "checking" | null => {
     if (!import.meta.client) return null;
     if (!enabled) return null;
     if (checking.value) return "checking";
     if (skipCheck.value) return null;
-    if (validIds.value.has(id)) return "valid";
+    if (validItems.value.has(item)) return "valid";
     return "invalid";
   };
 
@@ -120,7 +122,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     serverIndex,
     checking,
     skipCheck,
-    validIds,
+    validItems,
     submitPanCheck,
     getCheckStatus,
     stopPanCheck,
