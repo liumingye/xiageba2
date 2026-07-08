@@ -7,15 +7,15 @@ export const debounce = (fn: () => void, delay: number): (() => void) => {
 export const getTypeName = (type: string) => {
   switch (type) {
     case "quark":
-      return "夸克网盘";
+      return "夸克";
     case "baidu":
-      return "百度网盘";
+      return "百度";
     case "uc":
-      return "UC网盘";
+      return "UC";
     case "xunlei":
-      return "迅雷网盘";
+      return "迅雷";
     default:
-      return "其他网盘";
+      return "其他";
   }
 };
 

@@ -21,6 +21,7 @@ export interface SourceItem {
 defineProps<{
   item: SourceItem;
   checkStatus?: "valid" | "invalid" | "checking" | null;
+  highlightHtml?: string;
 }>();
 
 const emit = defineEmits<{
@@ -45,13 +46,24 @@ const emit = defineEmits<{
     />
     <div class="flex flex-col">
       <div
-        class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
+        class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse"
       >
+        <div
+          class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
+        >
+          <img
+            v-if="item.type !== 'other'"
+            :src="`/img/pan/${item.type}.png`"
+            class="w-4 h-4 mr-1"
+          />
+          {{ getTypeName(item.type) }}
+        </div>
         <h3
-          class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2"
+          class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2 truncate"
           @click="emit('clickTitle', item)"
         >
-          {{ item.title }}
+          <span v-if="highlightHtml" v-html="highlightHtml" />
+          <template v-else>{{ item.title }}</template>
           <CheckCircle
             v-if="checkStatus === 'valid'"
             class="w-4 h-4 text-green-400 flex-shrink-0"
@@ -68,21 +80,9 @@ const emit = defineEmits<{
             title="检测中"
           />
         </h3>
-        <div
-          class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
-        >
-          <img
-            v-if="item.type !== 'other'"
-            :src="`/img/pan/${item.type}.png`"
-            class="w-4 h-4 mr-1"
-          />
-          {{ getTypeName(item.type) }}
-        </div>
       </div>
       <template v-if="item.menu">
-        <div class="text-sm mb-2 text-gray-300 font-bold">
-          文件内容:
-        </div>
+        <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
         <pre
           class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
           >{{ item.menu }}</pre
@@ -96,14 +96,10 @@ const emit = defineEmits<{
         <Calendar class="w-3 h-3" />
         {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
       </span>
-      <div
-        class="flex items-center gap-2"
-        v-if="checkStatus !== 'invalid'"
-      >
+      <div class="flex items-center gap-2" v-if="checkStatus !== 'invalid'">
         <button
           v-if="
-            !item.menu &&
-            ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)
+            !item.menu && ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)
           "
           class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
           @click.stop="emit('openTree', item)"

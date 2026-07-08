@@ -1,8 +1,8 @@
 import {
   buildSearchTsQuery,
   buildSearchTsQueryExact,
+  cutForSearch,
 } from "#server/utils/jieba";
-import { prisma } from "#server/lib/prisma";
 import { getStorageType } from "#shared/utils";
 import { Pool } from "pg";
 
@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
   const exact = query.exact === "true";
 
   if (!term) {
-    return { data: [], total: 0, page: 1, pageSize, totalPages: 0 };
+    return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens: [] };
   }
 
   if (term.length > MAX_KEYWORD_LENGTH) {
@@ -63,12 +63,13 @@ export default defineEventHandler(async (event) => {
   }
 
   // 精准搜索使用 plainto_tsquery，模糊搜索使用自定义分词
+  const tokens = cutForSearch(term);
   const tsQuery = exact
-    ? buildSearchTsQueryExact(term)
-    : buildSearchTsQuery(term);
+    ? buildSearchTsQueryExact(tokens)
+    : buildSearchTsQuery(tokens);
 
   if (!tsQuery) {
-    return { data: [], total: 0, page, pageSize, totalPages: 0 };
+    return { data: [], total: 0, page, pageSize, totalPages: 0, tokens };
   }
 
   // 构建动态 SQL 条件
@@ -159,6 +160,7 @@ export default defineEventHandler(async (event) => {
       page,
       pageSize,
       totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
+      tokens,
     };
   } finally {
     client.release();

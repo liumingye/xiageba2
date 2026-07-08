@@ -1,4 +1,4 @@
-import { buildSearchTsQuery } from "#server/utils/jieba";
+import { buildSearchTsQuery, cutForSearch } from "#server/utils/jieba";
 import { prisma } from "#server/lib/prisma";
 
 const MAX_PAGE = 100;
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const skip = (page - 1) * pageSize;
 
   if (!term) {
-    return { data: [], total: 0, page: 1, pageSize, totalPages: 0 };
+    return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens: [] };
   }
 
   if (term.length > MAX_KEYWORD_LENGTH) {
@@ -29,10 +29,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const tsQuery = buildSearchTsQuery(term);
+  const tokens = cutForSearch(term);
+  const tsQuery = buildSearchTsQuery(tokens);
 
   if (!tsQuery) {
-    return { data: [], total: 0, page, pageSize, totalPages: 0 };
+    return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens };
   }
 
   const [musics, total] = await Promise.all([
@@ -68,5 +69,6 @@ export default defineEventHandler(async (event) => {
     page,
     pageSize,
     totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
+    tokens,
   };
 });

@@ -1,6 +1,10 @@
 import { prisma } from "#server/lib/prisma";
 import { Pool } from "pg";
-import { buildTokens, buildSearchTsQuery } from "#server/utils/jieba";
+import {
+  buildTokens,
+  buildSearchTsQuery,
+  cutForSearch,
+} from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
@@ -17,7 +21,7 @@ export default defineEventHandler(async (event) => {
 
     if (search) {
       // 搜索端：jieba 精确分词，CJK 词做 "(词|字1|字2|...)" OR 兜底
-      const tsQuery = buildSearchTsQuery(search);
+      const tsQuery = buildSearchTsQuery(cutForSearch(search));
 
       if (!tsQuery) {
         return { data: [], total: 0, page, pageSize, totalPages: 0 };

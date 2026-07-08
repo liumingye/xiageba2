@@ -285,6 +285,23 @@ const {
 const results = computed(() => pageData.value?.data || []);
 const total = computed(() => pageData.value?.total || 0);
 const totalPages = computed(() => pageData.value?.totalPages || 0);
+const tokens = computed(() => (pageData.value as any)?.tokens || []);
+
+// 高亮分词关键词
+const highlight = (text: string): string => {
+  if (!text || tokens.value.length === 0) return text;
+  // 按长度降序排列，优先匹配长词
+  const sorted = [...tokens.value].sort((a, b) => b.length - a.length);
+  let result = text;
+  for (const token of sorted) {
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(
+      new RegExp(escaped, "gi"),
+      (match) => `<mark class="bg-transparent text-primary-400">${match}</mark>`,
+    );
+  }
+  return result;
+};
 
 // 错误分类：rate-limit / server / network
 interface ErrorInfo {
@@ -616,12 +633,9 @@ const copyUrl = async (url: string) => {
                   "
                 />
                 <div class="flex-1 min-w-0">
-                  <h3 class="text-sm font-medium text-white truncate">
-                    {{ music.title }}
-                  </h3>
+                  <h3 class="text-sm font-medium text-white truncate" v-html="highlight(music.title)" />
                   <p class="text-xs text-gray-500 truncate">
-                    {{ music.artist
-                    }}<span v-if="music.album"> - {{ music.album }}</span>
+                    <span v-html="highlight(music.artist)" /><span v-if="music.album"> - <span v-html="highlight(music.album)" /></span>
                   </p>
                 </div>
                 <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
@@ -763,6 +777,7 @@ const copyUrl = async (url: string) => {
                 :key="item.id"
                 :item="item"
                 :check-status="getCheckStatus(item.id)"
+                :highlight-html="highlight(item.title)"
                 @click-title="router.push(`/source/${item.id}`)"
                 @open-tree="openTreeModal({ item, type: 'id' })"
                 @open-modal="openModal({ item, type: 'id' })"
