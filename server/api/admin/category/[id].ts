@@ -1,7 +1,15 @@
 import { prisma } from "#server/lib/prisma";
 
 export default defineEventHandler(async (event) => {
-  const id = event.context.params?.id as string;
+  if (!event.context.params?.id) {
+    throw createError({ statusCode: 400, message: "缺少分类ID" });
+  }
+
+  const id = parseInt(event.context.params.id);
+  if (isNaN(id)) {
+    throw createError({ statusCode: 400, message: "分类ID必须是数字" });
+  }
+
   const method = event.method;
 
   if (!id) {
