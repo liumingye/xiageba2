@@ -33,11 +33,11 @@ export function cleanClients() {
   ucClientCreatedAt = null;
 }
 
-// 每3分钟保持一次连接
+// 每1分钟保持一次连接
 setInterval(() => {
   ucClient?.keepAlive();
   quarkClient?.keepAlive();
-}, 3000 * 60);
+}, 1000 * 60);
 
 export async function getQuarkClient(force?: boolean) {
   if (!force && quarkClient && !isClientExpired(quarkClientCreatedAt)) {

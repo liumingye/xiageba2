@@ -5,6 +5,7 @@ import {
   Folder,
   Download,
   CheckCircle,
+  CircleSlash,
   XCircle,
 } from "@lucide/vue";
 import { getTypeName } from "~/utils";
@@ -130,12 +131,11 @@ defineExpose({ results, searching, error });
 </script>
 
 <template>
+  <div class="flex items-center gap-2 !my-3">
+    <Globe class="w-4 h-4 text-primary-400" />
+    <h2 class="text-gray-500 text-sm">全网搜</h2>
+  </div>
   <template v-if="results.length !== 0 || searching">
-    <div class="flex items-center gap-2 !my-3">
-      <Globe class="w-4 h-4 text-primary-400" />
-      <h2 class="text-gray-500 text-sm">全网搜</h2>
-    </div>
-
     <template v-if="results.length > 0">
       <article
         v-for="(item, idx) in results"
@@ -153,7 +153,9 @@ defineExpose({ results, searching, error });
         <div
           class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
         >
-          <h3 class="text-sm font-medium text-white truncate mb-1 flex items-center gap-2">
+          <h3
+            class="text-sm font-medium text-white truncate mb-1 flex items-center gap-2"
+          >
             {{ item.title }}
             <CheckCircle
               v-if="getCheckStatus(item.url) === 'valid'"
@@ -188,7 +190,10 @@ defineExpose({ results, searching, error });
           <span class="text-xs text-gray-500 flex items-center gap-1"
             >来源: {{ item.source }}</span
           >
-          <div class="flex items-center gap-2" v-if="getCheckStatus(item.url) !== 'invalid'">
+          <div
+            class="flex items-center gap-2"
+            v-if="getCheckStatus(item.url) !== 'invalid'"
+          >
             <button
               v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
               class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
@@ -210,17 +215,25 @@ defineExpose({ results, searching, error });
     </template>
 
     <div v-if="searching" class="card p-6 text-center">
-      <Loader2
-        class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2"
-      />
+      <Loader2 class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2" />
       <p class="text-gray-400 text-sm">正在全网搜索中...</p>
     </div>
 
-    <div
-      v-else-if="error && results.length === 0"
-      class="card p-5 text-center"
-    >
+    <div v-else-if="error && results.length === 0" class="card p-5 text-center">
       <p class="text-red-400 text-sm">{{ error }}</p>
+    </div>
+  </template>
+  <template v-else>
+    <div class="text-center py-20">
+      <div
+        class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+        aria-hidden="true"
+      >
+        <CircleSlash />
+      </div>
+      <p class="text-gray-500">
+        {{ "全网搜索暂无结果" }}
+      </p>
     </div>
   </template>
 </template>

@@ -2,20 +2,22 @@
 import { getStorageType } from "#shared/utils";
 import {
   CircleSlash,
-  AlertCircle,
   RotateCcw,
-  Search,
   Clipboard,
   Music as MusicIcon,
   FolderOpen,
   ExternalLink,
   ArrowRight,
-  Download,
   QrCode,
   X,
-  Globe,
   Folder,
   AlertTriangle,
+  Filter,
+  Calendar,
+  HardDrive,
+  ArrowUpDown,
+  Target,
+  RotateCcwSquare,
 } from "@lucide/vue";
 import { getTypeName } from "~/utils/index";
 import { useClipboard, useMediaQuery } from "@vueuse/core";
@@ -169,6 +171,78 @@ const searchType = computed(() => {
 });
 const isMusic = computed(() => searchType.value === "music");
 
+// 筛选参数
+const timeFilter = computed(() => (route.query.time as string) || "any");
+const panFilter = computed(() => (route.query.pan as string) || "all");
+const sortFilter = computed(() => (route.query.sort as string) || "default");
+const exactFilter = computed(() => route.query.exact === "true");
+
+// 筛选选项
+const timeOptions = [
+  { value: "any", label: "任何时间" },
+  { value: "day", label: "一天内" },
+  { value: "week", label: "一周内" },
+  { value: "month", label: "一月内" },
+  { value: "year", label: "一年内" },
+];
+
+const panOptions = [
+  { value: "all", label: "所有网盘" },
+  { value: "quark", label: "夸克网盘" },
+  { value: "baidu", label: "百度网盘" },
+  { value: "xunlei", label: "迅雷网盘" },
+  { value: "uc", label: "UC网盘" },
+];
+
+const sortOptions = [
+  { value: "default", label: "默认排序" },
+  { value: "newest", label: "最新排序" },
+  { value: "oldest", label: "最早排序" },
+];
+
+// 是否有筛选条件
+const hasFilters = computed(() => {
+  return (
+    timeFilter.value !== "any" ||
+    panFilter.value !== "all" ||
+    sortFilter.value !== "default" ||
+    exactFilter.value
+  );
+});
+
+// 更新筛选条件
+const updateFilter = (key: string, value: string | boolean) => {
+  const query: Record<string, string> = {
+    type: searchType.value,
+    q: searchKeyword.value,
+    page: "1", // 筛选变更时重置到第一页
+  };
+  if (
+    value !== "any" &&
+    value !== "all" &&
+    value !== "default" &&
+    value !== false
+  ) {
+    query[key] = value.toString();
+  }
+  // 保持其他筛选条件
+  if (timeFilter.value !== "any" && key !== "time")
+    query.time = timeFilter.value;
+  if (panFilter.value !== "all" && key !== "pan") query.pan = panFilter.value;
+  if (sortFilter.value !== "default" && key !== "sort")
+    query.sort = sortFilter.value;
+  if (exactFilter.value && key !== "exact") query.exact = "true";
+  router.push({ path: "/search", query });
+};
+
+// 清除筛选
+const clearFilters = () => {
+  router.push({
+    path: "/search",
+    query: { type: searchType.value, q: searchKeyword.value, page: "1" },
+  });
+};
+
 const {
   data: pageData,
   pending: loading,
@@ -178,14 +252,33 @@ const {
 } = await useFetch<PaginatedResponse>(
   () => {
     const base = isMusic.value ? "/api/music/search" : "/api/source/search";
-    return `${base}?q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}&pageSize=10`;
+    const params = new URLSearchParams({
+      q: searchKeyword.value,
+      page: currentPage.value.toString(),
+      pageSize: "10",
+    });
+    if (!isMusic.value) {
+      if (timeFilter.value !== "any") params.set("time", timeFilter.value);
+      if (panFilter.value !== "all") params.set("pan", panFilter.value);
+      if (sortFilter.value !== "default") params.set("sort", sortFilter.value);
+      if (exactFilter.value) params.set("exact", "true");
+    }
+    return `${base}?${params.toString()}`;
   },
   {
     key: () =>
-      `search-${searchType.value}-${searchKeyword.value}-${currentPage.value}`,
+      `search-${searchType.value}-${searchKeyword.value}-${currentPage.value}-${timeFilter.value}-${panFilter.value}-${sortFilter.value}-${exactFilter.value}`,
     server: true,
     lazy: true,
-    watch: [searchKeyword, currentPage, searchType],
+    watch: [
+      searchKeyword,
+      currentPage,
+      searchType,
+      timeFilter,
+      panFilter,
+      sortFilter,
+      exactFilter,
+    ],
   },
 );
 
@@ -534,18 +627,137 @@ const copyUrl = async (url: string) => {
                 <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
               </div>
             </article>
+
+            <template v-if="results.length === 0">
+              <div class="text-center py-20">
+                <div
+                  class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                  aria-hidden="true"
+                >
+                  <CircleSlash />
+                </div>
+                <p class="text-gray-500">
+                  {{ "此搜索关键词暂无结果" }}
+                </p>
+              </div>
+            </template>
           </template>
 
           <template v-else>
-            <template v-if="results.length > 0">
-              <div
-                v-if="currentPage === 1"
-                class="flex items-center gap-2 !my-3"
-              >
-                <Folder class="w-4 h-4 text-primary-400" />
-                <h2 class="text-gray-500 text-sm">本地资源</h2>
+            <template v-if="searchKeyword">
+              <div class="flex items-center gap-2 !my-3">
+                <Filter class="w-4 h-4 text-primary-400" />
+                <h2 class="text-gray-500 text-sm">筛选条件</h2>
               </div>
 
+              <!-- 资源筛选条件 -->
+              <div class="flex flex-wrap items-center gap-2 mb-4">
+                <!-- 入库时间 -->
+                <div class="flex-1 relative">
+                  <select
+                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-8 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    :value="timeFilter"
+                    @change="
+                      updateFilter(
+                        'time',
+                        ($event.target as HTMLSelectElement).value,
+                      )
+                    "
+                  >
+                    <option
+                      v-for="opt in timeOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <Calendar
+                    class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                  />
+                </div>
+
+                <!-- 网盘类型 -->
+                <div class="flex-1 relative">
+                  <select
+                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-8 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    :value="panFilter"
+                    @change="
+                      updateFilter(
+                        'pan',
+                        ($event.target as HTMLSelectElement).value,
+                      )
+                    "
+                  >
+                    <option
+                      v-for="opt in panOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <HardDrive
+                    class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                  />
+                </div>
+
+                <!-- 排序 -->
+                <div class="flex-1 relative">
+                  <select
+                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-8 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    :value="sortFilter"
+                    @change="
+                      updateFilter(
+                        'sort',
+                        ($event.target as HTMLSelectElement).value,
+                      )
+                    "
+                  >
+                    <option
+                      v-for="opt in sortOptions"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <ArrowUpDown
+                    class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                  />
+                </div>
+
+                <!-- 精准搜索 -->
+                <button
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
+                  :class="
+                    exactFilter
+                      ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+                      : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                  "
+                  @click="updateFilter('exact', !exactFilter)"
+                >
+                  <Target class="w-3.5 h-3.5" />
+                  精准搜索
+                </button>
+
+                <!-- 清除筛选 -->
+                <button
+                  class="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-gray-800 disabled:hover:text-gray-400"
+                  @click="clearFilters"
+                  :disabled="!hasFilters"
+                >
+                  <RotateCcwSquare class="w-3.5 h-3.5" />
+                  清除筛选
+                </button>
+              </div>
+            </template>
+
+            <div v-if="currentPage === 1" class="flex items-center gap-2 !my-3">
+              <Folder class="w-4 h-4 text-primary-400" />
+              <h2 class="text-gray-500 text-sm">本地资源</h2>
+            </div>
+            <template v-if="results.length > 0">
               <LocalResourceItem
                 v-for="item in results"
                 :key="item.id"
@@ -555,6 +767,19 @@ const copyUrl = async (url: string) => {
                 @open-tree="openTreeModal({ item, type: 'id' })"
                 @open-modal="openModal({ item, type: 'id' })"
               />
+            </template>
+            <template v-else>
+              <div class="text-center py-20">
+                <div
+                  class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                  aria-hidden="true"
+                >
+                  <CircleSlash />
+                </div>
+                <p class="text-gray-500">
+                  {{ "本地搜索暂无结果" }}
+                </p>
+              </div>
             </template>
 
             <template v-if="currentPage === 1">
@@ -569,27 +794,6 @@ const copyUrl = async (url: string) => {
               />
             </template>
           </template>
-
-          <div
-            v-if="
-              isMusic
-                ? !results.length
-                : !webSearchRef?.searching &&
-                  !webSearchRef?.results.length &&
-                  !results.length
-            "
-            class="text-center py-20"
-          >
-            <div
-              class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
-              aria-hidden="true"
-            >
-              <CircleSlash />
-            </div>
-            <p class="text-gray-500">
-              {{ isMusic ? "本地搜索暂无结果" : "全网搜索暂无结果" }}
-            </p>
-          </div>
 
           <div
             v-if="totalPages > 1"

@@ -28,6 +28,10 @@ export const buildSearchTsQuery = (input: string): string => {
   return cut(input).join(" | ");
 };
 
+export const buildSearchTsQueryExact = (input: string): string => {
+  return cut(input).join(" & ");
+};
+
 export const tokenizeIndex = (input: string): string => {
   return cut(input).join(" ");
 };
