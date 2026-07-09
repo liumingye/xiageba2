@@ -61,6 +61,23 @@ export default defineEventHandler(async (event) => {
   try {
     const res = await fetch(targetUrl, { headers });
 
+    // 验证最后响应的域名是否在白名单中，防止重定向攻击
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(res.url);
+    } catch {
+      throw createError({ statusCode: 400, message: "无效的 url 参数" });
+    }
+    if (
+      allowedHosts.length > 0 &&
+      !isHostAllowed(parsedUrl.host, allowedHosts)
+    ) {
+      throw createError({
+        statusCode: 403,
+        message: `该图片域名不在白名单中: ${parsedUrl.host}`,
+      });
+    }
+
     const contentType =
       res.headers.get("Content-Type") || "application/octet-stream";
     setResponseHeader(event, "Content-Type", contentType);
@@ -68,7 +85,10 @@ export default defineEventHandler(async (event) => {
 
     setResponseStatus(event, res.status);
     return res.body;
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) {
+      throw createError({ statusCode: 502, message: error.message });
+    }
     throw createError({ statusCode: 502, message: "图片代理请求失败" });
   }
 });
