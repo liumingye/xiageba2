@@ -667,9 +667,9 @@ const copyUrl = async (url: string) => {
               <!-- 资源筛选条件 -->
               <div class="flex flex-wrap items-center gap-2 mb-4">
                 <!-- 入库时间 -->
-                <div class="flex-1 relative">
+                <div class="flex-1 relative min-w-24">
                   <select
-                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-8 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     :value="timeFilter"
                     @change="
                       updateFilter(
@@ -692,9 +692,9 @@ const copyUrl = async (url: string) => {
                 </div>
 
                 <!-- 网盘类型 -->
-                <div class="flex-1 relative">
+                <div class="flex-1 relative min-w-24">
                   <select
-                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-8 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     :value="panFilter"
                     @change="
                       updateFilter(
@@ -717,9 +717,9 @@ const copyUrl = async (url: string) => {
                 </div>
 
                 <!-- 排序 -->
-                <div class="flex-1 relative">
+                <div class="flex-1 relative min-w-24">
                   <select
-                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-8 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     :value="sortFilter"
                     @change="
                       updateFilter(
