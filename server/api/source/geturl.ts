@@ -113,7 +113,6 @@ async function transferQuarkUC(
 
   // 步骤4: 等待转存完成
   let taskResult = await shareApi.saveTask(saveResult.task_id, true);
-  console.log(taskResult);
   if (taskResult.status === 0) {
     throw createError({ statusCode: 500, message: "转存任务未完成" });
   }

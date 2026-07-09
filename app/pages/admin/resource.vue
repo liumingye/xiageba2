@@ -61,6 +61,7 @@ const editUrl = ref("");
 const editDescription = ref("");
 const editMenu = ref("");
 const menuLoading = ref(false);
+const menuAbortController = ref<AbortController | null>(null);
 const error = ref("");
 
 const showImportModal = ref(false);
@@ -152,13 +153,25 @@ const openEditModal = (item: Source) => {
 
 const closeEditModal = () => {
   showEditModal.value = false;
+  if (menuAbortController.value) {
+    menuAbortController.value.abort();
+    menuAbortController.value = null;
+  }
+  menuLoading.value = false;
 };
 
 const fetchMenu = async () => {
   if (!editId.value) return;
+  if (menuAbortController.value) {
+    menuAbortController.value.abort();
+  }
+  const controller = new AbortController();
+  menuAbortController.value = controller;
   menuLoading.value = true;
   try {
-    const res = await fetch(`/api/source/tree?id=${editId.value}`);
+    const res = await fetch(`/api/source/tree?id=${editId.value}`, {
+      signal: controller.signal,
+    });
     const data = await res.json();
     if (res.ok && data.success) {
       editMenu.value = data.tree || "";
@@ -168,6 +181,7 @@ const fetchMenu = async () => {
   } catch {
     error.value = "获取目录失败";
   } finally {
+    menuAbortController.value = null;
     menuLoading.value = false;
   }
 };
