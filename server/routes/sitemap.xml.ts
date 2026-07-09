@@ -19,7 +19,6 @@ export default defineEventHandler(async (event) => {
 
   const staticPages = [
     { loc: "/", changefreq: "daily", priority: "1.0" },
-    { loc: "/search", changefreq: "always", priority: "0.8" },
   ];
 
   const urls = [

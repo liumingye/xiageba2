@@ -183,13 +183,13 @@ const pages = computed(() => {
               {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
             </span>
             <div class="flex items-center gap-2">
-              <button
+              <NuxtLink
+                :to="`/source/${item.id}`"
                 class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-                @click.stop="goToSource(item.id)"
               >
                 <Download class="w-3 h-3" />
                 查看详情
-              </button>
+              </NuxtLink>
             </div>
           </div>
         </article>
