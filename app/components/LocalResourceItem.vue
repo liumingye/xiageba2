@@ -39,11 +39,13 @@ const emit = defineEmits<{
     }"
     role="article"
   >
-    <div
-      v-if="checkStatus === 'invalid'"
-      class="absolute inset-0 flex items-center justify-center bg-red-900/50 text-red-400 flex-shrink-0"
-      title="链接失效"
-    />
+    <ClientOnly>
+      <div
+        v-if="checkStatus === 'invalid'"
+        class="absolute inset-0 flex items-center justify-center bg-red-900/50 text-red-400 flex-shrink-0 z-10"
+        title="链接失效"
+      />
+    </ClientOnly>
     <div class="flex flex-col">
       <div
         class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse"
@@ -59,26 +61,28 @@ const emit = defineEmits<{
           {{ getTypeName(item.type) }}
         </div>
         <h3
-          class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2 truncate"
+          class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2"
           @click="emit('clickTitle', item)"
         >
           <span v-if="highlightHtml" v-html="highlightHtml" />
           <template v-else>{{ item.title }}</template>
-          <CheckCircle
-            v-if="checkStatus === 'valid'"
-            class="w-4 h-4 text-green-400 flex-shrink-0"
-            title="链接有效"
-          />
-          <XCircle
-            v-if="checkStatus === 'invalid'"
-            class="w-4 h-4 text-red-400 flex-shrink-0"
-            title="链接失效"
-          />
-          <Loader2
-            v-if="checkStatus === 'checking'"
-            class="w-4 h-4 text-gray-400 animate-spin flex-shrink-0"
-            title="检测中"
-          />
+          <ClientOnly>
+            <CheckCircle
+              v-if="checkStatus === 'valid'"
+              class="w-4 h-4 text-green-400 flex-shrink-0"
+              title="链接有效"
+            />
+            <XCircle
+              v-if="checkStatus === 'invalid'"
+              class="w-4 h-4 text-red-400 flex-shrink-0"
+              title="链接失效"
+            />
+            <Loader2
+              v-if="checkStatus === 'checking'"
+              class="w-4 h-4 text-gray-400 animate-spin flex-shrink-0"
+              title="检测中"
+            />
+          </ClientOnly>
         </h3>
       </div>
       <template v-if="item.menu">
