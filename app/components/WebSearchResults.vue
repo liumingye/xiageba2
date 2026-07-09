@@ -21,6 +21,7 @@ export interface WebSearchResult {
 const props = defineProps<{
   keyword: string;
   disabled?: boolean;
+  highlightHtml?: (text: string) => string;
 }>();
 
 const emit = defineEmits<{
@@ -153,10 +154,10 @@ defineExpose({ results, searching, error });
         <div
           class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
         >
-          <h3
-            class="text-sm font-medium text-white truncate mb-1 flex items-center gap-2"
-          >
-            {{ item.title }}
+          <h3 class="text-white flex items-center gap-2">
+            <span
+              v-html="props.highlightHtml?.(item.title) || item.title"
+            ></span>
             <CheckCircle
               v-if="getCheckStatus(item.url) === 'valid'"
               class="w-4 h-4 text-green-400 flex-shrink-0"

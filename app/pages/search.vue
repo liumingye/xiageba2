@@ -297,7 +297,8 @@ const highlight = (text: string): string => {
     const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     result = result.replace(
       new RegExp(escaped, "gi"),
-      (match) => `<mark class="bg-transparent text-primary-400">${match}</mark>`,
+      (match) =>
+        `<mark class="bg-transparent text-primary-400">${match}</mark>`,
     );
   }
   return result;
@@ -633,9 +634,16 @@ const copyUrl = async (url: string) => {
                   "
                 />
                 <div class="flex-1 min-w-0">
-                  <h3 class="text-sm font-medium text-white truncate" v-html="highlight(music.title)" />
+                  <h3
+                    class="text-sm font-medium text-white truncate"
+                    v-html="highlight(music.title)"
+                  />
                   <p class="text-xs text-gray-500 truncate">
-                    <span v-html="highlight(music.artist)" /><span v-if="music.album"> - <span v-html="highlight(music.album)" /></span>
+                    <span v-html="highlight(music.artist)" /><span
+                      v-if="music.album"
+                    >
+                      - <span v-html="highlight(music.album)"
+                    /></span>
                   </p>
                 </div>
                 <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
@@ -778,6 +786,7 @@ const copyUrl = async (url: string) => {
                 :item="item"
                 :check-status="getCheckStatus(item.id)"
                 :highlight-html="highlight(item.title)"
+                :highlight-menu="highlight(item.menu)"
                 @click-title="router.push(`/source/${item.id}`)"
                 @open-tree="openTreeModal({ item, type: 'id' })"
                 @open-modal="openModal({ item, type: 'id' })"
@@ -802,6 +811,7 @@ const copyUrl = async (url: string) => {
                 ref="webSearchRef"
                 :keyword="searchKeyword"
                 :disabled="isMusic"
+                :highlight-html="highlight"
                 @open-tree-modal="
                   (item) => openTreeModal({ item, type: 'url' })
                 "
@@ -905,9 +915,9 @@ const copyUrl = async (url: string) => {
                   <div class="flex flex-col items-center gap-4">
                     <span
                       >可使用
-                      <span class="text-primary-500">{{
-                        getTypeName(getStorageType(modalUrl))
-                      }}</span>
+                      <span class="text-primary-500"
+                        >{{ getTypeName(getStorageType(modalUrl)) }}网盘</span
+                      >
                       APP 扫码获取</span
                     >
                     <div v-if="modalQrCode" class="flex-shrink-0">

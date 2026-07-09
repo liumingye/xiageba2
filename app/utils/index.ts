@@ -18,5 +18,3 @@ export const getTypeName = (type: string) => {
       return "其他";
   }
 };
-
-

@@ -244,7 +244,7 @@ onMounted(() => {
                       >可使用
                       <span class="text-primary-500">{{
                         getTypeName(source.type)
-                      }}</span>
+                      }}网盘</span>
                       APP 扫码获取</span
                     >
                     <div v-if="qrCodeUrl" class="flex-shrink-0">

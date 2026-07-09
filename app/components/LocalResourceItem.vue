@@ -22,6 +22,7 @@ defineProps<{
   item: SourceItem;
   checkStatus?: "valid" | "invalid" | "checking" | null;
   highlightHtml?: string;
+  highlightMenu?: string;
 }>();
 
 const emit = defineEmits<{
@@ -47,9 +48,7 @@ const emit = defineEmits<{
       />
     </ClientOnly>
     <div class="flex flex-col">
-      <div
-        class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse"
-      >
+      <div class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse">
         <div
           class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
         >
@@ -89,8 +88,8 @@ const emit = defineEmits<{
         <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
         <pre
           class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
-          >{{ item.menu }}</pre
-        >
+          v-html="highlightMenu || item.menu"
+        ></pre>
       </template>
     </div>
     <div
