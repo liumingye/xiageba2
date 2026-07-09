@@ -7,6 +7,9 @@ export default defineEventHandler((event) => {
   if (!url.startsWith("/api/admin")) return;
   if (url.startsWith("/api/admin/login")) return;
 
+  // 拦截 // 开头的请求
+  if (url.startsWith("//")) return;
+
   const token = getTokenFromEvent(event);
   if (!token) {
     throw createError({
