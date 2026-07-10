@@ -18,16 +18,16 @@ interface DoubanResponse {
 }
 
 interface DoubanResult {
-  vod_id: string;
-  link: string;
+  // vod_id: string;
+  // link: string;
   vod_name: string;
-  search: boolean;
+  // search: boolean;
   vod_pic: string;
-  type_id: string;
-  type_name: string;
-  vod_remarks: string;
-  vod_year: string;
-  vod_douban_score: string;
+  // type_id: string;
+  // type_name: string;
+  // vod_remarks: string;
+  // vod_year: string;
+  // vod_douban_score: string;
   vod_subtitle: string;
 }
 
@@ -424,46 +424,51 @@ const FILTERS: Record<
   ],
   short_drama: [
     {
-      key: "cate",
-      name: "类型",
-      init: "全部",
+      key: "tag",
+      name: "分类",
+      init: "",
       value: [
-        { name: "全部", value: "全部" },
-        { name: "爱情", value: "爱情" },
-        { name: "现代", value: "现代" },
+        { name: "热播榜", value: "" },
         { name: "穿越", value: "穿越" },
-        { name: "古装", value: "古装" },
         { name: "逆袭", value: "逆袭" },
-      ],
-    },
-    {
-      key: "rank_type",
-      name: "排序",
-      init: "热搜榜",
-      value: [
-        { name: "热搜榜", value: "热搜榜" },
-        { name: "新片榜", value: "新片榜" },
-        { name: "好评榜", value: "好评榜" },
+        { name: "重生", value: "重生" },
+        { name: "爱情", value: "爱情" },
+        { name: "玄幻", value: "玄幻" },
+        { name: "现代言情", value: "现代言情" },
+        { name: "总裁", value: "总裁" },
+        { name: "虐恋", value: "虐恋" },
+        { name: "甜宠", value: "甜宠" },
+        { name: "神豪", value: "神豪" },
+        { name: "女性成长", value: "女性成长" },
+        { name: "古风权谋", value: "古风权谋" },
+        { name: "家庭伦理", value: "家庭伦理" },
+        { name: "复仇", value: "复仇" },
+        { name: "悬疑推理", value: "悬疑推理" },
+        { name: "古风言情", value: "古风言情" },
+        { name: "生活", value: "生活" },
+        { name: "刑侦", value: "刑侦" },
+        { name: "恐怖", value: "恐怖" },
+        { name: "架空", value: "架空" },
       ],
     },
   ],
 };
 
-function buildDoubanSubjectLink(vodId: string): string {
-  return `https://movie.douban.com/subject/${vodId}`;
-}
+// function buildDoubanSubjectLink(vodId: string): string {
+//   return `https://movie.douban.com/subject/${vodId}`;
+// }
 
 function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
   const cardSubtitle = item.card_subtitle || "";
-  const yearMatch = cardSubtitle.match(/^(\d{4})/);
-  const vod_year = yearMatch ? yearMatch[1] : "";
+  // const yearMatch = cardSubtitle.match(/^(\d{4})/);
+  // const vod_year = yearMatch ? yearMatch[1] : "";
 
-  let vod_remarks = "";
-  if (item.episodes_info && item.episodes_info.trim()) {
-    vod_remarks = item.episodes_info.trim();
-  } else if (item.is_new) {
-    vod_remarks = categoryId === "movie" ? "新片" : "新剧";
-  }
+  // let vod_remarks = "";
+  // if (item.episodes_info && item.episodes_info.trim()) {
+  //   vod_remarks = item.episodes_info.trim();
+  // } else if (item.is_new) {
+  //   vod_remarks = categoryId === "movie" ? "新片" : "新剧";
+  // }
 
   const vod_pic = item.pic?.large || item.pic?.normal || "";
 
@@ -472,16 +477,16 @@ function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
     parts.length > 1 ? parts.slice(1).join(" / ") : cardSubtitle;
 
   return {
-    vod_id: item.id || `douban_${item.uri}`,
-    link: buildDoubanSubjectLink(item.id || `douban_${item.uri}`),
+    // vod_id: item.id || `douban_${item.uri}`,
+    // link: buildDoubanSubjectLink(item.id || `douban_${item.uri}`),
     vod_name: item.title || "",
-    search: true,
+    // search: true,
     vod_pic,
-    type_id: categoryId,
-    type_name: CATEGORY_NAMES[categoryId] || "未知分类",
-    vod_remarks,
-    vod_year,
-    vod_douban_score: item.rating?.value ? item.rating.value.toString() : "",
+    // type_id: categoryId,
+    // type_name: CATEGORY_NAMES[categoryId] || "未知分类",
+    // vod_remarks,
+    // vod_year,
+    // vod_douban_score: item.rating?.value ? item.rating.value.toString() : "",
     vod_subtitle,
   };
 }
@@ -589,17 +594,17 @@ async function fetchCategory(
   };
 }
 
-interface QuarkDramaItem {
+interface IqiyiDramaItem {
   title?: string;
-  src?: string;
-  episode_count?: string;
-  year?: string;
+  image_url_normal?: string;
+  page_url?: string;
   desc?: string;
-  video_id?: string;
-  ranking?: string;
-  score_avg?: string;
-  category?: string;
-  area?: string;
+  description?: string;
+  tag?: string;
+  showDate?: string;
+  sns_score?: string | number;
+  album_id?: string | number;
+  time_length?: number;
 }
 
 async function fetchShortDrama(
@@ -607,15 +612,31 @@ async function fetchShortDrama(
   page: number,
   filters: Record<string, string>,
 ) {
-  const cate = filters.cate || "全部";
-  const rankType = filters.rank_type || "热搜榜";
-  const start = (page - 1) * 20;
-  const url = `https://biz.quark.cn/api/trending/ranking/getYingshiRanking?${new URLSearchParams(
+  const tag = filters.tag || "";
+  const url = `https://mesh.if.iqiyi.com/portal/lw/v7/channel/card/video?${new URLSearchParams(
     {
-      channel: "短剧",
-      start: String(start),
-      rank_type: rankType,
-      cate,
+      channelName: "microdrama",
+      img_size: "_260_360",
+      data_source: "v7_microdrama_videolib",
+      tempId: "61",
+      data_id: "",
+      count: "30",
+      block_id: "pca_35_waterfall",
+      micro_source: "5",
+      tag,
+      uid: "0",
+      vip: "0",
+      auth: "",
+      device: "bb818181c2c376d00b0b713f45e27957",
+      scale: "100",
+      brightness: "dark",
+      width: "891",
+      pcv: "17.071.25717",
+      v: "17.071.25717",
+      os: "10.0",
+      from: "webapp",
+      mode: "page",
+      page: String(page),
     },
   ).toString()}`;
 
@@ -623,40 +644,41 @@ async function fetchShortDrama(
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Referer: "https://www.iqiyi.com/",
     },
   });
 
   const json = res.data as {
-    status?: number;
-    data?: {
-      hits?: {
-        hit?: {
-          item?: QuarkDramaItem[];
-        };
-      };
-    };
+    code?: number;
+    items?: Array<{
+      video?: Array<{ data?: IqiyiDramaItem[] }>;
+    }>;
   };
 
-  if (json?.status !== 0) {
-    throw createError({ statusCode: 502, message: "夸克短剧接口返回错误" });
+  if (json?.code !== 0) {
+    throw createError({ statusCode: 502, message: "爱奇艺短剧接口返回错误" });
   }
 
-  const items = json?.data?.hits?.hit?.item || [];
+  const items = json?.items?.[0]?.video?.[0]?.data || [];
   const text = (v: unknown) => String(v == null ? "" : v).trim();
 
-  const list: DoubanResult[] = items.map((v) => ({
-    vod_id: text(v.video_id) || text(v.title),
-    link: "",
-    vod_name: text(v.title),
-    search: true,
-    vod_pic: text(v.src),
-    type_id: categoryId,
-    type_name: CATEGORY_NAMES[categoryId] || "未知分类",
-    vod_remarks: text(v.episode_count),
-    vod_year: text(v.year),
-    vod_douban_score: text(v.score_avg),
-    vod_subtitle: text(v.desc) || text(v.category),
-  }));
+  const list: DoubanResult[] = items.map((v) => {
+    const showDate = text(v.showDate);
+    const yearMatch = showDate.match(/(\d{4})/);
+    return {
+      // vod_id: text(v.album_id),
+      // link: text(v.page_url),
+      vod_name: text(v.title),
+      // search: true,
+      vod_pic: text(v.image_url_normal),
+      // type_id: categoryId,
+      // type_name: CATEGORY_NAMES[categoryId] || "未知分类",
+      // vod_remarks: showDate,
+      // vod_year: yearMatch ? yearMatch[1] : "",
+      // vod_douban_score: text(v.sns_score),
+      vod_subtitle: text(v.desc) || text(v.tag),
+    };
+  });
 
   return {
     page,

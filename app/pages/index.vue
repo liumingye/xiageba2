@@ -324,7 +324,9 @@ const getPic = (url: string) => {
   const urlObj = new URL(url);
 
   if (urlObj.hostname.endsWith(".doubanio.com")) {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=m.douban.com`;
+    return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://m.douban.com`;
+  } else if (urlObj.hostname.endsWith(".iqiyipic.com")) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://www.iqiyi.com`;
   }
   return url;
 };

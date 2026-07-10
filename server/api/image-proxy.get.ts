@@ -8,6 +8,16 @@ const WHITELIST = [
   "img7.doubanio.com",
   "img8.doubanio.com",
   "img9.doubanio.com",
+  "pic0.iqiyipic.com",
+  "pic1.iqiyipic.com",
+  "pic2.iqiyipic.com",
+  "pic3.iqiyipic.com",
+  "pic4.iqiyipic.com",
+  "pic5.iqiyipic.com",
+  "pic6.iqiyipic.com",
+  "pic7.iqiyipic.com",
+  "pic8.iqiyipic.com",
+  "pic9.iqiyipic.com",
 ];
 
 function isHostAllowed(host: string, allowed: string[]): boolean {
