@@ -144,8 +144,22 @@ defineExpose({ results, searching, error });
         class="card p-3 relative"
       >
         <div
-          class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
+          v-if="getCheckStatus(item.url) === 'invalid'"
+          class="absolute inset-0 bg-red-900/20 pointer-events-none"
+        />
+        <div
+          class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse"
         >
+          <div
+            class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
+          >
+            <img
+              v-if="item.type !== 'other'"
+              :src="`/img/pan/${item.type}.png`"
+              class="w-4 h-4 mr-1"
+            />
+            {{ getTypeName(item.type) }}
+          </div>
           <h3 class="text-white flex items-center gap-2">
             <span
               v-html="props.highlightHtml?.(item.title) || item.title"
@@ -166,16 +180,6 @@ defineExpose({ results, searching, error });
               title="检测中"
             />
           </h3>
-          <div
-            class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
-          >
-            <img
-              v-if="item.type !== 'other'"
-              :src="`/img/pan/${item.type}.png`"
-              class="w-4 h-4 mr-1"
-            />
-            {{ getTypeName(item.type) }}
-          </div>
         </div>
         <div
           class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"

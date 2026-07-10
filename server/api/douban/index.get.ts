@@ -425,7 +425,7 @@ const FILTERS: Record<
   short_drama: [
     {
       key: "tag",
-      name: "分类",
+      name: "类型",
       init: "",
       value: [
         { name: "热播榜", value: "" },

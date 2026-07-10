@@ -37,6 +37,10 @@ const emit = defineEmits<{
     class="relative card p-3 hover:border-primary-500/50 transition-colors"
     role="article"
   >
+    <div
+      v-if="checkStatus === 'invalid'"
+      class="absolute inset-0 bg-red-900/20 pointer-events-none"
+    />
     <div class="flex flex-col">
       <div class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse">
         <div
