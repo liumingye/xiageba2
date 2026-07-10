@@ -424,15 +424,26 @@ const FILTERS: Record<
   ],
   short_drama: [
     {
-      key: "category",
+      key: "cate",
       name: "类型",
-      init: "1287",
+      init: "全部",
       value: [
-        { name: "甜宠", value: "1287" },
-        { name: "逆袭", value: "1288" },
-        { name: "热血", value: "1289" },
-        { name: "现代", value: "1290" },
-        { name: "古代", value: "1291" },
+        { name: "全部", value: "全部" },
+        { name: "爱情", value: "爱情" },
+        { name: "现代", value: "现代" },
+        { name: "穿越", value: "穿越" },
+        { name: "古装", value: "古装" },
+        { name: "逆袭", value: "逆袭" },
+      ],
+    },
+    {
+      key: "rank_type",
+      name: "排序",
+      init: "热搜榜",
+      value: [
+        { name: "热搜榜", value: "热搜榜" },
+        { name: "新片榜", value: "新片榜" },
+        { name: "好评榜", value: "好评榜" },
       ],
     },
   ],
@@ -578,18 +589,17 @@ async function fetchCategory(
   };
 }
 
-const SHORT_DRAMA_HOST = "http://read.api.duodutek.com";
-const SHORT_DRAMA_COMMON_PARAMS = {
-  productId: "2a8c14d1-72e7-498b-af23-381028eb47c0",
-  vestId: "2be070e0-c824-4d0e-a67a-8f688890cadb",
-  channel: "oppo19",
-  osType: "android",
-  version: "20",
-  token: "202509271001001446030204698626",
-};
-
-function text(v: unknown): string {
-  return String(v == null ? "" : v).trim();
+interface QuarkDramaItem {
+  title?: string;
+  src?: string;
+  episode_count?: string;
+  year?: string;
+  desc?: string;
+  video_id?: string;
+  ranking?: string;
+  score_avg?: string;
+  category?: string;
+  area?: string;
 }
 
 async function fetchShortDrama(
@@ -597,63 +607,61 @@ async function fetchShortDrama(
   page: number,
   filters: Record<string, string>,
 ) {
-  const resourceId = filters.category || "1287";
-  const pageSize = 10;
-  const url = `${SHORT_DRAMA_HOST}/novel-api/app/pageModel/getResourceById?${new URLSearchParams(
+  const cate = filters.cate || "全部";
+  const rankType = filters.rank_type || "热搜榜";
+  const start = (page - 1) * 20;
+  const url = `https://biz.quark.cn/api/trending/ranking/getYingshiRanking?${new URLSearchParams(
     {
-      ...SHORT_DRAMA_COMMON_PARAMS,
-      resourceId,
-      pageNum: String(page),
-      pageSize: String(pageSize),
+      channel: "短剧",
+      start: String(start),
+      rank_type: rankType,
+      cate,
     },
   ).toString()}`;
 
   const res = await axios.get(url, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.87 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     },
   });
 
   const json = res.data as {
+    status?: number;
     data?: {
-      datalist?: Array<{
-        id?: string;
-        name?: string;
-        introduction?: string;
-        icon?: string;
-        heat?: string;
-      }>;
-      total?: string | number;
-      totalCount?: string | number;
+      hits?: {
+        hit?: {
+          item?: QuarkDramaItem[];
+        };
+      };
     };
-    total?: string | number;
   };
 
-  const list = (json?.data?.datalist || []).map((v) => ({
-    vod_id: `${text(v.id)}@@${text(v.name)}@@${text(v.introduction)}`,
+  if (json?.status !== 0) {
+    throw createError({ statusCode: 502, message: "夸克短剧接口返回错误" });
+  }
+
+  const items = json?.data?.hits?.hit?.item || [];
+  const text = (v: unknown) => String(v == null ? "" : v).trim();
+
+  const list: DoubanResult[] = items.map((v) => ({
+    vod_id: text(v.video_id) || text(v.title),
     link: "",
-    vod_name: text(v.name),
+    vod_name: text(v.title),
     search: true,
-    vod_pic: text(v.icon),
+    vod_pic: text(v.src),
     type_id: categoryId,
     type_name: CATEGORY_NAMES[categoryId] || "未知分类",
-    vod_remarks: `${text(v.heat)}万播放`,
-    vod_year: "",
-    vod_douban_score: "",
-    vod_subtitle: text(v.introduction),
+    vod_remarks: text(v.episode_count),
+    vod_year: text(v.year),
+    vod_douban_score: text(v.score_avg),
+    vod_subtitle: text(v.desc) || text(v.category),
   }));
-
-  const total =
-    Number(json?.data?.total) ||
-    Number(json?.data?.totalCount) ||
-    Number(json?.total) ||
-    list.length;
 
   return {
     page,
     pagecount: 999,
-    total,
+    total: list.length,
     list,
   };
 }
