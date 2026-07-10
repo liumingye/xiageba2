@@ -151,11 +151,11 @@ async function walkQuarkUC(
     const item = items[i];
     if (!item) continue;
     const isLast = i === items.length - 1;
-    const connector = isLast ? "└─ " : "├─ ";
+    const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.file_name}`);
 
     if (item.file_type === 0) {
-      const extension = isLast ? "  " : "│  ";
+      const extension = depth === 0 ? "" : isLast ? "  " : "│  ";
       await walkQuarkUC(
         client,
         pwdId,
@@ -221,11 +221,11 @@ async function walkBaidu(
     const item = items[i];
     if (!item) continue;
     const isLast = i === items.length - 1;
-    const connector = isLast ? "└─ " : "├─ ";
+    const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.server_filename}`);
 
     if (item.isdir) {
-      const extension = isLast ? "  " : "│  ";
+      const extension = depth === 0 ? "" : isLast ? "  " : "│  ";
       await walkBaidu(
         client,
         shareParam,
@@ -290,11 +290,11 @@ async function walkXunlei(
     const item = items[i];
     if (!item) continue;
     const isLast = i === items.length - 1;
-    const connector = isLast ? "└─ " : "├─ ";
+    const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.name}`);
 
     if (item.is_dir) {
-      const extension = isLast ? "  " : "│  ";
+      const extension = depth === 0 ? "" : isLast ? "  " : "│  ";
       const res = await client.shareApi.detail({
         shareId,
         passCodeToken,

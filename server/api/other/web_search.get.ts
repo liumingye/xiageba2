@@ -1,4 +1,4 @@
-import { webSearch, webSearchConcurrent } from "#server/lib/webSearch";
+import { webSearchConcurrent } from "#server/lib/webSearch";
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
