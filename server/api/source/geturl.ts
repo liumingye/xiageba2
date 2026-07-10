@@ -365,7 +365,7 @@ export default defineEventHandler(async (event) => {
     }
   } catch (e: any) {
     // 404 表示分享不存在，
-    if (e.statusCode === 404) {
+    if (e.statusCode === 404 && id) {
       // invalidNum +1
       await prisma.source.update({
         where: { id },

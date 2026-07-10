@@ -16,12 +16,12 @@ const getAesMaterial = async (): Promise<AesMaterial | null> => {
     const ivBuf = Buffer.from(cfg.aes_iv, "base64");
 
     if (![16, 24, 32].includes(keyBuf.length)) return null;
-    if (ivBuf.length !== 12) return null;
+    if (ivBuf.length !== 16) return null;
 
     const cryptoKey = await crypto.subtle.importKey(
       "raw",
       keyBuf,
-      { name: "AES-GCM" },
+      { name: "AES-CBC" },
       false,
       ["encrypt", "decrypt"],
     );
@@ -33,7 +33,7 @@ const getAesMaterial = async (): Promise<AesMaterial | null> => {
 };
 
 /**
- * 使用 AES-GCM 加密 URL，未配置密钥时原样返回
+ * 使用 AES-CBC 加密 URL，未配置密钥时原样返回
  */
 export const encryptUrl = async (url: string): Promise<string> => {
   const mat = await getAesMaterial();
@@ -41,7 +41,7 @@ export const encryptUrl = async (url: string): Promise<string> => {
 
   const encoded = new TextEncoder().encode(url);
   const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: mat.iv },
+    { name: "AES-CBC", iv: mat.iv },
     mat.cryptoKey,
     encoded,
   );
@@ -50,7 +50,7 @@ export const encryptUrl = async (url: string): Promise<string> => {
 };
 
 /**
- * 使用 AES-GCM 解密 URL，未配置密钥时原样返回
+ * 使用 AES-CBC 解密 URL，未配置密钥时原样返回
  * 配置存在但解密失败则返回 null
  */
 export const decryptUrl = async (cipher: string): Promise<string | null> => {
@@ -59,7 +59,7 @@ export const decryptUrl = async (cipher: string): Promise<string | null> => {
 
   try {
     const decrypted = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: mat.iv },
+      { name: "AES-CBC", iv: mat.iv },
       mat.cryptoKey,
       Buffer.from(cipher, "base64"),
     );

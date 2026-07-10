@@ -458,9 +458,9 @@ const clearISRCache = async (route?: string) => {
               <Key class="w-5 h-5 text-yellow-400" />
             </div>
             <div>
-              <h3 class="text-white font-medium">AES-GCM 密钥</h3>
+              <h3 class="text-white font-medium">AES-CBC 密钥</h3>
               <p class="text-gray-500 text-sm">
-                Key 需为 16/24/32 字节 base64，IV 需为 12 字节 base64
+                Key 需为 16/24/32 字节 base64，IV 需为 16 字节 base64
               </p>
             </div>
           </div>
