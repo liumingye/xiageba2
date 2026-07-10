@@ -2,10 +2,20 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { Plus, Trash2, Edit3, Webhook, Globe, Search, X } from "@lucide/vue";
+import {
+  Plus,
+  Trash2,
+  Edit3,
+  Webhook,
+  Globe,
+  Search,
+  X,
+  Zap,
+} from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+const toast = useToast();
 
 interface ApiItem {
   id: string;
@@ -60,10 +70,14 @@ const form = ref({
   status: 1,
 });
 const error = ref("");
+const testing = ref(false);
 
 const parseFixedParams = () => {
   try {
-    return JSON.parse(form.value.fixed_params || "{}") as Record<string, string>;
+    return JSON.parse(form.value.fixed_params || "{}") as Record<
+      string,
+      string
+    >;
   } catch {
     return {} as Record<string, string>;
   }
@@ -211,6 +225,39 @@ const saveApi = async () => {
   } else {
     const data = await res.json();
     error.value = data.message || "保存失败";
+  }
+};
+
+const testApi = async () => {
+  if (!form.value.url.trim()) {
+    error.value = "请先填写地址";
+    return;
+  }
+  testing.value = true;
+  try {
+    const res = await fetch("/api/admin/apiList/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ config: form.value, keyword: "凡人修仙传" }),
+    });
+    if (res.status === 401) {
+      logout();
+      router.push("/admin/login");
+      return;
+    }
+    const data = await res.json();
+    if (data.success) {
+      toast.add(
+        `测试成功，搜索「凡人修仙传」找到 ${data.count} 条结果`,
+        "success",
+      );
+    } else {
+      toast.add(`测试失败，错误信息： ${data.message || "未知错误"}`, "error");
+    }
+  } catch {
+    toast.add("测试失败，网络错误", "error");
+  } finally {
+    testing.value = false;
   }
 };
 
@@ -620,19 +667,31 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 p-4 border-t border-gray-800">
+          <div
+            class="flex justify-between items-center gap-3 p-4 border-t border-gray-800"
+          >
             <button
-              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              @click="closeModal"
+              :disabled="testing"
+              class="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg transition-colors"
+              @click="testApi"
             >
-              取消
+              <Zap class="w-4 h-4" :class="{ 'animate-spin': testing }" />
+              {{ testing ? "测试中..." : "测试线路" }}
             </button>
-            <button
-              class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-              @click="saveApi"
-            >
-              保存
-            </button>
+            <div class="flex gap-3">
+              <button
+                class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                @click="closeModal"
+              >
+                取消
+              </button>
+              <button
+                class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                @click="saveApi"
+              >
+                保存
+              </button>
+            </div>
           </div>
         </div>
       </div>

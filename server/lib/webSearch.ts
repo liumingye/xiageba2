@@ -356,6 +356,22 @@ const searchHtml = async (
 //   }
 // }
 
+export async function testWebSearchConfig(
+  config: any,
+  keyword: string,
+): Promise<number> {
+  if (config.type === "api") {
+    const items = await searchApi(config, keyword);
+    return items.length;
+  } else if (config.type === "pansou") {
+    const items = await searchPanSou(config, keyword);
+    return items.length;
+  } else {
+    const items = await searchHtml(config, keyword);
+    return items.length;
+  }
+}
+
 export async function webSearchConcurrent(
   keyword: string,
   onResult: (results: WebSearchResult[]) => void,
