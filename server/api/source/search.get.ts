@@ -160,7 +160,7 @@ export default defineEventHandler(async (event) => {
       page,
       pageSize,
       totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
-      tokens,
+      tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
     };
   } finally {
     client.release();

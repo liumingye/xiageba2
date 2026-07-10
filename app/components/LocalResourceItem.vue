@@ -40,13 +40,6 @@ const emit = defineEmits<{
     }"
     role="article"
   >
-    <ClientOnly>
-      <div
-        v-if="checkStatus === 'invalid'"
-        class="absolute inset-0 flex items-center justify-center bg-red-900/50 text-red-400 flex-shrink-0 z-10"
-        title="链接失效"
-      />
-    </ClientOnly>
     <div class="flex flex-col">
       <div class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse">
         <div
@@ -99,7 +92,7 @@ const emit = defineEmits<{
         <Calendar class="w-3 h-3" />
         {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
       </span>
-      <div class="flex items-center gap-2" v-if="checkStatus !== 'invalid'">
+      <div class="flex items-center gap-2">
         <button
           v-if="
             !item.menu && ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)

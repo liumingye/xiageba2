@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少 title 参数" });
   }
 
-  const keyword = title.trim();
+  const keyword = title.replace(/"/g, "").trim();
 
   setHeader(event, "Content-Type", "text/event-stream");
   setHeader(event, "Cache-Control", "no-cache");
