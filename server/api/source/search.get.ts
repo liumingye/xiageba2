@@ -47,8 +47,9 @@ export default defineEventHandler(async (event) => {
   // 筛选参数（校验合法性，无效值回退到默认）
   const timeVal = String(query.time || "");
   const panVal = String(query.pan || "");
-  const timeFilter = timeVal in TIME_FILTER_MAP ? timeVal as TimeFilter : "any";
-  const panFilter = panVal in PAN_HOST_MAP ? panVal as PanFilter : "all";
+  const timeFilter =
+    timeVal in TIME_FILTER_MAP ? (timeVal as TimeFilter) : "any";
+  const panFilter = panVal in PAN_HOST_MAP ? (panVal as PanFilter) : "all";
   const sortOrder =
     query.sort && ["default", "newest", "oldest"].includes(query.sort as string)
       ? (query.sort as SortOrder)
@@ -86,10 +87,9 @@ export default defineEventHandler(async (event) => {
   const days = TIME_FILTER_MAP[timeFilter];
   if (days > 0) {
     conditions.push(
-      `s."createdAt" >= NOW() - ($${paramIndex} * INTERVAL '1 day')`,
+      `s."createdAt" >= NOW() - ($${paramIndex++} * INTERVAL '1 day')`,
     );
     params.push(days);
-    paramIndex++;
   }
 
   // 网盘类型筛选（通过 URL hostname 匹配）

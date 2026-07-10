@@ -28,12 +28,6 @@ export default defineEventHandler(async (event) => {
 
     const token = generateToken(admin.username);
 
-    setHeader(
-      event,
-      "Set-Cookie",
-      `admin-token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${60 * 60 * 24 * 7}; Secure`,
-    );
-
     return {
       id: admin.id,
       username: admin.username,

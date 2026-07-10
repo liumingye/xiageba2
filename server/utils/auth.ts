@@ -1,4 +1,4 @@
-import { createHmac, createHash } from "crypto";
+import { createHmac, randomBytes } from "crypto";
 
 const getSecret = (): string => {
   const SECRET = process.env.ADMIN_SECRET;
@@ -10,38 +10,67 @@ const getSecret = (): string => {
   return SECRET;
 };
 
+// JWT base64url 编码（不含 padding）
+const base64url = (buf: Buffer | string): string =>
+  Buffer.from(buf).toString("base64url");
+
+const base64urlDecode = (str: string): string =>
+  Buffer.from(str, "base64url").toString();
+
+// 使用 timingSafeEqual 防止时序攻击
+const safeEqual = (a: string, b: string): boolean => {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return bufA.equals(bufB);
+};
+
+const JWT_HEADER = base64url(
+  JSON.stringify({ alg: "HS256", typ: "JWT" }),
+);
+
 export const generateToken = (username: string): string => {
   const SECRET = getSecret();
-  const payload = JSON.stringify({
-    username,
-    exp: Date.now() + 1000 * 60 * 60 * 24 * 7,
-  });
-  const encoded = Buffer.from(payload).toString("base64");
-  const signature = createHmac("sha256", SECRET).update(encoded).digest("hex");
-  return `${encoded}.${signature}`;
+  const now = Date.now();
+  const payload = base64url(
+    JSON.stringify({
+      sub: username,
+      iat: now,
+      exp: now + 1000 * 60 * 60 * 24 * 7,
+      jti: randomBytes(16).toString("hex"),
+    }),
+  );
+  const signingInput = `${JWT_HEADER}.${payload}`;
+  const signature = createHmac("sha256", SECRET)
+    .update(signingInput)
+    .digest("base64url");
+  return `${signingInput}.${signature}`;
 };
 
 export const verifyToken = (token: string): { username: string } | null => {
   if (!token) return null;
 
-  const SECRET = getSecret();
-
   const parts = token.split(".");
-  if (parts.length !== 2) return null;
+  if (parts.length !== 3) return null;
 
-  const [encoded, signature] = parts;
-  if (!encoded || !signature) return null;
+  const [header, payload, signature] = parts;
+  if (!header || !payload || !signature) return null;
 
+  // 校验 header
+  if (!safeEqual(header, JWT_HEADER)) return null;
+
+  const SECRET = getSecret();
+  const signingInput = `${header}.${payload}`;
   const expectedSignature = createHmac("sha256", SECRET)
-    .update(encoded)
-    .digest("hex");
+    .update(signingInput)
+    .digest("base64url");
 
-  if (signature !== expectedSignature) return null;
+  if (!safeEqual(signature, expectedSignature)) return null;
 
   try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64").toString());
-    if (payload.exp < Date.now()) return null;
-    return { username: payload.username };
+    const decoded = JSON.parse(base64urlDecode(payload));
+    if (decoded.exp < Date.now()) return null;
+    return { username: decoded.sub };
   } catch {
     return null;
   }
@@ -52,11 +81,5 @@ export const getTokenFromEvent = (event: any): string | null => {
   if (authHeader && authHeader.startsWith("Bearer ")) {
     return authHeader.slice(7);
   }
-
-  const cookies = parseCookies(event);
-  if (cookies && cookies["admin-token"]) {
-    return cookies["admin-token"];
-  }
-
   return null;
 };

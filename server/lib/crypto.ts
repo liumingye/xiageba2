@@ -4,7 +4,7 @@ const AES_KEYS = ["aes_key", "aes_iv"];
 
 interface AesMaterial {
   cryptoKey: CryptoKey;
-  iv: Uint8Array;
+  iv: BufferSource;
 }
 
 const getAesMaterial = async (): Promise<AesMaterial | null> => {
