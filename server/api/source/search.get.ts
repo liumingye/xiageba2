@@ -44,10 +44,15 @@ export default defineEventHandler(async (event) => {
   );
   const skip = (page - 1) * pageSize;
 
-  // 筛选参数
-  const timeFilter = (query.time as TimeFilter) || "any";
-  const panFilter = (query.pan as PanFilter) || "all";
-  const sortOrder = (query.sort as SortOrder) || "default";
+  // 筛选参数（校验合法性，无效值回退到默认）
+  const timeVal = String(query.time || "");
+  const panVal = String(query.pan || "");
+  const timeFilter = timeVal in TIME_FILTER_MAP ? timeVal as TimeFilter : "any";
+  const panFilter = panVal in PAN_HOST_MAP ? panVal as PanFilter : "all";
+  const sortOrder =
+    query.sort && ["default", "newest", "oldest"].includes(query.sort as string)
+      ? (query.sort as SortOrder)
+      : "default";
   const exact = query.exact === "true";
 
   if (!term) {
@@ -72,23 +77,28 @@ export default defineEventHandler(async (event) => {
     return { data: [], total: 0, page, pageSize, totalPages: 0, tokens };
   }
 
-  // 构建动态 SQL 条件
+  // 构建动态 SQL 条件（全部使用参数化查询，杜绝字符串拼接）
   const conditions: string[] = [];
   const params: any[] = [];
   let paramIndex = 1;
 
   // 时间筛选
-  if (TIME_FILTER_MAP[timeFilter] > 0) {
-    const days = TIME_FILTER_MAP[timeFilter];
-    conditions.push(`s."createdAt" >= NOW() - INTERVAL '${days} days'`);
+  const days = TIME_FILTER_MAP[timeFilter];
+  if (days > 0) {
+    conditions.push(
+      `s."createdAt" >= NOW() - ($${paramIndex} * INTERVAL '1 day')`,
+    );
+    params.push(days);
+    paramIndex++;
   }
 
   // 网盘类型筛选（通过 URL hostname 匹配）
   const panHosts = PAN_HOST_MAP[panFilter];
   if (panHosts.length > 0) {
-    const likeConditions = panHosts.map(
-      (host) => `s.url LIKE 'http%s://${host}/%'`,
-    );
+    const likeConditions = panHosts.map((host) => {
+      params.push(`http%://${host}/%`);
+      return `s.url LIKE $${paramIndex++}`;
+    });
     conditions.push(`(${likeConditions.join(" OR ")})`);
   }
 
