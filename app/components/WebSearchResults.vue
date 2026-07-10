@@ -142,15 +142,7 @@ defineExpose({ results, searching, error });
         v-for="(item, idx) in results"
         :key="idx"
         class="card p-3 relative"
-        :class="{
-          'pointer-events-none': getCheckStatus(item.url) === 'invalid',
-        }"
       >
-        <div
-          v-if="getCheckStatus(item.url) === 'invalid'"
-          class="absolute inset-0 flex items-center justify-center bg-red-900/50 text-red-400 flex-shrink-0"
-          title="链接失效"
-        />
         <div
           class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
         >
@@ -191,10 +183,7 @@ defineExpose({ results, searching, error });
           <span class="text-xs text-gray-500 flex items-center gap-1"
             >来源: {{ item.source }}</span
           >
-          <div
-            class="flex items-center gap-2"
-            v-if="getCheckStatus(item.url) !== 'invalid'"
-          >
+          <div class="flex items-center gap-2">
             <button
               v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
               class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"

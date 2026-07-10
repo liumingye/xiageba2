@@ -35,9 +35,6 @@ const emit = defineEmits<{
 <template>
   <article
     class="relative card p-3 hover:border-primary-500/50 transition-colors"
-    :class="{
-      'pointer-events-none': checkStatus === 'invalid',
-    }"
     role="article"
   >
     <div class="flex flex-col">

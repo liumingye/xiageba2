@@ -324,6 +324,22 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "链接为空" });
   }
 
+  // hostname 白名单验证，非网盘域名直接返回原链接
+  try {
+    const hostname = new URL(sourceUrl).hostname;
+    const allowedHosts = [
+      "pan.quark.cn",
+      "pan.baidu.com",
+      "drive.uc.cn",
+      "pan.xunlei.com",
+    ];
+    if (!allowedHosts.includes(hostname)) {
+      return { url: sourceUrl };
+    }
+  } catch {
+    return { url: sourceUrl };
+  }
+
   const cacheKey = `source:${sourceUrl}`;
 
   const cached = await getRedisCache<SearchResult[]>(cacheKey);
