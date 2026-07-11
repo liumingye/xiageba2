@@ -55,7 +55,7 @@ export default defineEventHandler(async (event) => {
       WITH hit_rows AS (
         SELECT 
           id,
-          ts_rank_cd("searchVector", query) AS rank
+          ts_rank_cd("searchVector", query, 1) AS rank
         FROM "Music", to_tsquery('simple', ${tsQuery}) AS query
         WHERE "searchVector" @@ query
       )

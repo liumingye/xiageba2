@@ -44,7 +44,6 @@ export default defineEventHandler(async (event) => {
   );
   const skip = (page - 1) * pageSize;
 
-  // 筛选参数（校验合法性，无效值回退到默认）
   const timeVal = String(query.time || "");
   const panVal = String(query.pan || "");
   const timeFilter =
@@ -68,7 +67,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // 精准搜索使用 plainto_tsquery，模糊搜索使用自定义分词
   const tokens = cutForSearch(term);
   const tsQuery = exact
     ? buildSearchTsQueryExact(tokens)
@@ -78,78 +76,77 @@ export default defineEventHandler(async (event) => {
     return { data: [], total: 0, page, pageSize, totalPages: 0, tokens };
   }
 
-  // 构建动态 SQL 条件（全部使用参数化查询，杜绝字符串拼接）
-  const conditions: string[] = [];
-  const params: any[] = [];
+  // 1. 初始化基础参数（通用部分）
+  const baseParams: any[] = [];
   let paramIndex = 1;
+
+  const conditions: string[] = [];
 
   // 时间筛选
   const days = TIME_FILTER_MAP[timeFilter];
   if (days > 0) {
     conditions.push(
-      `s."createdAt" >= NOW() - ($${paramIndex++} * INTERVAL '1 day')`,
+      `"createdAt" >= NOW() - ($${paramIndex++} * INTERVAL '1 day')`,
     );
-    params.push(days);
+    baseParams.push(days);
   }
 
-  // 网盘类型筛选（通过 URL hostname 匹配）
+  // 网盘类型筛选
   const panHosts = PAN_HOST_MAP[panFilter];
   if (panHosts.length > 0) {
     const likeConditions = panHosts.map((host) => {
-      params.push(`http%://${host}/%`);
-      return `s.url LIKE $${paramIndex++}`;
+      baseParams.push(`http%://${host}/%`);
+      return `url LIKE $${paramIndex++}`;
     });
     conditions.push(`(${likeConditions.join(" OR ")})`);
   }
 
-  const whereClause =
-    conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
+  // 加入全文检索参数
+  conditions.push(`"searchVector" @@ to_tsquery('simple', $${paramIndex++})`);
+  baseParams.push(tsQuery);
 
-  // 构建排序条件
+  // 组装统一的 WHERE 语句
+  const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
+
+  // 2. 复制克隆一份 Count 参数，避免被后面的分页参数污染（解决原代码的 slice Bug）
+  const countParams = [...baseParams];
+
+  // 3. 构建 Data 参数
+  const dataParams = [...baseParams];
+  dataParams.push(pageSize, skip);
+  const limitIndex = paramIndex++;
+  const offsetIndex = paramIndex++;
+
+  // 动态排序
   let orderClause = "";
   if (sortOrder === "newest") {
-    orderClause = `s."createdAt" DESC`;
+    orderClause = `"createdAt" DESC`;
   } else if (sortOrder === "oldest") {
-    orderClause = `s."createdAt" ASC`;
+    orderClause = `"createdAt" ASC`;
   } else {
-    orderClause = `h.rank DESC, s."createdAt" DESC`;
+    orderClause = `ts_rank_cd("searchVector", to_tsquery('simple', $${baseParams.length}), 1) DESC, "createdAt" DESC`;
   }
 
-  // 添加 tsQuery 参数
-  params.push(tsQuery);
-  const tsQueryParam = `$${paramIndex++}`;
-
-  // 构建完整 SQL
+  // 砍掉多余的 WITH 嵌套，直接单层查询，让 PG 索引发挥最大威力
   const dataSql = `
-    WITH hit_rows AS (
-      SELECT
-        id,
-        ts_rank_cd("searchVector", query) AS rank
-      FROM "Source", to_tsquery('simple', ${tsQueryParam}) AS query
-      WHERE "searchVector" @@ query AND "isTemp" = false AND "status" = 1
-    )
-    SELECT s.id, s.title, s.url, s.menu, s."createdAt"
-    FROM hit_rows h
-    JOIN "Source" s USING(id)
-    WHERE 1=1 ${whereClause}
+    SELECT id, title, url, menu, "createdAt"
+    FROM "Source"
+    ${whereClause}
     ORDER BY ${orderClause}
-    LIMIT $${paramIndex++} OFFSET $${paramIndex++};
+    LIMIT $${limitIndex} OFFSET $${offsetIndex};
   `;
-  params.push(pageSize, skip);
 
   const countSql = `
     SELECT COUNT(*) as count
-    FROM "Source" s
-    WHERE s."searchVector" @@ to_tsquery('simple', ${tsQueryParam})
-      AND s."isTemp" = false AND s."status" = 1
-      ${whereClause}
+    FROM "Source"
+    ${whereClause}
   `;
-  const countParams = params.slice(0, paramIndex - 3); // 不包含 pageSize 和 skip
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     const [dataResult, countResult] = await Promise.all([
-      client.query(dataSql, params),
+      client.query(dataSql, dataParams),
       client.query(countSql, countParams),
     ]);
 
@@ -173,6 +170,6 @@ export default defineEventHandler(async (event) => {
       tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
     };
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
