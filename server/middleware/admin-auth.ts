@@ -1,19 +1,19 @@
 import { getTokenFromEvent, verifyToken } from "#server/utils/auth";
 
 export default defineEventHandler((event) => {
-  const url = event.node.req.url || "";
+  const path = event.path;
 
   // 只拦截 /api/admin/** 下的请求（排除 /api/admin/login）
-  if (!url.startsWith("/api/admin")) return;
-  if (url.startsWith("/api/admin/login")) return;
+  if (!path.startsWith("/api/admin")) return;
 
-  // 拦截 // 开头的请求
-  if (url.startsWith("//")) return;
+  // 严格比对或使用干净的路由路径匹配，防止通过 /api/admin/login/.. 绕过
+  if (path === "/api/admin/login") return;
 
   const token = getTokenFromEvent(event);
   if (!token) {
     throw createError({
       statusCode: 401,
+      statusMessage: "Unauthorized",
       message: "未登录或登录已过期",
     });
   }
@@ -22,6 +22,7 @@ export default defineEventHandler((event) => {
   if (!decoded) {
     throw createError({
       statusCode: 401,
+      statusMessage: "Unauthorized",
       message: "未登录或登录已过期",
     });
   }

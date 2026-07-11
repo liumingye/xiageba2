@@ -10,7 +10,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 const SCRYPT_N = 2 ** 14; // 16384
 const SCRYPT_R = 8;
 const SCRYPT_P = 1;
-const SALT_LEN = 4;
+const SALT_LEN = 16;
 const HASH_LEN = 16;
 
 /**
@@ -29,8 +29,6 @@ export function hashPassword(plain: string): string {
 
 /**
  * 验证密码
- * 返回 { ok } —— 后者为 true 时表示以旧版 sha256 通过，
- * 调用方应当立即用 hashPassword 重新计算并写回数据库。
  */
 export function verifyPassword(plain: string, hashed: string): { ok: boolean } {
   if (!plain || !hashed) return { ok: false };

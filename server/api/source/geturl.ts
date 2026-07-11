@@ -247,7 +247,7 @@ async function transferXunlei(
     shareId,
     passCodeToken: detail.passCodeToken,
     parentId: tempDirId,
-    fileIds: detail.files.map((file) => file.id),
+    fileIds: detail.files.map((file: any) => file.id),
   });
 
   const task = await client.shareApi.waitTask(restoreResult.restore_task_id, {
