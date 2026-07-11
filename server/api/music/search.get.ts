@@ -1,4 +1,8 @@
-import { buildSearchTsQuery, cutForSearch } from "#server/utils/jieba";
+import {
+  buildSearchTsQuery,
+  buildSearchTsQueryExact,
+  cutForSearch,
+} from "#server/utils/jieba";
 import { prisma } from "#server/lib/prisma";
 
 const MAX_PAGE = 100;
@@ -16,6 +20,7 @@ export default defineEventHandler(async (event) => {
     Math.max(1, parseInt(query.pageSize as string) || 20),
   );
   const skip = (page - 1) * pageSize;
+  const exact = query.exact === "true";
 
   if (!term) {
     return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens: [] };
@@ -30,10 +35,19 @@ export default defineEventHandler(async (event) => {
   }
 
   const tokens = cutForSearch(term);
-  const tsQuery = buildSearchTsQuery(tokens);
+  const tsQuery = exact
+    ? buildSearchTsQueryExact(tokens)
+    : buildSearchTsQuery(tokens);
 
   if (!tsQuery) {
-    return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens };
+    return {
+      data: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 0,
+      tokens: [],
+    };
   }
 
   const [musics, total] = await Promise.all([
@@ -69,6 +83,6 @@ export default defineEventHandler(async (event) => {
     page,
     pageSize,
     totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
-    tokens,
+    tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
   };
 });

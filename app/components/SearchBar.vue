@@ -44,7 +44,17 @@ const handleSearch = () => {
   const type = (route.query.type as string) || musicStore.searchType || "music";
   musicStore.addSearchHistory(q);
   emit("search", q);
-  router.push(`/search?type=${type}&q=${encodeURIComponent(q)}`);
+  if (route.path === "/search") {
+    router.push({
+      path: "/search",
+      query: { ...route.query, q },
+    });
+  } else {
+    router.push({
+      path: "/search",
+      query: { type, q },
+    });
+  }
 };
 
 const handleKeydown = (e: KeyboardEvent) => {

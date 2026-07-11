@@ -39,7 +39,6 @@ const route = useRoute();
 const router = useRouter();
 
 const showModal = ref(false);
-// const modalSource = ref<SourceItem | null>(null);
 const modalTitle = ref("");
 const modalUrl = ref("");
 const modalQrCode = ref("");
@@ -127,7 +126,6 @@ const openModal = async ({
       item: WebSearchResult;
       type: "url";
     }) => {
-  // modalSource.value = item;
   setModalLoading(item.title || "");
 
   try {
@@ -153,7 +151,6 @@ const openModal = async ({
 
 const closeModal = () => {
   showModal.value = false;
-  // modalSource.value = null;
   modalTitle.value = "";
   modalUrl.value = "";
   modalQrCode.value = "";
@@ -225,12 +222,15 @@ const updateFilter = (key: string, value: string | boolean) => {
   ) {
     query[key] = value.toString();
   }
-  // 保持其他筛选条件
-  if (timeFilter.value !== "any" && key !== "time")
-    query.time = timeFilter.value;
-  if (panFilter.value !== "all" && key !== "pan") query.pan = panFilter.value;
-  if (sortFilter.value !== "default" && key !== "sort")
-    query.sort = sortFilter.value;
+
+  // 保持其他筛选条件（资源专属）
+  if (!isMusic.value) {
+    if (timeFilter.value !== "any" && key !== "time")
+      query.time = timeFilter.value;
+    if (panFilter.value !== "all" && key !== "pan") query.pan = panFilter.value;
+    if (sortFilter.value !== "default" && key !== "sort")
+      query.sort = sortFilter.value;
+  }
   if (exactFilter.value && key !== "exact") query.exact = "true";
   router.push({ path: "/search", query });
 };
@@ -255,14 +255,14 @@ const {
     const params = new URLSearchParams({
       q: searchKeyword.value,
       page: currentPage.value.toString(),
-      pageSize: "10",
+      pageSize: isMusic.value ? "20" : "10",
     });
     if (!isMusic.value) {
       if (timeFilter.value !== "any") params.set("time", timeFilter.value);
       if (panFilter.value !== "all") params.set("pan", panFilter.value);
       if (sortFilter.value !== "default") params.set("sort", sortFilter.value);
-      if (exactFilter.value) params.set("exact", "true");
     }
+    if (exactFilter.value) params.set("exact", "true");
     return `${base}?${params.toString()}`;
   },
   {
@@ -402,7 +402,7 @@ useHead({
     { name: "description", content: pageDescription },
     {
       name: "keywords",
-      content: `${searchKeyword.value}, 音乐搜索, 下歌吧, MP3下载, FLAC下载`,
+      content: `${searchKeyword.value}, 音乐搜索, 下歌吧, MP3下载, FLAC下载, 网盘搜索, 网盘下载`,
     },
     { name: "robots", content: "index, follow" },
     { name: "theme-color", content: "#0f172a" },
@@ -431,9 +431,7 @@ watch(
 const performSearch = (keyword: string) => {
   if (!keyword.trim()) return;
   musicStore.addSearchHistory(keyword);
-  router.push(
-    `/search?type=${searchType.value}&q=${encodeURIComponent(keyword)}`,
-  );
+  searchQuery.value = keyword;
 };
 
 const switchType = (type: "music" | "resource") => {
@@ -451,11 +449,7 @@ const goToPage = (page: number) => {
   window.scrollTo({ top: 0 });
   router.push({
     path: "/search",
-    query: {
-      type: searchType.value,
-      q: searchKeyword.value,
-      page: page.toString(),
-    },
+    query: { ...route.query, page: page.toString() },
   });
 };
 
@@ -483,8 +477,6 @@ const goToDetail = (music: Music) => {
 };
 
 const skeletonList = Array.from({ length: 4 });
-
-const webSearchRef = ref<InstanceType<typeof WebSearchResults> | null>(null);
 
 const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
   enabled: !isMusic.value,
@@ -614,6 +606,31 @@ const copyUrl = async (url: string) => {
           </h2>
 
           <template v-if="isMusic">
+            <!-- 音乐筛选条件 -->
+            <div class="flex flex-wrap items-center gap-2 mb-4">
+              <button
+                class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
+                :class="
+                  exactFilter
+                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+                    : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                "
+                @click="updateFilter('exact', !exactFilter)"
+              >
+                <Target class="w-3.5 h-3.5" />
+                精准搜索
+              </button>
+
+              <button
+                class="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-gray-800 disabled:hover:text-gray-400"
+                @click="clearFilters"
+                :disabled="!hasFilters"
+              >
+                <RotateCcwSquare class="w-3.5 h-3.5" />
+                清除筛选
+              </button>
+            </div>
+
             <article
               v-for="music in results"
               :key="music.id"
@@ -808,7 +825,6 @@ const copyUrl = async (url: string) => {
 
             <template v-if="currentPage === 1">
               <WebSearchResults
-                ref="webSearchRef"
                 :keyword="searchKeyword"
                 :disabled="isMusic"
                 :highlight-html="highlight"

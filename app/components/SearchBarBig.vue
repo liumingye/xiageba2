@@ -49,11 +49,7 @@ const handleSearch = (keywords?: string) => {
     router.push(`/search?type=music&q=${encodeURIComponent(q)}`);
   } else if (currentSearchType.value === "resource") {
     router.push(`/search?type=resource&q=${encodeURIComponent(q)}`);
-  } else {
-    // ponytail: video 仍走外部站点
-    window.open(`https://pan.liumingye.cn/s/${q}`);
   }
-  // musicStore.searchType = currentSearchType.value;
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -109,9 +105,7 @@ defineExpose({
           :placeholder="
             currentSearchType === 'music'
               ? '搜你想要的音乐'
-              : currentSearchType === 'resource'
-                ? '搜你想要的网盘资源'
-                : '搜你想要的视频'
+              : '搜你想要的网盘资源'
           "
           class="flex-1 bg-transparent text-white text-lg outline-none placeholder-white/50"
           @input="updateSearchQuery"
@@ -150,14 +144,6 @@ defineExpose({
             title="搜索资源"
           >
             <FolderOpen class="w-5 h-5" />
-          </button>
-          <button
-            class="icon-btn ml-2"
-            :class="{ primary: currentSearchType === 'video' }"
-            @click="currentSearchType = 'video'"
-            title="搜索视频"
-          >
-            <Video class="w-5 h-5" />
           </button>
         </div>
         <button

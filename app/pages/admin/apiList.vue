@@ -238,7 +238,7 @@ const testApi = async () => {
     const res = await fetch("/api/admin/apiList/test", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify({ config: form.value, keyword: "凡人修仙传" }),
+      body: JSON.stringify({ config: form.value, keyword: "凡人" }),
     });
     if (res.status === 401) {
       logout();
@@ -248,7 +248,7 @@ const testApi = async () => {
     const data = await res.json();
     if (data.success) {
       toast.add(
-        `测试成功，搜索「凡人修仙传」找到 ${data.count} 条结果`,
+        `测试成功，搜索「凡人」找到 ${data.count} 条结果`,
         "success",
       );
     } else {
