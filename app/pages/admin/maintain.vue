@@ -2,7 +2,17 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { RefreshCw, Eraser, Database, Save, Check, Key, Link, Plus, Trash } from "@lucide/vue";
+import {
+  RefreshCw,
+  Eraser,
+  Database,
+  Save,
+  Check,
+  Key,
+  Link,
+  Plus,
+  Trash,
+} from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 
@@ -188,8 +198,31 @@ const removePancheckServer = (index: number) => {
   pancheckServers.value.splice(index, 1);
 };
 
+let timer: NodeJS.Timeout | null = null;
+
+// 新增：轮询进度的函数
+const checkStatus = async (type: "music" | "source") => {
+  try {
+    const res = await fetch(`/api/admin/${type}/rebuild-status`, {
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+
+    if (data.status === "running") {
+      rebuildMsg.value = `服务器正在疯狂分批处理中... 目前已完成: ${data.current} 条`;
+    } else if (data.status === "done") {
+      rebuildMsg.value = "🎉 全文索引重建圆满完成！";
+      isRebuilding.value = false;
+      if (timer) clearInterval(timer);
+    }
+  } catch {
+    // 静默降级，网络波动不中断轮询
+  }
+};
+
 const rebuildSearch = async (all: boolean, type: "music" | "source") => {
   if (isRebuilding.value) return;
+
   const name = type === "music" ? "音乐" : "资源";
   if (
     !confirm(
@@ -199,25 +232,26 @@ const rebuildSearch = async (all: boolean, type: "music" | "source") => {
     return;
 
   isRebuilding.value = true;
-  rebuildMsg.value = "";
+  rebuildMsg.value = "正在启动后台任务...";
+
   try {
     const res = await fetch(`/api/admin/${type}/rebuild-search`, {
       method: "POST",
       body: JSON.stringify({ all }),
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     });
+
     const data = await res.json();
-    if (data.message) {
-      rebuildMsg.value = data.message || "重建失败";
+
+    if (res.ok && data.success) {
+      // 启动每 2 秒一次的轻量级 Redis 状态轮询
+      timer = setInterval(() => checkStatus(type), 2000);
     } else {
-      rebuildMsg.value = `已处理 ${data.total} 项，成功 ${data.updated} 项，失败 ${data.errors} 项`;
+      rebuildMsg.value = data.message || "启动失败";
+      isRebuilding.value = false;
     }
   } catch {
     rebuildMsg.value = "请求失败";
-  } finally {
     isRebuilding.value = false;
   }
 };
@@ -530,7 +564,9 @@ const clearISRCache = async (route?: string) => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-2">接口地址</label>
+                  <label class="block text-gray-400 text-sm mb-2"
+                    >接口地址</label
+                  >
                   <input
                     v-model="server.url"
                     type="text"
@@ -564,7 +600,10 @@ const clearISRCache = async (route?: string) => {
               添加接口
             </button>
 
-            <div v-if="pancheckServers.length === 0" class="text-gray-500 text-sm">
+            <div
+              v-if="pancheckServers.length === 0"
+              class="text-gray-500 text-sm"
+            >
               未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
             </div>
           </div>
