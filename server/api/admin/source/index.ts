@@ -50,14 +50,22 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { cid, title, url, description, menu } = body;
 
-    // if (!cid) {
-    //   throw createError({ statusCode: 400, message: "请选择分类" });
-    // }
     if (!title?.trim()) {
       throw createError({ statusCode: 400, message: "资源名称不能为空" });
     }
     if (!url?.trim()) {
       throw createError({ statusCode: 400, message: "资源地址不能为空" });
+    }
+
+    const existing = await prisma.source.findFirst({
+      where: { url: url.trim() },
+      select: { id: true, title: true },
+    });
+    if (existing) {
+      throw createError({
+        statusCode: 409,
+        message: `资源地址已存在（ID: ${existing.id}，名称: ${existing.title}）`,
+      });
     }
 
     const source = await prisma.source.create({
