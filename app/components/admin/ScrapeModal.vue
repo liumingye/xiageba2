@@ -21,6 +21,8 @@ interface ScrapeResult {
   downloads: Array<{ quality: string; url: string }>;
 }
 
+const { getAuthHeaders } = useAuth();
+
 const props = defineProps<{
   show: boolean;
   initialKeyword?: string;
@@ -70,6 +72,7 @@ const handleSearch = async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       body: JSON.stringify({
         action: "search",
@@ -106,6 +109,7 @@ const selectItem = async (item: SearchItem) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       body: JSON.stringify({
         action: "detail",
@@ -158,7 +162,9 @@ const handleClose = () => {
             <X class="w-5 h-5 text-gray-400" />
           </button>
 
-          <h3 class="text-xl font-medium text-white mb-4 flex items-center gap-2">
+          <h3
+            class="text-xl font-medium text-white mb-4 flex items-center gap-2"
+          >
             <Search class="w-5 h-5 text-primary-500" />
             音乐刮削
           </h3>
@@ -174,7 +180,11 @@ const handleClose = () => {
                   ? 'bg-primary-500 text-white border-primary-500'
                   : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
               "
-              @click="selectedPlatform = p.value; results = []; selectedItem = null"
+              @click="
+                selectedPlatform = p.value;
+                results = [];
+                selectedItem = null;
+              "
             >
               {{ p.label }}
             </button>
@@ -185,7 +195,7 @@ const handleClose = () => {
             <input
               v-model="keyword"
               type="text"
-              :placeholder="`输入歌名或歌手（当前：${platforms.find(p => p.value === selectedPlatform)?.label}）`"
+              :placeholder="`输入歌名或歌手（当前：${platforms.find((p) => p.value === selectedPlatform)?.label}）`"
               class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500/50"
               @keydown.enter="handleSearch"
             />
@@ -229,17 +239,27 @@ const handleClose = () => {
                 :alt="item.title"
                 class="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                 loading="lazy"
-                @error="($event.target as HTMLImageElement).src = '/img/cover.png'"
+                @error="
+                  ($event.target as HTMLImageElement).src = '/img/cover.png'
+                "
               />
               <div class="flex-1 min-w-0">
-                <p class="text-white text-sm font-medium truncate">{{ item.title }}</p>
+                <p class="text-white text-sm font-medium truncate">
+                  {{ item.title }}
+                </p>
                 <p class="text-gray-400 text-xs truncate">{{ item.artist }}</p>
                 <p v-if="item.album" class="text-gray-500 text-xs truncate">
                   {{ item.album }}
                 </p>
               </div>
-              <div v-if="selectedItem?.sourceId === item.sourceId" class="flex-shrink-0">
-                <Loader2 v-if="isLoadingDetail" class="w-5 h-5 text-primary-400 animate-spin" />
+              <div
+                v-if="selectedItem?.sourceId === item.sourceId"
+                class="flex-shrink-0"
+              >
+                <Loader2
+                  v-if="isLoadingDetail"
+                  class="w-5 h-5 text-primary-400 animate-spin"
+                />
                 <CheckCircle v-else class="w-5 h-5 text-primary-400" />
               </div>
             </div>
