@@ -3,14 +3,17 @@ import { dict } from "@node-rs/jieba/dict.js";
 
 const jieba = Jieba.withDict(dict);
 
-// 辅助函数：清洗和安全化 token，去除干扰符号
+/**
+ * 辅助函数：严格清洗和安全化 token，彻底根除 tsquery 语法破坏者
+ */
 const sanitizeToken = (token: string): string => {
-  // 移除所有可能破坏 tsquery 语法的特殊控制字符：&, |, !, :, *, ( )
-  // 同时把单引号替换为双单引号（PostgreSQL 的标准字符串转义）
-  return token
-    .trim()
-    .replace(/[&|!:*()]/g, "")
-    .replace(/'/g, "''");
+  return (
+    token
+      .trim()
+      // 🛑 彻底把单引号、反斜杠以及所有可能破坏 tsquery 语法的特殊控制字符全部蒸发掉
+      .replace(/[&|!:*()'"`\\,.<>/?;:[\]{}~\-_=+^$%#@]/g, "")
+      .trim()
+  );
 };
 
 export const cutForSearch = (input: string): string[] => {
@@ -23,22 +26,22 @@ export const cutForSearch = (input: string): string[] => {
 
   for (const token of jiebaTokens) {
     const t = sanitizeToken(token);
-    // 过滤掉空字符串和无意义的单字符（如纯空格、或被洗掉的特殊符号）
-    if (!t) continue;
+    // 2. 过滤掉空字符串、纯空格和单独的数字/字符垃圾片段
+    if (!t || t === "" || t === "''") continue;
     groups.push(t);
   }
-  return groups;
+  return groups.filter(Boolean);
 };
 
 /**
- * [模糊搜索]
+ * [模糊搜索] 组装 OR 逻辑，加入严格过滤防止出现空子句
  */
 export const buildSearchTsQuery = (groups: string[]): string => {
   return groups.join(" | ");
 };
 
 /**
- * [精准搜索]
+ * [精准搜索] 组装 AND 逻辑
  */
 export const buildSearchTsQueryExact = (groups: string[]): string => {
   return groups.join(" & ");
