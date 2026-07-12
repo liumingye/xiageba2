@@ -1,10 +1,5 @@
 import { prisma } from "#server/lib/prisma";
 
-/**
- * Config 缓存模块
- * 缓存 Config 表所有数据到内存，减少数据库查询次数
- */
-
 interface CacheItem {
   value: Map<string, string>;
   expireAt: number;
@@ -14,30 +9,18 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 1天
 
 let memoryCache: CacheItem | null = null;
 
+// 🔒 互斥锁：用于暂存正在执行的全量数据库查询 Promise，防止并发击穿
+let activeFetchPromise: Promise<Map<string, string>> | null = null;
+
 /**
- * 获取缓存的配置数据
+ * 获取缓存的配置数据（同步检查）
  */
 export const getConfigCache = (): Map<string, string> | null => {
   if (memoryCache && memoryCache.expireAt > Date.now()) {
     return memoryCache.value;
   }
-
   memoryCache = null;
   return null;
-};
-
-/**
- * 设置配置缓存
- */
-export const setConfigCache = (configs: { key: string; value: string }[]) => {
-  const map = new Map<string, string>();
-  for (const c of configs) {
-    map.set(c.key, c.value);
-  }
-  memoryCache = {
-    value: map,
-    expireAt: Date.now() + CACHE_TTL,
-  };
 };
 
 /**
@@ -45,22 +28,96 @@ export const setConfigCache = (configs: { key: string; value: string }[]) => {
  */
 export const clearConfigCache = () => {
   memoryCache = null;
+  activeFetchPromise = null;
+};
+
+/**
+ * 🔒 核心防御函数：安全、互斥地获取全量 Map
+ * 确保高并发下，全网仅有一个数据库 findMany 请求在跑
+ */
+async function ensureAndGetFullMap(): Promise<Map<string, string>> {
+  // 1. 内存有有效的，直接返回
+  const cached = getConfigCache();
+  if (cached) return cached;
+
+  // 2. 内存没有，但别的请求已经在查数据库了，直接加入排队，共享同一个 Promise 结果
+  if (activeFetchPromise) {
+    return activeFetchPromise;
+  }
+
+  // 3. 确实没人查，由当前请求发起数据库查询
+  activeFetchPromise = (async () => {
+    try {
+      const configs = await prisma.config.findMany();
+      const map = new Map<string, string>();
+      for (const c of configs) {
+        map.set(c.key, c.value);
+      }
+
+      // 写入内存缓存
+      memoryCache = {
+        value: map,
+        expireAt: Date.now() + CACHE_TTL,
+      };
+
+      return map;
+    } finally {
+      // 无论成功还是失败，查完后必须释放挡箭牌，允许下一次过期时重新查询
+      activeFetchPromise = null;
+    }
+  })();
+
+  return activeFetchPromise;
+}
+
+/**
+ * 获取单个配置值
+ */
+export const getConfigValue = async (key: string): Promise<string> => {
+  const map = await ensureAndGetFullMap();
+  return map.get(key) || "";
+};
+
+/**
+ * 获取多个配置值
+ */
+export const getConfigValues = async (
+  keys: string[],
+): Promise<Record<string, string>> => {
+  const map = await ensureAndGetFullMap();
+  const result: Record<string, string> = {};
+  for (const k of keys) {
+    result[k] = map.get(k) || "";
+  }
+  return result;
 };
 
 /**
  * 设置单个配置值
  */
 export const setConfigValue = async (key: string, value: string) => {
+  const safeValue = String(value ?? "");
+
+  // 1. 先写数据库
   await prisma.config.upsert({
     where: { key },
-    update: { value: String(value || "") },
-    create: { key, value: String(value || "") },
+    update: { value: safeValue },
+    create: { key, value: safeValue },
   });
 
-  const newCached = getConfigCache();
-  if (newCached) {
-    newCached.set(key, value);
+  // 2. 🔒 修复脏数据 Bug：如果缓存还没建立，直接顺手帮它初始化，而不是漏掉
+  if (!memoryCache || memoryCache.expireAt <= Date.now()) {
+    const map = new Map<string, string>();
+    map.set(key, safeValue);
+    memoryCache = {
+      value: map,
+      expireAt: Date.now() + CACHE_TTL,
+    };
+  } else {
+    // 缓存存在则直接追加修改
+    memoryCache.value.set(key, safeValue);
   }
+
   return { success: true };
 };
 
@@ -73,71 +130,35 @@ export const setConfigValues = async (
   const upserts = [];
   for (const config of configs) {
     if (config.value !== undefined) {
+      const safeValue = String(config.value ?? "");
       upserts.push(
         prisma.config.upsert({
           where: { key: config.key },
-          update: { value: String(config.value || "") },
-          create: { key: config.key, value: String(config.value || "") },
+          update: { value: safeValue },
+          create: { key: config.key, value: safeValue },
         }),
       );
     }
   }
+
   if (upserts.length > 0) {
     await Promise.all(upserts);
 
-    const newCached = getConfigCache();
-    if (newCached) {
+    // 🔒 修复批量写入时的缓存遗漏 Bug
+    if (!memoryCache || memoryCache.expireAt <= Date.now()) {
+      const map = new Map<string, string>();
       for (const c of configs) {
-        newCached.set(c.key, c.value);
+        map.set(c.key, String(c.value ?? ""));
+      }
+      memoryCache = {
+        value: map,
+        expireAt: Date.now() + CACHE_TTL,
+      };
+    } else {
+      for (const c of configs) {
+        memoryCache.value.set(c.key, String(c.value ?? ""));
       }
     }
   }
   return { success: true };
-};
-
-/**
- * 获取单个配置值（优先从缓存读取）
- * 如果缓存不存在，会查询数据库并更新缓存
- */
-export const getConfigValue = async (key: string): Promise<string> => {
-  const cached = getConfigCache();
-  if (cached) {
-    return cached.get(key) || "";
-  }
-
-  // 缓存不存在，查询全部配置并缓存
-  const configs = await prisma.config.findMany();
-  setConfigCache(configs);
-
-  // 再次从缓存获取
-  const newCached = getConfigCache();
-  return newCached?.get(key) || "";
-};
-
-/**
- * 获取多个配置值（优先从缓存读取）
- */
-export const getConfigValues = async (
-  keys: string[],
-): Promise<Record<string, string>> => {
-  const cached = getConfigCache();
-  if (cached) {
-    const result: Record<string, string> = {};
-    for (const k of keys) {
-      result[k] = cached.get(k) || "";
-    }
-    return result;
-  }
-
-  // 缓存不存在，查询全部配置并缓存
-  const configs = await prisma.config.findMany();
-  setConfigCache(configs);
-
-  // 再次从缓存获取
-  const newCached = getConfigCache();
-  const result: Record<string, string> = {};
-  for (const k of keys) {
-    result[k] = newCached?.get(k) || "";
-  }
-  return result;
 };

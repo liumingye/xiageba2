@@ -107,11 +107,12 @@ async function deleteBaiduResource(fids: string[]): Promise<string[]> {
           path = `/${path}`;
         }
 
+        // 替换多个斜杠为单斜杠
+        path = path.replace(/\/+/g, "/");
+
         // 防止删除根目录
         if (path === "/" || path === tempDir) continue;
 
-        // 替换多个斜杠为单斜杠
-        path = path.replace(/\/+/g, "/");
         newPaths.push(path);
       }
 

@@ -19,12 +19,23 @@ interface ParsedShare {
   url: string;
 }
 
+// 🔒 内存进程锁（单实例高效防并发击穿）
+const inflightRequests = new Map<string, Promise<{ url: string }>>();
+
+// 提取白名单为全局 Set，O(1) 复杂度高性能判断
+const ALLOWED_HOSTS = new Set([
+  "pan.quark.cn",
+  "pan.baidu.com",
+  "drive.uc.cn",
+  "pan.xunlei.com",
+]);
+
 /**
  * 解析分享链接，识别网盘类型并提取 fid 和提取码
  */
 export function parseShareUrl(url: string): ParsedShare {
   const extractPwd = (u: string) => {
-    const m = u.match(/[?&]pwd=([^&#]+)/);
+    const m = u.match(/[?&]pwd=([a-zA-Z0-9]+)/); // 严格限制提取码字符集，防正则穿透
     return m && m[1] ? m[1] : "";
   };
 
@@ -305,35 +316,25 @@ export default defineEventHandler(async (event) => {
   let sourceTitle = "临时资源";
   let sourceUrl = "";
 
+  // 1. 快速获取源站 URL
   if (id) {
     const source = await prisma.source.findUnique({ where: { id } });
-    if (!source) {
-      throw createError({ statusCode: 404, message: "资源不存在" });
-    }
+    if (!source) throw createError({ statusCode: 404, message: "资源不存在" });
     sourceTitle = source.title;
     sourceUrl = source.url;
   } else if (inputUrl) {
     const decryptedUrl = await decryptUrl(inputUrl);
-    if (decryptedUrl === null) {
+    if (!decryptedUrl)
       throw createError({ statusCode: 400, message: "链接解密失败" });
-    }
     sourceUrl = decryptedUrl;
   }
 
-  if (!sourceUrl) {
-    throw createError({ statusCode: 400, message: "链接为空" });
-  }
+  if (!sourceUrl) throw createError({ statusCode: 400, message: "链接为空" });
 
-  // hostname 白名单验证，非网盘域名直接返回原链接
+  // 2. ⚡ 高性能白名单清洗：非网盘链接直接断开，绝不往下走
   try {
-    const hostname = new URL(sourceUrl).hostname;
-    const allowedHosts = [
-      "pan.quark.cn",
-      "pan.baidu.com",
-      "drive.uc.cn",
-      "pan.xunlei.com",
-    ];
-    if (!allowedHosts.includes(hostname)) {
+    const hostname = new URL(sourceUrl).hostname.toLowerCase();
+    if (!ALLOWED_HOSTS.has(hostname)) {
       return { url: sourceUrl };
     }
   } catch {
@@ -342,72 +343,90 @@ export default defineEventHandler(async (event) => {
 
   const cacheKey = `source:${sourceUrl}`;
 
-  const cached = await getRedisCache<SearchResult[]>(cacheKey);
-  if (cached) {
+  // 3. 🚀 一级防御：读取大并发下的分布式 Redis 缓存
+  const cached = await getRedisCache<{ url: string }>(cacheKey);
+  if (cached?.url) {
     return cached;
   }
 
-  const { type, fid, passcode, url: sharePageUrl } = parseShareUrl(sourceUrl);
-
-  if (type === "unknown") {
-    return { url: sourceUrl };
-    // throw createError({ statusCode: 400, message: "无法识别的网盘类型" });
-  }
-  if (!fid) {
-    throw createError({ statusCode: 400, message: "无法从URL中提取文件ID" });
+  // 4. 🔒 二级防御：并发互斥单飞锁（防止击穿网盘 SDK 和账号限制）
+  if (inflightRequests.has(cacheKey)) {
+    // 如果当前已经有一个请求正在为这个链接办理“转存”，后续并发请求在此排队等待它的 Promise 结果
+    return inflightRequests.get(cacheKey)!;
   }
 
-  // 根据网盘类型执行转存
-  let shareUrl: string;
-  let _fid: string;
-  try {
-    if (type === "quark" || type === "uc") {
-      const data = await transferQuarkUC(type, fid, passcode);
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else if (type === "baidu") {
-      const data = await transferBaidu(sharePageUrl);
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else if (type === "xunlei") {
-      const data = await transferXunlei(fid, passcode);
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else {
+  // 构建核心转存处理链条
+  const transferPromise = (async () => {
+    const { type, fid, passcode, url: sharePageUrl } = parseShareUrl(sourceUrl);
+
+    if (type === "unknown" || !fid) {
+      return { url: sourceUrl };
+    }
+
+    let shareUrl: string;
+    let _fid: string;
+
+    try {
+      if (type === "quark" || type === "uc") {
+        const data = await transferQuarkUC(type, fid, passcode);
+        shareUrl = data.shareUrl;
+        _fid = JSON.stringify(data.fids);
+      } else if (type === "baidu") {
+        const data = await transferBaidu(sharePageUrl);
+        shareUrl = data.shareUrl;
+        _fid = JSON.stringify(data.fids);
+      } else if (type === "xunlei") {
+        const data = await transferXunlei(fid, passcode);
+        shareUrl = data.shareUrl;
+        _fid = JSON.stringify(data.fids);
+      } else {
+        throw createError({ statusCode: 501, message: "未实现的网盘" });
+      }
+    } catch (e: any) {
+      // 降级与差错处理：失效计数
+      if (e.statusCode === 404 && id) {
+        // 使用非阻塞的异步处理，不卡死当前的请求响应时间
+        prisma.source
+          .update({
+            where: { id },
+            data: { invalidNum: { increment: 1 } },
+          })
+          .catch(() => {});
+      }
       throw createError({
-        statusCode: 501,
-        message: `${type} 网盘转存暂未实现`,
+        statusCode: e.statusCode || 500,
+        message: `获取网盘链接失败: ${e.message || "未知错误"}`,
       });
     }
-  } catch (e: any) {
-    // 404 表示分享不存在，
-    if (e.statusCode === 404 && id) {
-      // invalidNum +1
-      await prisma.source.update({
-        where: { id },
-        data: { invalidNum: { increment: 1 } },
-      });
+
+    // 5. 异步落库：将创建转存记录改为后台执行，不让数据库 I/O 拖慢响应速度
+    prisma.source
+      .create({
+        data: {
+          title: sourceTitle,
+          url: shareUrl,
+          fid: _fid,
+          isTemp: true,
+        },
+      })
+      .catch((err) => console.error("落库失败", err));
+
+    // 6. 成功后写入缓存 (20分钟)
+    if (shareUrl) {
+      await setRedisCache(cacheKey, { url: shareUrl }, 60 * 20);
     }
-    // SDK 抛出的错误转换为友好提示
-    throw createError({
-      statusCode: e.statusCode || 500,
-      message: `获取网盘链接失败: ${e.message || "未知错误"}`,
-    });
+
+    return { url: shareUrl };
+  })();
+
+  // 将 Promise 送入全局互斥拦截器
+  inflightRequests.set(cacheKey, transferPromise);
+
+  try {
+    const result = await transferPromise;
+    return result;
+  } finally {
+    // 🔒 无论成功或失败，办完手续后必须从内存中清除锁，允许下一个周期（20分钟后）的请求重新触发转存
+    inflightRequests.delete(cacheKey);
   }
-
-  // 保存转存记录，用于定期删除
-  await prisma.source.create({
-    data: {
-      title: sourceTitle,
-      url: shareUrl,
-      fid: _fid,
-      isTemp: true,
-    },
-  });
-
-  if (shareUrl) {
-    await setRedisCache(cacheKey, { url: shareUrl }, 60 * 20);
-  }
-
-  return { url: shareUrl };
 });

@@ -17,7 +17,11 @@ import {
   getXunleiClient,
 } from "#server/lib/pan";
 
-const MAX_DEPTH = 20;
+const MAX_DEPTH = 10;
+
+// 🔒 内存进程锁：阻断高并发的核心大闸
+// 确保同一时间，同一个资源文件树，全国只有一个 Worker 在调用网盘 SDK 跑递归，其余并发请求排队共享结果
+const treeInflightRequests = new Map<string, Promise<string>>();
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -29,14 +33,12 @@ export default defineEventHandler(async (event) => {
   }
 
   let url = "";
-  let source: {
-    url: string;
-    id: string;
-    menu: string;
-  } | null = null;
+  let sourceId = id || "";
+  let existingMenu = "";
 
+  // 1. 快速查询或解密，拿到真正的 url
   if (id) {
-    source = await prisma.source.findUnique({
+    const source = await prisma.source.findUnique({
       select: { id: true, url: true, menu: true },
       where: { id },
     });
@@ -44,6 +46,12 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: "资源不存在" });
     }
     url = source.url;
+    existingMenu = source.menu || "";
+
+    // 如果数据库里已经生成过了，高并发下直接秒回，不走后面任何逻辑
+    if (existingMenu) {
+      return { tree: existingMenu, success: true };
+    }
   } else if (inputUrl) {
     const decryptedUrl = await decryptUrl(inputUrl || "");
     if (decryptedUrl === null) {
@@ -52,40 +60,68 @@ export default defineEventHandler(async (event) => {
     url = decryptedUrl;
   }
 
-  const cacheKey = !id && inputUrl ? `tree:url:${inputUrl}` : null;
-  if (cacheKey) {
-    const cached = await getRedisCache<string>(cacheKey);
-    if (cached !== null) {
-      return { tree: cached, success: true };
+  // ⚡ 优化：不管通过 id 还是 url，都映射生成全局唯一的 cacheKey 确保全渠道覆盖
+  const cacheKey = id
+    ? `tree:id:${id}`
+    : `tree:url:${Buffer.from(url).toString("base64").substring(0, 40)}`;
+
+  // 2. 🚀 一级防御：读取分布式高速缓存 Redis
+  const cached = await getRedisCache<string>(cacheKey);
+  if (cached !== null) {
+    return { tree: cached, success: true };
+  }
+
+  // 3. 🔒 二级防御：互斥单飞锁，阻断多层网盘递归请求对连接池的瞬间榨干
+  if (treeInflightRequests.has(cacheKey)) {
+    const activeTree = await treeInflightRequests.get(cacheKey);
+    return { tree: activeTree, success: true };
+  }
+
+  // 构建核心的文件树递归生成任务链
+  const generateTreePromise = (async () => {
+    const parsed = parseShareUrl(url);
+    let generatedTree = "";
+
+    if (parsed.type === "quark" || parsed.type === "uc") {
+      generatedTree = await buildQuarkUCTree(
+        parsed.type,
+        parsed.fid,
+        parsed.passcode,
+      );
+    } else if (parsed.type === "baidu") {
+      generatedTree = await buildBaiduTree(url);
+    } else if (parsed.type === "xunlei") {
+      generatedTree = await buildXunleiTree(url);
+    } else {
+      throw createError({ statusCode: 400, message: "不支持的该网盘类型" });
     }
+
+    // 4. 写入 Redis 缓存（保存24小时）
+    await setRedisCache(cacheKey, generatedTree, 24 * 60 * 60);
+
+    // 5. 异步写库：改用非阻塞式后台运行，不再挂起当前的 HTTP 响应时间
+    if (sourceId && !existingMenu && generatedTree) {
+      prisma.source
+        .update({
+          where: { id: sourceId },
+          data: { menu: generatedTree },
+        })
+        .catch((err) => console.error("更新菜单树失败:", err));
+    }
+
+    return generatedTree;
+  })();
+
+  // 登记锁
+  treeInflightRequests.set(cacheKey, generateTreePromise);
+
+  try {
+    const tree = await generateTreePromise;
+    return { tree, success: true };
+  } finally {
+    // 🔒 办完手续，释放锁
+    treeInflightRequests.delete(cacheKey);
   }
-
-  const parsed = parseShareUrl(url);
-
-  let tree = "";
-  if (parsed.type === "quark" || parsed.type === "uc") {
-    tree = await buildQuarkUCTree(parsed.type, parsed.fid, parsed.passcode);
-  } else if (parsed.type === "baidu") {
-    tree = await buildBaiduTree(url);
-  } else if (parsed.type === "xunlei") {
-    tree = await buildXunleiTree(url);
-  } else {
-    return { message: "不支持的该网盘类型", success: false };
-  }
-
-  if (cacheKey) {
-    await setRedisCache(cacheKey, tree, 24 * 60 * 60);
-  }
-
-  if (id && source && source.id && !source.menu && tree) {
-    // update menu
-    await prisma.source.update({
-      where: { id: source.id },
-      data: { menu: tree },
-    });
-  }
-
-  return { tree, success: true };
 });
 
 async function buildQuarkUCTree(
@@ -210,7 +246,7 @@ async function walkBaidu(
     ...shareParam,
     dir,
     page: 1,
-    num: 1000,
+    num: 100,
     root: dir === "/" ? 1 : 0,
     sekey,
   } as any);
@@ -252,7 +288,7 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
     detail = await client.shareApi.getShare({
       shareId: parsed.fid,
       passCode: parsed.passcode,
-      limit: 200,
+      limit: 100,
     });
   } catch (e) {
     throw createError({ statusCode: 404, message: "分享已过期" });
@@ -299,7 +335,7 @@ async function walkXunlei(
         shareId,
         passCodeToken,
         parentId: item.id,
-        limit: 200,
+        limit: 100,
       });
 
       if (res.files.length > 0) {

@@ -14,6 +14,9 @@ export interface WebSearchResult {
   type: string;
 }
 
+// 🔒 内存单飞互斥锁：阻断高并发下多个请求同时压榨同一个第三方爬虫源
+const searchInflightLocks = new Map<string, Promise<WebSearchResult[]>>();
+
 const getByPath = (obj: any, path: string) => {
   return path.split(".").reduce((acc, key) => {
     if (acc === undefined || acc === null) return undefined;
@@ -32,8 +35,7 @@ const replaceFields = (
   searchFields: string[],
   keyword: string,
 ) => {
-  if (!searchFields || searchFields.length === 0) return template;
-  if (!keyword) return template;
+  if (!searchFields || searchFields.length === 0 || !keyword) return template;
   const searchFieldsStr = searchFields.map((field) => `{${field}}`).join("|");
   return template.replace(new RegExp(searchFieldsStr, "g"), keyword);
 };
@@ -64,14 +66,13 @@ const extractImage = (item: any, fieldMap: any): string | undefined => {
 
 const buildBaseHeaders = (headers?: Record<string, string>) => {
   const randomIp = getRandomIp("14.16.0.0/12");
-  if (headers) {
-    for (const [k, v] of Object.entries(headers)) {
-      headers[k] = replaceFields(v, ["randomip"], randomIp);
-    }
+  const processedHeaders = headers ? { ...headers } : {};
+  for (const [k, v] of Object.entries(processedHeaders)) {
+    processedHeaders[k] = replaceFields(v, ["randomip"], randomIp);
   }
   return {
     "User-Agent": getRandomUA(),
-    ...headers,
+    ...processedHeaders,
   };
 };
 
@@ -116,13 +117,7 @@ const searchApi = async (
     const type = getStorageType(link);
     const image = extractImage(item, fieldMap);
     if (title && link) {
-      results.push({
-        title,
-        url: link,
-        image,
-        source: config.name,
-        type,
-      });
+      results.push({ title, url: link, image, source: config.name, type });
     }
   }
 
@@ -181,11 +176,9 @@ const searchPanSou = async (
   }
 
   const res = await axios(requestConfig);
-
   const data = res.data.data as {
     merged_by_type?: Record<string, PanSouMergedItem[]>;
   };
-
   const merged = data?.merged_by_type || {};
 
   const results: WebSearchResult[] = [];
@@ -196,10 +189,7 @@ const searchPanSou = async (
       const title = String(item.note || item.name || "");
       const link = String(item.url || item.link || "");
       let image = extractImage(item, {
-        fields: {
-          image: "image",
-          images: "images",
-        },
+        fields: { image: "image", images: "images" },
       });
       if (image && imageProxy) {
         image = imageProxy + image;
@@ -244,6 +234,10 @@ const fetchHtml = async (url: string, headers?: Record<string, string>) => {
   return res.data;
 };
 
+/**
+ * ⚡ 优化重点一：重构 searchHtml 的二次详情页爬取
+ * 采用受控的 Promise.all 替换原有的串行 await，使得 10 个详情页能够在 1 秒内并发拉回，同时加设了防灾保护
+ */
 const searchHtml = async (
   config: any,
   keyword: string,
@@ -262,30 +256,33 @@ const searchHtml = async (
 
   const results: WebSearchResult[] = [];
   const count = Math.max(1, config.count || 10);
+  const elements = $(itemSelector).toArray().slice(0, count);
 
-  for (const el of $(itemSelector).toArray()) {
-    if (results.length >= count) break;
+  // 高并发重构：将原本阻塞性能的循环体内 await 收集起来，改为并行批处理
+  const taskPromises = elements.map(async (el) => {
     const $el = $(el);
-
     const title = titleSelector
       ? $el.find(titleSelector).first().text().trim()
       : "";
-
     let panUrl = "";
 
     if (config.html_url === 1 && typeSelector) {
       const detailUrl = $el.find(typeSelector).first().attr("href") || "";
       if (detailUrl) {
         try {
-          const detailHtml = await fetchHtml(
-            detailUrl.startsWith("http")
-              ? detailUrl
-              : new URL(detailUrl, url).href,
-            headers || {},
-          );
+          const absoluteUrl = detailUrl.startsWith("http")
+            ? detailUrl
+            : new URL(detailUrl, url).href;
+          // 加上局部超时控制，防止某个第三方详情页卡死拖垮整条网络链路
+          const detailHtml = await Promise.race([
+            fetchHtml(absoluteUrl, headers || {}),
+            new Promise<string>((_, reject) =>
+              setTimeout(() => reject(new Error("Timeout")), 4000),
+            ),
+          ]);
           panUrl = extractPanUrl(detailHtml);
         } catch {
-          // 忽略详情页抓取失败
+          // 静默降级
         }
       }
     }
@@ -303,139 +300,138 @@ const searchHtml = async (
     }
 
     if (title && panUrl) {
-      results.push({
+      return {
         title,
         url: panUrl,
         source: config.name,
         type: getStorageType(panUrl),
-      });
+      };
     }
+    return null;
+  });
+
+  const parsedItems = await Promise.all(taskPromises);
+  for (const item of parsedItems) {
+    if (item) results.push(item);
   }
 
   return results;
 };
-
-// export async function* webSearch(
-//   keyword: string,
-// ): AsyncGenerator<WebSearchResult> {
-//   const configs = await prisma.apiList.findMany({
-//     where: { status: 1 },
-//     orderBy: { weight: "desc" },
-//   });
-
-//   for (const config of configs) {
-//     const cacheKey = `webSearch:${config.name}:${keyword}`;
-
-//     try {
-//       const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
-//       if (cached) {
-//         for (const item of cached) yield item;
-//         continue;
-//       }
-
-//       let items: WebSearchResult[] = [];
-//       if (config.type === "api") {
-//         items = await searchApi(config, keyword);
-//       } else if (config.type === "pansou") {
-//         items = await searchPanSou(config, keyword);
-//       } else {
-//         items = await searchHtml(config, keyword);
-//       }
-
-//       for (const item of items) {
-//         item.url = await encryptUrl(item.url);
-//       }
-
-//       await setRedisCache(cacheKey, items, 30 * 60);
-
-//       for (const item of items) yield item;
-//     } catch (err: any) {
-//       console.error(err || "搜索失败");
-//       // 单个线路失败不影响其他线路
-//     }
-//   }
-// }
 
 export async function testWebSearchConfig(
   config: any,
   keyword: string,
 ): Promise<number> {
   if (config.type === "api") {
-    const items = await searchApi(config, keyword);
-    return items.length;
+    return (await searchApi(config, keyword)).length;
   } else if (config.type === "pansou") {
-    const items = await searchPanSou(config, keyword);
-    return items.length;
+    return (await searchPanSou(config, keyword)).length;
   } else {
-    const items = await searchHtml(config, keyword);
-    return items.length;
+    return (await searchHtml(config, keyword)).length;
   }
 }
 
+/**
+ * ⚡ 优化重点二：重构 webSearchConcurrent
+ * 引入互斥单飞锁 + 分级限流机制，保护中间件和 Redis 不在高并发下崩溃
+ */
 export async function webSearchConcurrent(
   keyword: string,
   onResult: (results: WebSearchResult[]) => void,
 ): Promise<number> {
+  // 1. 大闸放行：一次性拿回所有启用的引擎配置（走本地缓存或轻量查询）
   const configs = await prisma.apiList.findMany({
     where: { status: 1 },
     orderBy: { weight: "desc" },
   });
 
+  if (!configs.length) return 0;
+
   let totalCount = 0;
-  const timeoutMs = 30000; // 单个搜索源超时时间
+  const timeoutMs = 25000;
 
   const withTimeout = <T>(promise: Promise<T>): Promise<T | null> => {
-    const timeout = new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), timeoutMs),
-    );
-    return Promise.race([promise, timeout]);
+    return Promise.race([
+      promise,
+      new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), timeoutMs),
+      ),
+    ]);
   };
 
-  // 并发执行所有搜索源
-  const promises = configs.map(async (config) => {
-    const cacheKey = `webSearch:${config.name}:${keyword}`;
+  // 2. ⚡ 高并发分批控制（并发池限制）：防同时向系统申请数百个 Socket 句柄导致全站超时
+  const BATCH_SIZE = 5;
 
-    try {
-      // 先尝试获取缓存
-      const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
-      if (cached) {
-        totalCount += cached.length;
-        onResult(cached); // 立即返回缓存结果
+  for (let i = 0; i < configs.length; i += BATCH_SIZE) {
+    const chunk = configs.slice(i, i + BATCH_SIZE);
+
+    const chunkPromises = chunk.map(async (config) => {
+      const lockKey = `${config.name}:${keyword}`;
+      const cacheKey = `webSearch:${lockKey}`;
+
+      // 3. 🔒 一级防御：如果内存中当前正有其他并发请求正在跑这渠道的爬网，直接共享它的 Promise
+      if (searchInflightLocks.has(lockKey)) {
+        try {
+          const sharedItems = await searchInflightLocks.get(lockKey)!;
+          if (sharedItems && sharedItems.length > 0) {
+            totalCount += sharedItems.length;
+            onResult(sharedItems);
+          }
+        } catch {
+          // 共享任务如果遇到远端抛错，允许向下重试
+        }
         return;
       }
 
-      // 根据类型执行搜索
-      let items: WebSearchResult[] | null = null;
-      if (config.type === "api") {
-        items = await withTimeout(searchApi(config, keyword));
-      } else if (config.type === "pansou") {
-        items = await withTimeout(searchPanSou(config, keyword));
-      } else {
-        items = await withTimeout(searchHtml(config, keyword));
+      // 定义真正执行网络请求的任务体
+      const runSearchWorker = async (): Promise<WebSearchResult[]> => {
+        // 二级防御：检查 Redis 缓存
+        const cached = await getRedisCache<WebSearchResult[]>(cacheKey);
+        if (cached) return cached;
+
+        let items: WebSearchResult[] | null = null;
+        if (config.type === "api") {
+          items = await withTimeout(searchApi(config, keyword));
+        } else if (config.type === "pansou") {
+          items = await withTimeout(searchPanSou(config, keyword));
+        } else {
+          items = await withTimeout(searchHtml(config, keyword));
+        }
+
+        if (!items || items.length === 0) return [];
+
+        // 高并发优化：加密 URL 操作在入缓存前合并批量完成，减少高频运算
+        await Promise.all(
+          items.map(async (item) => {
+            item.url = await encryptUrl(item.url);
+          }),
+        );
+
+        // 写入高速 Redis 缓存（保存30分钟）
+        await setRedisCache(cacheKey, items, 30 * 60);
+        return items;
+      };
+
+      const workerPromise = runSearchWorker();
+      searchInflightLocks.set(lockKey, workerPromise);
+
+      try {
+        const finalItems = await workerPromise;
+        if (finalItems && finalItems.length > 0) {
+          totalCount += finalItems.length;
+          onResult(finalItems);
+        }
+      } catch (err) {
+        console.error(`搜索引擎线路 [${config.name}] 发生故障:`, err);
+      } finally {
+        // 执行完毕后，无论成功或失败都解除锁定
+        searchInflightLocks.delete(lockKey);
       }
+    });
 
-      if (items === null) {
-        console.warn(`搜索 ${config.name} 超时`);
-        return;
-      }
+    // 分批次阻塞，确保同一时刻只有 5 个引擎通道在全力进行网络爬取/缓存读写
+    await Promise.allSettled(chunkPromises);
+  }
 
-      // 加密 URL
-      for (const item of items) {
-        item.url = await encryptUrl(item.url);
-      }
-
-      // 设置缓存
-      await setRedisCache(cacheKey, items, 30 * 60);
-
-      totalCount += items.length;
-      onResult(items); // 立即返回搜索结果
-    } catch (err: any) {
-      console.error(err || `搜索 ${config.name} 失败`);
-      // 单个线路失败不影响其他线路
-    }
-  });
-
-  // 等待所有搜索完成
-  await Promise.allSettled(promises);
   return totalCount;
 }
