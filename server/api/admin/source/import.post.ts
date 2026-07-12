@@ -19,10 +19,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "请选择要导入的文件" });
   }
 
-  const cidField = formData.find((item) => item.name === "cid")?.data.toString();
-  const hasHeaderField = formData.find(
-    (item) => item.name === "hasHeader",
-  )?.data.toString();
+  const cidField = formData
+    .find((item) => item.name === "cid")
+    ?.data.toString();
+  const hasHeaderField = formData
+    .find((item) => item.name === "hasHeader")
+    ?.data.toString();
 
   const cid = Number(cidField) || null;
   const hasHeader = hasHeaderField === "true";
@@ -30,12 +32,10 @@ export default defineEventHandler(async (event) => {
   const mimeType = file.type || "";
   const filename = file.filename || "";
   const isXlsx =
-    mimeType.includes("sheet") ||
-    filename.toLowerCase().endsWith(".xlsx") ||
-    filename.toLowerCase().endsWith(".xls");
+    mimeType.includes("sheet") || filename.toLowerCase().endsWith(".xlsx");
 
   if (!isXlsx) {
-    throw createError({ statusCode: 400, message: "仅支持 xlsx/xls 格式文件" });
+    throw createError({ statusCode: 400, message: "仅支持 xlsx 格式文件" });
   }
 
   let workbook: XLSX.WorkBook;
@@ -49,6 +49,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const sheetName = workbook.SheetNames[0];
+  if (!sheetName) {
+    throw createError({ statusCode: 400, message: "SheetName 为空" });
+  }
   const worksheet = workbook.Sheets[sheetName];
   if (!worksheet) {
     throw createError({ statusCode: 400, message: "Excel 文件为空" });

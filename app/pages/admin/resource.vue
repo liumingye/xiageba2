@@ -734,7 +734,7 @@ const importSources = async () => {
                 >
                 <input
                   type="file"
-                  accept=".xlsx,.xls"
+                  accept=".xlsx"
                   class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-700 file:text-white hover:file:bg-gray-600"
                   @change="handleFileChange"
                 />
