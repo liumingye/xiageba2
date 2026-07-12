@@ -1,5 +1,6 @@
 import { prisma } from "#server/lib/prisma";
 import { clearTreeSymbols } from "#server/utils/source";
+import { buildTokens } from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id as string;
@@ -11,24 +12,19 @@ export default defineEventHandler(async (event) => {
 
   if (method === "PUT") {
     const body = await readBody(event);
-    const { cid, title, url, description, menu } = body;
+    const { cid, title, url, description, menu, status } = body;
 
-    if (!title?.trim()) {
-      throw createError({ statusCode: 400, message: "资源名称不能为空" });
-    }
-    if (!url?.trim()) {
-      throw createError({ statusCode: 400, message: "资源地址不能为空" });
-    }
+    const data: any = {};
+    if (title) data.title = title.trim();
+    if (url) data.url = url.trim();
+    if (cid !== undefined) data.cid = Number(cid) || null;
+    if (description !== undefined) data.description = description || "";
+    if (menu !== undefined) data.menu = menu || "";
+    if (status !== undefined) data.status = Number(status) ?? 1;
 
     const source = await prisma.source.update({
       where: { id },
-      data: {
-        cid: Number(cid) || null,
-        title: title.trim(),
-        url: url.trim(),
-        description: description || "",
-        menu: menu || "",
-      },
+      data,
     });
 
     // jieba 分词后更新 searchVector

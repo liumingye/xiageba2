@@ -23,6 +23,7 @@ interface Source {
   url: string;
   description: string;
   menu: string;
+  status: number;
   categoryName: string;
   createdAt: string;
   updatedAt: string;
@@ -272,6 +273,32 @@ const saveEdit = async () => {
   }
 };
 
+const toggleStatus = async (item: Source) => {
+  const newStatus = item.status === 1 ? 0 : 1;
+  const id = item.id;
+  if (!id) {
+    throw createError({ statusCode: 400, message: "缺少资源ID" });
+  }
+
+  const res = await fetch(`/api/admin/source/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({
+      status: newStatus,
+    }),
+  });
+
+  if (res.ok) {
+    await loadSources();
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
 const deleteSource = async (id: string) => {
   if (!confirm("确定要删除该资源吗？")) return;
 
@@ -422,8 +449,10 @@ const importSources = async () => {
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 入库时间
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
-                更新时间
+              <th
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
+              >
+                状态
               </th>
               <th
                 class="px-4 py-3 text-center text-gray-400 text-sm font-medium"
@@ -462,11 +491,20 @@ const importSources = async () => {
               <td class="px-4 py-3 text-gray-400 text-sm">
                 {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
               </td>
-              <td class="px-4 py-3 text-gray-400 text-sm">
-                <template v-if="item.updatedAt">
-                  {{ new Date(item.updatedAt).toLocaleString("zh-CN") }}
-                </template>
-                <span v-else>-</span>
+              <td class="px-4 py-3">
+                <button
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  :class="item.status === 1 ? 'bg-primary-600' : 'bg-gray-700'"
+                  @click="toggleStatus(item)"
+                  :title="item.status === 1 ? '点击禁用' : '点击启用'"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="
+                      item.status === 1 ? 'translate-x-6' : 'translate-x-1'
+                    "
+                  />
+                </button>
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-2">

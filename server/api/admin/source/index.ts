@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     const cid = Number(query.cid) || null;
     const keyword = query.keyword as string | undefined;
 
-    const where: any = { isTemp: false, status: 1 };
+    const where: any = { isTemp: false };
     if (cid) where.cid = cid;
     if (keyword) {
       where.OR = [
