@@ -1,8 +1,4 @@
-import {
-  buildSearchTsQuery,
-  buildSearchTsQueryExact,
-  cutForSearch,
-} from "#server/utils/jieba";
+import { cutForSearch } from "#server/utils/jieba";
 import { getStorageType } from "#shared/utils";
 import { Pool } from "pg";
 
@@ -67,16 +63,18 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // 1. 利用结巴分词获取干净的 tokens 数组
   const tokens = cutForSearch(term);
-  const tsQuery = exact
-    ? buildSearchTsQueryExact(tokens)
-    : buildSearchTsQuery(tokens);
-
-  if (!tsQuery) {
+  if (tokens.length === 0) {
     return { data: [], total: 0, page, pageSize, totalPages: 0, tokens };
   }
 
-  // 1. 初始化基础参数（通用部分）
+  // 2. 🔥 核心优化：根据 exact 模式动态拼接符合 websearch_to_tsquery 语法的字符串
+  // 模糊查询 (OR)： 用大写的 " OR " 连接 -> "周杰伦 OR 1"
+  // 精准查询 (AND)：用纯空格 " " 连接 -> "周杰伦 1"
+  const formattedWebQuery = exact ? tokens.join(" ") : tokens.join(" OR ");
+
+  // 3. 初始化基础参数（通用部分）
   const baseParams: any[] = [];
   let paramIndex = 1;
 
@@ -101,17 +99,20 @@ export default defineEventHandler(async (event) => {
     conditions.push(`(${likeConditions.join(" OR ")})`);
   }
 
-  // 加入全文检索参数
-  conditions.push(`"searchVector" @@ to_tsquery('simple', $${paramIndex++})`);
-  baseParams.push(tsQuery);
+  // 🔥 核心变更：全面换成 websearch_to_tsquery
+  const queryParamIndex = paramIndex++;
+  conditions.push(
+    `"searchVector" @@ websearch_to_tsquery('simple', $${queryParamIndex})`,
+  );
+  baseParams.push(formattedWebQuery);
 
   // 组装统一的 WHERE 语句
   const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
 
-  // 2. 复制克隆一份 Count 参数，避免被后面的分页参数污染（解决原代码的 slice Bug）
+  // 4. 复制克隆一份 Count 参数，避免被后面的分页参数污染
   const countParams = [...baseParams];
 
-  // 3. 构建 Data 参数
+  // 5. 构建 Data 参数
   const dataParams = [...baseParams];
   dataParams.push(pageSize, skip);
   const limitIndex = paramIndex++;
@@ -124,10 +125,10 @@ export default defineEventHandler(async (event) => {
   } else if (sortOrder === "oldest") {
     orderClause = `"createdAt" ASC`;
   } else {
-    orderClause = `ts_rank_cd("searchVector", to_tsquery('simple', $${baseParams.length}), 1) DESC, "createdAt" DESC`;
+    // 🔥 核心变更：计算权重等级评分函数也同步换成 websearch_to_tsquery
+    orderClause = `ts_rank_cd("searchVector", websearch_to_tsquery('simple', $${queryParamIndex})) DESC, "createdAt" DESC`;
   }
 
-  // 砍掉多余的 WITH 嵌套，直接单层查询，让 PG 索引发挥最大威力
   const dataSql = `
     SELECT id, title, url, menu, "createdAt"
     FROM "Source"

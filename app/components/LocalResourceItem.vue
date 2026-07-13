@@ -57,7 +57,11 @@ const emit = defineEmits<{
           class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2"
           @click="emit('clickTitle', item)"
         >
-          <span v-if="highlightHtml" v-html="highlightHtml" />
+          <span
+            class="min-w-0 break-all"
+            v-if="highlightHtml"
+            v-html="highlightHtml"
+          />
           <template v-else>{{ item.title }}</template>
           <ClientOnly>
             <CheckCircle
@@ -95,9 +99,7 @@ const emit = defineEmits<{
       </span>
       <div class="flex items-center gap-2">
         <button
-          v-if="
-            !item.menu && ['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)
-          "
+          v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
           class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
           @click.stop="emit('openTree', item)"
         >

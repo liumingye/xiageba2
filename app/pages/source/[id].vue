@@ -46,8 +46,19 @@ interface Source {
   type: string;
 }
 
-const { data: sourceData, pending: loading } = await useFetch<{ data: Source }>(
-  () => `/api/source/${sourceId}`,
+interface SimilarItem {
+  id: string;
+  title: string;
+  type: string;
+}
+
+interface SourceResponse {
+  data: Source;
+  similar?: SimilarItem[];
+}
+
+const { data: responseData, pending: loading } = await useFetch<SourceResponse>(
+  () => `/api/source/${sourceId}?similar=1`,
   {
     key: () => `source-${sourceId}`,
     lazy: true,
@@ -61,11 +72,13 @@ const { data: sourceData, pending: loading } = await useFetch<{ data: Source }>(
         createdAt: "",
         type: "",
       },
+      similar: [],
     }),
   },
 );
 
-const source = computed(() => sourceData.value?.data);
+const source = computed(() => responseData.value?.data);
+const similarList = computed(() => responseData.value?.similar || []);
 
 const pageTitle = computed(() => {
   if (source.value) {
@@ -163,7 +176,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-dark-300 py-4 md:py-6 px-2">
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-4xl mx-auto">
       <TopBar />
 
       <main>
@@ -173,7 +186,7 @@ onMounted(() => {
           aria-busy="true"
           aria-label="正在加载"
         >
-          <section class="card p-6 animate-pulse">
+          <section class="card sm:p-6 p-3 animate-pulse">
             <div class="flex flex-col gap-6">
               <div class="w-full bg-gray-700 rounded-xl h-32" />
               <div class="space-y-3">
@@ -185,8 +198,8 @@ onMounted(() => {
         </div>
 
         <div v-else-if="source" class="space-y-6">
-          <article class="card p-6">
-            <header class="flex items-start gap-4 mb-6">
+          <article class="card sm:p-6 p-3">
+            <header class="flex items-start gap-4 mb-4 border-b border-gray-800 pb-4">
               <div class="flex-1 min-w-0">
                 <h1 class="text-xl font-semibold text-white mb-2 line-clamp-2">
                   {{ source.title }}
@@ -194,7 +207,7 @@ onMounted(() => {
                 <div class="flex items-center gap-3 text-sm text-gray-500">
                   <span class="flex items-center gap-1">
                     <Link class="w-4 h-4" />
-                    {{ getTypeName(source.type) }}
+                    {{ getTypeName(source.type) }}网盘
                   </span>
                   <span class="flex items-center gap-1">
                     <Clock class="w-4 h-4" />
@@ -211,7 +224,7 @@ onMounted(() => {
             </div>
 
             <section v-if="source.menu">
-              <div class="mb-2">文件内容:</div>
+              <div class="font-bold text-gray-300 mb-4 text-lg">文件内容:</div>
               <pre
                 class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-56 overflow-auto"
                 >{{ source.menu }}</pre
@@ -219,11 +232,13 @@ onMounted(() => {
             </section>
 
             <footer class="border-t border-gray-800 pt-6">
-              <h3 class="font-medium text-gray-300 mb-4">获取下载链接:</h3>
+              <h3 class="font-bold text-gray-300 mb-4 text-lg">
+                获取下载链接:
+              </h3>
               <div class="space-y-3">
                 <div v-if="!fetchedUrl" class="space-y-3">
                   <p class="text-xs text-gray-500">
-                    点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存。
+                    点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存，失效后可重新获取。
                   </p>
                   <button
                     class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:bg-primary-400"
@@ -242,9 +257,9 @@ onMounted(() => {
                   <div class="flex flex-col items-center gap-4">
                     <span
                       >可使用
-                      <span class="text-primary-500">{{
-                        getTypeName(source.type)
-                      }}网盘</span>
+                      <span class="text-primary-500"
+                        >{{ getTypeName(source.type) }}网盘</span
+                      >
                       APP 扫码获取</span
                     >
                     <div v-if="qrCodeUrl" class="flex-shrink-0">
@@ -302,7 +317,28 @@ onMounted(() => {
             </footer>
           </article>
 
-          <section class="card p-6">
+          <section v-if="similarList.length" class="card sm:p-6 p-3">
+            <h3 class="font-bold text-gray-300 mb-4 text-lg">相似资源</h3>
+            <ul class="space-y-2">
+              <li v-for="item in similarList" :key="item.id">
+                <NuxtLink
+                  :to="`/source/${item.id}`"
+                  class="flex items-center gap-2 p-3 bg-gray-800/50 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <span
+                    class="inline-flex items-center justify-center px-2 py-0.5 text-xs rounded bg-primary-500/20 text-primary-400 flex-shrink-0"
+                  >
+                    {{ getTypeName(item.type) }}
+                  </span>
+                  <span class="text-gray-300 text-sm truncate">{{
+                    item.title
+                  }}</span>
+                </NuxtLink>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card sm:p-6 p-3">
             <button
               class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
               @click="goBack"

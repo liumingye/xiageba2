@@ -34,20 +34,6 @@ export const cutForSearch = (input: string): string[] => {
 };
 
 /**
- * [模糊搜索] 组装 OR 逻辑，加入严格过滤防止出现空子句
- */
-export const buildSearchTsQuery = (groups: string[]): string => {
-  return groups.join(" | ");
-};
-
-/**
- * [精准搜索] 组装 AND 逻辑
- */
-export const buildSearchTsQueryExact = (groups: string[]): string => {
-  return groups.join(" & ");
-};
-
-/**
  * [写入/索引端用] 将词语安全组装给 PostgreSQL 的 searchVector
  */
 export const tokenizeIndex = (groups: string[]): string => {
@@ -66,8 +52,6 @@ export const buildTokens = (...terms: string[]): string => {
 
 export default {
   cutForSearch,
-  buildSearchTsQuery,
-  buildSearchTsQueryExact,
   tokenizeIndex,
   buildTokens,
 };

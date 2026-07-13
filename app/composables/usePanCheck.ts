@@ -73,10 +73,14 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
           },
         );
         const data = await res.json();
+        // 实时更新 validItems
+        if (data.validIds && data.validIds.length > 0) {
+          for (const id of data.validIds) validItems.value.add(id);
+        }
         if (data.success) {
           skipCheck.value = false;
-          validItems.value.clear();
-          for (const id of data.validIds) validItems.value.add(id);
+          // validItems.value.clear();
+          // for (const id of data.validIds) validItems.value.add(id);
           if (data.pendingIds.length === 0) {
             clearInterval(pollTimer!);
             pollTimer = null;

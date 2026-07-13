@@ -183,7 +183,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-dark-300 py-4 md:py-6 px-2">
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-4xl mx-auto">
       <TopBar />
 
       <main>

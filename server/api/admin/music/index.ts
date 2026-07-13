@@ -1,10 +1,5 @@
 import { prisma } from "#server/lib/prisma";
-import { Pool } from "pg";
-import {
-  buildTokens,
-  buildSearchTsQuery,
-  cutForSearch,
-} from "#server/utils/jieba";
+import { buildTokens, cutForSearch } from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
@@ -20,36 +15,39 @@ export default defineEventHandler(async (event) => {
     const search = (query.search as string)?.trim() || "";
 
     if (search) {
-      // 搜索端：jieba 精确分词，CJK 词做 "(词|字1|字2|...)" OR 兜底
-      const tsQuery = buildSearchTsQuery(cutForSearch(search));
-
-      if (!tsQuery) {
+      // 1. 采用结巴分词获取 tokens 数组
+      const tokens = cutForSearch(search);
+      if (tokens.length === 0) {
         return { data: [], total: 0, page, pageSize, totalPages: 0 };
       }
 
+      // 2. 🔥 核心优化：采用大写 OR 拼接成符合 websearch_to_tsquery 语法的宽泛搜索文本
+      const formattedWebQuery = tokens.join(" OR ");
+
+      // 🔥 核心变更：全面平替为 websearch_to_tsquery，安全且完美抗碎
       const [musics, total] = await Promise.all([
         prisma.$queryRaw<any[]>`
-      WITH hit_rows AS (
-        SELECT 
-          id,
-          ts_rank_cd("searchVector", query) AS rank
-        FROM "Music", to_tsquery('simple', ${tsQuery}) AS query
-        WHERE "searchVector" @@ query
-      )
-      SELECT m.id, m.title, m.artist, m.album, m.cover
-      FROM hit_rows h
-      JOIN "Music" m USING(id)
-      ORDER BY h.rank DESC, m."createdAt" DESC
-      LIMIT ${pageSize} OFFSET ${skip};
-    `,
-        prisma.$queryRaw<[{ count: string }]>`
-      SELECT COUNT(*) as count
-      FROM "Music"
-      WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
-    `,
+          WITH hit_rows AS (
+            SELECT 
+              id,
+              ts_rank_cd("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery})) AS rank
+            FROM "Music"
+            WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
+          )
+          SELECT m.id, m.title, m.artist, m.album, m.cover, m.downloads
+          FROM hit_rows h
+          JOIN "Music" m USING(id)
+          ORDER BY h.rank DESC, m."createdAt" DESC
+          LIMIT ${pageSize} OFFSET ${skip};
+        `,
+        prisma.$queryRaw<[{ count: number }]>`
+          SELECT COUNT(*)::int as count
+          FROM "Music"
+          WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
+        `,
       ]);
 
-      const totalCount = parseInt(total[0]?.count || "0", 10);
+      const totalCount = total[0]?.count ?? 0;
 
       return {
         data: musics.map((m) => ({
@@ -66,6 +64,7 @@ export default defineEventHandler(async (event) => {
       };
     }
 
+    // 无搜索词时的默认查询
     const [musics, total] = await Promise.all([
       prisma.music.findMany({
         select: {
@@ -74,6 +73,7 @@ export default defineEventHandler(async (event) => {
           artist: true,
           album: true,
           cover: true,
+          downloads: true, // 🛠️ 修复：此前漏了选择该字段，导致下方 JSON.parse 崩溃
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -85,7 +85,7 @@ export default defineEventHandler(async (event) => {
     return {
       data: musics.map((m) => ({
         ...m,
-        downloads: JSON.parse(m.downloads || "[]"),
+        downloads: JSON.parse((m.downloads as string) || "[]"),
       })),
       total,
       page,
@@ -102,7 +102,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "歌名和歌手不能为空" });
     }
 
-    // 1) 先由 Prisma 创建记录（由 Prisma 生成 cuid(2) id）
+    // 1) 由 Prisma 创建记录
     const music = await prisma.music.create({
       data: {
         title,
@@ -115,7 +115,7 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    // 2) 然后用 jieba 构造 tokens，通过原始 SQL 更新 searchVector
+    // 2) 用 jieba 构造 tokens 并维护 searchVector
     const searchVectorTokens = buildTokens(
       music.title || "",
       music.artist || "",
@@ -138,7 +138,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "缺少音乐ID" });
     }
 
-    // 1) 先由 Prisma 更新普通字段
+    // 1) 先由 Prisma 更新基础数据
     const music = await prisma.music.update({
       where: { id },
       data: {
@@ -152,7 +152,7 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    // 2) 用 jieba 构造 tokens 更新 searchVector
+    // 2) 更新对应的全文检索向量
     const searchVectorTokens = buildTokens(
       music.title || "",
       music.artist || "",
@@ -160,10 +160,9 @@ export default defineEventHandler(async (event) => {
     );
     await prisma.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens}) WHERE id = ${music.id}`;
 
-    // 清理isr缓存
+    // 清理 ISR 缓存
     const storage = useStorage(`cache:nuxt:payload:`);
     const keys = await storage.getKeys();
-    console.log(keys);
     for (const k of keys) {
       if (k.startsWith(`music_${id}`)) {
         await storage.removeItem(k);

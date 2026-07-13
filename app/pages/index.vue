@@ -113,11 +113,6 @@ onMounted(async () => {
   checkHistoryOverflow();
 });
 
-const goToDetail = (music: Music) => {
-  musicStore.setCurrentMusic(music);
-  router.push(`/music/${music.id}`);
-};
-
 const clearHistory = () => {
   musicStore.clearSearchHistory();
 };
@@ -436,16 +431,16 @@ const getPic = (url: string) => {
               <li
                 v-for="music in hotMusic.slice(0, 11)"
                 :key="music.id"
-                class="flex items-center gap-2 min-w-0 cursor-pointer group"
-                @click="goToDetail(music)"
+                class="flex items-center gap-2 min-w-0"
               >
                 <MusicIcon class="w-3 h-3 text-primary-400 flex-shrink-0" />
-                <span
-                  class="text-sm text-gray-400 group-hover:text-primary-400 truncate transition-colors"
-                  :title="music.title + ' - ' + music.artist"
+                <NuxtLink
+                  :to="`/music/${music.id}`"
+                  class="text-sm text-gray-400 hover:text-primary-400 truncate transition-colors"
+                  :title="music.title"
                 >
                   {{ music.title }} - {{ music.artist }}
-                </span>
+                </NuxtLink>
               </li>
             </ul>
           </div>

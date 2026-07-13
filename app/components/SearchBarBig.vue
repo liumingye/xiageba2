@@ -75,7 +75,7 @@ watch(
 const searchInput = ref<HTMLInputElement>();
 
 onMounted(() => {
-  if (searchInput.value?.focus) {
+  if (document.activeElement === searchInput.value) {
     isFocused.value = true;
   }
 });

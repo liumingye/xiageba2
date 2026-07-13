@@ -162,6 +162,7 @@ defineExpose({ results, searching, error });
           </div>
           <h3 class="text-white flex items-center gap-2">
             <span
+              class="min-w-0 break-all"
               v-html="props.highlightHtml?.(item.title) || item.title"
             ></span>
             <CheckCircle

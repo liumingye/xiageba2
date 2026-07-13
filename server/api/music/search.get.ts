@@ -1,8 +1,4 @@
-import {
-  buildSearchTsQuery,
-  buildSearchTsQueryExact,
-  cutForSearch,
-} from "#server/utils/jieba";
+import { cutForSearch } from "#server/utils/jieba";
 import { prisma } from "#server/lib/prisma";
 
 const MAX_PAGE = 100;
@@ -34,31 +30,26 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // 1. 获取结巴分词的 tokens 数组
   const tokens = cutForSearch(term);
-  const tsQuery = exact
-    ? buildSearchTsQueryExact(tokens)
-    : buildSearchTsQuery(tokens);
-
-  if (!tsQuery) {
-    return {
-      data: [],
-      total: 0,
-      page: 1,
-      pageSize,
-      totalPages: 0,
-      tokens: [],
-    };
+  if (tokens.length === 0) {
+    return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens: [] };
   }
 
+  // 2. 🔥 核心优化：构建符合 websearch_to_tsquery 语法的查询文本
+  // exact 模式（AND 精准匹配）：用纯空格连接 -> "周杰伦 1"
+  // 非 exact 模式（OR 模糊匹配）：用大写 OR 连接 -> "周杰伦 OR 1"
+  const formattedWebQuery = exact ? tokens.join(" ") : tokens.join(" OR ");
+
   // 使用 Promise.all 并发执行数据查询与总数统计
-  // 注意：在 SQL 内部将 count 强转为 ::int，彻底消灭 JS 端的 BigInt 序列化和类型转换报错
+  // 🔥 将 to_tsquery 替换为 websearch_to_tsquery，参数传递完全保持 Prisma 的参数化安全机制
   const [musics, totalResult] = await Promise.all([
     prisma.$queryRaw<any[]>`
       SELECT id, title, artist, m.album, m.cover
       FROM "Music" m
-      WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
+      WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
       ORDER BY 
-        ts_rank_cd("searchVector", to_tsquery('simple', ${tsQuery}), 1) DESC, 
+        ts_rank_cd("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery}), 1) DESC, 
         "viewCount" DESC, 
         "createdAt" DESC
       LIMIT ${pageSize} OFFSET ${skip};
@@ -66,11 +57,10 @@ export default defineEventHandler(async (event) => {
     prisma.$queryRaw<[{ count: number }]>`
       SELECT COUNT(*)::int as count
       FROM "Music"
-      WHERE "searchVector" @@ to_tsquery('simple', ${tsQuery})
+      WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
     `,
   ]);
 
-  // 因为 SQL 层已经确保了是 number 类型，这里可以直接安全使用
   const rawCount = totalResult[0]?.count ?? 0;
   const totalCount = Math.min(MAX_PAGE * pageSize, rawCount);
 

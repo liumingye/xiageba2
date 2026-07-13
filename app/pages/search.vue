@@ -510,7 +510,7 @@ const copyUrl = async (url: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-4 md:px-6 px-2">
+  <div class="min-h-screen bg-dark-300 py-4 md:py-6 px-2">
     <div class="max-w-4xl mx-auto">
       <TopBar :search-query="searchQuery" @search="performSearch" />
 
@@ -898,11 +898,11 @@ const copyUrl = async (url: string) => {
         <Transition name="modal">
           <div
             v-if="showModal"
-            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
             @click.self="closeModal"
           >
             <div
-              class="modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl"
+              class="flex flex-col max-h-[90vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl overflow-hidden"
             >
               <div
                 class="flex items-center justify-between p-4 border-b border-gray-800"
@@ -915,7 +915,7 @@ const copyUrl = async (url: string) => {
                   <X class="w-5 h-5" />
                 </button>
               </div>
-              <div class="p-4">
+              <div class="p-4 h-full overflow-auto">
                 <div v-if="modalFetching" class="text-center py-8">
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
@@ -982,6 +982,7 @@ const copyUrl = async (url: string) => {
                       </a>
                     </div>
                     <p class="text-xs text-gray-400">
+                      网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
                       文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。
                     </p>
                   </div>
