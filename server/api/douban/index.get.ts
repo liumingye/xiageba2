@@ -573,6 +573,7 @@ async function fetchCategory(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       referer,
     },
+    timeout: 15000,
   });
 
   const data = res.data as DoubanResponse;
@@ -646,6 +647,7 @@ async function fetchShortDrama(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       Referer: "https://www.iqiyi.com/",
     },
+    timeout: 15000,
   });
 
   const json = res.data as {

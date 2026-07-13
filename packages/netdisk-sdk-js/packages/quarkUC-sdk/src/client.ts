@@ -62,17 +62,20 @@ export class QuarkUCClient {
       this.config = config;
     }
 
-    this.agent = (agent ?? superagent.agent()).use((request: Request) => {
-      // 监听cookie更新
-      request.on("response", (resp: Response) => {
-        const setCookie = ArrayUtil.toArray(resp.header["set-cookie"])
-          .filter(Boolean)
-          .map((v) => v.split(";")[0]);
-        const puus = setCookie.find((c) => c.startsWith("__puus"));
-        if (puus != null) this.updateCookie(setCookie.join(";"));
+    this.agent = (agent ?? superagent.agent())
+      .timeout(15000)
+      .use((request: Request) => {
+        // 监听cookie更新
+        request.on("response", (resp: Response) => {
+          const setCookie = ArrayUtil.toArray(resp.header["set-cookie"])
+            .filter(Boolean)
+            .map((v) => v.split(";")[0]);
+          const puus = setCookie.find((c) => c.startsWith("__puus"));
+          if (puus != null) this.updateCookie(setCookie.join(";"));
+        });
       });
-    });
     this.agentApi = this.agent
+      .timeout(15000)
       .use(prefix(this.config.api))
       .use((request: Request) => {
         // 自动注入

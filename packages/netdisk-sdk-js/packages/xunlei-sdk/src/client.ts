@@ -61,6 +61,7 @@ export class XunleiClient {
 
     this.agent = superagent
       .agent()
+      .timeout(15000)
       .set({
         "user-agent": this.config.userAgent,
         Accept: "application/json, text/plain, */*",

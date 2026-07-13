@@ -77,7 +77,7 @@ export const submitCheckRequest = async (
           "Content-Type": "application/json",
           ...(server.password ? { "X-Admin-Password": server.password } : {}),
         },
-        timeout: 30000,
+        timeout: 15000,
       },
     );
 
