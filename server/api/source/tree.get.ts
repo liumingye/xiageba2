@@ -17,7 +17,7 @@ import {
   getXunleiClient,
 } from "#server/lib/pan";
 
-const MAX_DEPTH = 10;
+const MAX_DEPTH = 5;
 
 // 🔒 内存进程锁：阻断高并发的核心大闸
 // 确保同一时间，同一个资源文件树，全国只有一个 Worker 在调用网盘 SDK 跑递归，其余并发请求排队共享结果
@@ -34,7 +34,6 @@ export default defineEventHandler(async (event) => {
 
   let url = "";
   let sourceId = id || "";
-  let existingMenu = "";
 
   // 1. 快速查询或解密，拿到真正的 url
   if (id) {
@@ -46,12 +45,6 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: "资源不存在" });
     }
     url = source.url;
-    existingMenu = source.menu || "";
-
-    // 如果数据库里已经生成过了，高并发下直接秒回，不走后面任何逻辑
-    if (existingMenu) {
-      return { tree: existingMenu, success: true };
-    }
   } else if (inputUrl) {
     const decryptedUrl = await decryptUrl(inputUrl || "");
     if (decryptedUrl === null) {
@@ -67,6 +60,7 @@ export default defineEventHandler(async (event) => {
 
   // 2. 🚀 一级防御：读取分布式高速缓存 Redis
   const cached = await getRedisCache<string>(cacheKey);
+
   if (cached !== null) {
     return { tree: cached, success: true };
   }
@@ -100,7 +94,7 @@ export default defineEventHandler(async (event) => {
     await setRedisCache(cacheKey, generatedTree, 24 * 60 * 60);
 
     // 5. 异步写库：改用非阻塞式后台运行，不再挂起当前的 HTTP 响应时间
-    if (sourceId && !existingMenu && generatedTree) {
+    if (sourceId && generatedTree) {
       prisma.source
         .update({
           where: { id: sourceId },
@@ -165,14 +159,15 @@ async function walkQuarkUC(
 
   const items: IShareFile[] = [];
   let page = 1;
-  const pageSize = 200;
+  const pageSize = 100;
+  const maxPages = 1;
 
-  while (page <= 5) {
+  while (page <= maxPages) {
     const res = await client.shareApi.detail(pwdId, stoken, {
       pdir_fid: pdirFid,
       _page: page,
       _size: pageSize,
-      _sort: ["file_type:asc", "updated_at:desc"],
+      _sort: ["file_type:asc", "file_name:asc"],
     });
 
     if (res.list && res.list.length > 0) {
@@ -249,9 +244,18 @@ async function walkBaidu(
     num: 100,
     root: dir === "/" ? 1 : 0,
     sekey,
+    order: "name",
+    desc: 0,
   } as any);
 
   const items: IBaiduFile[] = res.list || [];
+  items.sort((a, b) => {
+    // 目录排在前面
+    if (a.isdir && !b.isdir) return -1;
+    if (!a.isdir && b.isdir) return 1;
+    // 同一类型按文件名排序
+    return a.server_filename.localeCompare(b.server_filename);
+  });
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];

@@ -167,7 +167,7 @@ export type IQueryShareParam = Partial<
       _fetch_banner: NBoolean;
       _fetch_share: NBoolean;
     },
-    "file_type" | "updated_at"
+    "file_type" | "file_name" | "updated_at"
   >
 >;
 
@@ -253,24 +253,20 @@ QuarkUCShareApi.prototype.saveTask = function (taskID, _await) {
 QuarkUCShareApi.prototype.share = async function (fid_list, title) {
   const {
     body: { data },
-  } = await this.client.agentApi
-    .post(`/share`)
-    .send({
-      fid_list,
-      expired_type: 2,
-      title,
-      url_type: 1,
-    });
+  } = await this.client.agentApi.post(`/share`).send({
+    fid_list,
+    expired_type: 2,
+    title,
+    url_type: 1,
+  });
   return data;
 };
 
 QuarkUCShareApi.prototype.sharePassword = async function (share_id) {
   const {
     body: { data },
-  } = await this.client.agentApi
-    .post("/share/password")
-    .send({
-      share_id,
-    });
+  } = await this.client.agentApi.post("/share/password").send({
+    share_id,
+  });
   return data;
 };
