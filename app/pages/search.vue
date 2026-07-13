@@ -1006,7 +1006,11 @@ const copyUrl = async (url: string) => {
               <div
                 class="flex items-center justify-between p-4 border-b border-gray-800"
               >
-                <h3 class="text-white font-medium">目录结构</h3>
+                <h3 class="text-white font-medium">
+                  目录结构<span class="text-xs text-gray-400"
+                    >（最多显示5层、100个文件）</span
+                  >
+                </h3>
                 <button
                   class="text-gray-400 hover:text-white transition-colors"
                   @click="closeTreeModal"
