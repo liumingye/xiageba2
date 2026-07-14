@@ -39,20 +39,10 @@ const emit = defineEmits<{
   >
     <div
       v-if="checkStatus === 'invalid'"
-      class="absolute inset-0 bg-red-900/20 pointer-events-none"
+      class="absolute inset-0 bg-red-900/10 pointer-events-none"
     />
     <div class="flex flex-col">
-      <div class="flex-1 min-w-0 flex gap-2 mb-2 md:flex-row flex-col-reverse">
-        <div
-          class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
-        >
-          <img
-            v-if="item.type !== 'other'"
-            :src="`/img/pan/${item.type}.png`"
-            class="w-4 h-4 mr-1"
-          />
-          {{ getTypeName(item.type) }}
-        </div>
+      <div class="flex-1 min-w-0 flex gap-2 mb-2 flex-col">
         <h3
           class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2"
           @click="emit('clickTitle', item)"
@@ -63,24 +53,45 @@ const emit = defineEmits<{
             v-html="highlightHtml"
           />
           <template v-else>{{ item.title }}</template>
-          <ClientOnly>
-            <CheckCircle
-              v-if="checkStatus === 'valid'"
-              class="w-4 h-4 text-green-400 flex-shrink-0"
-              title="链接有效"
-            />
-            <XCircle
-              v-if="checkStatus === 'invalid'"
-              class="w-4 h-4 text-red-400 flex-shrink-0"
-              title="链接失效"
-            />
-            <Loader2
-              v-if="checkStatus === 'checking'"
-              class="w-4 h-4 text-gray-400 animate-spin flex-shrink-0"
-              title="检测中"
-            />
-          </ClientOnly>
         </h3>
+        <div class="flex gap-2">
+          <div
+            class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+          >
+            <img
+              v-if="item.type !== 'other'"
+              :src="`/img/pan/${item.type}.png`"
+              class="w-4 h-4 mr-1"
+            />
+            {{ getTypeName(item.type) }}网盘
+          </div>
+          <ClientOnly>
+            <div
+              v-if="checkStatus === 'valid'"
+              class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            >
+              <CheckCircle
+                class="w-4 h-4 text-green-400 flex-shrink-0 mr-1"
+              />链接有效
+            </div>
+            <div
+              v-if="checkStatus === 'invalid'"
+              class="bg-error-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            >
+              <XCircle
+                class="w-4 h-4 text-red-300 flex-shrink-0 mr-1"
+              />可能失效
+            </div>
+            <div
+              v-if="checkStatus === 'checking'"
+              class="bg-gray-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            >
+              <Loader2
+                class="w-4 h-4 text-white animate-spin flex-shrink-0 mr-1"
+              />正在检测
+            </div>
+          </ClientOnly>
+        </div>
       </div>
       <template v-if="item.menu">
         <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
