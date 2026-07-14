@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const count = await testWebSearchConfig(config, keyword);
-    return { success: true, count, keyword };
+    const results = await testWebSearchConfig(config, keyword);
+    return { success: true, count: results.length, keyword, results };
   } catch (err: any) {
     return {
       success: false,

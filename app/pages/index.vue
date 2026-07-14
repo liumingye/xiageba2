@@ -7,25 +7,26 @@ import {
   ArrowRight,
   TrashIcon,
   FolderKanban,
+  Flame,
+  History,
 } from "@lucide/vue";
 import SearchBarBig from "~/components/SearchBarBig.vue";
 import { useMediaQuery, useResizeObserver } from "@vueuse/core";
 
 const config = useRuntimeConfig();
-const router = useRouter();
 const musicStore = useMusicStore();
 const searchBarRef = ref<typeof SearchBarBig>();
-const historyRef = ref<HTMLElement | null>(null);
-const historyExpanded = ref(false);
-const historyOverflowing = ref(false);
+const sectionRef = ref<HTMLElement | null>(null);
+const sectionExpanded = ref(false);
+const sectionOverflowing = ref(true);
 
-const checkHistoryOverflow = () => {
-  if (!historyRef.value || historyExpanded.value) return;
-  historyOverflowing.value =
-    historyRef.value.scrollHeight > historyRef.value.clientHeight;
+const checkSectionOverflow = () => {
+  if (!sectionRef.value || sectionExpanded.value) return;
+  sectionOverflowing.value =
+    sectionRef.value.scrollHeight > sectionRef.value.clientHeight;
 };
 
-useResizeObserver(historyRef, checkHistoryOverflow);
+useResizeObserver(sectionRef, checkSectionOverflow);
 
 const { data: hotMusic } = await useFetch<Music[]>("/api/music/recent", {
   method: "POST",
@@ -34,6 +35,40 @@ const { data: hotMusic } = await useFetch<Music[]>("/api/music/recent", {
   lazy: true,
   default: () => [],
 });
+
+interface HotWord {
+  word: string;
+  weight: number;
+  type: "music" | "resource";
+}
+
+const { data: hotwordsData } = await useFetch<{ data: HotWord[] }>(
+  "/api/hotwords",
+  {
+    key: "home-hotwords",
+    server: true,
+    lazy: true,
+    default: () => ({ data: [] }),
+  },
+);
+
+const hotwords = computed(() => hotwordsData.value?.data || []);
+
+const hasHotwords = computed(() => hotwords.value.length > 0);
+const hasHistory = computed(() => musicStore.searchHistory.length > 0);
+
+const isClientMounted = ref(false);
+onMounted(() => {
+  isClientMounted.value = true;
+});
+
+const showHistorySection = computed(() => {
+  if (hasHotwords.value) return true;
+  if (isClientMounted.value && hasHistory.value) return true;
+  return false;
+});
+
+const activeHistoryTab = ref(hasHotwords.value ? "hot" : "history");
 
 interface CategoryLatestItem {
   id: string;
@@ -110,11 +145,23 @@ useHead({
 
 onMounted(async () => {
   await nextTick();
-  checkHistoryOverflow();
+  checkSectionOverflow();
+});
+
+watch(activeHistoryTab, async () => {
+  await nextTick();
+  checkSectionOverflow();
 });
 
 const clearHistory = () => {
   musicStore.clearSearchHistory();
+};
+
+const handleHotwordClick = (hotword: HotWord) => {
+  musicStore.searchType = hotword.type;
+  nextTick(() => {
+    searchBarRef.value?.handleSearch(hotword.word);
+  });
 };
 
 const isMobile = useMediaQuery("(max-width: 768px)");
@@ -351,39 +398,96 @@ const getPic = (url: string) => {
       </header>
 
       <section
-        v-if="musicStore.searchHistory.length > 0"
-        class="mb-8"
+        v-if="showHistorySection"
         :class="{
-          'mask-bottom': !historyExpanded && historyOverflowing,
+          'mask-bottom': !sectionExpanded && sectionOverflowing,
         }"
+        ref="sectionRef"
+        class="mb-8 overflow-hidden"
         aria-labelledby="history-title"
       >
-        <div class="flex items-center">
-          <h2
-            id="history-title"
-            class="text-lg font-medium text-gray-300 mb-4 flex-1"
-          >
-            搜索历史
-          </h2>
+        <div class="flex items-center border-b border-gray-800 mb-4">
           <button
-            v-if="historyOverflowing"
-            class="text-primary-400 hover:text-primary-300 transition-colors px-2 border-r border-gray-500/50"
-            @click="historyExpanded = !historyExpanded"
+            v-if="hasHotwords"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors"
+            :class="
+              activeHistoryTab === 'hot'
+                ? 'text-primary-400 border-b-2 border-primary-400'
+                : 'text-gray-500 hover:text-gray-300'
+            "
+            @click="activeHistoryTab = 'hot'"
           >
-            {{ historyExpanded ? "收起" : "展开" }}
+            <Flame class="w-4 h-4" />
+            热门搜索
           </button>
           <button
-            class="flex items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors px-2"
-            @click="clearHistory"
-            aria-label="清空搜索历史"
+            v-if="isClientMounted && hasHistory"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors"
+            :class="
+              activeHistoryTab === 'history'
+                ? 'text-primary-400 border-b-2 border-primary-400'
+                : 'text-gray-500 hover:text-gray-300'
+            "
+            @click="activeHistoryTab = 'history'"
           >
-            <TrashIcon class="w-4 h-4" />
+            <History class="w-4 h-4" />
+            搜索历史
+          </button>
+          <div class="flex ml-auto">
+            <button
+              v-if="activeHistoryTab === 'history'"
+              class="flex items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors px-2 border-gray-500/50"
+              :class="{
+                'border-r': sectionOverflowing,
+              }"
+              @click="clearHistory"
+              aria-label="清空搜索历史"
+            >
+              <TrashIcon class="w-4 h-4" />
+              清空
+            </button>
+            <button
+              v-if="sectionOverflowing"
+              class="text-primary-400 hover:text-primary-300 transition-colors px-2"
+              @click="sectionExpanded = !sectionExpanded"
+            >
+              {{ sectionExpanded ? "收起" : "展开" }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 热门搜索 -->
+        <div
+          v-if="activeHistoryTab === 'hot' && hasHotwords"
+          class="flex flex-wrap gap-2"
+          :class="sectionExpanded ? '' : 'max-h-[72px]'"
+        >
+          <button
+            v-for="(hotword, index) in hotwords"
+            :key="hotword.word"
+            class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full text-sm transition-colors"
+            @click="handleHotwordClick(hotword)"
+          >
+            <span
+              v-if="index < 3"
+              class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium"
+              :class="{
+                'bg-red-500 text-white': index === 0,
+                'bg-orange-500 text-white': index === 1,
+                'bg-yellow-500 text-white': index === 2,
+              }"
+            >
+              {{ index + 1 }}
+            </span>
+            {{ hotword.word }}
           </button>
         </div>
+
+        <!-- 搜索历史 -->
         <div
-          ref="historyRef"
+          v-if="activeHistoryTab === 'history' && hasHistory"
           class="flex flex-wrap gap-2 transition-all duration-300"
-          :class="historyExpanded ? '' : 'max-h-[72px] overflow-hidden'"
+          :class="sectionExpanded ? '' : 'max-h-[72px]'"
         >
           <button
             v-for="keyword in musicStore.searchHistory"
@@ -420,7 +524,7 @@ const getPic = (url: string) => {
               <div
                 class="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center flex-shrink-0"
               >
-                <MusicIcon class="w-5 h-5 text-primary-400" />
+                <MusicIcon class="w-6 h-6 text-primary-400" />
               </div>
               <div class="flex-1 min-w-0">
                 <h3 class="font-medium text-white truncate">最新音乐</h3>
@@ -457,7 +561,8 @@ const getPic = (url: string) => {
               <div
                 class="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary-500/30 transition-colors"
               >
-                <FolderKanban class="w-5 h-5 text-primary-400" />
+                <img v-if="cat.image" :src="cat.image" class="w-6 h-6" />
+                <FolderKanban v-else class="w-6 h-6 text-primary-400" />
               </div>
               <div class="flex-1 min-w-0">
                 <h3

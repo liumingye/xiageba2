@@ -321,13 +321,13 @@ const searchHtml = async (
 export async function testWebSearchConfig(
   config: any,
   keyword: string,
-): Promise<number> {
+): Promise<WebSearchResult[]> {
   if (config.type === "api") {
-    return (await searchApi(config, keyword)).length;
+    return await searchApi(config, keyword);
   } else if (config.type === "pansou") {
-    return (await searchPanSou(config, keyword)).length;
+    return await searchPanSou(config, keyword);
   } else {
-    return (await searchHtml(config, keyword)).length;
+    return await searchHtml(config, keyword);
   }
 }
 

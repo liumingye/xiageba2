@@ -17,13 +17,8 @@ interface Category {
 }
 
 const router = useRouter();
-const {
-  isLoggedIn,
-  logout,
-  checkLogin,
-  initialized,
-  getAuthHeaders,
-} = useAuth();
+const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
+  useAuth();
 
 const categories = ref<Category[]>([]);
 const currentPage = ref(1);
@@ -202,13 +197,17 @@ const deleteCategory = async (id: string) => {
         <table class="w-full table-auto">
           <thead class="bg-gray-800">
             <tr>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20"
+              >
                 ID
               </th>
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 名称
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-20"
+              >
                 排序
               </th>
               <th
@@ -232,7 +231,8 @@ const deleteCategory = async (id: string) => {
                   <div
                     class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center"
                   >
-                    <Tag class="w-5 h-5 text-gray-500" />
+                    <img v-if="cat.image" :src="cat.image" class="w-6 h-6" />
+                    <Tag v-else class="w-5 h-5 text-gray-500" />
                   </div>
                   <span class="text-white">{{ cat.name }}</span>
                 </div>

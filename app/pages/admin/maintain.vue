@@ -12,6 +12,7 @@ import {
   Link,
   Plus,
   Trash,
+  TrendingUp,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -62,6 +63,16 @@ const pancheckServers = ref<PanCheckServer[]>([]);
 const savingPancheck = ref(false);
 const savedPancheck = ref(false);
 
+interface HotWord {
+  word: string;
+  weight: number;
+  type: "music" | "resource";
+}
+
+const hotwords = ref<HotWord[]>([]);
+const savingHotwords = ref(false);
+const savedHotwords = ref(false);
+
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -74,6 +85,7 @@ onMounted(async () => {
   await loadRedisConfig();
   await loadAesConfig();
   await loadPancheckConfig();
+  await loadHotwordsConfig();
 });
 
 const loadRedisConfig = async () => {
@@ -196,6 +208,52 @@ const addPancheckServer = () => {
 
 const removePancheckServer = (index: number) => {
   pancheckServers.value.splice(index, 1);
+};
+
+const loadHotwordsConfig = async () => {
+  const res = await fetch("/api/admin/config/hotwords", {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+    return;
+  }
+  const data = await res.json();
+  hotwords.value = data.data || [];
+};
+
+const saveHotwordsConfig = async () => {
+  savingHotwords.value = true;
+  savedHotwords.value = false;
+
+  const res = await fetch("/api/admin/config/hotwords", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ hotwords: hotwords.value }),
+  });
+
+  savingHotwords.value = false;
+  if (res.ok) {
+    savedHotwords.value = true;
+    setTimeout(() => {
+      savedHotwords.value = false;
+    }, 2000);
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
+const addHotword = () => {
+  hotwords.value.push({ word: "", weight: 1, type: "music" });
+};
+
+const removeHotword = (index: number) => {
+  hotwords.value.splice(index, 1);
 };
 
 let timer: NodeJS.Timeout | null = null;
@@ -605,6 +663,102 @@ const clearISRCache = async (route?: string) => {
               class="text-gray-500 text-sm"
             >
               未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 热搜词配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">热搜词配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedHotwords }"
+            :disabled="savingHotwords"
+            @click="saveHotwordsConfig"
+          >
+            <Check v-if="savedHotwords" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedHotwords ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-orange-900/50 rounded-lg flex items-center justify-center"
+            >
+              <TrendingUp class="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <h3 class="text-white font-medium">热门搜索词</h3>
+              <p class="text-gray-500 text-sm">
+                配置首页热门搜索词，权重越高排名越靠前
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div
+              v-for="(hotword, index) in hotwords"
+              :key="index"
+              class="flex items-center gap-3"
+            >
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2"
+                    >搜索词</label
+                  >
+                  <input
+                    v-model="hotword.word"
+                    type="text"
+                    placeholder="输入搜索词"
+                    class="input-search"
+                  />
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">类型</label>
+                  <select
+                    v-model="hotword.type"
+                    class="input-search appearance-none cursor-pointer"
+                  >
+                    <option value="music">音乐</option>
+                    <option value="resource">资源</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">权重</label>
+                  <input
+                    v-model.number="hotword.weight"
+                    type="number"
+                    min="1"
+                    max="999"
+                    placeholder="1-999"
+                    class="input-search"
+                  />
+                </div>
+              </div>
+              <button
+                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
+                @click="removeHotword(index)"
+              >
+                <Trash class="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              @click="addHotword"
+            >
+              <Plus class="w-4 h-4" />
+              添加搜索词
+            </button>
+
+            <div
+              v-if="hotwords.length === 0"
+              class="text-gray-500 text-sm"
+            >
+              未配置热搜词，首页热门搜索区域将不显示
             </div>
           </div>
         </div>
