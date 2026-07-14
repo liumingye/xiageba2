@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import superagent, { Agent } from "superagent";
+import { HttpsAgent } from "agentkeepalive";
 
 import {
   XUNLEI_USER_BASE_URL,
@@ -59,8 +60,15 @@ export class XunleiClient {
 
     this.loadTokenFromFile();
 
+    const httpsAgent = new HttpsAgent({
+      maxSockets: 100,
+      maxFreeSockets: 10,
+      timeout: 60000, // active socket keepalive for 60 seconds
+      freeSocketTimeout: 30000, // free socket keepalive for 30 seconds
+    });
+
     this.agent = superagent
-      .agent()
+      .agent(httpsAgent as any)
       .timeout(15000)
       .set({
         "user-agent": this.config.userAgent,

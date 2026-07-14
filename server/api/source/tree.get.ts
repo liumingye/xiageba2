@@ -254,7 +254,10 @@ async function walkBaidu(
     if (a.isdir && !b.isdir) return -1;
     if (!a.isdir && b.isdir) return 1;
     // 同一类型按文件名排序
-    return a.server_filename.localeCompare(b.server_filename);
+    return a.server_filename.localeCompare(b.server_filename, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
   });
 
   for (let i = 0; i < items.length; i++) {

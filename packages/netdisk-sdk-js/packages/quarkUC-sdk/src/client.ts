@@ -1,5 +1,6 @@
 import superagent, { Agent, Request, Response } from "superagent";
 import { ArrayUtil, Check, CookieUtil } from "@netdisk-sdk/utils";
+import { HttpsAgent } from "agentkeepalive";
 
 import { CreateQuarkClientParam, CreateUCClientParam } from "./const";
 import { QuarkUCShareApi } from "./share_api";
@@ -62,7 +63,14 @@ export class QuarkUCClient {
       this.config = config;
     }
 
-    this.agent = (agent ?? superagent.agent())
+    const httpsAgent = new HttpsAgent({
+      maxSockets: 100,
+      maxFreeSockets: 10,
+      timeout: 60000, // active socket keepalive for 60 seconds
+      freeSocketTimeout: 30000, // free socket keepalive for 30 seconds
+    });
+
+    this.agent = (agent ?? superagent.agent(httpsAgent as any))
       .timeout(15000)
       .use((request: Request) => {
         // 监听cookie更新

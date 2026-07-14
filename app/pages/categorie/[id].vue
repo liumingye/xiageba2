@@ -170,7 +170,7 @@ const pages = computed(() => {
             <template v-if="item.menu">
               <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
               <pre
-                class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-36 overflow-auto text-gray-300"
+                class="bg-gray-700 p-2 rounded-sm text-xs border border-gray-600 max-h-36 overflow-auto text-gray-300"
                 >{{ item.menu }}</pre
               >
             </template>

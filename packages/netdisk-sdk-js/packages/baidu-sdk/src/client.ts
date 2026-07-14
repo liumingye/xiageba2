@@ -1,4 +1,5 @@
 import superagent, { Agent, Request } from "superagent";
+import { HttpsAgent } from "agentkeepalive";
 import { ITokenSource } from "./auth_client";
 import { throwError } from "./errors";
 import { BaiduFSOpenApi } from "./fs_openapi";
@@ -40,7 +41,15 @@ export class BaiduClient {
     };
 
     this.source = source;
-    this.agentApi = (agent ?? superagent.agent())
+
+    const httpsAgent = new HttpsAgent({
+      maxSockets: 100,
+      maxFreeSockets: 10,
+      timeout: 60000, // active socket keepalive for 60 seconds
+      freeSocketTimeout: 30000, // free socket keepalive for 30 seconds
+    });
+
+    this.agentApi = (agent ?? superagent.agent(httpsAgent as any))
       // 增加授权信息
       .timeout(15000)
       .use(authPlugin)

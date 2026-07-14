@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@netdisk-sdk/utils": "workspace:^",
+    "agentkeepalive": "^4.6.0",
     "error": "^10.4.0",
     "superagent": "^10.3.0"
   }

@@ -9,7 +9,7 @@ import {
 } from "#server/lib/pan";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
 
-const THIRTY_MINUTES = 30 * 60 * 1000;
+const THIRTY_MINUTES = 60 * 60 * 1000;
 const ONE_DAY = 24 * 60 * 60 * 1000; // ⚡ 1天的毫秒数
 const PAN_BATCH_LIMIT = 100;
 const LOCK_KEY = "lock:cron:clean-temp-sources";
@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
     const cutoffNormal = new Date(now - THIRTY_MINUTES);
     const cutoffForce = new Date(now - ONE_DAY); // ⚡ 超过1天的临界线
 
-    // 捞出所有超过 30 分钟的临时资源
+    // 捞出所有超过 THIRTY_MINUTES 分钟的临时资源
     const sources = await prisma.source.findMany({
       where: {
         isTemp: true,

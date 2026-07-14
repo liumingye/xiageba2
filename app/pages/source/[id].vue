@@ -199,7 +199,9 @@ onMounted(() => {
 
         <div v-else-if="source" class="space-y-6">
           <article class="card sm:p-6 p-3">
-            <header class="flex items-start gap-4 mb-4 border-b border-gray-800 pb-4">
+            <header
+              class="flex items-start gap-4 mb-4 border-b border-gray-800 pb-4"
+            >
               <div class="flex-1 min-w-0">
                 <h1 class="text-xl font-semibold text-white mb-2 line-clamp-2">
                   {{ source.title }}
@@ -226,12 +228,17 @@ onMounted(() => {
             <section v-if="source.menu">
               <div class="font-bold text-gray-300 mb-4 text-lg">文件内容:</div>
               <pre
-                class="bg-gray-700 p-2 rounded-sm text-sm border border-gray-600 max-h-56 overflow-auto"
+                class="bg-gray-700 p-2 rounded-sm text-xs border border-gray-600 max-h-56 overflow-auto"
                 >{{ source.menu }}</pre
               >
             </section>
 
-            <footer class="border-t border-gray-800 pt-6">
+            <footer
+              :class="{
+                'border-t border-gray-800 pt-6':
+                  source.description || source.menu,
+              }"
+            >
               <h3 class="font-bold text-gray-300 mb-4 text-lg">
                 获取下载链接:
               </h3>
