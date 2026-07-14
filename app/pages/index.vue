@@ -460,7 +460,7 @@ const getPic = (url: string) => {
         <div
           v-if="activeHistoryTab === 'hot' && hasHotwords"
           class="flex flex-wrap gap-2"
-          :class="sectionExpanded ? '' : 'max-h-[72px]'"
+          :class="sectionExpanded ? '' : 'max-h-[100px]'"
         >
           <button
             v-for="(hotword, index) in hotwords"
@@ -487,7 +487,7 @@ const getPic = (url: string) => {
         <div
           v-if="activeHistoryTab === 'history' && hasHistory"
           class="flex flex-wrap gap-2 transition-all duration-300"
-          :class="sectionExpanded ? '' : 'max-h-[72px]'"
+          :class="sectionExpanded ? '' : 'max-h-[100px]'"
         >
           <button
             v-for="keyword in musicStore.searchHistory"

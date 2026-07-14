@@ -618,7 +618,7 @@ const clearISRCache = async (route?: string) => {
             <div
               v-for="(server, index) in pancheckServers"
               :key="index"
-              class="flex items-start gap-3"
+              class="flex items-center gap-3"
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
