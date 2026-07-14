@@ -148,7 +148,8 @@ export default defineNuxtConfig({
       tasks: true,
     },
     scheduledTasks: {
-      "*/10 * * * *": ["source:clean"],
+      "*/10 * * * *": ["source:clean_temp"],
+      "*/5 * * * *": ["source:check_account"],
     },
   },
   vite: {

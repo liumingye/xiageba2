@@ -27,7 +27,7 @@ function safeParseFid(fidStr: string): string[] {
 
 export default defineTask({
   meta: {
-    name: "source:clean",
+    name: "source:clean_temp",
     description: "清理临时资源",
   },
   async run(): Promise<{
