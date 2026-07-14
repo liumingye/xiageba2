@@ -144,6 +144,12 @@ export default defineNuxtConfig({
         driver: "memory",
       },
     },
+    experimental: {
+      tasks: true,
+    },
+    scheduledTasks: {
+      "*/10 * * * *": ["source:clean"],
+    },
   },
   vite: {
     build: {
