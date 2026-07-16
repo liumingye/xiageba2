@@ -51,6 +51,9 @@ const treeModalContent = ref("");
 const treeModalLoading = ref(false);
 const treeModalError = ref("");
 
+const { currentText: funnyText, bindFetching } = useFunnyLoading();
+bindFetching([modalFetching, treeModalLoading]);
+
 const openTreeModal = async ({
   item,
   type,
@@ -923,7 +926,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
                   <p class="text-gray-400 text-sm">
-                    正在获取资源链接...<br />请耐心等待，这可能需要几秒钟
+                    {{ funnyText }}<br />请耐心等待，这可能需要几秒钟
                   </p>
                 </div>
                 <div v-else-if="modalError" class="text-center py-8">
@@ -1034,7 +1037,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-gray-400 text-sm">获取中...</p>
+                  <p class="text-gray-400 text-sm">{{ funnyText }}</p>
                 </div>
                 <div v-else-if="treeModalError" class="text-center py-8">
                   <p class="text-red-400 text-sm">{{ treeModalError }}</p>

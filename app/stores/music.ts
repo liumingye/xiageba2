@@ -1,6 +1,7 @@
-import { defineStore, skipHydrate } from "pinia";
+import { defineStore, skipHydrate, storeToRefs } from "pinia";
 import { ref } from "vue";
 import { useLocalStorage } from "@vueuse/core";
+export { storeToRefs };
 
 export interface DownloadOption {
   quality: string;
@@ -20,6 +21,10 @@ export interface Music {
 
 export const useMusicStore = defineStore("music", () => {
   const searchHistory = useLocalStorage<string[]>("searchHistory", []);
+  const searchType = useLocalStorage<"resource" | "music">(
+    "searchType",
+    "music",
+  );
   const currentMusic = ref<Music | null>(null);
 
   const addSearchHistory = (keyword: string) => {
@@ -42,14 +47,12 @@ export const useMusicStore = defineStore("music", () => {
     currentMusic.value = music;
   };
 
-  const searchType = ref<"resource" | "music">("music");
-
   return {
     searchHistory: skipHydrate(searchHistory),
+    searchType: skipHydrate(searchType),
     currentMusic,
     addSearchHistory,
     clearSearchHistory,
-    searchType,
     setCurrentMusic,
   };
 });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useMusicStore } from "~/stores/music";
+import { useMusicStore, storeToRefs } from "~/stores/music";
 import { Search, X, Music, Video, FolderOpen } from "@lucide/vue";
 
 const props = defineProps<{
@@ -16,8 +16,19 @@ const emit = defineEmits<{
 const router = useRouter();
 const musicStore = useMusicStore();
 
+const { searchType } = storeToRefs(musicStore);
+
 const searchQuery = ref(props.modelValue || "");
 const isFocused = ref(false);
+const isClientMounted = ref(false);
+const searchInput = ref<HTMLInputElement>();
+
+onMounted(() => {
+  isClientMounted.value = true;
+  if (document.activeElement === searchInput.value) {
+    isFocused.value = true;
+  }
+});
 
 watch(
   () => props.modelValue,
@@ -45,9 +56,9 @@ const handleSearch = (keywords?: string) => {
   }
   musicStore.addSearchHistory(q);
   emit("search", q);
-  if (currentSearchType.value === "music") {
+  if (searchType.value === "music") {
     router.push(`/search?type=music&q=${encodeURIComponent(q)}`);
-  } else if (currentSearchType.value === "resource") {
+  } else if (searchType.value === "resource") {
     router.push(`/search?type=resource&q=${encodeURIComponent(q)}`);
   }
 };
@@ -62,23 +73,6 @@ const clearInput = () => {
   searchQuery.value = "";
   emit("update:modelValue", "");
 };
-
-const currentSearchType = ref(musicStore.searchType);
-
-watch(
-  () => musicStore.searchType,
-  (val) => {
-    currentSearchType.value = val;
-  },
-);
-
-const searchInput = ref<HTMLInputElement>();
-
-onMounted(() => {
-  if (document.activeElement === searchInput.value) {
-    isFocused.value = true;
-  }
-});
 
 defineExpose({
   handleSearch,
@@ -103,9 +97,11 @@ defineExpose({
           :maxlength="MAX_KEYWORD_LENGTH"
           type="text"
           :placeholder="
-            currentSearchType === 'music'
-              ? '搜你想要的音乐'
-              : '搜你想要的网盘资源'
+            isClientMounted
+              ? searchType === 'music'
+                ? '搜你想要的音乐'
+                : '搜你想要的网盘资源'
+              : ''
           "
           class="flex-1 bg-transparent text-white text-lg outline-none placeholder-white/50"
           @input="updateSearchQuery"
@@ -129,22 +125,28 @@ defineExpose({
         class="bottom-3 left-4 right-4 absolute flex items-center justify-center"
       >
         <div class="flex flex-1">
-          <button
-            class="icon-btn"
-            :class="{ primary: currentSearchType === 'music' }"
-            @click="currentSearchType = 'music'"
-            title="搜索音乐"
-          >
-            <Music class="w-5 h-5" />
-          </button>
-          <button
-            class="icon-btn ml-2"
-            :class="{ primary: currentSearchType === 'resource' }"
-            @click="currentSearchType = 'resource'"
-            title="搜索资源"
-          >
-            <FolderOpen class="w-5 h-5" />
-          </button>
+          <template v-if="!isClientMounted">
+            <div class="icon-btn placeholder-skeleton"></div>
+            <div class="icon-btn placeholder-skeleton ml-2"></div>
+          </template>
+          <template v-else>
+            <button
+              class="icon-btn"
+              :class="{ primary: searchType === 'music' }"
+              @click="searchType = 'music'"
+              title="搜索音乐"
+            >
+              <Music class="w-5 h-5" />
+            </button>
+            <button
+              class="icon-btn ml-2"
+              :class="{ primary: searchType === 'resource' }"
+              @click="searchType = 'resource'"
+              title="搜索资源"
+            >
+              <FolderOpen class="w-5 h-5" />
+            </button>
+          </template>
         </div>
         <button
           class="bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 transition-all duration-200"
@@ -179,5 +181,8 @@ defineExpose({
 .icon-btn.primary {
   background-color: rgb(246, 248, 255);
   color: #3b82f6;
+}
+.placeholder-skeleton {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 </style>
