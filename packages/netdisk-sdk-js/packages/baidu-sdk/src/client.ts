@@ -55,19 +55,10 @@ export class BaiduClient {
       agent,
     } = config;
 
-    const getAccessToken = () => {
-      return this.accessToken;
-    };
-
     const authPlugin = (request: Request) => {
       const end = request.end;
       request.end = async function () {
         this.set("Cookie", source);
-        // openapi 需要 accessToken
-        const accessToken = getAccessToken();
-        if (accessToken) {
-          this.query({ access_token: accessToken });
-        }
         // @ts-ignore
         return end.apply(this, arguments);
       };

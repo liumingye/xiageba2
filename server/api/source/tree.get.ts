@@ -218,6 +218,7 @@ async function buildBaiduTree(shareUrl: string): Promise<string> {
       root: 1,
     });
   } catch (err) {
+    console.error("获取分享目录失败:", err);
     throw createError({ statusCode: 404, message: "分享已过期" });
   }
 
@@ -298,6 +299,7 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
       limit: 100,
     });
   } catch (e) {
+    console.error("获取分享详情失败:", e);
     throw createError({ statusCode: 404, message: "分享已过期" });
   }
 

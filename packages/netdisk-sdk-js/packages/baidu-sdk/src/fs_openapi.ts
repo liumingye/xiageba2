@@ -53,6 +53,7 @@ export class BaiduFSOpenApi {
     const md = method.toLowerCase();
     if (url.startsWith("/")) url = this.prefix + url;
     const request = (this.client.agentApi as any)[md](url) as Request;
+    request.query({ access_token: this.client.accessToken });
     return request;
   }
 
@@ -161,10 +162,9 @@ export type IOpnApiQuota = {
 };
 BaiduFSOpenApi.prototype.quota = async function () {
   await this.ensureToken();
-  const { body: userinfo } = await this.request(
-    Method.GET,
-    "/api/quota",
-  ).query({ checkfree: "1", checkexpire: "1" });
+  const { body: userinfo } = await this.request(Method.GET, "/api/quota").query(
+    { checkfree: "1", checkexpire: "1" },
+  );
   return userinfo;
 };
 
@@ -231,10 +231,7 @@ export type IOpenApiLocateUploadResult<Server = { server: string }> = {
 };
 BaiduFSOpenApi.prototype.locateupload = async function (path, uploadid) {
   await this.ensureToken();
-  const { body } = await this.request(
-    Method.POST,
-    "/rest/2.0/pcs/file",
-  ).query({
+  const { body } = await this.request(Method.POST, "/rest/2.0/pcs/file").query({
     method: "locateupload",
     appid: 250528,
     upload_version: "2.0",
