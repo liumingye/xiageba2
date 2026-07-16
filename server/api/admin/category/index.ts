@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
   if (method === "POST") {
     const body = await readBody(event);
-    const { name, image, sort } = body;
+    const { name, image, sort, isShow } = body;
 
     if (!name?.trim()) {
       throw createError({ statusCode: 400, message: "分类名称不能为空" });
@@ -40,6 +40,7 @@ export default defineEventHandler(async (event) => {
         name: name.trim(),
         image: image || "",
         sort: sort ? parseInt(sort) || 0 : 0,
+        isShow: isShow !== undefined ? isShow : true,
       },
     });
 

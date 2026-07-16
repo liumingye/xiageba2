@@ -18,19 +18,22 @@ export default defineEventHandler(async (event) => {
 
   if (method === "PUT") {
     const body = await readBody(event);
-    const { name, image, sort } = body;
+    const { name, image, sort, isShow } = body;
 
     if (!name?.trim()) {
       throw createError({ statusCode: 400, message: "分类名称不能为空" });
     }
 
+    const data: any = {
+      name: name.trim(),
+      image: image || "",
+    };
+    if (sort !== undefined) data.sort = parseInt(sort) || 0;
+    if (isShow !== undefined) data.isShow = isShow;
+
     const category = await prisma.category.update({
       where: { id },
-      data: {
-        name: name.trim(),
-        image: image || "",
-        sort: sort !== undefined ? parseInt(sort) || 0 : undefined,
-      },
+      data,
     });
 
     return { success: true, data: category };

@@ -12,6 +12,7 @@ interface Category {
   name: string;
   image: string;
   sort: number;
+  isShow: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,10 +31,12 @@ const showEditModal = ref(false);
 const newName = ref("");
 const newImage = ref("");
 const newSort = ref(0);
+const newIsShow = ref(true);
 const editId = ref("");
 const editName = ref("");
 const editImage = ref("");
 const editSort = ref(0);
+const editIsShow = ref(true);
 const error = ref("");
 
 const loadCategories = async () => {
@@ -76,6 +79,7 @@ const openAddModal = () => {
   newName.value = "";
   newImage.value = "";
   newSort.value = 0;
+  newIsShow.value = true;
   error.value = "";
 };
 
@@ -89,6 +93,7 @@ const openEditModal = (cat: Category) => {
   editName.value = cat.name;
   editImage.value = cat.image;
   editSort.value = cat.sort;
+  editIsShow.value = cat.isShow;
   error.value = "";
 };
 
@@ -112,6 +117,7 @@ const addCategory = async () => {
       name: newName.value,
       image: newImage.value,
       sort: newSort.value,
+      isShow: newIsShow.value,
     }),
   });
 
@@ -144,6 +150,7 @@ const saveEdit = async () => {
       name: editName.value,
       image: editImage.value,
       sort: editSort.value,
+      isShow: editIsShow.value,
     }),
   });
 
@@ -213,6 +220,11 @@ const deleteCategory = async (id: string) => {
               <th
                 class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24"
               >
+                显示
+              </th>
+              <th
+                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24"
+              >
                 操作
               </th>
             </tr>
@@ -238,6 +250,14 @@ const deleteCategory = async (id: string) => {
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-300">{{ cat.sort }}</td>
+              <td class="px-4 py-3 text-center">
+                <span
+                  class="inline-flex items-center px-2 py-1 rounded-sm text-xs"
+                  :class="cat.isShow ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-500'"
+                >
+                  {{ cat.isShow ? "显示" : "隐藏" }}
+                </span>
+              </td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-2">
                   <button
@@ -325,6 +345,15 @@ const deleteCategory = async (id: string) => {
                   class="input-search"
                 />
               </div>
+              <div class="flex items-center gap-2">
+                <input
+                  id="newIsShow"
+                  v-model="newIsShow"
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                />
+                <label for="newIsShow" class="text-gray-300 text-sm">显示该分类</label>
+              </div>
               <div class="flex gap-4">
                 <button
                   class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
@@ -392,6 +421,15 @@ const deleteCategory = async (id: string) => {
                   placeholder="排序值，数字越小越靠前"
                   class="input-search"
                 />
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  id="editIsShow"
+                  v-model="editIsShow"
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                />
+                <label for="editIsShow" class="text-gray-300 text-sm">显示该分类</label>
               </div>
               <div class="flex gap-4">
                 <button

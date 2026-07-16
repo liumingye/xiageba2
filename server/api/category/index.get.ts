@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const withLatest = query.withLatest === "true";
 
   const categories = await prisma.category.findMany({
+    where: { isShow: true },
     select: { id: true, name: true, image: true },
     orderBy: [{ sort: "asc" }, { id: "asc" }],
   });

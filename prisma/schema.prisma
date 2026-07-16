@@ -59,6 +59,7 @@ model Category {
   name      String
   image     String    @default("")
   sort      Int       @default(0)
+  isShow    Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
