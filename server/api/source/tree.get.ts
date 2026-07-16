@@ -15,7 +15,7 @@ import {
   getUCClient,
   getBaiduClient,
   getXunleiClient,
-} from "#server/lib/pan";
+} from "#server/lib/pan-instance";
 
 const MAX_DEPTH = 5;
 

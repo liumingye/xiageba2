@@ -1,5 +1,5 @@
 import { getConfigValues, setConfigValues } from "#server/lib/configCache";
-import { cleanClients } from "#server/lib/pan";
+import { cleanClients } from "#server/lib/pan-instance";
 
 const ACCOUNT_KEYS = [
   "quark_cookie",

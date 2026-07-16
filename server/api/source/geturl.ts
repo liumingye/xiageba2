@@ -8,7 +8,7 @@ import {
   getUCClient,
   getBaiduClient,
   getXunleiClient,
-} from "#server/lib/pan";
+} from "#server/lib/pan-instance";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 

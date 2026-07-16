@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { prisma } from "#server/lib/prisma";
-import { getPanCheckServers } from "#server/lib/pancheck";
+import { getPanCheckServers } from "#server/lib/pan-check";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");

@@ -3,7 +3,7 @@ import {
   getUCClient,
   getBaiduClient,
   getXunleiClient,
-} from "#server/lib/pan";
+} from "#server/lib/pan-instance";
 import "dotenv/config";
 import axios from "axios";
 
@@ -60,6 +60,7 @@ export default defineTask({
     try {
       const client2 = await getBaiduClient();
       await client2.fsApi.list({ dir: "/" });
+      await client2.fsOpenApi.listall({ path: "/", start: 0 });
     } catch (error: any) {
       sendNotice("百度网盘账号失效", error.message);
     }

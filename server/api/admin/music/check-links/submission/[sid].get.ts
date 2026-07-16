@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { getPanCheckServers } from "#server/lib/pancheck";
+import { getPanCheckServers } from "#server/lib/pan-check";
 
 export default defineEventHandler(async (event) => {
   const submissionId = getRouterParam(event, "sid");

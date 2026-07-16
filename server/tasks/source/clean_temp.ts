@@ -6,7 +6,7 @@ import {
   getUCClient,
   getBaiduClient,
   getXunleiClient,
-} from "#server/lib/pan";
+} from "#server/lib/pan-instance";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
 
 const THIRTY_MINUTES = 60 * 60 * 1000;

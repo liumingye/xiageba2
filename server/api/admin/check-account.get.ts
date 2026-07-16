@@ -3,7 +3,7 @@ import {
   getUCClient,
   getBaiduClient,
   getXunleiClient,
-} from "#server/lib/pan";
+} from "#server/lib/pan-instance";
 
 const TYPE_NAMES: Record<string, string> = {
   quark: "夸克网盘",

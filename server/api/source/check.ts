@@ -5,7 +5,7 @@ import {
   submitCheckRequest,
   getCheckResult,
   getPanCheckServers,
-} from "#server/lib/pancheck";
+} from "#server/lib/pan-check";
 
 const SUBMISSION_CACHE_TTL = 600; // 10 分钟
 
