@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import superagent, { Agent } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
 
@@ -13,19 +11,20 @@ import { XunleiShareApi } from "./share_api";
 import { XunleiFSApi } from "./fs_api";
 import { IXunleiTokenData, IXunleiCaptchaData, IXunleiMethod } from "./types";
 
+export interface IXunleiTokenInfo {
+  refreshToken: string;
+  accessToken: string;
+  expiresAt: number;
+}
+
 export interface IXunleiClientConfig {
   refreshToken: string;
+  accessToken?: string;
+  expiresAt?: number;
   clientId?: string;
   deviceId?: string;
   userAgent?: string;
-  tokenCachePath?: string;
-  onRefreshToken?: (refreshToken: string) => void;
-}
-
-interface ICachedToken {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
+  onRefreshToken?: (tokenInfo: IXunleiTokenInfo) => void;
 }
 
 interface ICachedCaptcha {
@@ -37,13 +36,17 @@ interface ICachedCaptcha {
 export class XunleiClient {
   agent: Agent;
   agentApi: Agent;
-  config: Required<Omit<IXunleiClientConfig, "onRefreshToken">> &
+  config: Required<Omit<IXunleiClientConfig, "onRefreshToken" | "accessToken" | "expiresAt">> &
     Pick<IXunleiClientConfig, "onRefreshToken">;
 
   shareApi: XunleiShareApi;
   fsApi: XunleiFSApi;
 
-  private token?: ICachedToken;
+  private token?: {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: number;
+  };
   private captchas = new Map<string, ICachedCaptcha>();
 
   constructor(config: IXunleiClientConfig) {
@@ -52,13 +55,16 @@ export class XunleiClient {
       clientId: config.clientId || DEFAULT_XUNLEI_CONFIG.clientId,
       deviceId: config.deviceId || DEFAULT_XUNLEI_CONFIG.deviceId,
       userAgent: config.userAgent || DEFAULT_XUNLEI_CONFIG.userAgent,
-      tokenCachePath:
-        config.tokenCachePath ||
-        path.resolve(process.cwd(), ".xunlei-token-cache.json"),
       onRefreshToken: config.onRefreshToken,
     };
 
-    this.loadTokenFromFile();
+    if (config.accessToken && config.expiresAt && config.expiresAt > Date.now()) {
+      this.token = {
+        accessToken: config.accessToken,
+        refreshToken: config.refreshToken,
+        expiresAt: config.expiresAt,
+      };
+    }
 
     const httpsAgent = new HttpsAgent({
       maxSockets: 100,
@@ -110,14 +116,18 @@ export class XunleiClient {
       throw AuthError.create("xunlei token response missing access_token");
     }
 
+    const expiresAt = now + (data.expires_in - 60) * 1000;
     this.config.refreshToken = data.refresh_token;
     this.token = {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
-      expiresAt: now + (data.expires_in - 60) * 1000,
+      expiresAt,
     };
-    this.saveTokenToFile();
-    this.config.onRefreshToken?.(data.refresh_token);
+    this.config.onRefreshToken?.({
+      refreshToken: data.refresh_token,
+      accessToken: data.access_token,
+      expiresAt,
+    });
     return data.access_token;
   }
 
@@ -164,41 +174,6 @@ export class XunleiClient {
       expiresAt: now + (data.expires_in - 10) * 1000,
     });
     return data.captcha_token;
-  }
-
-  private async loadTokenFromFile(): Promise<void> {
-    try {
-      const raw = fs.readFileSync(this.config.tokenCachePath, "utf8");
-      const data = JSON.parse(raw) as ICachedToken;
-      if (
-        data?.accessToken &&
-        data?.refreshToken &&
-        typeof data?.expiresAt === "number" &&
-        data.expiresAt > Date.now()
-      ) {
-        this.token = data;
-        this.config.refreshToken = data.refreshToken;
-      }
-    } catch {
-      // 缓存文件不存在或解析失败时忽略，使用传入的 refreshToken 重新获取
-    }
-  }
-
-  private saveTokenToFile(): void {
-    if (!this.token) return;
-    try {
-      const dir = path.dirname(this.config.tokenCachePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      fs.writeFileSync(
-        this.config.tokenCachePath,
-        JSON.stringify(this.token, null, 2),
-        "utf8",
-      );
-    } catch {
-      // 写入失败时静默处理，不影响主流程
-    }
   }
 
   async request<T = any>(

@@ -1,14 +1,26 @@
 import superagent, { Agent, Request } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
-import { ITokenSource } from "./auth_client";
 import { throwError } from "./errors";
 import { BaiduFSOpenApi } from "./fs_openapi";
 import { BaiduFSApi } from "./fs_api";
 import { BaiduShareFSApi } from "./fs_share_api";
 
+export interface IBaiduRefreshTokenInfo {
+  refreshToken: string;
+  accessToken: string;
+  expiresAt: number;
+}
+
 export class BaiduClient {
   agentApi: Agent;
-  source: string | ITokenSource;
+  source: string;
+
+  public accessToken: string | null = null;
+  public refreshToken: string | null = null;
+  public expiresAt: number | null = null;
+  public clientId: string | null = null;
+  public clientSecret: string | null = null;
+  public onRefreshToken?: (tokenInfo: IBaiduRefreshTokenInfo) => void;
 
   fsApi: BaiduFSApi;
   fsShareApi: BaiduShareFSApi;
@@ -22,18 +34,39 @@ export class BaiduClient {
     sk: string | null;
   } = { sk: null };
 
-  constructor(cookie: string, agent?: Agent);
-  constructor(tokenSource: ITokenSource, agent?: Agent);
+  constructor(config: {
+    source: string;
+    clientId?: string;
+    clientSecret?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number;
+    onRefreshToken?: (tokenInfo: IBaiduRefreshTokenInfo) => void;
+    agent?: Agent;
+  }) {
+    const {
+      source,
+      clientId,
+      clientSecret,
+      accessToken,
+      refreshToken,
+      expiresAt,
+      onRefreshToken,
+      agent,
+    } = config;
 
-  constructor(source: any, agent?: Agent) {
+    const getAccessToken = () => {
+      return this.accessToken;
+    };
+
     const authPlugin = (request: Request) => {
       const end = request.end;
       request.end = async function () {
-        if (typeof source == "string") {
-          this.set("Cookie", source);
-        } else {
-          const { accessToken } = await source.getToken();
-          this.query({ access_token: accessToken }).set("Cookie", "BDUID=0");
+        this.set("Cookie", source);
+        // openapi 需要 accessToken
+        const accessToken = getAccessToken();
+        if (accessToken) {
+          this.query({ access_token: accessToken });
         }
         // @ts-ignore
         return end.apply(this, arguments);
@@ -41,6 +74,12 @@ export class BaiduClient {
     };
 
     this.source = source;
+    this.clientId = clientId ?? null;
+    this.clientSecret = clientSecret ?? null;
+    this.onRefreshToken = onRefreshToken;
+    this.accessToken = accessToken ?? null;
+    this.refreshToken = refreshToken ?? null;
+    this.expiresAt = expiresAt ?? null;
 
     const httpsAgent = new HttpsAgent({
       maxSockets: 100,
@@ -61,6 +100,13 @@ export class BaiduClient {
     this.fsShareApi = new BaiduShareFSApi(this);
     this.fsYouthApi = new BaiduFSApi(this, "https://pan.baidu.com/youth");
     this.fsOpenApi = new BaiduFSOpenApi(this);
+  }
+
+  _onRefreshToken(tokenInfo: IBaiduRefreshTokenInfo) {
+    this.accessToken = tokenInfo.accessToken;
+    this.refreshToken = tokenInfo.refreshToken;
+    this.expiresAt = tokenInfo.expiresAt;
+    this.onRefreshToken?.(tokenInfo);
   }
 
   public async init() {
@@ -139,7 +185,8 @@ export class BaiduClient {
       if (typeof this.source === "string") {
         headers["cookie"] = this.source;
       } else {
-        const { accessToken } = (await this.source?.getToken()) || {};
+        const { accessToken } =
+          (await this.source?.getToken()) || this.accessToken || {};
         const search = url.searchParams;
         search.set("access_token", accessToken);
         url.search = search.toString();

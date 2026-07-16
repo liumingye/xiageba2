@@ -58,7 +58,7 @@
 | 数据库 | PostgreSQL 16+ |
 | 中文分词 | @node-rs/jieba 2.x |
 | 缓存 | Redis (ioredis) |
-| 网盘 SDK | 自研 workspace 包（百度 / 夸克+UC / 迅雷） |
+| 网盘 SDK | workspace 包（百度 / 夸克+UC / 迅雷） |
 | 二维码 | qrcode |
 | HTML 解析 | cheerio |
 | 运行时 | Node.js 20+ |

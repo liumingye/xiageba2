@@ -39,8 +39,6 @@ const navigate = (path: string) => {
 const toggleResource = () => {
   resourceOpen.value = !resourceOpen.value;
 };
-
-
 </script>
 
 <template>
@@ -178,7 +176,7 @@ const toggleResource = () => {
         @click="navigate('/admin/maintain')"
       >
         <Settings class="w-5 h-5" />
-        系统维护
+        系统配置
       </button>
     </div>
   </nav>

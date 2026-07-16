@@ -1,12 +1,29 @@
-import { setConfigValue } from "#server/lib/configCache";
-import { prisma } from "#server/lib/prisma";
+import { setConfigValues } from "#server/lib/configCache";
 
-export const updateXunleiRefreshToken = async (refreshToken: string) => {
-  await prisma.config.update({
-    where: { key: "xunlei_refresh_token" },
-    data: { value: refreshToken },
-  });
-  setConfigValue("xunlei_refresh_token", refreshToken);
+interface TokenInfo {
+  refreshToken: string;
+  accessToken: string;
+  expiresAt: number;
+}
+
+export const updateBaiduRefreshToken = async (tokenInfo: TokenInfo) => {
+  const { refreshToken, accessToken, expiresAt } = tokenInfo;
+  const configs = [
+    { key: "baidu_refresh_token", value: refreshToken },
+    { key: "baidu_access_token", value: accessToken },
+    { key: "baidu_expires_at", value: String(expiresAt) },
+  ];
+  await setConfigValues(configs);
+};
+
+export const updateXunleiRefreshToken = async (tokenInfo: TokenInfo) => {
+  const { refreshToken, accessToken, expiresAt } = tokenInfo;
+  const configs = [
+    { key: "xunlei_refresh_token", value: refreshToken },
+    { key: "xunlei_access_token", value: accessToken },
+    { key: "xunlei_expires_at", value: String(expiresAt) },
+  ];
+  await setConfigValues(configs);
 };
 
 // IP字符串转数字

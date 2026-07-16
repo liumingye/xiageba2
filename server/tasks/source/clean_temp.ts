@@ -201,9 +201,17 @@ export default defineTask({
             }
 
             if (allPanPaths.length > 0) {
-              await client.fsApi.filemanager("delete", {
-                filelist: allPanPaths,
-              } as any);
+              // 优先使用OpenAPI删除，不需要验证码
+              if (client.accessToken) {
+                await client.fsOpenApi.filemanager("delete", {
+                  filelist: allPanPaths,
+                  async: 0,
+                });
+              } else {
+                await client.fsApi.filemanager("delete", {
+                  filelist: allPanPaths,
+                } as any);
+              }
               successfullyDeletedDbIds.push(...validChunkDbIds);
             } else {
               successfullyDeletedDbIds.push(...chunk.map((c) => c.id));

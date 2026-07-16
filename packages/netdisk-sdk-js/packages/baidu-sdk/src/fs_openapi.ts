@@ -8,6 +8,7 @@ import { BaiduClient } from "./client";
 import type { ReadableStream } from "stream/web";
 import { ProgressEvent, Request } from "superagent";
 import { FileCategory, IFile, ResultList } from "./types";
+import superagent from "superagent";
 
 export class BaiduFSOpenApi {
   prefix = "https://pan.baidu.com";
@@ -16,7 +17,39 @@ export class BaiduFSOpenApi {
   constructor(client: BaiduClient) {
     this.client = client;
   }
-  request(method: Method, url: string) {
+
+  async refreshToken(): Promise<void> {
+    const { clientId, clientSecret, refreshToken } = this.client;
+    if (!clientId || !clientSecret || !refreshToken) {
+      return;
+    }
+
+    const { body } = await superagent
+      .get("https://openapi.baidu.com/oauth/2.0/token")
+      .query({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+      });
+
+    const expiresAt = Date.now() + (body.expires_in - 60) * 1000;
+    this.client._onRefreshToken({
+      accessToken: body.access_token,
+      refreshToken: body.refresh_token,
+      expiresAt,
+    });
+  }
+
+  async ensureToken(): Promise<void> {
+    const { expiresAt } = this.client;
+    if (expiresAt && expiresAt > Date.now()) {
+      return;
+    }
+    await this.refreshToken();
+  }
+
+  request(method: Method, url: string): Request {
     const md = method.toLowerCase();
     if (url.startsWith("/")) url = this.prefix + url;
     const request = (this.client.agentApi as any)[md](url) as Request;
@@ -108,6 +141,7 @@ export type IOpenApiUserInfo = {
   vip_type: number;
 };
 BaiduFSOpenApi.prototype.userInfo = async function () {
+  await this.ensureToken();
   const { body: userinfo } = await this.request(
     Method.GET,
     "/rest/2.0/xpan/nas",
@@ -126,13 +160,16 @@ export type IOpnApiQuota = {
   expire: boolean;
 };
 BaiduFSOpenApi.prototype.quota = async function () {
-  const { body: userinfo } = await this.request(Method.GET, "/api/quota").query(
-    { checkfree: "1", checkexpire: "1" },
-  );
+  await this.ensureToken();
+  const { body: userinfo } = await this.request(
+    Method.GET,
+    "/api/quota",
+  ).query({ checkfree: "1", checkexpire: "1" });
   return userinfo;
 };
 
 BaiduFSOpenApi.prototype.xpanfile = async function (method, query, data) {
+  await this.ensureToken();
   const { body } = await this.request(Method.POST, "/rest/2.0/xpan/file")
     .type(ContentType.FormUrlencoded)
     .query({ method, ...query })
@@ -140,6 +177,7 @@ BaiduFSOpenApi.prototype.xpanfile = async function (method, query, data) {
   return body;
 };
 BaiduFSOpenApi.prototype.xpanmultimedia = async function (method, query) {
+  await this.ensureToken();
   const { body } = await this.request(Method.POST, "/rest/2.0/xpan/multimedia")
     .type(ContentType.FormUrlencoded)
     .query({ method, ...query })
@@ -154,14 +192,14 @@ export type IOpenApiFileManagerParam<FileList = any> = {
   /** 全局ondup,遇到重复文件的处理策略,
    * fail(默认，直接返回失败)、newcopy(重命名文件)、overwrite(覆盖文件)、skip（跳过文件）
    */
-  ondup: "fail" | "newcopy" | "overwrite" | "skip";
+  ondup?: "fail" | "newcopy" | "overwrite" | "skip";
   filelist: FileList;
 };
 export type IOpenApiFileManagerFileListTypeMap = {
   copy: { path: string; dest: string; newname: string };
   move: { path: string; dest: string; newname: string };
   rename: { path: string; newname: string };
-  delete: { filelist: string[] };
+  delete: string[];
 };
 export type IOpenApiFileManagerResult = {
   taskid: number;
@@ -192,7 +230,11 @@ export type IOpenApiLocateUploadResult<Server = { server: string }> = {
   servers: Server[];
 };
 BaiduFSOpenApi.prototype.locateupload = async function (path, uploadid) {
-  const { body } = await this.request(Method.POST, "/rest/2.0/pcs/file").query({
+  await this.ensureToken();
+  const { body } = await this.request(
+    Method.POST,
+    "/rest/2.0/pcs/file",
+  ).query({
     method: "locateupload",
     appid: 250528,
     upload_version: "2.0",
@@ -320,6 +362,7 @@ BaiduFSOpenApi.prototype.updatePart = async function (
   progress,
   serverUrl = "https://c.pcs.baidu.com",
 ) {
+  await this.ensureToken();
   const { body } = await this.request(
     Method.POST,
     serverUrl + "/rest/2.0/pcs/superfile2",

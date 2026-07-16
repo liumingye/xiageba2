@@ -2,7 +2,11 @@ import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { getConfigValues } from "./configCache";
-import { updateXunleiRefreshToken } from "#server/utils/source";
+import {
+  updateXunleiRefreshToken,
+  updateBaiduRefreshToken,
+} from "#server/utils/source";
+import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "~~/server/api/const";
 
 // 客户端过期时间，单位：小时
 const CLIENT_EXPIRE_HOURS = 0.5;
@@ -83,7 +87,12 @@ export async function getBaiduClient(force?: boolean) {
   if (!force && baiduClient && !isClientExpired(baiduClientCreatedAt)) {
     return baiduClient;
   }
-  const config = await getConfigValues(["baidu_cookie"]);
+  const config = await getConfigValues([
+    "baidu_cookie",
+    "baidu_access_token",
+    "baidu_refresh_token",
+    "baidu_expires_at",
+  ]);
   const cookie = config.baidu_cookie;
 
   if (!cookie) {
@@ -94,7 +103,17 @@ export async function getBaiduClient(force?: boolean) {
   }
 
   try {
-    baiduClient = new BaiduClient(cookie);
+    baiduClient = new BaiduClient({
+      source: cookie,
+      clientId: BAIDU_CLIENT_ID,
+      clientSecret: BAIDU_CLIENT_SECRET,
+      accessToken: config.baidu_access_token || undefined,
+      refreshToken: config.baidu_refresh_token || undefined,
+      expiresAt: config.baidu_expires_at
+        ? parseInt(config.baidu_expires_at)
+        : undefined,
+      onRefreshToken: updateBaiduRefreshToken,
+    });
     await baiduClient.init();
     baiduClientCreatedAt = Date.now();
     return baiduClient;
@@ -109,6 +128,8 @@ export async function getXunleiClient(force?: boolean) {
   }
   const config = await getConfigValues([
     "xunlei_refresh_token",
+    "xunlei_access_token",
+    "xunlei_expires_at",
     "xunlei_temp_dir",
   ]);
   const refreshToken = config.xunlei_refresh_token;
@@ -120,9 +141,16 @@ export async function getXunleiClient(force?: boolean) {
     });
   }
 
+  const accessToken = config.xunlei_access_token || undefined;
+  const expiresAt = config.xunlei_expires_at
+    ? parseInt(config.xunlei_expires_at)
+    : undefined;
+
   try {
     xunleiClient = new XunleiClient({
       refreshToken,
+      accessToken,
+      expiresAt,
       onRefreshToken: updateXunleiRefreshToken,
     });
     xunleiClientCreatedAt = Date.now();

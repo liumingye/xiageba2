@@ -5,10 +5,15 @@ const ACCOUNT_KEYS = [
   "quark_cookie",
   "quark_temp_dir",
   "baidu_cookie",
+  "baidu_refresh_token",
+  // "baidu_access_token",
+  // "baidu_expires_at",
   "baidu_temp_dir",
   "uc_cookie",
   "uc_temp_dir",
   "xunlei_refresh_token",
+  // "xunlei_access_token",
+  // "xunlei_expires_at",
   "xunlei_temp_dir",
 ];
 
