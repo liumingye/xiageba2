@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
       description: true,
       menu: true,
       url: true,
+      isSelf: true,
     },
     where: { id },
   });

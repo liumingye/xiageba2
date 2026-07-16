@@ -375,7 +375,7 @@ const getPic = (url: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-8 px-4">
+  <div class="min-h-screen bg-dark-300 py-8 px-2 sm:px-4">
     <div class="max-w-4xl mx-auto">
       <header class="text-center mb-6">
         <div class="flex items-center justify-center gap-3 mb-6">
@@ -409,7 +409,7 @@ const getPic = (url: string) => {
         <div class="flex items-center border-b border-gray-800 mb-4">
           <button
             v-if="hasHotwords"
-            class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeHistoryTab === 'hot'
                 ? 'text-primary-400 border-b-2 border-primary-400'
@@ -422,7 +422,7 @@ const getPic = (url: string) => {
           </button>
           <button
             v-if="isClientMounted && hasHistory"
-            class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeHistoryTab === 'history'
                 ? 'text-primary-400 border-b-2 border-primary-400'

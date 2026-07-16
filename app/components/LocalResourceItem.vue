@@ -14,6 +14,7 @@ export interface SourceItem {
   title: string;
   type: string;
   menu: string;
+  isSelf?: boolean;
   // description: string;
   createdAt: string;
 }
@@ -64,6 +65,12 @@ const emit = defineEmits<{
               class="w-4 h-4 mr-1"
             />
             {{ getTypeName(item.type) }}网盘
+          </div>
+          <div
+            v-if="item.isSelf"
+            class="bg-gradient-to-br from-amber-900 to-orange-500 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+          >
+            独家精选
           </div>
           <ClientOnly>
             <div

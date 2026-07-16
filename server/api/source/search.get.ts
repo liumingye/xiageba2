@@ -129,7 +129,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const dataSql = `
-    SELECT id, title, url, menu, "createdAt"
+    SELECT id, title, url, menu, "isSelf", "createdAt"
     FROM "Source"
     ${whereClause}
     ORDER BY ${orderClause}
