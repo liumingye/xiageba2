@@ -176,10 +176,8 @@ export class BaiduClient {
       if (typeof this.source === "string") {
         headers["cookie"] = this.source;
       } else {
-        const { accessToken } =
-          (await this.source?.getToken()) || this.accessToken || {};
         const search = url.searchParams;
-        search.set("access_token", accessToken);
+        search.set("access_token", this.accessToken || "");
         url.search = search.toString();
       }
 
