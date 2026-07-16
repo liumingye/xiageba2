@@ -320,6 +320,9 @@ export default defineEventHandler(async (event) => {
   if (id) {
     const source = await prisma.source.findUnique({ where: { id } });
     if (!source) throw createError({ statusCode: 404, message: "资源不存在" });
+    if (source.isSelf) {
+      return { url: source.url };
+    }
     sourceTitle = source.title;
     sourceUrl = source.url;
   } else if (inputUrl) {
