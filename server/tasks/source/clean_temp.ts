@@ -9,7 +9,7 @@ import {
 } from "#server/lib/pan-instance";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
 
-const THIRTY_MINUTES = 60 * 60 * 1000;
+const THIRTY_MINUTES = 2 * 60 * 60 * 1000; // ⚡ 2小时的毫秒数
 const ONE_DAY = 24 * 60 * 60 * 1000; // ⚡ 1天的毫秒数
 const PAN_BATCH_LIMIT = 100;
 const LOCK_KEY = "lock:cron:clean-temp-sources";
