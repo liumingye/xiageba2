@@ -2,8 +2,20 @@
 import SiteFooter from "~/components/SiteFooter.vue";
 import TopBar from "~/components/TopBar.vue";
 import Qrcode from "~/components/Qrcode.vue";
-import { ArrowLeft, Calendar, Download, Folder, Loader2 } from "@lucide/vue";
+import {
+  ArrowLeft,
+  Calendar,
+  Download,
+  Folder,
+  Loader2,
+  X,
+  QrCode,
+  Clipboard,
+  ExternalLink,
+} from "@lucide/vue";
 import { getTypeName } from "~/utils";
+import type { SourceItem } from "~/components/LocalResourceItem.vue";
+import { useMediaQuery, useClipboard } from "@vueuse/core";
 
 const config = useRuntimeConfig();
 const route = useRoute();
@@ -93,10 +105,6 @@ const goToPage = (page: number) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
-const goToSource = (id: string) => {
-  router.push(`/source/${id}`);
-};
-
 const pages = computed(() => {
   const total = totalPages.value;
   const current = currentPage.value;
@@ -116,6 +124,133 @@ const pages = computed(() => {
   }
   return result;
 });
+
+const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
+  enabled: true,
+});
+
+watch(
+  [data],
+  () => {
+    if (import.meta.client) {
+      stopPanCheck();
+      const ids = (data.value.data as SourceItem[]).map((item) => item.id);
+      submitPanCheck(ids);
+    }
+  },
+  { immediate: true },
+);
+
+const showTreeModal = ref(false);
+const treeModalTitle = ref("");
+const treeModalContent = ref("");
+const treeModalLoading = ref(false);
+const treeModalError = ref("");
+
+const openTreeModal = async ({
+  item,
+  type,
+}: {
+  item: SourceItem;
+  type: "id";
+}) => {
+  treeModalTitle.value = item.title || "";
+  treeModalContent.value = "";
+  treeModalError.value = "";
+  treeModalLoading.value = true;
+  showTreeModal.value = true;
+
+  try {
+    const query = `id=${(item as SourceItem).id}`;
+    const res = await fetch(`/api/source/tree?${query}`);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      treeModalContent.value = data.tree || "（空目录）";
+    } else {
+      treeModalError.value = data.message || "获取目录失败";
+    }
+  } catch {
+    treeModalError.value = "获取目录失败";
+  } finally {
+    treeModalLoading.value = false;
+  }
+};
+
+const closeTreeModal = () => {
+  showTreeModal.value = false;
+  treeModalTitle.value = "";
+  treeModalContent.value = "";
+  treeModalError.value = "";
+};
+
+const showModal = ref(false);
+const modalTitle = ref("");
+const modalUrl = ref("");
+const modalQrCode = ref("");
+const modalFetching = ref(false);
+const modalError = ref("");
+
+const setModalLoading = (title: string) => {
+  modalTitle.value = title;
+  modalUrl.value = "";
+  modalQrCode.value = "";
+  modalError.value = "";
+  modalFetching.value = true;
+  showModal.value = true;
+};
+
+const setModalResult = async (url: string) => {
+  modalUrl.value = url;
+  const qrcode = await import("qrcode");
+  modalQrCode.value = await qrcode.toDataURL(url, {
+    width: 200,
+    margin: 2,
+    color: { dark: "#000", light: "#fff" },
+  });
+};
+
+const openModal = async ({ item, type }: { item: SourceItem; type: "id" }) => {
+  setModalLoading(item.title || "");
+
+  try {
+    const res = await fetch("/api/source/geturl", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id }),
+    });
+    const data = await res.json();
+    if (res.ok && data?.url) {
+      await setModalResult(data.url);
+    } else {
+      modalError.value = data.message || "获取下载链接失败";
+    }
+  } catch {
+    modalError.value = "获取下载链接失败";
+  } finally {
+    modalFetching.value = false;
+  }
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  modalTitle.value = "";
+  modalUrl.value = "";
+  modalQrCode.value = "";
+};
+
+const { success, error: showError } = useToast();
+const { copy } = useClipboard();
+
+const copyUrl = async (url: string) => {
+  try {
+    await copy(url);
+    success("复制成功");
+  } catch {
+    showError("复制失败");
+  }
+};
+
+const isMobile = useMediaQuery("(max-width: 768px)");
 </script>
 
 <template>
@@ -140,59 +275,15 @@ const pages = computed(() => {
       </div>
 
       <div v-else class="space-y-3">
-        <article
+        <LocalResourceItem
           v-for="item in items"
           :key="item.id"
-          class="card p-3 hover:border-primary-500/50 transition-colors cursor-pointer"
-          role="article"
-          @click="goToSource(item.id)"
-        >
-          <div class="flex flex-col">
-            <div
-              class="flex-1 min-w-0 flex justify-between gap-2 md:flex-row flex-col mb-2"
-            >
-              <h3
-                class="text-white truncate hover:text-primary-400 transition-colors"
-              >
-                {{ item.title }}
-              </h3>
-              <div
-                class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
-              >
-                <img
-                  v-if="item.type !== 'other'"
-                  :src="`/img/pan/${item.type}.png`"
-                  class="w-4 h-4 mr-1"
-                />
-                {{ getTypeName(item.type) }}
-              </div>
-            </div>
-            <template v-if="item.menu">
-              <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
-              <pre
-                class="bg-gray-700 p-2 rounded-sm text-xs border border-gray-600 max-h-36 overflow-auto text-gray-300"
-                >{{ item.menu }}</pre
-              >
-            </template>
-          </div>
-          <div
-            class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
-          >
-            <span class="text-xs text-gray-500 flex items-center gap-1">
-              <Calendar class="w-3 h-3" />
-              {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
-            </span>
-            <div class="flex items-center gap-2">
-              <NuxtLink
-                :to="`/source/${item.id}`"
-                class="flex items-center gap-1 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 text-xs rounded-sm transition-colors flex-shrink-0"
-              >
-                <Download class="w-3 h-3" />
-                查看详情
-              </NuxtLink>
-            </div>
-          </div>
-        </article>
+          :item="item"
+          :check-status="getCheckStatus(item.id)"
+          @click-title="router.push(`/source/${item.id}`)"
+          @open-tree="openTreeModal({ item, type: 'id' })"
+          @open-modal="openModal({ item, type: 'id' })"
+        />
       </div>
 
       <div
@@ -233,6 +324,160 @@ const pages = computed(() => {
       <Qrcode />
 
       <SiteFooter />
+
+      <Teleport to="body">
+        <Transition name="modal">
+          <div
+            v-if="showModal"
+            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
+            @click.self="closeModal"
+          >
+            <div
+              class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl overflow-hidden"
+            >
+              <div
+                class="flex items-center justify-between p-4 border-b border-gray-800"
+              >
+                <h3 class="text-white font-medium">获取下载链接</h3>
+                <button
+                  class="text-gray-400 hover:text-white transition-colors"
+                  @click="closeModal"
+                >
+                  <X class="w-5 h-5" />
+                </button>
+              </div>
+              <div class="p-4 h-full overflow-auto">
+                <div v-if="modalFetching" class="text-center py-8">
+                  <div
+                    class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+                  />
+                  <p class="text-gray-400 text-sm">
+                    正在获取资源链接...<br />请耐心等待，这可能需要几秒钟
+                  </p>
+                </div>
+                <div v-else-if="modalError" class="text-center py-8">
+                  <p class="text-red-400 text-sm">{{ modalError }}</p>
+                </div>
+                <div v-else-if="modalUrl" class="space-y-4">
+                  <div class="flex flex-col items-center gap-4">
+                    <template v-if="!isMobile">
+                      <span
+                        >可使用
+                        <span class="text-primary-500"
+                          >{{ getTypeName(getStorageType(modalUrl)) }}网盘</span
+                        >
+                        APP 扫码获取</span
+                      >
+                      <div v-if="modalQrCode" class="flex-shrink-0">
+                        <img
+                          :src="modalQrCode"
+                          alt="下载链接二维码"
+                          class="w-60 h-auto rounded-lg"
+                        />
+                      </div>
+                      <div
+                        v-else
+                        class="w-28 h-28 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                      >
+                        <QrCode class="w-10 h-10 text-gray-600" />
+                      </div>
+                    </template>
+                    <p
+                      class="w-full text-white font-medium text-center text-lg line-clamp-5"
+                      :class="{ truncate: !isMobile }"
+                    >
+                      {{ modalTitle }}
+                    </p>
+                    <p class="text-center break-all">
+                      资源地址：<a
+                        :href="modalUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-primary-500"
+                        >{{ modalUrl }}</a
+                      >
+                    </p>
+                    <div class="w-full flex items-center justify-center gap-2">
+                      <button
+                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600 hover:text-white"
+                        @click="copyUrl(modalUrl)"
+                      >
+                        <Clipboard class="w-4 h-4" />
+                        复制链接
+                      </button>
+                      <a
+                        :href="modalUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all h-9 px-4 py-2 flex-1 bg-primary-600 hover:bg-primary-700 text-white"
+                      >
+                        <ExternalLink class="w-4 h-4" />
+                        打开链接
+                      </a>
+                    </div>
+                    <p class="text-xs text-gray-400">
+                      网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
+                      文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
+      <Teleport to="body">
+        <Transition name="modal">
+          <div
+            v-if="showTreeModal"
+            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            @click.self="closeTreeModal"
+          >
+            <div
+              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-gray-700 shadow-2xl"
+            >
+              <div
+                class="flex items-center justify-between p-4 border-b border-gray-800"
+              >
+                <h3 class="text-white font-medium">
+                  目录结构<span class="text-xs text-gray-400"
+                    >（最多显示5层、100个文件）</span
+                  >
+                </h3>
+                <button
+                  class="text-gray-400 hover:text-white transition-colors"
+                  @click="closeTreeModal"
+                >
+                  <X class="w-5 h-5" />
+                </button>
+              </div>
+              <div class="p-4">
+                <h4
+                  v-if="treeModalTitle"
+                  class="text-white text-sm font-medium truncate mb-3"
+                >
+                  {{ treeModalTitle }}
+                </h4>
+                <div v-if="treeModalLoading" class="text-center py-8">
+                  <div
+                    class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+                  />
+                  <p class="text-gray-400 text-sm">获取中...</p>
+                </div>
+                <div v-else-if="treeModalError" class="text-center py-8">
+                  <p class="text-red-400 text-sm">{{ treeModalError }}</p>
+                </div>
+                <pre
+                  v-else
+                  class="bg-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
+                  >{{ treeModalContent }}</pre
+                >
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
     </div>
   </div>
 </template>

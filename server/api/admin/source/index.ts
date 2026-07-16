@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
 
   if (method === "POST") {
     const body = await readBody(event);
-    const { cid, title, url, description, menu } = body;
+    const { cid, title, url, description, menu, isSelf } = body;
 
     if (!title?.trim()) {
       throw createError({ statusCode: 400, message: "资源名称不能为空" });
@@ -75,6 +75,7 @@ export default defineEventHandler(async (event) => {
         url: url.trim(),
         description: description || "",
         menu: menu || "",
+        isSelf: isSelf || false,
       },
     });
 

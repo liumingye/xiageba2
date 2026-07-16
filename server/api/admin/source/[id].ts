@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 
   if (method === "PUT") {
     const body = await readBody(event);
-    const { cid, title, url, description, menu, status } = body;
+    const { cid, title, url, description, menu, status, isSelf } = body;
 
     const data: any = {};
     if (title) data.title = title.trim();
@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
     if (description !== undefined) data.description = description || "";
     if (menu !== undefined) data.menu = menu || "";
     if (status !== undefined) data.status = Number(status) ?? 1;
+    if (isSelf !== undefined) data.isSelf = isSelf;
 
     const source = await prisma.source.update({
       where: { id },

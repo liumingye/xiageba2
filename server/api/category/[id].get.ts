@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
         title: true,
         url: true,
         menu: true,
-        description: true,
+        // description: true,
         createdAt: true,
       },
     }),
@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
   const items = sources.map((item) => ({
     id: item.id,
     title: item.title,
-    description: item.description,
+    // description: item.description,
     menu: item.menu,
     type: getStorageType(item.url),
     createdAt: item.createdAt,

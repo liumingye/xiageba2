@@ -507,6 +507,8 @@ const copyUrl = async (url: string) => {
     showError("复制失败");
   }
 };
+
+const isMobile = useMediaQuery("(max-width: 768px)");
 </script>
 
 <template>
@@ -902,7 +904,7 @@ const copyUrl = async (url: string) => {
             @click.self="closeModal"
           >
             <div
-              class="flex flex-col max-h-[90vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl overflow-hidden"
+              class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl overflow-hidden"
             >
               <div
                 class="flex items-center justify-between p-4 border-b border-gray-800"
@@ -929,28 +931,31 @@ const copyUrl = async (url: string) => {
                 </div>
                 <div v-else-if="modalUrl" class="space-y-4">
                   <div class="flex flex-col items-center gap-4">
-                    <span
-                      >可使用
-                      <span class="text-primary-500"
-                        >{{ getTypeName(getStorageType(modalUrl)) }}网盘</span
+                    <template v-if="!isMobile">
+                      <span
+                        >可使用
+                        <span class="text-primary-500"
+                          >{{ getTypeName(getStorageType(modalUrl)) }}网盘</span
+                        >
+                        APP 扫码获取</span
                       >
-                      APP 扫码获取</span
-                    >
-                    <div v-if="modalQrCode" class="flex-shrink-0">
-                      <img
-                        :src="modalQrCode"
-                        alt="下载链接二维码"
-                        class="w-60 h-auto rounded-lg"
-                      />
-                    </div>
-                    <div
-                      v-else
-                      class="w-28 h-28 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
-                    >
-                      <QrCode class="w-10 h-10 text-gray-600" />
-                    </div>
+                      <div v-if="modalQrCode" class="flex-shrink-0">
+                        <img
+                          :src="modalQrCode"
+                          alt="下载链接二维码"
+                          class="w-60 h-auto rounded-lg"
+                        />
+                      </div>
+                      <div
+                        v-else
+                        class="w-28 h-28 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                      >
+                        <QrCode class="w-10 h-10 text-gray-600" />
+                      </div>
+                    </template>
                     <p
-                      class="w-full text-white font-medium truncate text-center text-lg"
+                      class="w-full text-white font-medium text-center text-lg line-clamp-5"
+                      :class="{ truncate: !isMobile }"
                     >
                       {{ modalTitle }}
                     </p>

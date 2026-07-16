@@ -14,7 +14,7 @@ export interface SourceItem {
   title: string;
   type: string;
   menu: string;
-  description: string;
+  // description: string;
   createdAt: string;
 }
 

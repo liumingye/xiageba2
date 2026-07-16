@@ -25,9 +25,13 @@ export default defineEventHandler(async (event) => {
   const hasHeaderField = formData
     .find((item) => item.name === "hasHeader")
     ?.data.toString();
+  const isSelfField = formData
+    .find((item) => item.name === "isSelf")
+    ?.data.toString();
 
   const cid = Number(cidField) || null;
   const hasHeader = hasHeaderField === "true";
+  const isSelf = isSelfField === "true";
 
   const mimeType = file.type || "";
   const filename = file.filename || "";
@@ -113,6 +117,7 @@ export default defineEventHandler(async (event) => {
           url: r.url,
           description: "",
           menu: "",
+          isSelf,
         }));
 
         await tx.source.createMany({

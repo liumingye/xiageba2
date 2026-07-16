@@ -76,6 +76,7 @@ model Source {
   status       Int                      @default(1)
   invalidNum   Int                      @default(0)
   isTemp       Boolean                  @default(false)
+  isSelf       Boolean                  @default(false)
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime?                @updatedAt
   searchVector Unsupported("tsvector")?
@@ -83,6 +84,7 @@ model Source {
   @@index([cid])
   @@index([createdAt])
   @@index([status])
+  @@index([isSelf])
   @@index([searchVector], type: Gin)
 }
 

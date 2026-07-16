@@ -125,8 +125,7 @@ export default defineEventHandler(async (event) => {
   } else if (sortOrder === "oldest") {
     orderClause = `"createdAt" ASC`;
   } else {
-    // 🔥 核心变更：计算权重等级评分函数也同步换成 websearch_to_tsquery
-    orderClause = `ts_rank_cd("searchVector", websearch_to_tsquery('simple', $${queryParamIndex})) DESC, "createdAt" DESC`;
+    orderClause = `"isSelf" DESC, ts_rank_cd("searchVector", websearch_to_tsquery('simple', $${queryParamIndex})) DESC, "createdAt" DESC`;
   }
 
   const dataSql = `

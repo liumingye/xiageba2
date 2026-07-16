@@ -24,6 +24,7 @@ interface Source {
   description: string;
   menu: string;
   status: number;
+  isSelf: boolean;
   categoryName: string;
   createdAt: string;
   updatedAt: string;
@@ -55,20 +56,23 @@ const newTitle = ref("");
 const newUrl = ref("");
 const newDescription = ref("");
 const newMenu = ref("");
-const editId = ref("");
+  const newIsSelf = ref(false);
+  const editId = ref("");
 const editCid = ref<string>("");
 const editTitle = ref("");
 const editUrl = ref("");
 const editDescription = ref("");
 const editMenu = ref("");
-const menuLoading = ref(false);
+  const editIsSelf = ref(false);
+  const menuLoading = ref(false);
 const menuAbortController = ref<AbortController | null>(null);
 const error = ref("");
 
 const showImportModal = ref(false);
 const importCid = ref<string>("");
 const importHasHeader = ref(true);
-const importFile = ref<File | null>(null);
+  const importIsSelf = ref(false);
+  const importFile = ref<File | null>(null);
 const importing = ref(false);
 const importResult = ref<{
   total: number;
@@ -134,6 +138,7 @@ const openAddModal = () => {
   newUrl.value = "";
   newDescription.value = "";
   newMenu.value = "";
+  newIsSelf.value = false;
   error.value = "";
 };
 
@@ -144,11 +149,12 @@ const closeAddModal = () => {
 const openEditModal = (item: Source) => {
   showEditModal.value = true;
   editId.value = item.id;
-  editCid.value = item.cid?.toString() || ""; // 转换为字符串
+  editCid.value = item.cid?.toString() || "";
   editTitle.value = item.title;
   editUrl.value = item.url;
   editDescription.value = item.description;
   editMenu.value = item.menu;
+  editIsSelf.value = item.isSelf || false;
   error.value = "";
 };
 
@@ -213,6 +219,7 @@ const addSource = async () => {
       url: newUrl.value,
       description: newDescription.value,
       menu: newMenu.value,
+      isSelf: newIsSelf.value,
     }),
   });
 
@@ -256,6 +263,7 @@ const saveEdit = async () => {
       url: editUrl.value,
       description: editDescription.value,
       menu: editMenu.value,
+      isSelf: editIsSelf.value,
     }),
   });
 
@@ -319,6 +327,7 @@ const openImportModal = () => {
   showImportModal.value = true;
   importCid.value = "";
   importHasHeader.value = true;
+  importIsSelf.value = false;
   importFile.value = null;
   importResult.value = null;
   error.value = "";
@@ -349,6 +358,7 @@ const importSources = async () => {
     formData.append("file", importFile.value);
     formData.append("cid", importCid.value);
     formData.append("hasHeader", String(importHasHeader.value));
+    formData.append("isSelf", String(importIsSelf.value));
 
     const res = await fetch("/api/admin/source/import", {
       method: "POST",
@@ -549,10 +559,7 @@ const importSources = async () => {
           v-if="showAddModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeAddModal"
-          ></div>
+          <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
           <div
             class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800 max-h-[90vh] overflow-y-auto"
           >
@@ -608,6 +615,17 @@ const importSources = async () => {
                   class="input-search resize-none"
                 ></textarea>
               </div>
+              <div class="flex items-center gap-2">
+                <input
+                  id="newIsSelf"
+                  v-model="newIsSelf"
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                />
+                <label for="newIsSelf" class="text-gray-300 text-sm"
+                  >是自己的资源，搜索结果靠前</label
+                >
+              </div>
               <div class="flex gap-4 pt-2">
                 <button
                   class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
@@ -633,10 +651,7 @@ const importSources = async () => {
           v-if="showEditModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeEditModal"
-          ></div>
+          <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
           <div
             class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800 max-h-[90vh] overflow-y-auto"
           >
@@ -714,6 +729,17 @@ const importSources = async () => {
                   class="input-search resize-none font-mono text-xs"
                 ></textarea>
               </div>
+              <div class="flex items-center gap-2">
+                <input
+                  id="editIsSelf"
+                  v-model="editIsSelf"
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                />
+                <label for="editIsSelf" class="text-gray-300 text-sm"
+                  >是自己的资源，搜索结果靠前</label
+                >
+              </div>
               <div class="flex gap-4 pt-2">
                 <button
                   class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
@@ -738,10 +764,7 @@ const importSources = async () => {
           v-if="showImportModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeImportModal"
-          ></div>
+          <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
           <div
             class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800 max-h-[90vh] overflow-y-auto"
           >
@@ -789,6 +812,17 @@ const importSources = async () => {
                 />
                 <label for="hasHeader" class="text-gray-300 text-sm"
                   >第一行为表头，跳过不导入</label
+                >
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  id="importIsSelf"
+                  v-model="importIsSelf"
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                />
+                <label for="importIsSelf" class="text-gray-300 text-sm"
+                  >是自己的资源，搜索结果靠前</label
                 >
               </div>
               <div
