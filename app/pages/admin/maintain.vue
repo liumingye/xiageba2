@@ -26,6 +26,7 @@ const isRebuilding = ref(false);
 const rebuildMsg = ref("");
 const isClearing = ref(false);
 const clearMsg = ref("");
+const loading = ref(true);
 
 interface RedisConfig {
   redis_host: string;
@@ -100,6 +101,7 @@ onMounted(async () => {
   await loadPancheckConfig();
   await loadHotwordsConfig();
   await loadAdFilterConfig();
+  loading.value = false;
 });
 
 const loadRedisConfig = async () => {
@@ -517,7 +519,7 @@ const clearISRCache = async (route?: string) => {
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedRedis }"
-            :disabled="savingRedis"
+            :disabled="savingRedis || loading"
             @click="saveRedisConfig"
           >
             <Check v-if="savedRedis" class="w-4 h-4" />
@@ -588,7 +590,7 @@ const clearISRCache = async (route?: string) => {
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedAes }"
-            :disabled="savingAes"
+            :disabled="savingAes || loading"
             @click="saveAesConfig"
           >
             <Check v-if="savedAes" class="w-4 h-4" />
@@ -645,7 +647,7 @@ const clearISRCache = async (route?: string) => {
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedPancheck }"
-            :disabled="savingPancheck"
+            :disabled="savingPancheck || loading"
             @click="savePancheckConfig"
           >
             <Check v-if="savedPancheck" class="w-4 h-4" />
@@ -729,7 +731,7 @@ const clearISRCache = async (route?: string) => {
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedHotwords }"
-            :disabled="savingHotwords"
+            :disabled="savingHotwords || loading"
             @click="saveHotwordsConfig"
           >
             <Check v-if="savedHotwords" class="w-4 h-4" />
@@ -825,7 +827,7 @@ const clearISRCache = async (route?: string) => {
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedAdFilter }"
-            :disabled="savingAdFilter"
+            :disabled="savingAdFilter || loading"
             @click="saveAdFilterConfig"
           >
             <Check v-if="savedAdFilter" class="w-4 h-4" />

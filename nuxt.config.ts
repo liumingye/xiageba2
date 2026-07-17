@@ -134,6 +134,7 @@ export default defineNuxtConfig({
       attempts: 0,
     },
     security: {
+      // 不使用CDN请修改成false
       trustXForwardedFor: true,
     },
   },

@@ -44,6 +44,7 @@ export default defineEventHandler(async (event) => {
         menu: true,
         // description: true,
         createdAt: true,
+        isSelf: true,
       },
     }),
     prisma.source.count({ where }),
@@ -60,6 +61,7 @@ export default defineEventHandler(async (event) => {
     menu: item.menu,
     type: getStorageType(item.url),
     createdAt: item.createdAt,
+    isSelf: item.isSelf,
   }));
 
   const totalPages = Math.min(MAX_PAGE, Math.ceil(total / pageSize));

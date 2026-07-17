@@ -198,8 +198,6 @@ async function deleteAdFiles(
 
   if (keywords.length === 0) return;
 
-  console.log(topFids);
-
   const adFids: string[] = [];
 
   let listFn: (fsApi: any, parentId: string) => Promise<PanFile[]>;
@@ -225,7 +223,6 @@ async function deleteAdFiles(
       }
 
       for (const file of files) {
-        console.log(file);
         const fileNameLower = file.name.toLowerCase();
         const isAd = keywords.some((kw) => fileNameLower.includes(kw));
 

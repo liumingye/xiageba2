@@ -1,6 +1,8 @@
 import { prisma } from "#server/lib/prisma";
 import { decryptUrl } from "#server/lib/crypto";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
+import { clearTreeSymbols } from "#server/utils/source";
+import { buildTokens } from "#server/utils/jieba";
 import { parseShareUrl } from "./geturl";
 import { QuarkUCClient, IShareFile } from "@netdisk-sdk/quarkuc-sdk";
 import {
@@ -34,17 +36,21 @@ export default defineEventHandler(async (event) => {
 
   let url = "";
   let sourceId = id || "";
+  let sourceTitle = "";
+  let sourceDescription = "";
 
   // 1. 快速查询或解密，拿到真正的 url
   if (id) {
     const source = await prisma.source.findUnique({
-      select: { id: true, url: true, menu: true },
+      select: { id: true, url: true, title: true, description: true },
       where: { id },
     });
     if (!source) {
       throw createError({ statusCode: 404, message: "资源不存在" });
     }
     url = source.url;
+    sourceTitle = source.title || "";
+    sourceDescription = source.description || "";
   } else if (inputUrl) {
     const decryptedUrl = await decryptUrl(inputUrl || "");
     if (decryptedUrl === null) {
@@ -95,11 +101,14 @@ export default defineEventHandler(async (event) => {
 
     // 5. 异步写库：改用非阻塞式后台运行，不再挂起当前的 HTTP 响应时间
     if (sourceId && generatedTree) {
-      prisma.source
-        .update({
-          where: { id: sourceId },
-          data: { menu: generatedTree },
-        })
+      const tokens = buildTokens(
+        sourceTitle,
+        sourceDescription,
+        clearTreeSymbols(generatedTree),
+      );
+
+      prisma
+        .$executeRaw`UPDATE "Source" SET "menu" = ${generatedTree}, "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${sourceId}`
         .catch((err) => console.error("更新菜单树失败:", err));
     }
 

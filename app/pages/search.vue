@@ -291,13 +291,27 @@ const totalPages = computed(() => pageData.value?.totalPages || 0);
 const tokens = computed(() => (pageData.value as any)?.tokens || []);
 
 // 高亮分词关键词
+const escapeHtml = (value: string): string =>
+  String(value ?? "").replace(/[&<>"']/g, (char) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[char] || char;
+  });
+
 const highlight = (text: string): string => {
-  if (!text || tokens.value.length === 0) return text;
+  const escapedText = escapeHtml(text || "");
+  if (!escapedText || tokens.value.length === 0) return escapedText;
   // 按长度降序排列，优先匹配长词
   const sorted = [...tokens.value].sort((a, b) => b.length - a.length);
-  let result = text;
+  let result = escapedText;
   for (const token of sorted) {
-    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapedToken = escapeHtml(token);
+    const escaped = escapedToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     result = result.replace(
       new RegExp(escaped, "gi"),
       (match) =>

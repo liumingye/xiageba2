@@ -150,9 +150,11 @@ defineExpose({ results, searching, error });
         <div class="flex-1 min-w-0 flex gap-2 mb-2 flex-col">
           <h3 class="text-white flex items-center gap-2">
             <span
+              v-if="props.highlightHtml"
               class="min-w-0 break-all"
-              v-html="props.highlightHtml?.(item.title) || item.title"
+              v-html="props.highlightHtml(item.title)"
             ></span>
+            <span v-else class="min-w-0 break-all">{{ item.title }}</span>
           </h3>
           <div class="flex gap-2">
             <div
