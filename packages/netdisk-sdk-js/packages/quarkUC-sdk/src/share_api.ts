@@ -53,7 +53,9 @@ export class QuarkUCShareApi {
     pwd_id: string,
     stoken: string,
     saveDir: IFidExtend,
-    fileList: Pick<IShareFile, "fid" | "share_fid_token">[],
+    pdir_fid?: string,
+    pdir_save_all?: boolean,
+    exclude_fids?: string[],
   ): Promise<ICreateTaskResult> {
     throw "";
   }
@@ -226,22 +228,21 @@ QuarkUCShareApi.prototype.save = async function (
   pwd_id,
   stoken,
   saveDir,
-  fileList,
+  pdir_fid = "0",
+  pdir_save_all = true,
+  exclude_fids = [],
 ) {
-  const [fid_list, fid_token_list] = fileList
-    .map((file) => [[file.fid], [file.share_fid_token]])
-    .flat(1);
   const to_pdir_fid = getFileFid(saveDir);
   const {
     body: { data },
   } = await this.client.agentApi.post("/share/sharepage/save").send({
     scene: "link",
-    pdir_fid: "0",
     pwd_id,
     stoken,
-    fid_list,
-    fid_token_list,
     to_pdir_fid,
+    pdir_fid,
+    pdir_save_all,
+    exclude_fids,
   });
   return data;
 };

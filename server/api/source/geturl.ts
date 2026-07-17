@@ -359,24 +359,13 @@ async function transferQuarkUC(
     throw createError({ statusCode: 500, message: "获取stoken失败" });
   }
 
-  // 步骤2: 获取分享详情
-  const detail = await shareApi.detail(pwdId, token.stoken);
-  if (!detail.list || detail.list.length === 0) {
-    throw createError({ statusCode: 404, message: "分享内容为空" });
-  }
-
-  // 步骤3: 转存分享
-  const saveResult = await shareApi.save(
-    pwdId,
-    token.stoken,
-    tempDirId,
-    detail.list,
-  );
+  // 步骤2: 转存分享
+  const saveResult = await shareApi.save(pwdId, token.stoken, tempDirId);
   if (!saveResult.task_id) {
     throw createError({ statusCode: 500, message: "转存任务失败" });
   }
 
-  // 步骤4: 等待转存完成
+  // 步骤3: 等待转存完成
   let taskResult = await shareApi.saveTask(saveResult.task_id, true);
   if (taskResult.status === 0) {
     throw createError({ statusCode: 500, message: "转存任务未完成" });
@@ -384,7 +373,7 @@ async function transferQuarkUC(
 
   const saveAsTopFids = taskResult.save_as?.save_as_top_fids || [];
 
-  // 步骤4.5: 异步删除广告文件（后台执行，不阻塞分享创建）
+  // 步骤4: 异步删除广告文件（后台执行，不阻塞分享创建）
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && saveAsTopFids.length > 0) {
     deleteAdFiles(client.fsApi, saveAsTopFids, adFilterConfig, "quarkUC").catch(
