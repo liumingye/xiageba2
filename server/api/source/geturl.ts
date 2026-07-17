@@ -1,7 +1,9 @@
 import { prisma } from "#server/lib/prisma";
-import { getConfigValues } from "#server/lib/configCache";
+import { getConfigValues, getConfigValue } from "#server/lib/configCache";
 import { decryptUrl } from "#server/lib/crypto";
-import { parseShareParam } from "@netdisk-sdk/baidu-sdk";
+import { parseShareParam, BaiduFSOpenApi } from "@netdisk-sdk/baidu-sdk";
+import { QuarkUCFSApi } from "@netdisk-sdk/quarkUC-sdk";
+import { XunleiFSApi } from "@netdisk-sdk/xunlei-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import {
   getQuarkClient,
@@ -11,6 +13,261 @@ import {
 } from "#server/lib/pan-instance";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
+
+interface AdFilterConfig {
+  enabled: boolean;
+  keywords: string;
+}
+
+const DEFAULT_AD_FILTER: AdFilterConfig = {
+  enabled: false,
+  keywords: "",
+};
+
+async function getAdFilterConfig(): Promise<AdFilterConfig> {
+  const value = await getConfigValue("ad_filter");
+  if (!value) return { ...DEFAULT_AD_FILTER };
+  try {
+    const parsed = JSON.parse(value);
+    return { ...DEFAULT_AD_FILTER, ...parsed };
+  } catch {
+    return { ...DEFAULT_AD_FILTER };
+  }
+}
+
+type PanSDKType = "quarkUC" | "xunlei" | "baidu";
+
+interface PanFile {
+  id: string;
+  name: string;
+  isDir: boolean;
+}
+
+async function listFilesQuarkUC(
+  fsApi: QuarkUCFSApi,
+  pdirFid: string,
+): Promise<PanFile[]> {
+  const result: PanFile[] = [];
+  let page = 1;
+  const pageSize = 100;
+
+  while (true) {
+    const data = await fsApi.sort({
+      pdir_fid: pdirFid,
+      _page: page,
+      _size: pageSize,
+    });
+    if (!data?.list || data.list.length === 0) break;
+
+    for (const file of data.list) {
+      result.push({
+        id: file.fid,
+        name: file.file_name || "",
+        isDir: file.file_type === 0,
+      });
+    }
+
+    if (data.list.length < pageSize) break;
+    page++;
+  }
+
+  return result;
+}
+
+async function listFilesXunlei(
+  fsApi: XunleiFSApi,
+  parentId: string,
+): Promise<PanFile[]> {
+  const result: PanFile[] = [];
+  let pageToken = "";
+
+  while (true) {
+    const data = await fsApi.listFiles({
+      parentId,
+      limit: 100,
+      pageToken,
+    });
+    if (!data?.list || data.list.length === 0) break;
+
+    for (const file of data.list) {
+      result.push({
+        id: file.id,
+        name: file.name || "",
+        isDir: file.is_dir || false,
+      });
+    }
+
+    if (!data.next_page_token) break;
+    pageToken = data.next_page_token;
+  }
+
+  return result;
+}
+
+async function listFilesBaidu(
+  fsApi: BaiduFSOpenApi,
+  dirPath: string,
+): Promise<PanFile[]> {
+  const result: PanFile[] = [];
+  let start = 0;
+  const limit = 100;
+
+  while (true) {
+    const data = await fsApi.listall({
+      path: dirPath,
+      start,
+      limit,
+      order: "name",
+      desc: 0,
+    });
+    if (!data?.list || data.list.length === 0) break;
+
+    for (const file of data.list) {
+      result.push({
+        id: file.path || "",
+        name: file.server_filename || "",
+        isDir: file.isdir === 1,
+      });
+    }
+
+    if (!data.has_more) break;
+    start = data.cursor;
+  }
+
+  return result;
+}
+
+async function findAdFilesRecursive(
+  fsApi: any,
+  parentId: string,
+  keywords: string[],
+  maxDepth: number,
+  currentDepth: number,
+  sdkType: PanSDKType,
+): Promise<string[]> {
+  const result: string[] = [];
+
+  let listFn: (fsApi: any, parentId: string) => Promise<PanFile[]>;
+  if (sdkType === "quarkUC") {
+    listFn = listFilesQuarkUC;
+  } else if (sdkType === "xunlei") {
+    listFn = listFilesXunlei;
+  } else {
+    listFn = listFilesBaidu;
+  }
+
+  const files = await listFn(fsApi, parentId);
+
+  for (const file of files) {
+    const fileNameLower = file.name.toLowerCase();
+    const isAd = keywords.some((kw) => fileNameLower.includes(kw));
+
+    if (isAd) {
+      result.push(file.id);
+      continue;
+    }
+
+    if (file.isDir && currentDepth < maxDepth) {
+      const childAdFiles = await findAdFilesRecursive(
+        fsApi,
+        file.id,
+        keywords,
+        maxDepth,
+        currentDepth + 1,
+        sdkType,
+      );
+      result.push(...childAdFiles);
+    }
+  }
+
+  return result;
+}
+
+async function deleteAdFiles(
+  fsApi: any,
+  topFids: string[],
+  config: AdFilterConfig,
+  sdkType: PanSDKType,
+): Promise<void> {
+  if (!config.enabled || !config.keywords.trim()) return;
+
+  const keywords = config.keywords
+    .split(",")
+    .map((k) => k.trim().toLowerCase())
+    .filter((k) => k.length > 0);
+
+  if (keywords.length === 0) return;
+
+  console.log(topFids);
+
+  const adFids: string[] = [];
+
+  let listFn: (fsApi: any, parentId: string) => Promise<PanFile[]>;
+  if (sdkType === "quarkUC") {
+    listFn = listFilesQuarkUC;
+  } else if (sdkType === "xunlei") {
+    listFn = listFilesXunlei;
+  } else {
+    listFn = listFilesBaidu;
+  }
+
+  for (const fid of topFids) {
+    try {
+      const files = await listFn(fsApi, fid);
+      if (files.length === 0) {
+        const fileName = "";
+        const fileNameLower = fileName.toLowerCase();
+        const isAd = keywords.some((kw) => fileNameLower.includes(kw));
+        if (isAd) {
+          adFids.push(fid);
+          continue;
+        }
+      }
+
+      for (const file of files) {
+        console.log(file);
+        const fileNameLower = file.name.toLowerCase();
+        const isAd = keywords.some((kw) => fileNameLower.includes(kw));
+
+        if (isAd) {
+          adFids.push(file.id);
+          continue;
+        }
+
+        if (file.isDir) {
+          const childAdFiles = await findAdFilesRecursive(
+            fsApi,
+            file.id,
+            keywords,
+            2,
+            1,
+            sdkType,
+          );
+          adFids.push(...childAdFiles);
+        }
+      }
+    } catch (e) {
+      console.error("检查广告文件失败", fid, e);
+    }
+  }
+
+  if (adFids.length > 0) {
+    try {
+      if (sdkType === "baidu") {
+        await fsApi.filemanager("delete", {
+          async: 2,
+          ondup: "fail",
+          filelist: adFids,
+        });
+      } else {
+        await fsApi.delete(adFids);
+      }
+      console.log(`已删除 ${adFids.length} 个广告文件/目录 (${sdkType})`);
+    } catch (e) {
+      console.error("删除广告文件失败", e);
+    }
+  }
+}
 
 interface ParsedShare {
   type: NetdiskType;
@@ -128,11 +385,18 @@ async function transferQuarkUC(
     throw createError({ statusCode: 500, message: "转存任务未完成" });
   }
 
+  const saveAsTopFids = taskResult.save_as?.save_as_top_fids || [];
+
+  // 步骤4.5: 异步删除广告文件（后台执行，不阻塞分享创建）
+  const adFilterConfig = await getAdFilterConfig();
+  if (adFilterConfig.enabled && saveAsTopFids.length > 0) {
+    deleteAdFiles(client.fsApi, saveAsTopFids, adFilterConfig, "quarkUC").catch(
+      (e) => console.error("异步删除广告文件失败", e),
+    );
+  }
+
   // 步骤5: 创建分享
-  const shareResult = await shareApi.share(
-    taskResult.save_as?.save_as_top_fids || [],
-    token.title,
-  );
+  const shareResult = await shareApi.share(saveAsTopFids, token.title);
   if (!shareResult.task_id) {
     throw createError({ statusCode: 500, message: "创建分享任务失败" });
   }
@@ -205,6 +469,19 @@ async function transferBaidu(
     throw createError({ statusCode: 500, message: "分享内容为空" });
   }
 
+  let fids: string[] = [];
+  if (result.info) {
+    fids = result.info.map((item) => tempDir + item.path);
+  }
+
+  // 异步删除广告文件（后台执行，不阻塞分享创建）
+  const adFilterConfig = await getAdFilterConfig();
+  if (adFilterConfig.enabled && fids.length > 0) {
+    deleteAdFiles(client.fsOpenApi, fids, adFilterConfig, "baidu").catch((e) =>
+      console.error("异步删除广告文件失败", e),
+    );
+  }
+
   const pwd = shareParam.pwd || "6666";
   const shareResult = await client.fsShareApi.createShare({
     fsidList: result.extra.list.map((item) => item.to_fs_id),
@@ -215,11 +492,6 @@ async function transferBaidu(
   let shareUrl = shareResult.link;
   if (pwd) {
     shareUrl += `&pwd=${pwd}`;
-  }
-
-  let fids: string[] = [];
-  if (result.info) {
-    fids = result.info.map((item) => tempDir + item.path);
   }
 
   return {
@@ -275,6 +547,14 @@ async function transferXunlei(
       statusCode: 500,
       message: "xunlei task has no trace_file_ids",
     });
+  }
+
+  // 异步删除广告文件（后台执行，不阻塞分享创建）
+  const adFilterConfig = await getAdFilterConfig();
+  if (adFilterConfig.enabled && fileIds.length > 0) {
+    deleteAdFiles(client.fsApi, fileIds, adFilterConfig, "xunlei").catch((e) =>
+      console.error("异步删除广告文件失败", e),
+    );
   }
 
   const shareResult = await client.shareApi.createShare({

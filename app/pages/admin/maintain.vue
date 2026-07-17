@@ -13,6 +13,7 @@ import {
   Plus,
   Trash,
   TrendingUp,
+  ShieldAlert,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -73,6 +74,18 @@ const hotwords = ref<HotWord[]>([]);
 const savingHotwords = ref(false);
 const savedHotwords = ref(false);
 
+interface AdFilterConfig {
+  enabled: boolean;
+  keywords: string;
+}
+
+const adFilterConfig = ref<AdFilterConfig>({
+  enabled: false,
+  keywords: "",
+});
+const savingAdFilter = ref(false);
+const savedAdFilter = ref(false);
+
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -86,6 +99,7 @@ onMounted(async () => {
   await loadAesConfig();
   await loadPancheckConfig();
   await loadHotwordsConfig();
+  await loadAdFilterConfig();
 });
 
 const loadRedisConfig = async () => {
@@ -254,6 +268,46 @@ const addHotword = () => {
 
 const removeHotword = (index: number) => {
   hotwords.value.splice(index, 1);
+};
+
+const loadAdFilterConfig = async () => {
+  const res = await fetch("/api/admin/config/ad-filter", {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+    return;
+  }
+  const data = await res.json();
+  if (data.data) {
+    adFilterConfig.value = { ...adFilterConfig.value, ...data.data };
+  }
+};
+
+const saveAdFilterConfig = async () => {
+  savingAdFilter.value = true;
+  savedAdFilter.value = false;
+
+  const res = await fetch("/api/admin/config/ad-filter", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(adFilterConfig.value),
+  });
+
+  savingAdFilter.value = false;
+  if (res.ok) {
+    savedAdFilter.value = true;
+    setTimeout(() => {
+      savedAdFilter.value = false;
+    }, 2000);
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
 };
 
 let timer: NodeJS.Timeout | null = null;
@@ -759,6 +813,66 @@ const clearISRCache = async (route?: string) => {
               class="text-gray-500 text-sm"
             >
               未配置热搜词，首页热门搜索区域将不显示
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 广告过滤配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">广告过滤配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedAdFilter }"
+            :disabled="savingAdFilter"
+            @click="saveAdFilterConfig"
+          >
+            <Check v-if="savedAdFilter" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedAdFilter ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-purple-900/50 rounded-lg flex items-center justify-center"
+            >
+              <ShieldAlert class="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <h3 class="text-white font-medium">转存广告过滤</h3>
+              <p class="text-gray-500 text-sm">
+                转存网盘资源后，自动删除包含广告词的文件或目录（最深2层）
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <input
+                id="adFilterEnabled"
+                v-model="adFilterConfig.enabled"
+                type="checkbox"
+                class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+              />
+              <label for="adFilterEnabled" class="text-white">
+                启用广告过滤
+              </label>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">
+                广告关键词（英文逗号隔开）
+              </label>
+              <textarea
+                v-model="adFilterConfig.keywords"
+                rows="3"
+                placeholder="例如：关注公众号,加微信,广告,推广"
+                class="input-search resize-none"
+              />
+              <p class="text-gray-500 text-xs mt-2">
+                文件名或目录名包含任一关键词即被删除，关键词不区分大小写
+              </p>
             </div>
           </div>
         </div>
