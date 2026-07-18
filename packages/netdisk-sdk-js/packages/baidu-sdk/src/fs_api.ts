@@ -1,4 +1,4 @@
-import { ContentType, Method, NBoolean } from "@netdisk-sdk/utils";
+import { ContentType, Method, NBoolean, AsyncUtil } from "@netdisk-sdk/utils";
 import { BaiduClient } from "./client";
 import { FileCategory, IFile, ResultInfo } from "./types";
 import { ProgressEvent, Request } from "superagent";
@@ -97,7 +97,7 @@ export class BaiduFSApi {
   }
 
   /** 查询异步任务进度 */
-  taskquery(taskId: string): Promise<ITaskQueryResult> {
+  taskquery(taskId: string, _await?: boolean): Promise<ITaskQueryResult> {
     throw "";
   }
 }
@@ -383,13 +383,27 @@ BaiduFSApi.prototype.recycleRestore = async function (param, ...fsids) {
 
 export type ITaskQueryResult = {
   mtime: number;
-  status: "pending" | "failed" | "success";
+  status: "pending" | "failed" | "success" | "running";
   task_errno: number;
   task_error: string;
+  list: {
+    from: string;
+    from_fs_id: number;
+    to: string;
+    to_fs_id: number;
+  }[];
 };
-BaiduFSApi.prototype.taskquery = async function (taskid) {
-  const { body } = await this.request(Method.GET, "/share/taskquery").query({
-    taskid,
-  });
-  return body;
+BaiduFSApi.prototype.taskquery = async function (taskid, _await = false) {
+  let result: ITaskQueryResult;
+  do {
+    const { body } = await this.request(Method.GET, "/share/taskquery").query({
+      taskid,
+    });
+    result = body;
+  } while (
+    _await &&
+    (result.status === "pending" || result.status === "running") &&
+    ((await AsyncUtil.sleep(500)) ?? true)
+  );
+  return result;
 };

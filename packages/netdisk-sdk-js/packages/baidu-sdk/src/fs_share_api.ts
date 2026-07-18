@@ -142,7 +142,7 @@ export type ITransferShareParam = {
   // ondup: 'fail' | 'newcopy' | 'overwrite' | 'skip'
 };
 export type ITransferShareResult = {
-  extra: {
+  extra?: {
     list: {
       /** 分享路径 */
       from: string;
@@ -163,7 +163,7 @@ export type ITransferShareResult = {
     path: string;
   }[];
   show_msg: string;
-  task_id: number;
+  task_id: string;
 };
 BaiduShareFSApi.prototype.transfer = async function (param, path, ...fsids) {
   const fsidlist = JSON.stringify(fsids.map((v) => parseInt(v as any)));

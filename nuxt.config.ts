@@ -101,7 +101,7 @@ export default defineNuxtConfig({
 
     // 开发环境配置
     devOptions: {
-      enabled: true, // 在开发模式（npm run dev）下禁用 PWA 功能，避免频繁的 Service Worker 缓存导致调试困难
+      enabled: false, // 在开发模式（npm run dev）下禁用 PWA 功能，避免频繁的 Service Worker 缓存导致调试困难
     },
   },
   css: ["~/assets/css/main.css"],

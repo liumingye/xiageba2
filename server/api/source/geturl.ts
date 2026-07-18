@@ -403,8 +403,6 @@ async function transferQuarkUC(
 
   const saveAsTopFids = taskResult.save_as?.save_as_top_fids || [];
 
-  // console.log(taskResult);
-
   // 步骤4: 创建分享
   const shareResult = await shareApi.share(saveAsTopFids, token.title);
   if (!shareResult.task_id) {
@@ -483,14 +481,34 @@ async function transferBaidu(
     ...fsids,
   );
 
-  if (!result.extra.list || result.extra.list.length === 0) {
+  let list: {
+    from: string;
+    from_fs_id: number;
+    to: string;
+    to_fs_id: number;
+  }[] = [];
+
+  if (result.extra?.list) {
+    // 转存任务已完成，直接使用结果
+    list = result.extra.list;
+  } else {
+    // 等待转存完成
+    const taskResult = await client.fsApi.taskquery(result.task_id, true);
+    list = taskResult.list;
+  }
+
+  if (list.length === 0) {
     throw createError({ statusCode: 500, message: "分享内容为空" });
   }
 
-  let fids: string[] = [];
-  if (result.info) {
-    fids = result.info.map((item) => tempDir + item.path);
-  }
+  const fids = list.map((item) => item.to);
+
+  const pwd = shareParam.pwd || "6666";
+  const shareResult = await client.fsShareApi.createShare({
+    fsidList: list.map((item) => item.to_fs_id),
+    pwd,
+    period: 1,
+  });
 
   // 异步删除广告文件（后台执行，不阻塞分享创建）
   const adFilterConfig = await getAdFilterConfig();
@@ -499,13 +517,6 @@ async function transferBaidu(
       console.error("异步删除广告文件失败", e),
     );
   }
-
-  const pwd = shareParam.pwd || "6666";
-  const shareResult = await client.fsShareApi.createShare({
-    fsidList: result.extra.list.map((item) => item.to_fs_id),
-    pwd,
-    period: 1,
-  });
 
   let shareUrl = shareResult.link;
   if (pwd) {
