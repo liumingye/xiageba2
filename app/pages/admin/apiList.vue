@@ -545,7 +545,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   <textarea
                     v-model="form.headers"
                     rows="3"
-                    class="input-search w-full font-mono text-xs resize-none"
+                    class="input-search w-full font-mono text-xs"
                   ></textarea>
                 </div>
                 <div>
@@ -555,7 +555,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   <textarea
                     v-model="form.fixed_params"
                     rows="4"
-                    class="input-search w-full font-mono text-xs resize-none"
+                    class="input-search w-full font-mono text-xs"
                   ></textarea>
                 </div>
                 <div>
@@ -565,7 +565,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   <textarea
                     v-model="form.field_map"
                     rows="5"
-                    class="input-search w-full font-mono text-xs resize-none"
+                    class="input-search w-full font-mono text-xs"
                   ></textarea>
                 </div>
               </template>

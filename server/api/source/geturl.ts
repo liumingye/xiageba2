@@ -11,6 +11,7 @@ import {
   getBaiduClient,
   getXunleiClient,
 } from "#server/lib/pan-instance";
+import { THIRTY_MINUTES } from "#server/api/const";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -46,6 +47,7 @@ interface PanFile {
 async function listFilesQuarkUC(
   fsApi: QuarkUCFSApi,
   pdirFid: string,
+  isTop: boolean,
 ): Promise<PanFile[]> {
   const result: PanFile[] = [];
   let page = 1;
@@ -57,7 +59,21 @@ async function listFilesQuarkUC(
       _page: page,
       _size: pageSize,
     });
-    if (!data?.list || data.list.length === 0) break;
+
+    if (!data?.list || data.list.length === 0) {
+      // 顶级目录为空，可能不是目录，可能是文件
+      if (isTop) {
+        const info = await fsApi.info(pdirFid);
+        if (info.file_type === 1) {
+          result.push({
+            id: info.fid,
+            name: info.file_name || "",
+            isDir: false,
+          });
+        }
+      }
+      break;
+    }
 
     for (const file of data.list) {
       result.push({
@@ -68,6 +84,9 @@ async function listFilesQuarkUC(
     }
 
     if (data.list.length < pageSize) break;
+
+    // 最多遍历5页
+    if (page >= 5) break;
     page++;
   }
 
@@ -77,9 +96,11 @@ async function listFilesQuarkUC(
 async function listFilesXunlei(
   fsApi: XunleiFSApi,
   parentId: string,
+  isTop: boolean,
 ): Promise<PanFile[]> {
   const result: PanFile[] = [];
   let pageToken = "";
+  let page = 1;
 
   while (true) {
     const data = await fsApi.listFiles({
@@ -99,6 +120,10 @@ async function listFilesXunlei(
 
     if (!data.next_page_token) break;
     pageToken = data.next_page_token;
+
+    // 最多遍历5页
+    if (page >= 5) break;
+    page++;
   }
 
   return result;
@@ -107,10 +132,12 @@ async function listFilesXunlei(
 async function listFilesBaidu(
   fsApi: BaiduFSOpenApi,
   dirPath: string,
+  isTop: boolean,
 ): Promise<PanFile[]> {
   const result: PanFile[] = [];
   let start = 0;
   const limit = 100;
+  let page = 1;
 
   while (true) {
     const data = await fsApi.listall({
@@ -132,6 +159,10 @@ async function listFilesBaidu(
 
     if (!data.has_more) break;
     start = data.cursor;
+
+    // 最多遍历5页
+    if (page >= 5) break;
+    page++;
   }
 
   return result;
@@ -147,7 +178,11 @@ async function findAdFilesRecursive(
 ): Promise<string[]> {
   const result: string[] = [];
 
-  let listFn: (fsApi: any, parentId: string) => Promise<PanFile[]>;
+  let listFn: (
+    fsApi: any,
+    parentId: string,
+    isTop: boolean,
+  ) => Promise<PanFile[]>;
   if (sdkType === "quarkUC") {
     listFn = listFilesQuarkUC;
   } else if (sdkType === "xunlei") {
@@ -156,7 +191,7 @@ async function findAdFilesRecursive(
     listFn = listFilesBaidu;
   }
 
-  const files = await listFn(fsApi, parentId);
+  const files = await listFn(fsApi, parentId, false);
 
   for (const file of files) {
     const fileNameLower = file.name.toLowerCase();
@@ -200,7 +235,11 @@ async function deleteAdFiles(
 
   const adFids: string[] = [];
 
-  let listFn: (fsApi: any, parentId: string) => Promise<PanFile[]>;
+  let listFn: (
+    fsApi: any,
+    parentId: string,
+    isTop: boolean,
+  ) => Promise<PanFile[]>;
   if (sdkType === "quarkUC") {
     listFn = listFilesQuarkUC;
   } else if (sdkType === "xunlei") {
@@ -211,16 +250,7 @@ async function deleteAdFiles(
 
   for (const fid of topFids) {
     try {
-      const files = await listFn(fsApi, fid);
-      if (files.length === 0) {
-        const fileName = "";
-        const fileNameLower = fileName.toLowerCase();
-        const isAd = keywords.some((kw) => fileNameLower.includes(kw));
-        if (isAd) {
-          adFids.push(fid);
-          continue;
-        }
-      }
+      const files = await listFn(fsApi, fid, true);
 
       for (const file of files) {
         const fileNameLower = file.name.toLowerCase();
@@ -373,18 +403,20 @@ async function transferQuarkUC(
 
   const saveAsTopFids = taskResult.save_as?.save_as_top_fids || [];
 
-  // 步骤4: 异步删除广告文件（后台执行，不阻塞分享创建）
+  // console.log(taskResult);
+
+  // 步骤4: 创建分享
+  const shareResult = await shareApi.share(saveAsTopFids, token.title);
+  if (!shareResult.task_id) {
+    throw createError({ statusCode: 500, message: "创建分享任务失败" });
+  }
+
+  // 步骤5: 异步删除广告文件（后台执行，不阻塞分享创建）
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && saveAsTopFids.length > 0) {
     deleteAdFiles(client.fsApi, saveAsTopFids, adFilterConfig, "quarkUC").catch(
       (e) => console.error("异步删除广告文件失败", e),
     );
-  }
-
-  // 步骤5: 创建分享
-  const shareResult = await shareApi.share(saveAsTopFids, token.title);
-  if (!shareResult.task_id) {
-    throw createError({ statusCode: 500, message: "创建分享任务失败" });
   }
 
   // 步骤6: 等待分享完成
@@ -680,9 +712,13 @@ export default defineEventHandler(async (event) => {
       })
       .catch((err) => console.error("落库失败", err));
 
-    // 6. 成功后写入缓存 (20分钟)
+    // 6. 成功后写入缓存
     if (shareUrl) {
-      await setRedisCache(cacheKey, { url: shareUrl }, 60 * 20);
+      await setRedisCache(
+        cacheKey,
+        { url: shareUrl },
+        Math.max(THIRTY_MINUTES - 300, 1),
+      );
     }
 
     return { url: shareUrl };

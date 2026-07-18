@@ -14,6 +14,107 @@ body {
   color: #fff;
 }
 
+/* Route transitions are intentionally mobile-only. */
+@media (max-width: 767px) {
+  ::view-transition-group(root) {
+    animation-duration: 320ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  ::view-transition-image-pair(root) {
+    isolation: isolate;
+  }
+
+  html[data-navigation-direction="forward"]::view-transition-old(root) {
+    z-index: 1;
+    animation: app-page-forward-out 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-navigation-direction="forward"]::view-transition-new(root) {
+    z-index: 2;
+    animation: app-page-forward-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-navigation-direction="back"]::view-transition-old(root) {
+    z-index: 2;
+    animation: app-page-back-out 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-navigation-direction="back"]::view-transition-new(root) {
+    z-index: 1;
+    animation: app-page-back-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Nuxt's Vue transition remains as a fallback for browsers without the API. */
+  @supports not (view-transition-name: none) {
+    .page-enter-active,
+    .page-leave-active {
+      transition:
+        opacity 180ms ease,
+        transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .page-enter-from {
+      opacity: 0;
+      transform: translateX(32px);
+    }
+
+    .page-leave-to {
+      opacity: 0;
+      transform: translateX(-24px);
+    }
+
+    html[data-navigation-direction="back"] .page-enter-from {
+      transform: translateX(-32px);
+    }
+
+    html[data-navigation-direction="back"] .page-leave-to {
+      transform: translateX(24px);
+    }
+  }
+}
+
+@keyframes app-page-forward-out {
+  to {
+    opacity: 0.65;
+    transform: translateX(-18%) scale(0.985);
+  }
+}
+
+@keyframes app-page-forward-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes app-page-back-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes app-page-back-in {
+  from {
+    opacity: 0.65;
+    transform: translateX(-18%) scale(0.985);
+  }
+}
+
+/* 如果用户偏好减少动态效果 */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .page-enter-active,
+  .page-leave-active {
+    transition: none !important;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

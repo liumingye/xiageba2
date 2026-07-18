@@ -13,6 +13,10 @@ import {
 import SearchBarBig from "~/components/SearchBarBig.vue";
 import { useMediaQuery, useResizeObserver } from "@vueuse/core";
 
+defineOptions({
+  name: "IndexPage",
+});
+
 const config = useRuntimeConfig();
 const musicStore = useMusicStore();
 const searchBarRef = ref<typeof SearchBarBig>();
@@ -69,6 +73,13 @@ const showHistorySection = computed(() => {
 });
 
 const activeHistoryTab = ref(hasHotwords.value ? "hot" : "history");
+
+const hasCategory = computed(
+  () =>
+    (!!categoriesWithLatest.value && categoriesWithLatest.value.length > 0) ||
+    (!!hotMusic.value && hotMusic.value.length > 0),
+);
+const activeContentTab = ref<"category" | "douban">("category");
 
 interface CategoryLatestItem {
   id: string;
@@ -501,21 +512,44 @@ const getPic = (url: string) => {
       </section>
 
       <section
-        v-if="
-          (categoriesWithLatest && categoriesWithLatest.length > 0) ||
-          (hotMusic && hotMusic.length > 0)
-        "
-        aria-labelledby="categories-title"
+        v-if="hasCategory || doubanClasses.length > 0"
+        aria-labelledby="content-title"
         class="mb-8"
       >
-        <h2
-          id="categories-title"
-          class="text-lg font-medium text-gray-300 mb-4"
-        >
-          资源分类
-        </h2>
+        <div class="flex items-center border-b border-gray-800 mb-4">
+          <button
+            v-if="hasCategory"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
+            :class="
+              activeContentTab === 'category'
+                ? 'text-primary-400 border-b-2 border-primary-400'
+                : 'text-gray-500 hover:text-gray-300'
+            "
+            @click="activeContentTab = 'category'"
+          >
+            <FolderKanban class="w-4 h-4" />
+            资源分类
+          </button>
+          <button
+            v-if="doubanClasses.length > 0"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
+            :class="
+              activeContentTab === 'douban'
+                ? 'text-primary-400 border-b-2 border-primary-400'
+                : 'text-gray-500 hover:text-gray-300'
+            "
+            @click="activeContentTab = 'douban'"
+          >
+            <Flame class="w-4 h-4" />
+            热门影视
+          </button>
+        </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- 资源分类 -->
+        <div
+          v-if="activeContentTab === 'category' && hasCategory"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+        >
           <div
             v-if="hotMusic && hotMusic.length > 0"
             class="card p-4 flex flex-col"
@@ -606,170 +640,167 @@ const getPic = (url: string) => {
             </NuxtLink>
           </div>
         </div>
-      </section>
 
-      <section aria-labelledby="douban-title" class="mt-10">
-        <h2 id="douban-title" class="text-lg font-medium text-gray-300 mb-4">
-          热门影视
-        </h2>
-
-        <div class="space-y-3 mb-4">
-          <div class="flex items-center gap-3">
-            <div
-              class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
-            >
-              分类
-            </div>
-            <div
-              class="overflow-x-auto overflow-y-hidden select-none touch-pan-x cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
-              @mousedown="
-                onDragMouseDown($event, $event.currentTarget as HTMLElement)
-              "
-              @mousemove="onDragMouseMove"
-              @mouseup="onDragMouseUpOrLeave"
-              @mouseleave="onDragMouseUpOrLeave"
-            >
-              <div class="flex gap-2 min-w-max items-center h-8">
-                <button
-                  v-for="cls in doubanClasses"
-                  :key="cls.type_id"
-                  type="button"
-                  class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
-                  :class="
-                    activeCategoryId === cls.type_id
-                      ? 'bg-gray-700 text-white shadow-sm'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                  "
-                  @click="onCategoryChange(cls.type_id)"
-                >
-                  {{ cls.type_name }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-for="filter in currentFilters"
-            :key="filter.key"
-            class="flex items-center gap-3"
-          >
-            <div
-              class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
-            >
-              {{ filter.name }}
-            </div>
-            <div
-              class="overflow-x-auto overflow-y-hidden select-none touch-pan-x cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
-              @mousedown="
-                onDragMouseDown($event, $event.currentTarget as HTMLElement)
-              "
-              @mousemove="onDragMouseMove"
-              @mouseup="onDragMouseUpOrLeave"
-              @mouseleave="onDragMouseUpOrLeave"
-            >
-              <div class="flex gap-2 min-w-max items-center h-8">
-                <button
-                  v-for="opt in filter.value"
-                  :key="opt.value"
-                  type="button"
-                  class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
-                  :class="
-                    activeFilters[filter.key] === opt.value
-                      ? 'bg-gray-700 text-white shadow-sm'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                  "
-                  @click="
-                    activeFilters[filter.key] = opt.value;
-                    onFilterChange();
-                  "
-                >
-                  {{ opt.name }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-if="doubanLoading && doubanPage === 1"
-          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"
-          aria-busy="true"
-        >
-          <div
-            v-for="(_, i) in Array.from({ length: 10 })"
-            :key="i"
-            class="card p-3 animate-pulse"
-          >
-            <div class="aspect-[2/3] bg-gray-700 rounded-lg mb-3" />
-            <div class="h-4 bg-gray-700 rounded w-3/4 mb-2" />
-            <div class="h-3 bg-gray-700 rounded w-full" />
-          </div>
-        </div>
-
-        <div v-else-if="doubanList.length === 0" class="text-center py-12">
-          <p class="text-gray-500">暂无豆瓣推荐数据</p>
-        </div>
-
-        <div
-          v-else
-          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"
-        >
-          <article
-            v-for="item in doubanList"
-            :key="item.vod_id"
-            class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
-            @click="goToResourceSearch(item)"
-          >
-            <div
-              class="aspect-[2/3] rounded-lg overflow-hidden mb-3 bg-gray-800"
-            >
-              <img
-                v-if="item.vod_pic"
-                :src="getPic(item.vod_pic)"
-                :alt="item.vod_name"
-                class="w-full h-full object-cover"
-                loading="lazy"
-                decoding="async"
-                @error="
-                  ($event.target as HTMLImageElement).style.display = 'none'
-                "
-              />
+        <!-- 热门影视 -->
+        <div v-else-if="activeContentTab === 'douban'">
+          <div class="space-y-3 mb-4">
+            <div class="flex items-center gap-3">
               <div
-                v-else
-                class="w-full h-full flex items-center justify-center text-gray-600 text-sm"
+                class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
               >
-                暂无封面
+                分类
+              </div>
+              <div
+                class="overflow-x-auto overflow-y-hidden select-none touch-pan-x cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
+                @mousedown="
+                  onDragMouseDown($event, $event.currentTarget as HTMLElement)
+                "
+                @mousemove="onDragMouseMove"
+                @mouseup="onDragMouseUpOrLeave"
+                @mouseleave="onDragMouseUpOrLeave"
+              >
+                <div class="flex gap-2 min-w-max items-center h-8">
+                  <button
+                    v-for="cls in doubanClasses"
+                    :key="cls.type_id"
+                    type="button"
+                    class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
+                    :class="
+                      activeCategoryId === cls.type_id
+                        ? 'bg-gray-700 text-white shadow-sm'
+                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    "
+                    @click="onCategoryChange(cls.type_id)"
+                  >
+                    {{ cls.type_name }}
+                  </button>
+                </div>
               </div>
             </div>
-            <h3
-              class="font-medium text-white text-sm truncate"
-              :title="item.vod_name"
-            >
-              {{ item.vod_name }}
-            </h3>
-            <p
-              class="text-xs text-gray-500 truncate mt-1"
-              :title="item.vod_subtitle.replaceAll(/\s/g, '')"
-            >
-              {{ item.vod_subtitle || "-" }}
-            </p>
-          </article>
-        </div>
 
-        <div
-          v-if="doubanLoading && doubanPage > 1"
-          class="text-center py-4 text-sm text-gray-500"
-          aria-busy="true"
-        >
-          加载中...
-        </div>
+            <div
+              v-for="filter in currentFilters"
+              :key="filter.key"
+              class="flex items-center gap-3"
+            >
+              <div
+                class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
+              >
+                {{ filter.name }}
+              </div>
+              <div
+                class="overflow-x-auto overflow-y-hidden select-none touch-pan-x cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
+                @mousedown="
+                  onDragMouseDown($event, $event.currentTarget as HTMLElement)
+                "
+                @mousemove="onDragMouseMove"
+                @mouseup="onDragMouseUpOrLeave"
+                @mouseleave="onDragMouseUpOrLeave"
+              >
+                <div class="flex gap-2 min-w-max items-center h-8">
+                  <button
+                    v-for="opt in filter.value"
+                    :key="opt.value"
+                    type="button"
+                    class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
+                    :class="
+                      activeFilters[filter.key] === opt.value
+                        ? 'bg-gray-700 text-white shadow-sm'
+                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    "
+                    @click="
+                      activeFilters[filter.key] = opt.value;
+                      onFilterChange();
+                    "
+                  >
+                    {{ opt.name }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <InfiniteLoad
-          v-if="doubanList.length > 0 && doubanPage < doubanPageCount"
-          @infinite-load="loadMoreDouban"
-        />
-        <div v-else class="text-center py-4 text-sm text-gray-500">
-          — 已经到底了 —
+          <div
+            v-if="doubanLoading && doubanPage === 1"
+            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"
+            aria-busy="true"
+          >
+            <div
+              v-for="(_, i) in Array.from({ length: 10 })"
+              :key="i"
+              class="card p-3 animate-pulse"
+            >
+              <div class="aspect-[2/3] bg-gray-700 rounded-lg mb-3" />
+              <div class="h-4 bg-gray-700 rounded w-3/4 mb-2" />
+              <div class="h-3 bg-gray-700 rounded w-full" />
+            </div>
+          </div>
+
+          <div v-else-if="doubanList.length === 0" class="text-center py-12">
+            <p class="text-gray-500">暂无豆瓣推荐数据</p>
+          </div>
+
+          <div
+            v-else
+            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"
+          >
+            <article
+              v-for="item in doubanList"
+              :key="item.vod_id"
+              class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
+              @click="goToResourceSearch(item)"
+            >
+              <div
+                class="aspect-[2/3] rounded-lg overflow-hidden mb-3 bg-gray-800"
+              >
+                <img
+                  v-if="item.vod_pic"
+                  :src="getPic(item.vod_pic)"
+                  :alt="item.vod_name"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  @error="
+                    ($event.target as HTMLImageElement).style.display = 'none'
+                  "
+                />
+                <div
+                  v-else
+                  class="w-full h-full flex items-center justify-center text-gray-600 text-sm"
+                >
+                  暂无封面
+                </div>
+              </div>
+              <h3
+                class="font-medium text-white text-sm truncate"
+                :title="item.vod_name"
+              >
+                {{ item.vod_name }}
+              </h3>
+              <p
+                class="text-xs text-gray-500 truncate mt-1"
+                :title="item.vod_subtitle.replaceAll(/\s/g, '')"
+              >
+                {{ item.vod_subtitle || "-" }}
+              </p>
+            </article>
+          </div>
+
+          <div
+            v-if="doubanLoading && doubanPage > 1"
+            class="text-center py-4 text-sm text-gray-500"
+            aria-busy="true"
+          >
+            加载中...
+          </div>
+
+          <InfiniteLoad
+            v-if="doubanList.length > 0 && doubanPage < doubanPageCount"
+            @infinite-load="loadMoreDouban"
+          />
+          <div v-else class="text-center py-4 text-sm text-gray-500">
+            — 已经到底了 —
+          </div>
         </div>
       </section>
 

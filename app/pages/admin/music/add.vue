@@ -189,7 +189,7 @@ const handleSubmit = async () => {
             v-model="form.lyrics"
             rows="6"
             placeholder="请输入歌词，每行一句"
-            class="input-search resize-none"
+            class="input-search"
           ></textarea>
         </div>
 

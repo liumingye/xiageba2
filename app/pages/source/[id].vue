@@ -155,7 +155,7 @@ const fetchDirectUrl = async () => {
         color: { dark: "#000", light: "#fff" },
       });
     } else {
-      fetchError.value = data.message || "获取下载链接失败";
+      fetchError.value = data.message || data.error || "获取下载链接失败";
     }
   } catch (e) {
     fetchError.value = "获取下载链接失败";

@@ -9,6 +9,9 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true,
   },
+  experimental: {
+    viewTransition: true,
+  },
   sourcemap: false,
   modules: [
     "@nuxtjs/tailwindcss",

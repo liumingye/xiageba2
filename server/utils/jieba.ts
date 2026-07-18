@@ -23,14 +23,26 @@ export const cutForSearch = (input: string): string[] => {
 
   const jiebaTokens = jieba.cutForSearch(text, true);
   const groups: string[] = [];
+  const normalizedText = text.toLocaleLowerCase();
+  const seen = new Set<string>();
 
   for (const token of jiebaTokens) {
     const t = sanitizeToken(token);
-    // 2. 过滤掉空字符串、纯空格和单独的数字/字符垃圾片段
-    if (!t || t === "" || t === "''") continue;
+    const normalizedToken = t.toLocaleLowerCase();
+
+    // Jieba occasionally emits artifacts that do not occur in the source.
+    if (
+      !t ||
+      !normalizedText.includes(normalizedToken) ||
+      seen.has(normalizedToken)
+    ) {
+      continue;
+    }
+
+    seen.add(normalizedToken);
     groups.push(t);
   }
-  return groups.filter(Boolean);
+  return groups;
 };
 
 /**

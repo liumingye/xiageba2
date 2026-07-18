@@ -8,8 +8,8 @@ import {
   getXunleiClient,
 } from "#server/lib/pan-instance";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
+import { THIRTY_MINUTES } from "#server/api/const";
 
-const THIRTY_MINUTES = 2 * 60 * 60 * 1000; // ⚡ 2小时的毫秒数
 const ONE_DAY = 24 * 60 * 60 * 1000; // ⚡ 1天的毫秒数
 const PAN_BATCH_LIMIT = 100;
 const LOCK_KEY = "lock:cron:clean-temp-sources";
@@ -58,7 +58,7 @@ export default defineTask({
 
     try {
       const now = Date.now();
-      const cutoffNormal = new Date(now - THIRTY_MINUTES);
+      const cutoffNormal = new Date(now - THIRTY_MINUTES * 1000);
       const cutoffForce = new Date(now - ONE_DAY); // ⚡ 超过1天的临界线
 
       // 捞出所有超过 THIRTY_MINUTES 分钟的临时资源

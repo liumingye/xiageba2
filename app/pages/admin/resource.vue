@@ -612,7 +612,7 @@ const importSources = async () => {
                   v-model="newDescription"
                   rows="3"
                   placeholder="资源说明，可选"
-                  class="input-search resize-none"
+                  class="input-search"
                 ></textarea>
               </div>
               <div class="flex items-center gap-2">
@@ -706,7 +706,7 @@ const importSources = async () => {
                   v-model="editDescription"
                   rows="3"
                   placeholder="资源说明，可选"
-                  class="input-search resize-none"
+                  class="input-search"
                 ></textarea>
               </div>
               <div>
@@ -726,7 +726,7 @@ const importSources = async () => {
                   v-model="editMenu"
                   rows="5"
                   placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
-                  class="input-search resize-none font-mono text-xs"
+                  class="input-search font-mono text-xs"
                 ></textarea>
               </div>
               <div class="flex items-center gap-2">

@@ -215,7 +215,7 @@ const openModal = async ({ item, type }: { item: SourceItem; type: "id" }) => {
     if (res.ok && data?.url) {
       await setModalResult(data.url);
     } else {
-      modalError.value = data.message || "获取下载链接失败";
+      modalError.value = data.message || data.error || "获取下载链接失败";
     }
   } catch {
     modalError.value = "获取下载链接失败";

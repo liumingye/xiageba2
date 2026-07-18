@@ -762,9 +762,7 @@ const clearISRCache = async (route?: string) => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-2"
-                    >搜索词</label
-                  >
+                  <label class="block text-gray-400 text-sm mb-2">搜索词</label>
                   <input
                     v-model="hotword.word"
                     type="text"
@@ -810,10 +808,7 @@ const clearISRCache = async (route?: string) => {
               添加搜索词
             </button>
 
-            <div
-              v-if="hotwords.length === 0"
-              class="text-gray-500 text-sm"
-            >
+            <div v-if="hotwords.length === 0" class="text-gray-500 text-sm">
               未配置热搜词，首页热门搜索区域将不显示
             </div>
           </div>
@@ -868,9 +863,9 @@ const clearISRCache = async (route?: string) => {
               </label>
               <textarea
                 v-model="adFilterConfig.keywords"
-                rows="3"
+                rows="10"
                 placeholder="例如：关注公众号,加微信,广告,推广"
-                class="input-search resize-none"
+                class="input-search"
               />
               <p class="text-gray-500 text-xs mt-2">
                 文件名或目录名包含任一关键词即被删除，关键词不区分大小写

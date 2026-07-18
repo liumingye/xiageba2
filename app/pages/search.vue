@@ -34,6 +34,10 @@ interface PaginatedResponse<T = any> {
   totalPages: number;
 }
 
+defineOptions({
+  name: "SearchPage",
+});
+
 const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
@@ -143,7 +147,8 @@ const openModal = async ({
     if (res.ok && data?.url) {
       await setModalResult(data.url);
     } else {
-      modalError.value = data.message || "获取下载链接失败";
+      console.error(data);
+      modalError.value = data.message || data.error || "获取下载链接失败";
     }
   } catch {
     modalError.value = "获取下载链接失败";
@@ -290,36 +295,7 @@ const total = computed(() => pageData.value?.total || 0);
 const totalPages = computed(() => pageData.value?.totalPages || 0);
 const tokens = computed(() => (pageData.value as any)?.tokens || []);
 
-// 高亮分词关键词
-const escapeHtml = (value: string): string =>
-  String(value ?? "").replace(/[&<>"']/g, (char) => {
-    const entities: Record<string, string> = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return entities[char] || char;
-  });
-
-const highlight = (text: string): string => {
-  const escapedText = escapeHtml(text || "");
-  if (!escapedText || tokens.value.length === 0) return escapedText;
-  // 按长度降序排列，优先匹配长词
-  const sorted = [...tokens.value].sort((a, b) => b.length - a.length);
-  let result = escapedText;
-  for (const token of sorted) {
-    const escapedToken = escapeHtml(token);
-    const escaped = escapedToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    result = result.replace(
-      new RegExp(escaped, "gi"),
-      (match) =>
-        `<mark class="bg-transparent text-primary-400">${match}</mark>`,
-    );
-  }
-  return result;
-};
+const highlight = (text: string): string => highlightTokens(text, tokens.value);
 
 // 错误分类：rate-limit / server / network
 interface ErrorInfo {
