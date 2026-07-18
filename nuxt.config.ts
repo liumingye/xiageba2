@@ -78,10 +78,6 @@ export default defineNuxtConfig({
       skipWaiting: true, // 跳过等待，强制最新的 Service Worker 立即进入激活状态
       navigateFallback: null, // 禁用全局导航回退。因为下方 runtimeCaching 中对单页面做了精确的离线后备处理
 
-      // 保持静态 HTML 文件名原样。Nuxt 默认的转换可能会把 offline.html 重写为 /offline，
-      // 这会导致找不到真实的 Nitro 路由而报错，这里设为空数组以禁用该转换。
-      manifestTransforms: [],
-
       // 匹配需要通过 Workbox 自动打包并预缓存的文件类型后缀
       globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
 
@@ -138,6 +134,7 @@ export default defineNuxtConfig({
           rel: "apple-touch-icon",
           href: "/pwa/apple-touch-icon.png",
         },
+        { rel: "manifest", href: "/manifest.webmanifest" },
       ],
     },
     pageTransition: { name: "page", mode: "out-in" },
