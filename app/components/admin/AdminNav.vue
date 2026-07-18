@@ -12,6 +12,7 @@ import {
   Tags,
   UserCog,
   Webhook,
+  Megaphone,
 } from "@lucide/vue";
 
 const route = useRoute();
@@ -152,6 +153,18 @@ const toggleResource = () => {
       >
         <MessageSquare class="w-5 h-5" />
         反馈管理
+      </button>
+      <button
+        class="flex items-center gap-2 transition-colors py-3"
+        :class="
+          isActive('/admin/announcement')
+            ? 'text-primary-500 font-medium'
+            : 'text-gray-400 hover:text-gray-200'
+        "
+        @click="navigate('/admin/announcement')"
+      >
+        <Megaphone class="w-5 h-5" />
+        公告管理
       </button>
 
       <button

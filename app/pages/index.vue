@@ -401,12 +401,16 @@ const getPic = (url: string) => {
         <SearchBarBig ref="searchBarRef" />
         <div class="text-sm text-gray-400 mt-3">
           {{
-            isMobile
-              ? "打开浏览器菜单，点击加入书签不迷路"
-              : "按下Ctrl + D收藏网站不迷路"
+            !isClientMounted
+              ? "&nbsp;"
+              : isMobile
+                ? "打开浏览器菜单，点击加入书签不迷路"
+                : "按下Ctrl + D收藏网站不迷路"
           }}
         </div>
       </header>
+
+      <AnnouncementDisplay />
 
       <section
         v-if="showHistorySection"
@@ -471,7 +475,7 @@ const getPic = (url: string) => {
         <div
           v-if="activeHistoryTab === 'hot' && hasHotwords"
           class="flex flex-wrap gap-2"
-          :class="sectionExpanded ? '' : 'max-h-[100px]'"
+          :class="sectionExpanded ? '' : 'max-h-[200px]'"
         >
           <button
             v-for="(hotword, index) in hotwords"
@@ -498,7 +502,7 @@ const getPic = (url: string) => {
         <div
           v-if="activeHistoryTab === 'history' && hasHistory"
           class="flex flex-wrap gap-2 transition-all duration-300"
-          :class="sectionExpanded ? '' : 'max-h-[100px]'"
+          :class="sectionExpanded ? '' : 'max-h-[200px]'"
         >
           <button
             v-for="keyword in musicStore.searchHistory"

@@ -118,6 +118,41 @@ model ApiList {
   @@index([weight])
 }
 
+model Announcement {
+  id          String              @id @default(cuid(2))
+  title       String
+  content     String              @default("")
+  displayType AnnouncementDisplay @default(NORMAL)
+  icon        AnnouncementIcon    @default(INFO)
+  status      AnnouncementStatus  @default(ACTIVE)
+  sort        Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime?           @updatedAt
+
+  @@index([status])
+  @@index([displayType])
+  @@index([sort])
+  @@index([createdAt])
+}
+
+enum AnnouncementDisplay {
+  NORMAL
+  BANNER
+  DIALOG
+}
+
+enum AnnouncementIcon {
+  INFO
+  WARN
+  ERROR
+  SUCCESS
+}
+
+enum AnnouncementStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 enum FeedbackStatus {
   PENDING
   DONE
