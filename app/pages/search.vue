@@ -1006,7 +1006,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               >
                 <h3 class="text-white font-medium">
                   目录结构<span class="text-xs text-gray-400"
-                    >（最多显示5层、100个文件）</span
+                    >（最多显示5层、150个文件）</span
                   >
                 </h3>
                 <button
