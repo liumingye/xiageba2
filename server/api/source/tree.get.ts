@@ -18,6 +18,7 @@ import {
   getBaiduClient,
   getXunleiClient,
 } from "#server/lib/pan-instance";
+import { TREE_MAX_LINE } from "#server/lib/const";
 
 const MAX_DEPTH = 5;
 
@@ -58,8 +59,14 @@ export default defineEventHandler(async (event) => {
     sourceTitle = source.title || "";
     sourceDescription = source.description || "";
     // 目录文件数太多，直接返回目录
-    if (source.menu && source.menu.length > 3000) {
-      return { tree: source.menu, success: true };
+    if (source.menu) {
+      const lineNum = source.menu.split(/\r?\n/).length;
+      if (lineNum >= TREE_MAX_LINE) {
+        return {
+          tree: source.menu + "\n(文件过多，已截断显示)",
+          success: true,
+        };
+      }
     }
   } else if (inputUrl) {
     const decryptedUrl = await decryptUrl(inputUrl || "");
@@ -114,7 +121,7 @@ export default defineEventHandler(async (event) => {
       const tokens = buildTokens(
         sourceTitle,
         sourceDescription,
-        truncateString(clearTreeSymbols(generatedTree), 3000),
+        truncateString(clearTreeSymbols(generatedTree), TREE_MAX_LINE),
       );
 
       prisma.$executeRaw`UPDATE "Source" SET "menu" = ${generatedTree}, "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${sourceId}`.catch(
@@ -204,6 +211,10 @@ async function walkQuarkUC(
     const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.file_name}`);
 
+    if (lines.length >= TREE_MAX_LINE + 1) {
+      break;
+    }
+
     if (item.file_type === 0) {
       const extension = depth === 0 ? "" : isLast ? "  " : "│  ";
       await walkQuarkUC(
@@ -287,6 +298,10 @@ async function walkBaidu(
     const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.server_filename}`);
 
+    if (lines.length >= TREE_MAX_LINE + 1) {
+      break;
+    }
+
     if (item.isdir) {
       const extension = depth === 0 ? "" : isLast ? "  " : "│  ";
       await walkBaidu(
@@ -356,6 +371,10 @@ async function walkXunlei(
     const isLast = i === items.length - 1;
     const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.name}`);
+
+    if (lines.length >= TREE_MAX_LINE + 1) {
+      break;
+    }
 
     if (item.is_dir) {
       const extension = depth === 0 ? "" : isLast ? "  " : "│  ";

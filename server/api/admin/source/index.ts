@@ -1,6 +1,7 @@
 import { prisma } from "#server/lib/prisma";
 import { clearTreeSymbols } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
+import { TREE_MAX_LINE } from "#server/lib/const";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
@@ -83,7 +84,7 @@ export default defineEventHandler(async (event) => {
     const tokens = buildTokens(
       source.title || "",
       source.description || "",
-      truncateString(clearTreeSymbols(source.menu || ""), 3000),
+      truncateString(clearTreeSymbols(source.menu || ""), TREE_MAX_LINE),
     );
     if (tokens) {
       await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;

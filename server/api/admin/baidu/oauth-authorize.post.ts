@@ -1,5 +1,5 @@
 import { createAuthClient, generateCodeVerifier } from "@netdisk-sdk/baidu-sdk";
-import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "~~/server/api/const";
+import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
 
 export default defineEventHandler(async () => {
   const authClient = createAuthClient(BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET);

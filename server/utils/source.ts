@@ -87,11 +87,27 @@ export const clearTreeSymbols = (str: string) => {
   return str.replace(/\├|└|─/g, "");
 };
 
-// 字符串最多maxLength个字符，超过显示省略号
-export const truncateString = (
-  str: string,
-  maxLength = 1000,
-  ellipsis = "",
-) => {
-  return str.length > maxLength ? str.slice(0, maxLength) + ellipsis : str;
+// 字符串超过maxLine，超过显示省略号
+export const truncateString = (str: string, maxLine = 150, ellipsis = "") => {
+  if (!str) return "";
+
+  // 按换行符切分成数组
+  const lines = str.split(/\r?\n/);
+
+  // 如果实际行数超过了最大行数限制
+  if (lines.length >= maxLine) {
+    // 根据 greaterThan 决定截取的终点
+    const truncatedLines = lines.slice(0, Math.max(0, maxLine));
+
+    // 如果截取后还有内容，在最后一行末尾拼接省略号
+    if (truncatedLines.length > 0) {
+      truncatedLines[truncatedLines.length - 1] += ellipsis;
+    } else {
+      return "";
+    }
+
+    return truncatedLines.join("\n");
+  }
+
+  return str;
 };

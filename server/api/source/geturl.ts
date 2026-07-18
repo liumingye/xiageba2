@@ -11,7 +11,7 @@ import {
   getBaiduClient,
   getXunleiClient,
 } from "#server/lib/pan-instance";
-import { THIRTY_MINUTES } from "#server/api/const";
+import { THIRTY_MINUTES } from "#server/lib/const";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 

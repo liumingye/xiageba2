@@ -8,7 +8,7 @@ import {
   getXunleiClient,
 } from "#server/lib/pan-instance";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
-import { THIRTY_MINUTES } from "#server/api/const";
+import { THIRTY_MINUTES } from "#server/lib/const";
 
 const ONE_DAY = 24 * 60 * 60 * 1000; // ⚡ 1天的毫秒数
 const PAN_BATCH_LIMIT = 100;

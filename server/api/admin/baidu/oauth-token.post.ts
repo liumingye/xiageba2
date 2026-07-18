@@ -1,6 +1,6 @@
 import { createAuthClient } from "@netdisk-sdk/baidu-sdk";
-import { setConfigValues } from "~~/server/lib/configCache";
-import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "~~/server/api/const";
+import { setConfigValues } from "#server/lib/configCache";
+import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

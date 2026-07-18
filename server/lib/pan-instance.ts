@@ -6,7 +6,7 @@ import {
   updateXunleiRefreshToken,
   updateBaiduRefreshToken,
 } from "#server/utils/source";
-import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "~~/server/api/const";
+import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
 
 // 客户端过期时间，单位：小时
 const CLIENT_EXPIRE_HOURS = 0.5;

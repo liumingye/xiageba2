@@ -6,6 +6,7 @@ import {
 import { getStorageType } from "#shared/utils";
 import { Pool } from "pg";
 import { truncateString } from "#server/utils/source";
+import { TREE_MAX_LINE } from "#server/lib/const";
 
 const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;
@@ -173,7 +174,7 @@ export default defineCachedEventHandler(
     WITH search_query AS (
       SELECT websearch_to_tsquery('simple', $${queryParamIndex}) AS value
     )
-    SELECT id, title, url, left(menu, 3001) AS menu, "isSelf", "createdAt"
+    SELECT id, title, url, menu, "isSelf", "createdAt"
     FROM "Source" CROSS JOIN search_query
     ${whereClause}
     ORDER BY ${orderClause}
@@ -211,7 +212,7 @@ export default defineCachedEventHandler(
         item.type = item.type || getStorageType(item.url);
         item.menu = truncateString(
           item.menu || "",
-          3000,
+          TREE_MAX_LINE,
           "\n(文件过多，已截断显示)",
         );
         delete item.url;
@@ -231,8 +232,11 @@ export default defineCachedEventHandler(
   },
   {
     name: "source-search-v3",
-    maxAge: 30,
-    staleMaxAge: 120,
+    // maxAge: 30,
+    // staleMaxAge: 120,
+
+    maxAge: 0,
+    staleMaxAge: 0,
     swr: true,
     getKey: (event) => {
       const query = getQuery(event);

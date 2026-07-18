@@ -1,7 +1,9 @@
 import { prisma } from "#server/lib/prisma";
 import { getStorageType } from "#shared/utils";
 import { truncateString } from "#server/utils/source";
+import { TREE_MAX_LINE } from "#server/lib/const";
 
+// 分页最大页数
 const MAX_PAGE = 100;
 
 export default defineEventHandler(async (event) => {
@@ -59,7 +61,11 @@ export default defineEventHandler(async (event) => {
     id: item.id,
     title: item.title,
     // description: item.description,
-    menu: truncateString(item.menu || "", 3000, "\n(文件过多，已截断显示)"),
+    menu: truncateString(
+      item.menu || "",
+      TREE_MAX_LINE,
+      "\n(文件过多，已截断显示)",
+    ),
     type: getStorageType(item.url),
     createdAt: item.createdAt,
     isSelf: item.isSelf,

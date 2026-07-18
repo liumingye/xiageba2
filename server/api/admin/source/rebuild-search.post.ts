@@ -2,6 +2,7 @@ import { Pool } from "pg";
 import { buildTokens } from "#server/utils/jieba";
 import { clearTreeSymbols } from "#server/utils/source";
 import { setRedisCache } from "#server/lib/redis";
+import { TREE_MAX_LINE } from "#server/lib/const";
 
 // 🔒 全局互斥状态锁，防止高并发下重复触发运维任务
 let isRebuilding = false;
@@ -60,7 +61,7 @@ export default defineEventHandler(async (event) => {
           const tokens = buildTokens(
             s.title || "",
             s.description || "",
-            truncateString(clearTreeSymbols(s.menu || ""), 3000),
+            truncateString(clearTreeSymbols(s.menu || ""), TREE_MAX_LINE),
           );
           ids.push(s.id);
           tokenStrings.push(tokens);
