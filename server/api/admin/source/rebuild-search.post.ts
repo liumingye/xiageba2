@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
           const tokens = buildTokens(
             s.title || "",
             s.description || "",
-            clearTreeSymbols(s.menu || ""),
+            truncateString(clearTreeSymbols(s.menu || ""), 3000),
           );
           ids.push(s.id);
           tokenStrings.push(tokens);

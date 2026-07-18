@@ -45,6 +45,49 @@ export const cutForSearch = (input: string): string[] => {
   return groups;
 };
 
+/** Remove weak, synthetic and overlapping tokens before building a query. */
+export const prioritizeSearchTokens = (tokens: string[]): string[] => {
+  const hasTextToken = tokens.some((token) => !/^\d+$/.test(token));
+  const withoutRandomNumbers = hasTextToken
+    ? tokens.filter((token) => !/^\d{6,}$/.test(token))
+    : tokens;
+  const hasLongToken = withoutRandomNumbers.some(
+    (token) => Array.from(token).length > 1,
+  );
+  const withoutWeakSingles = hasLongToken
+    ? withoutRandomNumbers.filter(
+        (token) => Array.from(token).length > 1,
+      )
+    : withoutRandomNumbers;
+
+  return withoutWeakSingles.filter(
+    (token, index, allTokens) =>
+      !allTokens.some(
+        (candidate, candidateIndex) =>
+          candidateIndex !== index &&
+          candidate.length > token.length &&
+          candidate.toLocaleLowerCase().includes(token.toLocaleLowerCase()),
+      ),
+  );
+};
+
+export const buildSearchWebQuery = (
+  tokens: string[],
+  exact: boolean,
+): string => {
+  if (exact || tokens.length <= 1) return tokens.join(" ");
+
+  const sorted = [...tokens].sort((a, b) => {
+    const aNumeric = /^\d+$/.test(a) ? 1 : 0;
+    const bNumeric = /^\d+$/.test(b) ? 1 : 0;
+    return aNumeric - bNumeric || Array.from(b).length - Array.from(a).length;
+  });
+  const [anchor, ...others] = sorted;
+
+  if (others.length === 1) return `${anchor} ${others[0]}`;
+  return `${anchor} (${others.join(" OR ")})`;
+};
+
 /**
  * [写入/索引端用] 将词语安全组装给 PostgreSQL 的 searchVector
  */
@@ -64,6 +107,8 @@ export const buildTokens = (...terms: string[]): string => {
 
 export default {
   cutForSearch,
+  prioritizeSearchTokens,
+  buildSearchWebQuery,
   tokenizeIndex,
   buildTokens,
 };

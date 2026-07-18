@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
     const tokens = buildTokens(
       source.title || "",
       source.description || "",
-      clearTreeSymbols(source.menu || ""),
+      truncateString(clearTreeSymbols(source.menu || ""), 3000),
     );
     if (tokens) {
       await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;

@@ -86,3 +86,12 @@ export const getRandomUA = () => {
 export const clearTreeSymbols = (str: string) => {
   return str.replace(/\├|└|─/g, "");
 };
+
+// 字符串最多maxLength个字符，超过显示省略号
+export const truncateString = (
+  str: string,
+  maxLength = 1000,
+  ellipsis = "",
+) => {
+  return str.length > maxLength ? str.slice(0, maxLength) + ellipsis : str;
+};

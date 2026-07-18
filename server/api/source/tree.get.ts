@@ -1,7 +1,7 @@
 import { prisma } from "#server/lib/prisma";
 import { decryptUrl } from "#server/lib/crypto";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
-import { clearTreeSymbols } from "#server/utils/source";
+import { clearTreeSymbols, truncateString } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
 import { parseShareUrl } from "./geturl";
 import { QuarkUCClient, IShareFile } from "@netdisk-sdk/quarkuc-sdk";
@@ -42,7 +42,13 @@ export default defineEventHandler(async (event) => {
   // 1. 快速查询或解密，拿到真正的 url
   if (id) {
     const source = await prisma.source.findUnique({
-      select: { id: true, url: true, title: true, description: true },
+      select: {
+        id: true,
+        url: true,
+        title: true,
+        description: true,
+        menu: true,
+      },
       where: { id },
     });
     if (!source) {
@@ -51,6 +57,10 @@ export default defineEventHandler(async (event) => {
     url = source.url;
     sourceTitle = source.title || "";
     sourceDescription = source.description || "";
+    // 目录文件数太多，直接返回目录
+    if (source.menu && source.menu.length > 3000) {
+      return { tree: source.menu, success: true };
+    }
   } else if (inputUrl) {
     const decryptedUrl = await decryptUrl(inputUrl || "");
     if (decryptedUrl === null) {
@@ -104,12 +114,12 @@ export default defineEventHandler(async (event) => {
       const tokens = buildTokens(
         sourceTitle,
         sourceDescription,
-        clearTreeSymbols(generatedTree),
+        truncateString(clearTreeSymbols(generatedTree), 3000),
       );
 
-      prisma
-        .$executeRaw`UPDATE "Source" SET "menu" = ${generatedTree}, "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${sourceId}`
-        .catch((err) => console.error("更新菜单树失败:", err));
+      prisma.$executeRaw`UPDATE "Source" SET "menu" = ${generatedTree}, "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${sourceId}`.catch(
+        (err) => console.error("更新菜单树失败:", err),
+      );
     }
 
     return generatedTree;

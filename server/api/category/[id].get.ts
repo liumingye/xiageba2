@@ -1,5 +1,6 @@
 import { prisma } from "#server/lib/prisma";
 import { getStorageType } from "#shared/utils";
+import { truncateString } from "#server/utils/source";
 
 const MAX_PAGE = 100;
 
@@ -58,7 +59,7 @@ export default defineEventHandler(async (event) => {
     id: item.id,
     title: item.title,
     // description: item.description,
-    menu: item.menu,
+    menu: truncateString(item.menu || "", 3000, "\n(文件过多，已截断显示)"),
     type: getStorageType(item.url),
     createdAt: item.createdAt,
     isSelf: item.isSelf,
