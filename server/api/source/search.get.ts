@@ -232,11 +232,8 @@ export default defineCachedEventHandler(
   },
   {
     name: "source-search-v3",
-    // maxAge: 30,
-    // staleMaxAge: 120,
-
-    maxAge: 0,
-    staleMaxAge: 0,
+    maxAge: 30,
+    staleMaxAge: 120,
     swr: true,
     getKey: (event) => {
       const query = getQuery(event);

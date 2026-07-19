@@ -304,7 +304,7 @@ interface ParsedShare {
 }
 
 // 🔒 内存进程锁（单实例高效防并发击穿）
-const inflightRequests = new Map<string, Promise<{ url: string }>>();
+const inflightRequests = new Map<string, Promise<string>>();
 
 // 提取白名单为全局 Set，O(1) 复杂度高性能判断
 const ALLOWED_HOSTS = new Set([
@@ -622,10 +622,36 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少参数 url 或 id" });
   }
 
+  if (inputUrl && id) {
+    throw createError({ statusCode: 400, message: "同时传入 url 和 id 无效" });
+  }
+
   let sourceTitle = "临时资源";
   let sourceUrl = "";
 
-  // 1. 快速获取源站 URL
+  if (inputUrl) {
+    const decryptedUrl = await decryptUrl(inputUrl);
+    if (!decryptedUrl)
+      throw createError({ statusCode: 400, message: "链接解密失败" });
+    sourceUrl = decryptedUrl;
+  }
+
+  const cacheKey = id
+    ? `source:id:${id}`
+    : `source:url:${Buffer.from(sourceUrl).toString("base64").substring(0, 40)}`;
+
+  // 🚀 一级防御：读取大并发下的分布式 Redis 缓存
+  const redisCache = await getRedisCache<string>(cacheKey);
+  if (redisCache !== null) {
+    return { url: redisCache, redis: true };
+  }
+
+  // 🔒 二级防御：并发互斥单飞锁（防止击穿网盘 SDK 和账号限制）
+  if (inflightRequests.has(cacheKey)) {
+    const url = await inflightRequests.get(cacheKey);
+    return { url, inflight: true };
+  }
+
   if (id) {
     const source = await prisma.source.findUnique({ where: { id } });
     if (!source) throw createError({ statusCode: 404, message: "资源不存在" });
@@ -634,37 +660,18 @@ export default defineEventHandler(async (event) => {
     }
     sourceTitle = source.title;
     sourceUrl = source.url;
-  } else if (inputUrl) {
-    const decryptedUrl = await decryptUrl(inputUrl);
-    if (!decryptedUrl)
-      throw createError({ statusCode: 400, message: "链接解密失败" });
-    sourceUrl = decryptedUrl;
   }
 
   if (!sourceUrl) throw createError({ statusCode: 400, message: "链接为空" });
 
-  // 2. ⚡ 高性能白名单清洗：非网盘链接直接断开，绝不往下走
+  // ⚡ 高性能白名单清洗：非网盘链接直接断开，绝不往下走
   try {
     const hostname = new URL(sourceUrl).hostname.toLowerCase();
     if (!ALLOWED_HOSTS.has(hostname)) {
       return { url: sourceUrl };
     }
   } catch {
-    return { url: sourceUrl };
-  }
-
-  const cacheKey = `source:${sourceUrl}`;
-
-  // 3. 🚀 一级防御：读取大并发下的分布式 Redis 缓存
-  const cached = await getRedisCache<{ url: string }>(cacheKey);
-  if (cached?.url) {
-    return cached;
-  }
-
-  // 4. 🔒 二级防御：并发互斥单飞锁（防止击穿网盘 SDK 和账号限制）
-  if (inflightRequests.has(cacheKey)) {
-    // 如果当前已经有一个请求正在为这个链接办理“转存”，后续并发请求在此排队等待它的 Promise 结果
-    return inflightRequests.get(cacheKey)!;
+    throw createError({ statusCode: 400, message: "白名单清洗失败" });
   }
 
   // 构建核心转存处理链条
@@ -672,7 +679,7 @@ export default defineEventHandler(async (event) => {
     const { type, fid, passcode, url: sharePageUrl } = parseShareUrl(sourceUrl);
 
     if (type === "unknown" || !fid) {
-      return { url: sourceUrl };
+      return sourceUrl;
     }
 
     let shareUrl: string;
@@ -711,7 +718,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // 5. 异步落库：将创建转存记录改为后台执行，不让数据库 I/O 拖慢响应速度
+    // 异步落库：将创建转存记录改为后台执行，不让数据库 I/O 拖慢响应速度
     prisma.source
       .create({
         data: {
@@ -723,16 +730,16 @@ export default defineEventHandler(async (event) => {
       })
       .catch((err) => console.error("落库失败", err));
 
-    // 6. 成功后写入缓存
+    // 成功后写入缓存
     if (shareUrl) {
       await setRedisCache(
         cacheKey,
-        { url: shareUrl },
+        shareUrl,
         Math.max(THIRTY_MINUTES - 300, 1),
       );
     }
 
-    return { url: shareUrl };
+    return shareUrl;
   })();
 
   // 将 Promise 送入全局互斥拦截器
@@ -740,7 +747,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const result = await transferPromise;
-    return result;
+    return { url: result };
   } finally {
     // 🔒 无论成功或失败，办完手续后必须从内存中清除锁，允许下一个周期（20分钟后）的请求重新触发转存
     inflightRequests.delete(cacheKey);

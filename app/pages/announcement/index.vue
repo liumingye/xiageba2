@@ -208,7 +208,7 @@ watch(
         </button>
       </div>
 
-      <div v-if="pending && announcements.length === 0" class="space-y-4">
+      <div v-if="pending" class="space-y-4">
         <div
           v-for="i in 3"
           :key="i"

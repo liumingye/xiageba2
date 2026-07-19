@@ -35,12 +35,41 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少参数 url 或 id" });
   }
 
+  if (id && inputUrl) {
+    throw createError({ statusCode: 400, message: "id 和 url 不能同时存在" });
+  }
+
   let url = "";
   let sourceId = id || "";
   let sourceTitle = "";
   let sourceDescription = "";
 
-  // 1. 快速查询或解密，拿到真正的 url
+  // 解密 url
+  if (inputUrl) {
+    const decryptedUrl = await decryptUrl(inputUrl || "");
+    if (decryptedUrl === null) {
+      throw createError({ statusCode: 400, message: "链接解密失败" });
+    }
+    url = decryptedUrl;
+  }
+
+  // ⚡ 优化：不管通过 id 还是 url，都映射生成全局唯一的 cacheKey 确保全渠道覆盖
+  const cacheKey = id
+    ? `tree:id:${id}`
+    : `tree:url:${Buffer.from(url).toString("base64").substring(0, 40)}`;
+
+  // 🚀 一级防御：读取分布式高速缓存 Redis
+  const cached = await getRedisCache<string>(cacheKey);
+  if (cached !== null) {
+    return { tree: cached, success: true, redis: true };
+  }
+
+  // 🔒 二级防御：互斥单飞锁，阻断多层网盘递归请求对连接池的瞬间榨干
+  if (treeInflightRequests.has(cacheKey)) {
+    const activeTree = await treeInflightRequests.get(cacheKey);
+    return { tree: activeTree, success: true, inflight: true };
+  }
+
   if (id) {
     const source = await prisma.source.findUnique({
       select: {
@@ -68,30 +97,6 @@ export default defineEventHandler(async (event) => {
         };
       }
     }
-  } else if (inputUrl) {
-    const decryptedUrl = await decryptUrl(inputUrl || "");
-    if (decryptedUrl === null) {
-      throw createError({ statusCode: 400, message: "链接解密失败" });
-    }
-    url = decryptedUrl;
-  }
-
-  // ⚡ 优化：不管通过 id 还是 url，都映射生成全局唯一的 cacheKey 确保全渠道覆盖
-  const cacheKey = id
-    ? `tree:id:${id}`
-    : `tree:url:${Buffer.from(url).toString("base64").substring(0, 40)}`;
-
-  // 2. 🚀 一级防御：读取分布式高速缓存 Redis
-  const cached = await getRedisCache<string>(cacheKey);
-
-  if (cached !== null) {
-    return { tree: cached, success: true };
-  }
-
-  // 3. 🔒 二级防御：互斥单飞锁，阻断多层网盘递归请求对连接池的瞬间榨干
-  if (treeInflightRequests.has(cacheKey)) {
-    const activeTree = await treeInflightRequests.get(cacheKey);
-    return { tree: activeTree, success: true };
   }
 
   // 构建核心的文件树递归生成任务链
@@ -113,23 +118,25 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "不支持的该网盘类型" });
     }
 
-    // 4. 写入 Redis 缓存（保存24小时）
-    await setRedisCache(cacheKey, generatedTree, 24 * 60 * 60);
+    const truncateTree = truncateString(generatedTree, TREE_MAX_LINE + 1);
 
-    // 5. 异步写库：改用非阻塞式后台运行，不再挂起当前的 HTTP 响应时间
-    if (sourceId && generatedTree) {
+    // 写入 Redis 缓存（保存24小时）
+    await setRedisCache(cacheKey, truncateTree, 24 * 60 * 60);
+
+    // 异步写库：改用非阻塞式后台运行，不再挂起当前的 HTTP 响应时间
+    if (sourceId && truncateTree) {
       const tokens = buildTokens(
         sourceTitle,
         sourceDescription,
-        truncateString(clearTreeSymbols(generatedTree), TREE_MAX_LINE),
+        clearTreeSymbols(truncateTree),
       );
 
-      prisma.$executeRaw`UPDATE "Source" SET "menu" = ${generatedTree}, "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${sourceId}`.catch(
+      prisma.$executeRaw`UPDATE "Source" SET "menu" = ${truncateTree}, "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${sourceId}`.catch(
         (err) => console.error("更新菜单树失败:", err),
       );
     }
 
-    return generatedTree;
+    return truncateTree;
   })();
 
   // 登记锁
@@ -211,7 +218,7 @@ async function walkQuarkUC(
     const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.file_name}`);
 
-    if (lines.length >= TREE_MAX_LINE + 1) {
+    if (lines.length >= TREE_MAX_LINE + 5) {
       break;
     }
 
@@ -298,7 +305,7 @@ async function walkBaidu(
     const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.server_filename}`);
 
-    if (lines.length >= TREE_MAX_LINE + 1) {
+    if (lines.length >= TREE_MAX_LINE + 5) {
       break;
     }
 
@@ -372,7 +379,7 @@ async function walkXunlei(
     const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
     lines.push(`${prefix}${connector}${item.name}`);
 
-    if (lines.length >= TREE_MAX_LINE + 1) {
+    if (lines.length >= TREE_MAX_LINE + 5) {
       break;
     }
 
