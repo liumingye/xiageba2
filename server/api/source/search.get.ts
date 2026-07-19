@@ -7,6 +7,10 @@ import { getStorageType } from "#shared/utils";
 import { Pool } from "pg";
 import { truncateString } from "#server/utils/source";
 import { TREE_MAX_LINE } from "#server/lib/const";
+import {
+  getResourceFileExtensions,
+  normalizeResourceFileTypes,
+} from "#shared/resource-file-types";
 
 const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;
@@ -58,6 +62,7 @@ export default defineCachedEventHandler(
         ? (query.sort as SortOrder)
         : "default";
     const exact = query.exact === "true";
+    const fileTypes = normalizeResourceFileTypes(query.type);
 
     if (!term) {
       return {
@@ -79,14 +84,23 @@ export default defineCachedEventHandler(
     }
 
     // 1. 利用结巴分词获取干净的 tokens 数组
-    const tokens = prioritizeSearchTokens(cutForSearch(term));
+    const keywordTokens = prioritizeSearchTokens(cutForSearch(term));
 
-    if (tokens.length === 0) {
-      return { data: [], total: 0, page, pageSize, totalPages: 0, tokens };
+    if (keywordTokens.length === 0) {
+      return {
+        data: [],
+        total: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+        tokens: keywordTokens,
+      };
     }
 
     // 模糊搜索使用“核心词 AND 其他词任选其一”，避免宽泛 OR 查询全表评分。
-    const formattedWebQuery = buildSearchWebQuery(tokens, exact);
+    const keywordWebQuery = buildSearchWebQuery(keywordTokens, exact);
+    const extensionTokens = getResourceFileExtensions(fileTypes);
+    const tokens = [...keywordTokens, ...extensionTokens];
 
     // 3. 初始化基础参数（通用部分）
     const baseParams: any[] = [];
@@ -113,10 +127,19 @@ export default defineCachedEventHandler(
       conditions.push(`(${likeConditions.join(" OR ")})`);
     }
 
-    // 🔥 核心变更：全面换成 websearch_to_tsquery
+    // 关键词与扩展名分别构造 tsquery，避免 websearch 括号改变 OR 优先级。
     const queryParamIndex = paramIndex++;
+    baseParams.push(keywordWebQuery);
+    let searchQueryExpression = `websearch_to_tsquery('simple', $${queryParamIndex})`;
+    if (extensionTokens.length > 0) {
+      const extensionParamIndex = paramIndex++;
+      const extensionTsQuery = extensionTokens
+        .map((extension) => extension.slice(1))
+        .join(" | ");
+      baseParams.push(extensionTsQuery);
+      searchQueryExpression = `(${searchQueryExpression} && to_tsquery('simple', $${extensionParamIndex}))`;
+    }
     conditions.push(`"searchVector" @@ search_query.value`);
-    baseParams.push(formattedWebQuery);
 
     // 组装统一的 WHERE 语句
     const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
@@ -172,7 +195,7 @@ export default defineCachedEventHandler(
 
     const dataSql = `
     WITH search_query AS (
-      SELECT websearch_to_tsquery('simple', $${queryParamIndex}) AS value
+      SELECT ${searchQueryExpression} AS value
     )
     SELECT id, title, url, menu, "isSelf", "createdAt"
     FROM "Source" CROSS JOIN search_query
@@ -183,7 +206,7 @@ export default defineCachedEventHandler(
 
     const countSql = `
     WITH search_query AS (
-      SELECT websearch_to_tsquery('simple', $${queryParamIndex}) AS value
+      SELECT ${searchQueryExpression} AS value
     ), limited_matches AS (
       SELECT 1
       FROM "Source" CROSS JOIN search_query
@@ -231,7 +254,7 @@ export default defineCachedEventHandler(
     }
   },
   {
-    name: "source-search-v3",
+    name: "source-search-v4",
     maxAge: 30,
     staleMaxAge: 120,
     swr: true,
@@ -245,6 +268,9 @@ export default defineCachedEventHandler(
         query.pan,
         query.sort,
         query.exact,
+        Array.isArray(query.type)
+          ? [...query.type].map(String).sort().join(",")
+          : query.type,
       ]
         .map((value) => encodeURIComponent(String(value ?? "")))
         .join(":");

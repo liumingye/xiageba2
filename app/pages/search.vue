@@ -25,6 +25,10 @@ import WebSearchResults from "~/components/WebSearchResults.vue";
 import type { WebSearchResult } from "~/components/WebSearchResults.vue";
 import LocalResourceItem from "~/components/LocalResourceItem.vue";
 import type { SourceItem } from "~/components/LocalResourceItem.vue";
+import {
+  RESOURCE_FILE_TYPE_OPTIONS,
+  normalizeResourceFileTypes,
+} from "#shared/resource-file-types";
 
 interface PaginatedResponse<T = any> {
   data: T[];
@@ -181,6 +185,9 @@ const timeFilter = computed(() => (route.query.time as string) || "any");
 const panFilter = computed(() => (route.query.pan as string) || "all");
 const sortFilter = computed(() => (route.query.sort as string) || "default");
 const exactFilter = computed(() => route.query.exact === "true");
+const fileTypeFilter = computed(() =>
+  normalizeResourceFileTypes(route.query.fileType),
+);
 
 // 筛选选项
 const timeOptions = [
@@ -211,24 +218,29 @@ const hasFilters = computed(() => {
     timeFilter.value !== "any" ||
     panFilter.value !== "all" ||
     sortFilter.value !== "default" ||
+    fileTypeFilter.value.length > 0 ||
     exactFilter.value
   );
 });
 
 // 更新筛选条件
-const updateFilter = (key: string, value: string | boolean) => {
-  const query: Record<string, string> = {
+const updateFilter = (
+  key: string,
+  value: string | string[] | boolean,
+) => {
+  const query: Record<string, string | string[]> = {
     type: searchType.value,
     q: searchKeyword.value,
     page: "1", // 筛选变更时重置到第一页
   };
-  if (
-    value !== "any" &&
-    value !== "all" &&
-    value !== "default" &&
-    value !== false
-  ) {
-    query[key] = value.toString();
+  const hasValue = Array.isArray(value)
+    ? value.length > 0
+    : value !== "any" &&
+      value !== "all" &&
+      value !== "default" &&
+      value !== false;
+  if (hasValue) {
+    query[key] = Array.isArray(value) ? value : value.toString();
   }
 
   // 保持其他筛选条件（资源专属）
@@ -238,6 +250,8 @@ const updateFilter = (key: string, value: string | boolean) => {
     if (panFilter.value !== "all" && key !== "pan") query.pan = panFilter.value;
     if (sortFilter.value !== "default" && key !== "sort")
       query.sort = sortFilter.value;
+    if (fileTypeFilter.value.length > 0 && key !== "fileType")
+      query.fileType = fileTypeFilter.value;
   }
   if (exactFilter.value && key !== "exact") query.exact = "true";
   router.push({ path: "/search", query });
@@ -269,13 +283,14 @@ const {
       if (timeFilter.value !== "any") params.set("time", timeFilter.value);
       if (panFilter.value !== "all") params.set("pan", panFilter.value);
       if (sortFilter.value !== "default") params.set("sort", sortFilter.value);
+      fileTypeFilter.value.forEach((type) => params.append("type", type));
     }
     if (exactFilter.value) params.set("exact", "true");
     return `${base}?${params.toString()}`;
   },
   {
     key: () =>
-      `search-${searchType.value}-${searchKeyword.value}-${currentPage.value}-${timeFilter.value}-${panFilter.value}-${sortFilter.value}-${exactFilter.value}`,
+      `search-${searchType.value}-${searchKeyword.value}-${currentPage.value}-${timeFilter.value}-${panFilter.value}-${sortFilter.value}-${fileTypeFilter.value.join(",")}-${exactFilter.value}`,
     server: true,
     lazy: true,
     watch: [
@@ -285,6 +300,7 @@ const {
       timeFilter,
       panFilter,
       sortFilter,
+      fileTypeFilter,
       exactFilter,
     ],
   },
@@ -686,6 +702,17 @@ const isMobile = useMediaQuery("(max-width: 768px)");
 
               <!-- 资源筛选条件 -->
               <div class="flex flex-wrap items-center gap-2 mb-4">
+                <!-- 文件类型（多选） -->
+                <MultiSelectCombobox
+                  class="flex-1 min-w-32"
+                  :model-value="fileTypeFilter"
+                  :options="RESOURCE_FILE_TYPE_OPTIONS"
+                  placeholder="所有文件"
+                  clear-label="清空选择"
+                  aria-label="选择文件类型"
+                  @update:model-value="updateFilter('fileType', $event)"
+                />
+
                 <!-- 入库时间 -->
                 <div class="flex-1 relative min-w-24">
                   <select

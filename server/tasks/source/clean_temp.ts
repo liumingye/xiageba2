@@ -8,7 +8,7 @@ import {
   getXunleiClient,
 } from "#server/lib/pan-instance";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
-import { THIRTY_MINUTES } from "#server/lib/const";
+import { THIRTY_MINUTES, THIRTY_MINUTES_UC } from "#server/lib/const";
 
 const ONE_DAY = 24 * 60 * 60 * 1000; // ⚡ 1天的毫秒数
 const PAN_BATCH_LIMIT = 100;
@@ -59,13 +59,24 @@ export default defineTask({
     try {
       const now = Date.now();
       const cutoffNormal = new Date(now - THIRTY_MINUTES * 1000);
+      const cutoffUC = new Date(now - THIRTY_MINUTES_UC * 1000);
       const cutoffForce = new Date(now - ONE_DAY); // ⚡ 超过1天的临界线
 
-      // 捞出所有超过 THIRTY_MINUTES 分钟的临时资源
+      // 捞出所有超过对应过期时间的临时资源
+      // UC 网盘使用 THIRTY_MINUTES_UC，其他网盘使用 THIRTY_MINUTES
       const sources = await prisma.source.findMany({
         where: {
           isTemp: true,
-          createdAt: { lt: cutoffNormal },
+          OR: [
+            {
+              url: { startsWith: "https://drive.uc.cn/s/" },
+              createdAt: { lt: cutoffUC },
+            },
+            {
+              url: { not: { startsWith: "https://drive.uc.cn/s/" } },
+              createdAt: { lt: cutoffNormal },
+            },
+          ],
         },
         select: { id: true, url: true, fid: true, createdAt: true },
       });
