@@ -1,6 +1,9 @@
+const plugin = require("tailwindcss/plugin");
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./app/**/*.{js,vue,ts}"],
+  darkMode: ["selector", '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
@@ -36,5 +39,16 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(function ({ addBase, theme }) {
+      addBase({
+        h1: { fontSize: theme("fontSize.3xl"), fontWeight: "bold" },
+        h2: { fontSize: theme("fontSize.2xl"), fontWeight: "bold" },
+        h3: { fontSize: theme("fontSize.xl"), fontWeight: "bold" },
+        h4: { fontSize: theme("fontSize.lg"), fontWeight: "bold" },
+        h5: { fontSize: theme("fontSize.sm"), fontWeight: "bold" },
+        h6: { fontSize: theme("fontSize.xs"), fontWeight: "bold" },
+      });
+    }),
+  ],
 };

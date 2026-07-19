@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore, storeToRefs } from "~/stores/music";
-import { Search, X, Music, Video, FolderOpen } from "@lucide/vue";
+import { Search, X, Music, FolderOpen, Sparkles } from "@lucide/vue";
 
 const props = defineProps<{
   modelValue?: string;
@@ -54,12 +54,16 @@ const handleSearch = (keywords?: string) => {
   if (q.length > MAX_KEYWORD_LENGTH) {
     q = q.slice(0, MAX_KEYWORD_LENGTH);
   }
+
   musicStore.addSearchHistory(q);
   emit("search", q);
+
   if (searchType.value === "music") {
     router.push(`/search?type=music&q=${encodeURIComponent(q)}`);
   } else if (searchType.value === "resource") {
     router.push(`/search?type=resource&q=${encodeURIComponent(q)}`);
+  } else if (searchType.value === "ai") {
+    router.push(`/search?type=ai&q=${encodeURIComponent(q)}`);
   }
 };
 
@@ -73,6 +77,14 @@ const clearInput = () => {
   searchQuery.value = "";
   emit("update:modelValue", "");
 };
+
+const placeholderText = computed(() => {
+  if (!isClientMounted.value) return "";
+  if (searchType.value === "music") return "搜你想要的音乐";
+  if (searchType.value === "resource") return "搜你想要的网盘资源";
+  if (searchType.value === "ai") return "和 AI 聊聊你想找什么... 例如：推荐一些搞笑的动漫、推荐一些周杰伦的热门歌曲";
+  return "";
+});
 
 defineExpose({
   handleSearch,
@@ -96,13 +108,7 @@ defineExpose({
           :value="searchQuery"
           :maxlength="MAX_KEYWORD_LENGTH"
           type="text"
-          :placeholder="
-            isClientMounted
-              ? searchType === 'music'
-                ? '搜你想要的音乐'
-                : '搜你想要的网盘资源'
-              : ''
-          "
+          :placeholder="placeholderText"
           class="flex-1 bg-transparent text-white text-lg outline-none placeholder-white/50"
           @input="updateSearchQuery"
           @keydown="handleKeydown"
@@ -128,6 +134,7 @@ defineExpose({
           <template v-if="!isClientMounted">
             <div class="icon-btn placeholder-skeleton"></div>
             <div class="icon-btn placeholder-skeleton ml-2"></div>
+            <div class="icon-btn placeholder-skeleton ml-2"></div>
           </template>
           <template v-else>
             <button
@@ -146,14 +153,22 @@ defineExpose({
             >
               <FolderOpen class="w-5 h-5" />
             </button>
+            <button
+              class="icon-btn ml-2"
+              :class="{ primary: searchType === 'ai' }"
+              @click="searchType = 'ai'"
+              title="AI 搜索"
+            >
+              <Sparkles class="w-5 h-5" />
+            </button>
           </template>
         </div>
         <button
-          class="bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 transition-all duration-200"
+          class="bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 transition-all duration-200 flex items-center justify-center"
           @click="handleSearch()"
           type="button"
         >
-          <Search class="mx-auto w-4 h-4" />
+          <Search class="w-4 h-4" />
         </button>
       </div>
     </div>

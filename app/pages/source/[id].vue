@@ -16,6 +16,9 @@ import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import { getTypeName } from "~/utils/index";
 import { useMusicStore } from "~/stores/music";
+import { marked } from "marked";
+
+marked.setOptions({ gfm: true, breaks: true, async: false });
 
 const { copy } = useClipboard();
 
@@ -79,6 +82,12 @@ const { data: responseData, pending: loading } = await useFetch<SourceResponse>(
 
 const source = computed(() => responseData.value?.data);
 const similarList = computed(() => responseData.value?.similar || []);
+
+const renderedDescription = computed(() =>
+  source.value?.description
+    ? (marked.parse(source.value.description) as string)
+    : "",
+);
 
 const pageTitle = computed(() => {
   if (source.value) {
@@ -220,9 +229,10 @@ onMounted(() => {
             </header>
 
             <div v-if="source.description" class="mb-6">
-              <p class="text-gray-400 text-sm leading-relaxed">
-                描述：{{ source.description }}
-              </p>
+              <div class="text-gray-400 text-sm leading-relaxed prose-resource">
+                <span class="text-gray-500">描述：</span>
+                <div v-html="renderedDescription" />
+              </div>
             </div>
 
             <section v-if="source.menu">
@@ -239,9 +249,7 @@ onMounted(() => {
                   source.description || source.menu,
               }"
             >
-              <h3 class="font-bold text-gray-300 mb-4 text-lg">
-                获取下载链接:
-              </h3>
+              <h4 class="text-gray-300 mb-4">获取下载链接:</h4>
               <div class="space-y-3">
                 <div v-if="!fetchedUrl" class="space-y-3">
                   <p class="text-xs text-gray-500">
@@ -325,7 +333,7 @@ onMounted(() => {
           </article>
 
           <section v-if="similarList.length" class="card sm:p-6 p-3">
-            <h3 class="font-bold text-gray-300 mb-4 text-lg">相似资源</h3>
+            <h4 class="text-gray-300 mb-4">相似资源</h4>
             <ul class="space-y-2">
               <li v-for="item in similarList" :key="item.id">
                 <NuxtLink

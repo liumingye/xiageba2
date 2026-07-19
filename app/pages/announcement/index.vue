@@ -10,6 +10,9 @@ import {
   Megaphone,
   Archive,
 } from "@lucide/vue";
+import { marked } from "marked";
+
+marked.setOptions({ gfm: true, breaks: true, async: false });
 
 defineOptions({
   name: "AnnouncementListPage",
@@ -108,10 +111,9 @@ const formatDate = (dateStr: string) => {
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 };
 
-const getPreview = (content: string) => {
-  if (!content) return "";
-  const text = content.replace(/\s+/g, " ").trim();
-  return text;
+const renderMarkdown = (text: string): string => {
+  if (!text) return "";
+  return marked.parse(text) as string;
 };
 
 const switchTab = (tab: "ACTIVE" | "ARCHIVED") => {
@@ -209,11 +211,7 @@ watch(
       </div>
 
       <div v-if="pending" class="space-y-4">
-        <div
-          v-for="i in 3"
-          :key="i"
-          class="card p-6 animate-pulse"
-        >
+        <div v-for="i in 3" :key="i" class="card p-6 animate-pulse">
           <div class="flex items-start gap-4">
             <div class="w-10 h-10 rounded-lg bg-gray-800 flex-shrink-0"></div>
             <div class="flex-1 space-y-2">
@@ -225,10 +223,7 @@ watch(
         </div>
       </div>
 
-      <div
-        v-else-if="announcements.length === 0"
-        class="card p-12 text-center"
-      >
+      <div v-else-if="announcements.length === 0" class="card p-12 text-center">
         <Megaphone class="w-12 h-12 mx-auto text-gray-600 mb-3" />
         <p class="text-gray-500">
           {{ activeTab === "ARCHIVED" ? "暂无归档公告" : "暂无公告" }}
@@ -242,7 +237,7 @@ watch(
           :to="`/announcement/${item.id}`"
           class="card p-6 block hover:border-primary-500/50 transition-colors"
         >
-          <div class="flex items-start gap-4">
+          <div class="flex items-center gap-4">
             <div
               class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
               :class="getIconConfig(item.icon).class"
@@ -267,13 +262,13 @@ watch(
               <p class="text-xs text-gray-500 mt-1">
                 {{ formatDate(item.createdAt) }}
               </p>
-              <p
-                v-if="getPreview(item.content)"
-                class="text-sm text-gray-400 mt-2 line-clamp-2"
-              >
-                {{ getPreview(item.content) }}
-              </p>
             </div>
+          </div>
+          <div
+            v-if="item.content"
+            class="text-[0.875rem] text-gray-400 mt-2 line-clamp-2 prose-resource"
+          >
+            <span v-html="renderMarkdown(item.content)" />
           </div>
         </NuxtLink>
       </div>

@@ -4,6 +4,8 @@ import path from "path";
 // 1. 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
 
+const themeInitScript = `(function(){try{var p=localStorage.getItem('xiageba-theme');if(p!=='light'&&p!=='dark'&&p!=='system')p='dark';var dark=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.dataset.theme=dark?'dark':'light';r.dataset.themePreference=p;r.style.colorScheme=dark?'dark':'light'}catch(e){document.documentElement.dataset.theme='dark'}})();`;
+
 export default defineNuxtConfig({
   compatibilityDate: "2026-06-01",
   devtools: {
@@ -135,6 +137,12 @@ export default defineNuxtConfig({
           href: "/pwa/apple-touch-icon.png",
         },
         ...(isDev ? [] : [{ rel: "manifest", href: "/manifest.webmanifest" }]),
+      ],
+      script: [
+        {
+          key: "theme-init",
+          innerHTML: themeInitScript,
+        },
       ],
     },
     pageTransition: { name: "page", mode: "out-in" },

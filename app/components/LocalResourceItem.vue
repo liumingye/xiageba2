@@ -44,7 +44,7 @@ const emit = defineEmits<{
     />
     <div class="flex flex-col">
       <div class="flex-1 min-w-0 flex gap-2 mb-2 flex-col">
-        <h3
+        <div
           class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2"
           @click="emit('clickTitle', item)"
         >
@@ -54,10 +54,10 @@ const emit = defineEmits<{
             v-html="highlightHtml"
           />
           <template v-else>{{ item.title }}</template>
-        </h3>
+        </div>
         <div class="flex gap-2">
           <div
-            class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
           >
             <img
               v-if="item.type !== 'other'"
@@ -75,7 +75,7 @@ const emit = defineEmits<{
           <ClientOnly>
             <div
               v-if="checkStatus === 'valid'"
-              class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+              class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <CheckCircle
                 class="w-4 h-4 text-green-400 flex-shrink-0 mr-1"

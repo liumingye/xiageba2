@@ -28,16 +28,20 @@ export default defineEventHandler(async (event) => {
         content: true,
         displayType: true,
         icon: true,
-        status: true,
-        sort: true,
         createdAt: true,
       },
     }),
     prisma.announcement.count({ where }),
   ]);
 
+  // 使用 map 在内存中截取字符
+  const data = list.map((item) => ({
+    ...item,
+    content: item.content ? item.content.substring(0, 150) : "",
+  }));
+
   return {
-    data: list,
+    data,
     total,
     page,
     pageSize,

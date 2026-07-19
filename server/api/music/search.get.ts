@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
       FROM "Music" m
       WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
       ORDER BY 
-        ts_rank_cd("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery}), 1) DESC, 
+        ts_rank("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery}), 1) DESC, 
         "viewCount" DESC, 
         "createdAt" DESC
       LIMIT ${pageSize} OFFSET ${skip};

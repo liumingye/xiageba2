@@ -15,9 +15,9 @@ import {
 const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;
 
-type TimeFilter = "any" | "day" | "week" | "month" | "year";
-type PanFilter = "all" | "quark" | "baidu" | "xunlei" | "uc";
-type SortOrder = "default" | "newest" | "oldest";
+export type TimeFilter = "any" | "day" | "week" | "month" | "year";
+export type PanFilter = "all" | "quark" | "baidu" | "xunlei" | "uc";
+export type SortOrder = "default" | "newest" | "oldest";
 
 const TIME_FILTER_MAP: Record<TimeFilter, number> = {
   any: 0,
@@ -27,7 +27,7 @@ const TIME_FILTER_MAP: Record<TimeFilter, number> = {
   year: 365,
 };
 
-const PAN_HOST_MAP: Record<PanFilter, string[]> = {
+export const PAN_HOST_MAP: Record<PanFilter, string[]> = {
   all: [],
   quark: ["pan.quark.cn"],
   baidu: ["pan.baidu.com"],

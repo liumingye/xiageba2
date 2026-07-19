@@ -7,6 +7,9 @@ import {
   CheckCircle,
   Megaphone,
 } from "@lucide/vue";
+import { marked } from "marked";
+
+marked.setOptions({ gfm: true, breaks: true, async: false });
 
 defineOptions({
   name: "AnnouncementDetailPage",
@@ -52,6 +55,12 @@ const { data } = await useAsyncData<{
 
 const announcement = computed(() => data.value?.data || null);
 const isNotFound = computed(() => !announcement.value);
+
+const renderedContent = computed(() =>
+  announcement.value?.content
+    ? (marked.parse(announcement.value.content) as string)
+    : "",
+);
 
 useHead(() => ({
   title: announcement.value
@@ -132,7 +141,7 @@ const formatDate = (dateStr: string) => {
       </div>
 
       <article v-else class="card p-6">
-        <div class="flex items-start gap-4 mb-4">
+        <div class="flex items-center gap-4 mb-4">
           <div
             class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
             :class="getIconConfig(announcement!.icon).class"
@@ -146,19 +155,19 @@ const formatDate = (dateStr: string) => {
             <h1 class="text-xl font-bold text-white break-words">
               {{ announcement!.title }}
             </h1>
-            <p class="text-xs text-gray-500 mt-2">
+            <p class="text-xs text-gray-500 mt-1">
               {{ formatDate(announcement!.createdAt) }}
             </p>
           </div>
         </div>
 
-        <div class="border-t border-gray-800 pt-4">
-          <p
-            v-if="announcement!.content"
-            class="text-sm text-gray-300 whitespace-pre-wrap break-words leading-relaxed"
+        <div>
+          <div
+            v-if="renderedContent"
+            class="text-sm text-gray-300 break-words leading-relaxed prose-resource"
           >
-            {{ announcement!.content }}
-          </p>
+            <span v-html="renderedContent" />
+          </div>
           <p v-else class="text-sm text-gray-500">暂无内容</p>
         </div>
       </article>

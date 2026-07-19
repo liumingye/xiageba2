@@ -18,6 +18,7 @@ import {
   ArrowUpDown,
   Target,
   RotateCcwSquare,
+  Sparkles,
 } from "@lucide/vue";
 import { getTypeName } from "~/utils/index";
 import { useClipboard, useMediaQuery } from "@vueuse/core";
@@ -176,9 +177,12 @@ const currentPage = computed(() =>
 const searchKeyword = computed(() => (route.query.q as string) || "");
 const searchType = computed(() => {
   const t = route.query.type as string;
-  return t === "resource" ? "resource" : "music";
+  if (t === "resource") return "resource";
+  if (t === "ai") return "ai";
+  return "music";
 });
 const isMusic = computed(() => searchType.value === "music");
+const isAi = computed(() => searchType.value === "ai");
 
 // 筛选参数
 const timeFilter = computed(() => (route.query.time as string) || "any");
@@ -273,6 +277,8 @@ const {
   status,
 } = await useFetch<PaginatedResponse>(
   () => {
+    // AI 模式不请求搜索 API
+    if (isAi.value) return "";
     const base = isMusic.value ? "/api/music/search" : "/api/source/search";
     const params = new URLSearchParams({
       q: searchKeyword.value,
@@ -383,6 +389,9 @@ const handleRetry = () => {
 
 const pageTitle = computed(() => {
   const q = searchKeyword.value;
+  if (isAi.value) {
+    return q ? `${q} - AI 搜索 - 下歌吧` : "AI 搜索 - 下歌吧";
+  }
   const label = isMusic.value ? "歌曲" : "资源";
   if (q && results.value.length > 0) {
     return `"${q}" - 第${currentPage.value}页 - 搜索${label} - 下歌吧`;
@@ -443,7 +452,7 @@ const performSearch = (keyword: string) => {
   searchQuery.value = keyword;
 };
 
-const switchType = (type: "music" | "resource") => {
+const switchType = (type: "music" | "resource" | "ai") => {
   if (type === searchType.value) return;
   const q = searchKeyword.value;
   if (q) {
@@ -488,7 +497,7 @@ const goToDetail = (music: Music) => {
 const skeletonList = Array.from({ length: 4 });
 
 const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
-  enabled: !isMusic.value,
+  enabled: !isMusic.value && !isAi.value,
 });
 
 watch(
@@ -531,7 +540,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
           class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
           :class="
             isMusic
-              ? 'bg-primary-500 text-white font-medium'
+              ? 'bg-primary-600 text-white font-medium'
               : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
           "
           @click="switchType('music')"
@@ -542,18 +551,36 @@ const isMobile = useMediaQuery("(max-width: 768px)");
         <button
           class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
           :class="
-            !isMusic
-              ? 'bg-primary-500 text-white font-medium'
+            searchType === 'resource'
+              ? 'bg-primary-600 text-white font-medium'
               : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
           "
           @click="switchType('resource')"
         >
           <FolderOpen class="w-4 h-4" />
-          搜资源Beta
+          搜资源
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
+          :class="
+            isAi
+              ? 'bg-primary-600 text-white font-medium'
+              : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+          "
+          @click="switchType('ai')"
+        >
+          <Sparkles class="w-4 h-4" />
+          AI 搜索(Beta)
         </button>
       </div>
 
       <main>
+        <!-- AI 搜索模式 -->
+        <ClientOnly v-if="isAi">
+          <AiChat :initial-query="searchKeyword" />
+        </ClientOnly>
+
+        <template v-else>
         <div
           v-if="errorInfo && searchKeyword"
           class="card p-5 text-center mb-6"
@@ -910,11 +937,12 @@ const isMobile = useMediaQuery("(max-width: 768px)");
           </div>
           <p class="text-gray-500">请输入搜索关键词</p>
         </div>
+        </template>
       </main>
 
-      <Qrcode />
+      <Qrcode v-if="!isAi" />
 
-      <SiteFooter />
+      <SiteFooter v-if="!isAi" />
 
       <Teleport to="body">
         <Transition name="modal">

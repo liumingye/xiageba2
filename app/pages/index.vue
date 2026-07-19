@@ -387,11 +387,14 @@ const getPic = (url: string) => {
 
 <template>
   <div class="min-h-screen bg-dark-300 py-8 px-2 sm:px-4">
+    <ClientOnly>
+      <ThemeSwitcher class="absolute right-3 top-3" />
+    </ClientOnly>
     <div class="max-w-4xl mx-auto">
       <header class="text-center mb-6">
         <div class="flex items-center justify-center gap-3 mb-6">
           <div
-            class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center"
+            class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white"
             aria-hidden="true"
           >
             <MusicIcon />

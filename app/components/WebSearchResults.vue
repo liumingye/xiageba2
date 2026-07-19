@@ -148,17 +148,17 @@ defineExpose({ results, searching, error });
           class="absolute inset-0 bg-red-900/10 pointer-events-none"
         />
         <div class="flex-1 min-w-0 flex gap-2 mb-2 flex-col">
-          <h3 class="text-white flex items-center gap-2">
+          <div class="text-white flex items-center gap-2">
             <span
               v-if="props.highlightHtml"
               class="min-w-0 break-all"
               v-html="props.highlightHtml(item.title)"
             ></span>
             <span v-else class="min-w-0 break-all">{{ item.title }}</span>
-          </h3>
+          </div>
           <div class="flex gap-2">
             <div
-              class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
+              class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
             >
               <img
                 v-if="item.type !== 'other'"
@@ -170,7 +170,7 @@ defineExpose({ results, searching, error });
             <ClientOnly>
               <div
                 v-if="getCheckStatus(item.url) === 'valid'"
-                class="bg-primary-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+                class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
                 <CheckCircle
                   class="w-4 h-4 text-green-400 flex-shrink-0 mr-1"

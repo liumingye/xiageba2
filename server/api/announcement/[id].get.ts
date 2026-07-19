@@ -8,6 +8,13 @@ export default defineEventHandler(async (event) => {
 
   const announcement = await prisma.announcement.findUnique({
     where: { id },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      icon: true,
+      createdAt: true,
+    },
   });
 
   if (!announcement) {

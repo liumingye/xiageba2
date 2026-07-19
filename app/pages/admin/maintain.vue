@@ -14,6 +14,7 @@ import {
   Trash,
   TrendingUp,
   ShieldAlert,
+  Sparkles,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -87,6 +88,22 @@ const adFilterConfig = ref<AdFilterConfig>({
 const savingAdFilter = ref(false);
 const savedAdFilter = ref(false);
 
+interface AiSearchConfig {
+  enabled: boolean;
+  baseURL: string;
+  apiKey: string;
+  model: string;
+}
+
+const aiSearchConfig = ref<AiSearchConfig>({
+  enabled: false,
+  baseURL: "",
+  apiKey: "",
+  model: "",
+});
+const savingAiSearch = ref(false);
+const savedAiSearch = ref(false);
+
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -101,6 +118,7 @@ onMounted(async () => {
   await loadPancheckConfig();
   await loadHotwordsConfig();
   await loadAdFilterConfig();
+  await loadAiSearchConfig();
   loading.value = false;
 });
 
@@ -305,6 +323,46 @@ const saveAdFilterConfig = async () => {
     savedAdFilter.value = true;
     setTimeout(() => {
       savedAdFilter.value = false;
+    }, 2000);
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
+const loadAiSearchConfig = async () => {
+  const res = await fetch("/api/admin/config/ai-search", {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+    return;
+  }
+  const data = await res.json();
+  if (data.data) {
+    aiSearchConfig.value = { ...aiSearchConfig.value, ...data.data };
+  }
+};
+
+const saveAiSearchConfig = async () => {
+  savingAiSearch.value = true;
+  savedAiSearch.value = false;
+
+  const res = await fetch("/api/admin/config/ai-search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(aiSearchConfig.value),
+  });
+
+  savingAiSearch.value = false;
+  if (res.ok) {
+    savedAiSearch.value = true;
+    setTimeout(() => {
+      savedAiSearch.value = false;
     }, 2000);
   } else if (res.status === 401) {
     logout();
@@ -869,6 +927,88 @@ const clearISRCache = async (route?: string) => {
               />
               <p class="text-gray-500 text-xs mt-2">
                 文件名或目录名包含任一关键词即被删除，关键词不区分大小写
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI 搜索配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">AI 搜索配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedAiSearch }"
+            :disabled="savingAiSearch || loading"
+            @click="saveAiSearchConfig"
+          >
+            <Check v-if="savedAiSearch" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedAiSearch ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-cyan-900/50 rounded-lg flex items-center justify-center"
+            >
+              <Sparkles class="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h3 class="text-white font-medium">AI 智能搜索</h3>
+              <p class="text-gray-500 text-sm">
+                配置 AI 模型接口，支持 OpenAI 兼容协议（DeepSeek、通义千问等）
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <input
+                id="aiSearchEnabled"
+                v-model="aiSearchConfig.enabled"
+                type="checkbox"
+                class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+              />
+              <label for="aiSearchEnabled" class="text-white">
+                启用 AI 搜索
+              </label>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">Base URL</label>
+              <input
+                v-model="aiSearchConfig.baseURL"
+                type="text"
+                placeholder="https://api.deepseek.com/v1"
+                class="input-search font-mono text-xs"
+              />
+              <p class="text-gray-500 text-xs mt-2">
+                OpenAI 兼容的 API 地址，需包含 /v1 路径
+              </p>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">API Key</label>
+              <input
+                v-model="aiSearchConfig.apiKey"
+                type="password"
+                placeholder="sk-..."
+                class="input-search font-mono text-xs"
+              />
+              <p class="text-gray-500 text-xs mt-2">
+                模型服务商提供的密钥
+              </p>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-sm mb-2">模型名称</label>
+              <input
+                v-model="aiSearchConfig.model"
+                type="text"
+                placeholder="qwen-plus"
+                class="input-search font-mono text-xs"
+              />
+              <p class="text-gray-500 text-xs mt-2">
+                调用的模型标识，如 qwen-plus、deepseek-chat 等
               </p>
             </div>
           </div>

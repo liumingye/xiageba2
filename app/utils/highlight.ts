@@ -33,7 +33,7 @@ export const highlightTokens = (text: string, tokens: string[]): string => {
   for (const match of source.matchAll(pattern)) {
     const index = match.index;
     result += escapeHtml(source.slice(lastIndex, index));
-    result += `<mark class="bg-transparent text-primary-400">${escapeHtml(match[0])}</mark>`;
+    result += `<mark class="bg-transparent text-primary-400 font-bold">${escapeHtml(match[0])}</mark>`;
     lastIndex = index + match[0].length;
   }
 
