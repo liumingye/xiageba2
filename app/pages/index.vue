@@ -655,7 +655,7 @@ const getPic = (url: string) => {
                 分类
               </div>
               <div
-                class="overflow-x-auto overflow-y-hidden select-none touch-pan-x cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
+                class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
                 @mousedown="
                   onDragMouseDown($event, $event.currentTarget as HTMLElement)
                 "
@@ -693,7 +693,7 @@ const getPic = (url: string) => {
                 {{ filter.name }}
               </div>
               <div
-                class="overflow-x-auto overflow-y-hidden select-none touch-pan-x cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
+                class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
                 @mousedown="
                   onDragMouseDown($event, $event.currentTarget as HTMLElement)
                 "
