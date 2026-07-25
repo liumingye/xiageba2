@@ -230,7 +230,7 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>
@@ -278,7 +278,7 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>
@@ -319,7 +319,7 @@ const saveConfig = async () => {
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <button
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   :disabled="gettingOauthUrl"
                   @click="getBaiduOauthUrl"
                 >
@@ -401,7 +401,7 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>
@@ -449,7 +449,7 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>

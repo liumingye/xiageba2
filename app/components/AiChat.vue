@@ -8,8 +8,22 @@ import {
   onUnmounted,
   computed,
 } from "vue";
-import { Sparkles, Square, Trash2, User } from "@lucide/vue";
+import { Sparkles, User } from "@lucide/vue";
 import { marked } from "marked";
+import type { RendererObject, Tokens } from "marked";
+
+const renderer: RendererObject = {
+  // 新窗口打开链接
+  link(token: Tokens.Link): string {
+    const { href, title, text } = token;
+    const cleanHref = href || "#";
+    const titleAttr = title ? ` title="${title}"` : "";
+
+    return `<a href="${cleanHref}" target="_blank" rel="noopener noreferrer"${titleAttr}>${text}</a>`;
+  },
+};
+
+marked.use({ renderer });
 
 // marked 全局配置：开启 GFM、换行转 <br>、同步返回
 marked.setOptions({
@@ -135,18 +149,6 @@ const sendMessage = async (message?: string) => {
     abortController = null;
     await scrollToBottom();
   }
-};
-
-const stopGeneration = () => {
-  if (abortController) {
-    abortController.abort();
-  }
-};
-
-const clearChat = () => {
-  if (aiLoading.value) stopGeneration();
-  chatMessages.value = [];
-  aiError.value = "";
 };
 
 onMounted(() => {

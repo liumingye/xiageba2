@@ -247,10 +247,7 @@ const testApi = async () => {
     }
     const data = await res.json();
     if (data.success) {
-      toast.add(
-        `测试成功，搜索「凡人」找到 ${data.count} 条结果`,
-        "success",
-      );
+      toast.add(`测试成功，搜索「凡人」找到 ${data.count} 条结果`, "success");
     } else {
       toast.add(`测试失败，错误信息： ${data.message || "未知错误"}`, "error");
     }
@@ -346,11 +343,11 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
               <th class="px-4 py-3 w-32">操作</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-800">
+          <tbody>
             <tr
               v-for="item in apis"
               :key="item.id"
-              class="hover:bg-gray-800/50"
+              class="border-t border-gray-800 hover:bg-gray-800/50"
             >
               <td class="px-4 py-3">
                 <span

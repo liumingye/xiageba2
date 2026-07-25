@@ -54,6 +54,10 @@ html[data-theme="light"] .bg-gray-700 {
   background-color: #e2e8f0;
 }
 
+html[data-theme="light"] .bg-gray-700:hover {
+  background-color: #cbd5e1;
+}
+
 html[data-theme="light"] .bg-gray-600 {
   background-color: #cbd5e1;
 }

@@ -1,5 +1,3 @@
-import { EventEmitter } from "events";
-
 class RequestQueue {
   private maxConcurrent: number;
   private activeCount: number = 0;

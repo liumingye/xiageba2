@@ -555,11 +555,11 @@ const getPic = (url: string) => {
         <!-- 资源分类 -->
         <div
           v-if="activeContentTab === 'category' && hasCategory"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4"
         >
           <div
             v-if="hotMusic && hotMusic.length > 0"
-            class="card p-4 flex flex-col"
+            class="card p-2 md:p-4 flex flex-col"
           >
             <div class="flex items-center gap-3 mb-3">
               <div
@@ -593,7 +593,7 @@ const getPic = (url: string) => {
           <div
             v-for="cat in categoriesWithLatest"
             :key="cat.id"
-            class="card p-4 flex flex-col"
+            class="card p-2 md:p-4 flex flex-col"
           >
             <NuxtLink
               :to="`/categorie/${cat.id}`"
@@ -729,13 +729,13 @@ const getPic = (url: string) => {
 
           <div
             v-if="doubanLoading && doubanPage === 1"
-            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"
+            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
             aria-busy="true"
           >
             <div
               v-for="(_, i) in Array.from({ length: 10 })"
               :key="i"
-              class="card p-3 animate-pulse"
+              class="card p-2 md:p-4 animate-pulse"
             >
               <div class="aspect-[2/3] bg-gray-700 rounded-lg mb-3" />
               <div class="h-4 bg-gray-700 rounded w-3/4 mb-2" />
@@ -749,12 +749,12 @@ const getPic = (url: string) => {
 
           <div
             v-else
-            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"
+            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
           >
             <article
               v-for="item in doubanList"
               :key="item.vod_id"
-              class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
+              class="card p-2 md:p-4 cursor-pointer hover:border-primary-500/50 transition-colors"
               @click="goToResourceSearch(item)"
             >
               <div

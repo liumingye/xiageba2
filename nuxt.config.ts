@@ -242,6 +242,12 @@ export default defineNuxtConfig({
         duration: 60,
         ban: 120,
       },
+      {
+        path: "/api/ai-search",
+        max: 10,
+        duration: 30,
+        ban: 120,
+      },
     ],
     log: {
       path: "",

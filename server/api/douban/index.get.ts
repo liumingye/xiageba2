@@ -662,22 +662,17 @@ async function fetchShortDrama(
   }
 
   const items = json?.items?.[0]?.video?.[0]?.data || [];
+
   const text = (v: unknown) => String(v == null ? "" : v).trim();
 
   const list: DoubanResult[] = items.map((v) => {
-    const showDate = text(v.showDate);
-    const yearMatch = showDate.match(/(\d{4})/);
+    let vod_pic = text(v.image_url_normal);
+    if (vod_pic.endsWith(".avif")) {
+      vod_pic += "?caplist=jpg,webp";
+    }
     return {
-      // vod_id: text(v.album_id),
-      // link: text(v.page_url),
       vod_name: text(v.title),
-      // search: true,
-      vod_pic: text(v.image_url_normal),
-      // type_id: categoryId,
-      // type_name: CATEGORY_NAMES[categoryId] || "未知分类",
-      // vod_remarks: showDate,
-      // vod_year: yearMatch ? yearMatch[1] : "",
-      // vod_douban_score: text(v.sns_score),
+      vod_pic,
       vod_subtitle: text(v.desc) || text(v.tag),
     };
   });
