@@ -9,26 +9,26 @@ datasource db {
 }
 
 model Admin {
-  id        String   @id @default(cuid(2))
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime? @updatedAt
+  id            String         @id @default(cuid(2)) @db.VarChar(32)
+  username      String         @unique @db.VarChar(50)
+  password      String         @db.VarChar(255)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime?      @updatedAt @db.Timestamptz(3)
 }
 
 model Feedback {
-  id          String         @id @default(cuid(2))
-  musicId     String
-  musicTitle  String
-  musicArtist String
-  type        FeedbackType
-  description String         @default("")
-  email       String         @default("")
-  status      FeedbackStatus @default(PENDING)
-  resolvedAt  DateTime?
-  resolvedBy  String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime?       @updatedAt
+  id            String         @id @default(cuid(2))
+  musicId       String
+  musicTitle    String
+  musicArtist   String
+  type          FeedbackType
+  description   String         @default("")
+  email         String         @default("")
+  status        FeedbackStatus @default(PENDING)
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime?      @updatedAt @db.Timestamptz(3)
 
   @@index([createdAt])
   @@index([musicId])
@@ -36,17 +36,17 @@ model Feedback {
 }
 
 model Music {
-  id           String                   @id @default(cuid(2))
-  title        String
-  artist       String
-  album        String
-  cover        String
-  lyrics       String
-  playUrl      String
-  downloads    String                   @default("[]")
+  id           String                   @id @default(cuid(2)) @db.VarChar(32)
+  title        String                   @db.VarChar(255)
+  artist       String                   @db.VarChar(255)
+  album        String                   @db.VarChar(255)
+  cover        String                   @db.VarChar(2048)
+  lyrics       String?                  @db.Text
+  playUrl      String                   @db.VarChar(2048)
+  downloads    Json                     @default("[]")
   viewCount    Int                      @default(0)
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime?                @updatedAt
+  createdAt    DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime?                @updatedAt @db.Timestamptz(3)
   searchVector Unsupported("tsvector")?
 
   @@index([createdAt])
@@ -55,37 +55,39 @@ model Music {
 }
 
 model Category {
-  id        Int       @id @default(autoincrement())
-  name      String
-  image     String    @default("")
-  sort      Int       @default(0)
-  isShow    Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  id           Int              @id @default(autoincrement())
+  name         String           @db.VarChar(255)
+  image        String           @default("") @db.VarChar(2048)
+  sort         Int              @default(0) @db.SmallInt
+  isShow       Boolean          @default(true)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime?        @updatedAt @db.Timestamptz(3)
 
   @@index([sort])
 }
 
 model Source {
-  id           String                   @id @default(cuid(2))
-  cid          Int?
-  title        String
-  url          String
-  fid          String?
-  description  String                   @default("")
-  menu         String                   @default("")
-  status       Int                      @default(1)
-  invalidNum   Int                      @default(0)
-  isTemp       Boolean                  @default(false)
-  isSelf       Boolean                  @default(false)
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime?                @updatedAt
-  searchVector Unsupported("tsvector")?
+  id            String      @id @default(cuid(2)) @db.VarChar(32)
+  cid           Int?        @db.SmallInt
+  title         String
+  url           String
+  fid           String?
+  description   String      @default("")
+  menu          String      @default("")
+  status        Int         @default(1) @db.SmallInt
+  invalidNum    Int         @default(0) @db.SmallInt
+  isTemp        Boolean     @default(false)
+  isSelf        Boolean     @default(false)
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime?   @updatedAt @db.Timestamptz(3)
+
+  searchVector  Unsupported("tsvector")?
 
   @@index([cid])
   @@index([createdAt])
   @@index([status])
   @@index([isSelf])
+  @@index([url])
   @@index([searchVector], type: Gin)
 }
 
@@ -95,39 +97,39 @@ model Config {
 }
 
 model ApiList {
-  id           String   @id @default(cuid(2))
+  id           String      @id @default(cuid(2))
   name         String
-  type         String   @default("api")
+  type         String      @default("api")
   url          String
-  method       String   @default("GET")
-  headers      String   @default("{}")
-  fixed_params String   @default("{}")
-  field_map    String   @default("{}")
-  count        Int      @default(10)
-  html_item    String   @default("")
-  html_title   String   @default("")
-  html_url     Int      @default(0)
-  html_type    String   @default("")
-  html_url2    String   @default("")
-  weight       Int      @default(0)
-  status       Int      @default(1)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  method       String      @default("GET")
+  headers      String      @default("{}")
+  fixed_params String      @default("{}")
+  field_map    String      @default("{}")
+  count        Int         @default(10)
+  html_item    String      @default("")
+  html_title   String      @default("")
+  html_url     Int         @default(0)
+  html_type    String      @default("")
+  html_url2    String      @default("")
+  weight       Int         @default(0)
+  status       Int         @default(1)
+  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime?   @updatedAt @db.Timestamptz(3)
 
   @@index([status])
   @@index([weight])
 }
 
 model Announcement {
-  id          String              @id @default(cuid(2))
-  title       String
-  content     String              @default("")
+  id          String              @id @default(cuid(2)) @db.VarChar(32)
+  title       String              @db.VarChar(255)
+  content     String              @default("") @db.Text
   displayType AnnouncementDisplay @default(NORMAL)
   icon        AnnouncementIcon    @default(INFO)
   status      AnnouncementStatus  @default(ACTIVE)
-  sort        Int                 @default(0)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime?           @updatedAt
+  sort        Int                 @default(0) @db.SmallInt
+  createdAt   DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime?           @updatedAt @db.Timestamptz(3)
 
   @@index([status])
   @@index([displayType])
