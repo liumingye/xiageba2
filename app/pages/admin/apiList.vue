@@ -272,7 +272,8 @@ const deleteApi = async (id: string) => {
   await loadApis();
 };
 
-const goPage = async (page: number) => {
+const goToPage = async (page: number) => {
+  console.log(page);  
   currentPage.value = page;
   const query: any = {};
   if (page > 1) query.page = page;
@@ -283,7 +284,7 @@ const goPage = async (page: number) => {
 
 const search = async () => {
   currentPage.value = 1;
-  await goPage(1);
+  await goToPage(1);
 };
 
 const typeLabel = (type: string) => {
@@ -421,7 +422,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
         :current-page="currentPage"
         :total-pages="totalPages"
         :total="total"
-        @change="goPage"
+        @page-change="goToPage"
       />
     </main>
 
