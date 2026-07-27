@@ -52,10 +52,7 @@ export default defineEventHandler(async (event) => {
       return {
         data: musics.map((m) => ({
           ...m,
-          downloads:
-            typeof m.downloads === "string"
-              ? JSON.parse(m.downloads || "[]")
-              : m.downloads,
+          downloads: m.downloads || [],
         })),
         total: totalCount,
         page,
@@ -85,7 +82,7 @@ export default defineEventHandler(async (event) => {
     return {
       data: musics.map((m) => ({
         ...m,
-        downloads: JSON.parse((m.downloads as string) || "[]"),
+        downloads: m.downloads || [],
       })),
       total,
       page,
@@ -111,7 +108,7 @@ export default defineEventHandler(async (event) => {
         cover: cover || "",
         lyrics: lyrics || "",
         playUrl: playUrl || "",
-        downloads: JSON.stringify(downloads || []),
+        downloads: downloads || [],
       },
     });
 
@@ -148,7 +145,7 @@ export default defineEventHandler(async (event) => {
         cover,
         lyrics,
         playUrl,
-        downloads: JSON.stringify(downloads || []),
+        downloads: downloads || [],
       },
     });
 

@@ -4,12 +4,16 @@ export default defineEventHandler(async () => {
   const limit = 15;
 
   const musics = await prisma.music.findMany({
+    select: {
+      id: true,
+      title: true,
+      artist: true,
+    },
     orderBy: { createdAt: "desc" },
     take: limit,
   });
 
   return musics.map((m) => ({
     ...m,
-    downloads: JSON.parse(m.downloads || "[]"),
   }));
 });

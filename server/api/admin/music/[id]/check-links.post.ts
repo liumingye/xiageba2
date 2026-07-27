@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "音乐不存在" });
   }
 
-  const downloads = JSON.parse(music.downloads || "[]") as Array<{
+  const downloads = (music.downloads || []) as Array<{
     quality: string;
     url: string;
   }>;

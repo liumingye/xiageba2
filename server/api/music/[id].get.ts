@@ -22,6 +22,6 @@ export default defineEventHandler(async (event) => {
 
   return {
     ...music,
-    downloads: JSON.parse(music.downloads || "[]"),
+    downloads: music.downloads || [],
   };
 });
