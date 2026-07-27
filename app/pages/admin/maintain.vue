@@ -15,6 +15,7 @@ import {
   TrendingUp,
   ShieldAlert,
   Sparkles,
+  Filter,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -104,6 +105,15 @@ const aiSearchConfig = ref<AiSearchConfig>({
 const savingAiSearch = ref(false);
 const savedAiSearch = ref(false);
 
+interface WebSearchFilterConfig {
+  websearch_filter_keywords: string;
+}
+const webSearchFilterConfig = ref<WebSearchFilterConfig>({
+  websearch_filter_keywords: "",
+});
+const savingWebSearchFilter = ref(false);
+const savedWebSearchFilter = ref(false);
+
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -119,6 +129,7 @@ onMounted(async () => {
   await loadHotwordsConfig();
   await loadAdFilterConfig();
   await loadAiSearchConfig();
+  await loadWebSearchFilterConfig();
   loading.value = false;
 });
 
@@ -363,6 +374,50 @@ const saveAiSearchConfig = async () => {
     savedAiSearch.value = true;
     setTimeout(() => {
       savedAiSearch.value = false;
+    }, 2000);
+  } else if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+  }
+};
+
+// 全网搜过滤词配置
+const loadWebSearchFilterConfig = async () => {
+  const res = await fetch("/api/admin/config/web-search-filter", {
+    headers: { ...getAuthHeaders() },
+  });
+  if (res.status === 401) {
+    logout();
+    router.push("/admin/login");
+    return;
+  }
+  const data = await res.json();
+  if (data.data) {
+    webSearchFilterConfig.value = {
+      ...webSearchFilterConfig.value,
+      ...data.data,
+    };
+  }
+};
+
+const saveWebSearchFilterConfig = async () => {
+  savingWebSearchFilter.value = true;
+  savedWebSearchFilter.value = false;
+
+  const res = await fetch("/api/admin/config/web-search-filter", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(webSearchFilterConfig.value),
+  });
+
+  savingWebSearchFilter.value = false;
+  if (res.ok) {
+    savedWebSearchFilter.value = true;
+    setTimeout(() => {
+      savedWebSearchFilter.value = false;
     }, 2000);
   } else if (res.status === 401) {
     logout();
@@ -698,176 +753,49 @@ const clearISRCache = async (route?: string) => {
         </div>
       </section>
 
-      <!-- PanCheck 配置 -->
+      <!-- 全网搜过滤词配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">网盘检测配置</h2>
+          <h2 class="text-lg font-medium text-white">全网搜过滤词配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedPancheck }"
-            :disabled="savingPancheck || loading"
-            @click="savePancheckConfig"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedWebSearchFilter }"
+            :disabled="savingWebSearchFilter || loading"
+            @click="saveWebSearchFilterConfig"
           >
-            <Check v-if="savedPancheck" class="w-4 h-4" />
+            <Check v-if="savedWebSearchFilter" class="w-4 h-4" />
             <Save v-else class="w-4 h-4" />
-            {{ savedPancheck ? "已保存" : "保存" }}
+            {{ savedWebSearchFilter ? "已保存" : "保存" }}
           </button>
         </div>
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-emerald-900/50 rounded-lg flex items-center justify-center"
             >
-              <Link class="w-5 h-5 text-blue-400" />
+              <Filter class="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h3 class="text-white font-medium">PanCheck 接口</h3>
+              <h3 class="text-white font-medium">搜索结果过滤词</h3>
               <p class="text-gray-500 text-sm">
-                配置网盘链接检测服务接口，格式：接口地址 + 密码
+                配置全网搜中需要过滤掉的资源关键词，关键词用英文逗号隔开
               </p>
             </div>
           </div>
-
           <div class="space-y-4">
-            <div
-              v-for="(server, index) in pancheckServers"
-              :key="index"
-              class="flex items-center gap-3"
-            >
-              <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-gray-400 text-sm mb-2"
-                    >接口地址</label
-                  >
-                  <input
-                    v-model="server.url"
-                    type="text"
-                    placeholder="http://localhost:6080"
-                    class="input-search"
-                  />
-                </div>
-                <div>
-                  <label class="block text-gray-400 text-sm mb-2">密码</label>
-                  <input
-                    v-model="server.password"
-                    type="text"
-                    placeholder="admin123"
-                    class="input-search"
-                  />
-                </div>
-              </div>
-              <button
-                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
-                @click="removePancheckServer(index)"
-              >
-                <Trash class="w-4 h-4" />
-              </button>
-            </div>
-
-            <button
-              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
-              @click="addPancheckServer"
-            >
-              <Plus class="w-4 h-4" />
-              添加接口
-            </button>
-
-            <div
-              v-if="pancheckServers.length === 0"
-              class="text-gray-500 text-sm"
-            >
-              未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 热搜词配置 -->
-      <section class="mb-8">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">热搜词配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedHotwords }"
-            :disabled="savingHotwords || loading"
-            @click="saveHotwordsConfig"
-          >
-            <Check v-if="savedHotwords" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
-            {{ savedHotwords ? "已保存" : "保存" }}
-          </button>
-        </div>
-        <div class="card p-6">
-          <div class="flex items-center gap-3 mb-6">
-            <div
-              class="w-10 h-10 bg-orange-900/50 rounded-lg flex items-center justify-center"
-            >
-              <TrendingUp class="w-5 h-5 text-orange-400" />
-            </div>
             <div>
-              <h3 class="text-white font-medium">热门搜索词</h3>
-              <p class="text-gray-500 text-sm">
-                配置首页热门搜索词，权重越高排名越靠前
+              <label class="block text-gray-400 text-sm mb-2">
+                过滤关键词（英文逗号隔开）
+              </label>
+              <textarea
+                v-model="webSearchFilterConfig.websearch_filter_keywords"
+                rows="10"
+                placeholder="例如：加微信,关注公众号,推广,广告,赌博"
+                class="input-search"
+              />
+              <p class="text-gray-500 text-xs mt-2">
+                标题中包含任一关键词的资源都会被过滤掉，关键词不区分大小写
               </p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div
-              v-for="(hotword, index) in hotwords"
-              :key="index"
-              class="flex items-center gap-3"
-            >
-              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label class="block text-gray-400 text-sm mb-2">搜索词</label>
-                  <input
-                    v-model="hotword.word"
-                    type="text"
-                    placeholder="输入搜索词"
-                    class="input-search"
-                  />
-                </div>
-                <div>
-                  <label class="block text-gray-400 text-sm mb-2">类型</label>
-                  <select
-                    v-model="hotword.type"
-                    class="input-search appearance-none cursor-pointer"
-                  >
-                    <option value="music">音乐</option>
-                    <option value="resource">资源</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-gray-400 text-sm mb-2">权重</label>
-                  <input
-                    v-model.number="hotword.weight"
-                    type="number"
-                    min="1"
-                    max="999"
-                    placeholder="1-999"
-                    class="input-search"
-                  />
-                </div>
-              </div>
-              <button
-                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
-                @click="removeHotword(index)"
-              >
-                <Trash class="w-4 h-4" />
-              </button>
-            </div>
-
-            <button
-              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
-              @click="addHotword"
-            >
-              <Plus class="w-4 h-4" />
-              添加搜索词
-            </button>
-
-            <div v-if="hotwords.length === 0" class="text-gray-500 text-sm">
-              未配置热搜词，首页热门搜索区域将不显示
             </div>
           </div>
         </div>
@@ -995,9 +923,7 @@ const clearISRCache = async (route?: string) => {
                 placeholder="sk-..."
                 class="input-search font-mono text-xs"
               />
-              <p class="text-gray-500 text-xs mt-2">
-                模型服务商提供的密钥
-              </p>
+              <p class="text-gray-500 text-xs mt-2">模型服务商提供的密钥</p>
             </div>
             <div>
               <label class="block text-gray-400 text-sm mb-2">模型名称</label>
@@ -1010,6 +936,181 @@ const clearISRCache = async (route?: string) => {
               <p class="text-gray-500 text-xs mt-2">
                 调用的模型标识，如 qwen-plus、deepseek-chat 等
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 热搜词配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">热搜词配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedHotwords }"
+            :disabled="savingHotwords || loading"
+            @click="saveHotwordsConfig"
+          >
+            <Check v-if="savedHotwords" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedHotwords ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-orange-900/50 rounded-lg flex items-center justify-center"
+            >
+              <TrendingUp class="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <h3 class="text-white font-medium">热门搜索词</h3>
+              <p class="text-gray-500 text-sm">
+                配置首页热门搜索词，权重越高排名越靠前
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div
+              v-for="(hotword, index) in hotwords"
+              :key="index"
+              class="flex items-center gap-3"
+            >
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">搜索词</label>
+                  <input
+                    v-model="hotword.word"
+                    type="text"
+                    placeholder="输入搜索词"
+                    class="input-search"
+                  />
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">类型</label>
+                  <select
+                    v-model="hotword.type"
+                    class="input-search appearance-none cursor-pointer"
+                  >
+                    <option value="music">音乐</option>
+                    <option value="resource">资源</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">权重</label>
+                  <input
+                    v-model.number="hotword.weight"
+                    type="number"
+                    min="1"
+                    max="999"
+                    placeholder="1-999"
+                    class="input-search"
+                  />
+                </div>
+              </div>
+              <button
+                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
+                @click="removeHotword(index)"
+              >
+                <Trash class="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              @click="addHotword"
+            >
+              <Plus class="w-4 h-4" />
+              添加搜索词
+            </button>
+
+            <div v-if="hotwords.length === 0" class="text-gray-500 text-sm">
+              未配置热搜词，首页热门搜索区域将不显示
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PanCheck 配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">网盘检测配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedPancheck }"
+            :disabled="savingPancheck || loading"
+            @click="savePancheckConfig"
+          >
+            <Check v-if="savedPancheck" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedPancheck ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+            >
+              <Link class="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 class="text-white font-medium">PanCheck 接口</h3>
+              <p class="text-gray-500 text-sm">
+                配置网盘链接检测服务接口，格式：接口地址 + 密码
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div
+              v-for="(server, index) in pancheckServers"
+              :key="index"
+              class="flex items-center gap-3"
+            >
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2"
+                    >接口地址</label
+                  >
+                  <input
+                    v-model="server.url"
+                    type="text"
+                    placeholder="http://localhost:6080"
+                    class="input-search"
+                  />
+                </div>
+                <div>
+                  <label class="block text-gray-400 text-sm mb-2">密码</label>
+                  <input
+                    v-model="server.password"
+                    type="text"
+                    placeholder="admin123"
+                    class="input-search"
+                  />
+                </div>
+              </div>
+              <button
+                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
+                @click="removePancheckServer(index)"
+              >
+                <Trash class="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              @click="addPancheckServer"
+            >
+              <Plus class="w-4 h-4" />
+              添加接口
+            </button>
+
+            <div
+              v-if="pancheckServers.length === 0"
+              class="text-gray-500 text-sm"
+            >
+              未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
             </div>
           </div>
         </div>

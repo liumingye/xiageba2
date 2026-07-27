@@ -227,13 +227,13 @@ export default defineNuxtConfig({
       {
         path: "/api/source/geturl",
         max: 10,
-        duration: 30,
+        duration: 45,
         ban: 120,
       },
       {
         path: "/api/source/tree",
         max: 10,
-        duration: 30,
+        duration: 45,
         ban: 120,
       },
       {
@@ -269,7 +269,7 @@ export default defineNuxtConfig({
       tasks: true,
     },
     scheduledTasks: {
-      "*/30 * * * *": ["source:clean_temp"],
+      "*/15 * * * *": ["source:clean_temp"],
       "*/5 * * * *": ["source:check_account"],
     },
   },

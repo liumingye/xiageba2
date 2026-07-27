@@ -735,7 +735,7 @@ export default defineEventHandler(async (event) => {
       await setRedisCache(
         cacheKey,
         shareUrl,
-        Math.max(THIRTY_MINUTES - 300, 1),
+        Math.max(THIRTY_MINUTES - 300, 60),
       );
     }
 
