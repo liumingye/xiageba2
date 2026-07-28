@@ -19,7 +19,7 @@ interface Announcement {
 }
 
 const { data } = await useFetch<{ data: Announcement[] }>("/api/announcement", {
-  query: { pageSize: 3, displayType: "NORMAL" },
+  query: { pageSize: 10 },
   server: true,
   default: () => ({ data: [] }),
 });
@@ -27,7 +27,7 @@ const { data } = await useFetch<{ data: Announcement[] }>("/api/announcement", {
 const allAnnouncements = computed(() => data.value?.data || []);
 
 const normalList = computed(() =>
-  allAnnouncements.value.filter((a) => a.displayType === "NORMAL").slice(0, 5),
+  allAnnouncements.value.filter((a) => a.displayType === "NORMAL").slice(0, 3),
 );
 
 const bannerList = computed(() =>
