@@ -1,4 +1,5 @@
 import { getConfigValues, setConfigValues } from "#server/lib/configCache";
+import { initAutomaton_websearch_filter_keywords } from "#server/lib/simpleAC";
 
 const CONFIG_KEYS = ["websearch_filter_keywords"];
 
@@ -21,6 +22,9 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await setConfigValues(configs);
+
+    // 重新初始化自动机
+    await initAutomaton_websearch_filter_keywords();
 
     return result;
   }

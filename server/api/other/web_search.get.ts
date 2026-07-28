@@ -1,4 +1,19 @@
-import { webSearchConcurrent } from "#server/lib/webSearch";
+import { webSearchConcurrent, WebSearchResult } from "#server/lib/webSearch";
+import {
+  automaton_websearch_filter_keywords,
+  SimpleAC,
+} from "#server/lib/simpleAC";
+
+const filterSearchResults = (
+  items: WebSearchResult[],
+  automaton: SimpleAC | null,
+): WebSearchResult[] => {
+  if (!automaton) return items;
+  return items.filter((item) => {
+    const haystack = (item.title || "").toLowerCase();
+    return !automaton.hasMatch(haystack);
+  });
+};
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -26,6 +41,14 @@ export default defineEventHandler(async (event) => {
   try {
     // 使用并发搜索，实时返回结果
     const totalCount = await webSearchConcurrent(keyword, (results) => {
+      // 应用过滤词过滤（入缓存前过滤，保证缓存干净）
+      const filteredItems = filterSearchResults(
+        results,
+        automaton_websearch_filter_keywords,
+      );
+      if (filteredItems.length === 0) return [];
+      results = filteredItems;
+
       // 每个搜索源完成后立即发送结果
       for (const item of results) {
         send({ type: "result", data: item });

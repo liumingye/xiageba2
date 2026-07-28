@@ -5,7 +5,6 @@ import { encryptUrl } from "#server/lib/crypto";
 import { getRandomIp, getRandomUA } from "#server/utils/source";
 import { getStorageType } from "#shared/utils";
 import axios, { AxiosRequestConfig } from "axios";
-import { getConfigValue } from "#server/lib/configCache";
 
 export interface WebSearchResult {
   title: string;
@@ -17,18 +16,6 @@ export interface WebSearchResult {
 
 // 🔒 内存单飞互斥锁：阻断高并发下多个请求同时压榨同一个第三方爬虫源
 const searchInflightLocks = new Map<string, Promise<WebSearchResult[]>>();
-
-// 全网搜过滤词过滤函数
-const filterSearchResults = (
-  items: WebSearchResult[],
-  filterKeywords: string[],
-): WebSearchResult[] => {
-  if (filterKeywords.length === 0) return items;
-  return items.filter((item) => {
-    const titleLower = (item.title || "").toLowerCase();
-    return !filterKeywords.some((keyword) => titleLower.includes(keyword));
-  });
-};
 
 const getByPath = (obj: any, path: string) => {
   return path.split(".").reduce((acc, key) => {
@@ -360,13 +347,6 @@ export async function webSearchConcurrent(
 
   if (!configs.length) return 0;
 
-  // 加载全网搜过滤词配置（英文逗号隔开，不区分大小写）
-  const filterKeywordsStr = await getConfigValue("websearch_filter_keywords");
-  const filterKeywords = filterKeywordsStr
-    .split(",")
-    .map((k) => k.trim().toLowerCase())
-    .filter((k) => k.length > 0);
-
   let totalCount = 0;
   const timeoutMs = 25000;
 
@@ -419,11 +399,6 @@ export async function webSearchConcurrent(
         }
 
         if (!items || items.length === 0) return [];
-
-        // 应用过滤词过滤（入缓存前过滤，保证缓存干净）
-        const filteredItems = filterSearchResults(items, filterKeywords);
-        if (filteredItems.length === 0) return [];
-        items = filteredItems;
 
         // 高并发优化：加密 URL 操作在入缓存前合并批量完成，减少高频运算
         await Promise.all(
