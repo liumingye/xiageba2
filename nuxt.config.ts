@@ -269,7 +269,7 @@ export default defineNuxtConfig({
       tasks: true,
     },
     scheduledTasks: {
-      "*/15 * * * *": ["source:clean_temp"],
+      "*/10 * * * *": ["source:clean_temp"],
       "*/5 * * * *": ["source:check_account"],
     },
   },

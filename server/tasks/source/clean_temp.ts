@@ -13,7 +13,7 @@ import { THIRTY_MINUTES, THIRTY_MINUTES_UC } from "#server/lib/const";
 const ONE_DAY = 24 * 60 * 60 * 1000; // ⚡ 1天的毫秒数
 const PAN_BATCH_LIMIT = 100;
 const LOCK_KEY = "lock:cron:clean-temp-sources";
-const LOCK_TTL = 600;
+const LOCK_TTL = 300;
 
 function safeParseFid(fidStr: string): string[] {
   if (!fidStr) return [];

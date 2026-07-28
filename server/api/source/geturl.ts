@@ -401,7 +401,10 @@ async function transferQuarkUC(
     throw createError({ statusCode: 500, message: "转存任务未完成" });
   }
 
-  const saveAsTopFids = taskResult.save_as?.save_as_top_fids || [];
+  const saveAsTopFids =
+    taskResult.save_as?.save_as_select_top_fids ||
+    taskResult.save_as?.save_as_top_fids ||
+    [];
 
   // 步骤4: 创建分享
   const shareResult = await shareApi.share(saveAsTopFids, token.title);
@@ -429,11 +432,9 @@ async function transferQuarkUC(
     throw createError({ statusCode: 500, message: "获取分享密码失败" });
   }
 
-  const shareFid = share_task_data.save_as.save_as_top_fids;
-
   return {
     shareUrl: password_data.share_url,
-    fids: shareFid.length > 0 ? shareFid : [password_data.first_file.fid],
+    fids: saveAsTopFids,
   };
 }
 

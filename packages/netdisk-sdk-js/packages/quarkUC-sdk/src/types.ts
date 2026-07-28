@@ -36,6 +36,7 @@ export type ITaskStateResult<Extend = {}> = {
 export type ISaveTaskStateResult = ITaskStateResult<{
     save_as: {
         save_as_top_fids: string[]
+        save_as_select_top_fids: string[]
         to_pdir_fid: string
     }
 }>
