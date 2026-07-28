@@ -1,7 +1,6 @@
 import { ref, onBeforeUnmount, reactive } from "vue";
 
 interface UsePanCheckOptions {
-  enabled?: boolean;
   mode?: "ids" | "urls";
   batchSize?: number;
 }
@@ -13,10 +12,11 @@ interface BatchState {
   pollCancel: AbortController | null;
   pending: boolean;
   success: boolean;
+  urls: string[]; // ✅ 新增：记录这个批次检测的是哪些 URL
 }
 
 export function usePanCheck(options: UsePanCheckOptions = {}) {
-  const { enabled = true, mode = "ids", batchSize = 10 } = options;
+  const { mode = "ids", batchSize = 10 } = options;
 
   const checking = ref(false);
   const skipCheck = ref(true);
@@ -24,26 +24,18 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
 
   const batches = reactive<Map<number, BatchState>>(new Map());
   let nextBatchId = 0;
-  let overallDoneCount = 0;
-  let totalBatches = 0;
+  let pendingBatchCount = 0;
 
   const submitPanCheck = async (items: string[]) => {
-    if (!enabled) return;
-    stopPanCheck();
-
     if (items.length === 0) return;
 
     checking.value = true;
-    skipCheck.value = true;
-    validItems.value.clear();
-    batches.clear();
-    overallDoneCount = 0;
 
     const slices: string[][] = [];
     for (let i = 0; i < items.length; i += batchSize) {
       slices.push(items.slice(i, i + batchSize));
     }
-    totalBatches = slices.length;
+    pendingBatchCount += slices.length;
 
     for (const slice of slices) {
       await submitOneBatch(slice);
@@ -68,6 +60,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
           pollCancel: null,
           pending: true,
           success: true,
+          urls: [...items], // ✅ 保存这个批次的 URL 列表
         };
         batches.set(batchId, state);
         startBatchPoll(batchId, state);
@@ -122,20 +115,35 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   };
 
   const markBatchDone = (_batchId: number) => {
-    overallDoneCount++;
-    if (overallDoneCount >= totalBatches) {
+    if (pendingBatchCount > 0) pendingBatchCount--;
+    if (pendingBatchCount <= 0) {
+      pendingBatchCount = 0;
       checking.value = false;
       skipCheck.value = false;
+      // 全部批次结束后，可以清理已完成的 batch 状态（可选，防止 Map 无限增长）
+      for (const [id, st] of Array.from(batches.entries())) {
+        if (!st.pending) batches.delete(id);
+      }
     }
   };
 
+  // ✅ 核心修复：getCheckStatus 按「URL 粒度」判断，不再受全局 checking 影响
   const getCheckStatus = (
     item: string,
   ): "valid" | "invalid" | "checking" | null => {
     if (!import.meta.client) return null;
-    if (!enabled) return null;
-    if (checking.value) return "checking";
+
+    // ✅ 关键：只有这个 URL 自己在某个 pending 批次的 urls 列表里，才显示 checking
+    // 已经出结果的 URL（valid / invalid）不受其他新批次影响
+    for (const state of batches.values()) {
+      if (state.pending && state.urls.includes(item)) {
+        return "checking";
+      }
+    }
+
     if (skipCheck.value) return null;
+
+    // 这个 URL 不在任何 pending 批次里 → 看最终结果
     if (validItems.value.has(item)) return "valid";
     return "invalid";
   };
@@ -151,10 +159,10 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
       state.pending = false;
     }
     batches.clear();
-    overallDoneCount = 0;
-    totalBatches = 0;
+    pendingBatchCount = 0;
     checking.value = false;
     skipCheck.value = true;
+    validItems.value.clear();
   };
 
   onBeforeUnmount(() => {

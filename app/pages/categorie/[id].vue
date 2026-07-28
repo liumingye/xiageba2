@@ -115,9 +115,7 @@ const pages = computed(() => {
   return result;
 });
 
-const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
-  enabled: true,
-});
+const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck();
 
 watch(
   [data],

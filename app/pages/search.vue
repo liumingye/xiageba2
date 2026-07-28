@@ -228,10 +228,7 @@ const hasFilters = computed(() => {
 });
 
 // 更新筛选条件
-const updateFilter = (
-  key: string,
-  value: string | string[] | boolean,
-) => {
+const updateFilter = (key: string, value: string | string[] | boolean) => {
   const query: Record<string, string | string[]> = {
     type: searchType.value,
     q: searchKeyword.value,
@@ -496,9 +493,7 @@ const goToDetail = (music: Music) => {
 
 const skeletonList = Array.from({ length: 4 });
 
-const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
-  enabled: !isMusic.value && !isAi.value,
-});
+const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck();
 
 watch(
   [results],
@@ -507,6 +502,7 @@ watch(
       stopPanCheck();
       if (!isMusic.value && results.value.length > 0) {
         const ids = (results.value as SourceItem[]).map((item) => item.id);
+        console.log(results.value, searchType.value, isMusic.value, ids);
         submitPanCheck(ids);
       }
     }
@@ -581,241 +577,71 @@ const isMobile = useMediaQuery("(max-width: 768px)");
         </ClientOnly>
 
         <template v-else>
-        <div
-          v-if="errorInfo && searchKeyword"
-          class="card p-5 text-center mb-6"
-          role="alert"
-        >
           <div
-            class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
-            :class="
-              errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
-                ? 'bg-yellow-900/50 text-yellow-400'
-                : 'bg-red-900/50 text-red-400'
-            "
-            aria-hidden="true"
+            v-if="errorInfo && searchKeyword"
+            class="card p-5 text-center mb-6"
+            role="alert"
           >
-            <AlertTriangle class="w-7 h-7" />
-          </div>
-          <h3 class="text-lg font-medium text-white mb-1">
-            {{ errorInfo.title }}
-          </h3>
-          <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
-          <button
-            v-if="errorInfo.canRetry"
-            class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="handleRetry"
-          >
-            <RotateCcw class="w-4 h-4" />
-            重新搜索
-          </button>
-        </div>
-
-        <div
-          v-else-if="loading && searchKeyword"
-          class="space-y-2"
-          :class="{ 'mt-3': !isMusic }"
-          aria-busy="true"
-          aria-label="正在加载搜索结果"
-        >
-          <div class="h-3 bg-gray-700 rounded w-1/4 animate-pulse mb-2" />
-          <article
-            v-for="(_, i) in skeletonList"
-            :key="i"
-            class="card p-3 animate-pulse"
-          >
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 bg-gray-700 rounded-lg" />
-              <div class="flex-1 space-y-1">
-                <div class="h-3 bg-gray-700 rounded w-3/4" />
-                <div class="h-2 bg-gray-700 rounded w-1/3" />
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <div v-else-if="searchKeyword" class="space-y-2">
-          <h2 v-if="results.length > 0" class="text-gray-500 text-sm mb-3">
-            搜索"<span class="text-primary-400">{{ searchKeyword }}</span
-            >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
-            <span v-if="totalPages > 1" class="ml-2"
-              >（第 {{ currentPage }} / {{ totalPages }} 页）</span
+            <div
+              class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
+              :class="
+                errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
+                  ? 'bg-yellow-900/50 text-yellow-400'
+                  : 'bg-red-900/50 text-red-400'
+              "
+              aria-hidden="true"
             >
-          </h2>
-
-          <template v-if="isMusic">
-            <!-- 音乐筛选条件 -->
-            <div class="flex flex-wrap items-center gap-2 mb-4">
-              <button
-                class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
-                :class="
-                  exactFilter
-                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
-                    : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-                "
-                @click="updateFilter('exact', !exactFilter)"
-              >
-                <Target class="w-3.5 h-3.5" />
-                精准搜索
-              </button>
-
-              <button
-                class="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-gray-800 disabled:hover:text-gray-400"
-                @click="clearFilters"
-                :disabled="!hasFilters"
-              >
-                <RotateCcwSquare class="w-3.5 h-3.5" />
-                清除筛选
-              </button>
+              <AlertTriangle class="w-7 h-7" />
             </div>
+            <h3 class="text-lg font-medium text-white mb-1">
+              {{ errorInfo.title }}
+            </h3>
+            <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
+            <button
+              v-if="errorInfo.canRetry"
+              class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+              @click="handleRetry"
+            >
+              <RotateCcw class="w-4 h-4" />
+              重新搜索
+            </button>
+          </div>
 
+          <div
+            v-else-if="loading && searchKeyword"
+            class="space-y-2"
+            :class="{ 'mt-3': !isMusic }"
+            aria-busy="true"
+            aria-label="正在加载搜索结果"
+          >
+            <div class="h-3 bg-gray-700 rounded w-1/4 animate-pulse mb-2" />
             <article
-              v-for="music in results"
-              :key="music.id"
-              class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
-              @click="goToDetail(music)"
-              role="article"
+              v-for="(_, i) in skeletonList"
+              :key="i"
+              class="card p-3 animate-pulse"
             >
               <div class="flex items-center gap-3">
-                <img
-                  :src="music.cover || config.app.baseURL + 'img/cover.png'"
-                  :alt="music.title"
-                  class="w-12 h-12 rounded-lg object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  @error="
-                    ($event.target as HTMLImageElement).src =
-                      config.app.baseURL + 'img/cover.png'
-                  "
-                />
-                <div class="flex-1 min-w-0">
-                  <h3
-                    class="text-sm font-medium text-white truncate"
-                    v-html="highlight(music.title)"
-                  />
-                  <p class="text-xs text-gray-500 truncate">
-                    <span v-html="highlight(music.artist)" /><span
-                      v-if="music.album"
-                    >
-                      - <span v-html="highlight(music.album)"
-                    /></span>
-                  </p>
+                <div class="w-12 h-12 bg-gray-700 rounded-lg" />
+                <div class="flex-1 space-y-1">
+                  <div class="h-3 bg-gray-700 rounded w-3/4" />
+                  <div class="h-2 bg-gray-700 rounded w-1/3" />
                 </div>
-                <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
               </div>
             </article>
+          </div>
 
-            <template v-if="results.length === 0">
-              <div class="text-center py-20">
-                <div
-                  class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
-                  aria-hidden="true"
-                >
-                  <CircleSlash />
-                </div>
-                <p class="text-gray-500">
-                  {{ "此搜索关键词暂无结果" }}
-                </p>
-              </div>
-            </template>
-          </template>
+          <div v-else-if="searchKeyword" class="space-y-2">
+            <h2 v-if="results.length > 0" class="text-gray-500 text-sm mb-3">
+              搜索"<span class="text-primary-400">{{ searchKeyword }}</span
+              >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
+              <span v-if="totalPages > 1" class="ml-2"
+                >（第 {{ currentPage }} / {{ totalPages }} 页）</span
+              >
+            </h2>
 
-          <template v-else>
-            <template v-if="searchKeyword">
-              <div class="flex items-center gap-2 !my-3">
-                <Filter class="w-4 h-4 text-primary-400" />
-                <h2 class="text-gray-500 text-sm">筛选条件</h2>
-              </div>
-
-              <!-- 资源筛选条件 -->
+            <template v-if="isMusic">
+              <!-- 音乐筛选条件 -->
               <div class="flex flex-wrap items-center gap-2 mb-4">
-                <!-- 文件类型（多选） -->
-                <MultiSelectCombobox
-                  class="flex-1 min-w-32"
-                  :model-value="fileTypeFilter"
-                  :options="RESOURCE_FILE_TYPE_OPTIONS"
-                  placeholder="所有文件"
-                  clear-label="清空选择"
-                  aria-label="选择文件类型"
-                  @update:model-value="updateFilter('fileType', $event)"
-                />
-
-                <!-- 入库时间 -->
-                <div class="flex-1 relative min-w-24">
-                  <select
-                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    :value="timeFilter"
-                    @change="
-                      updateFilter(
-                        'time',
-                        ($event.target as HTMLSelectElement).value,
-                      )
-                    "
-                  >
-                    <option
-                      v-for="opt in timeOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <Calendar
-                    class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                  />
-                </div>
-
-                <!-- 网盘类型 -->
-                <div class="flex-1 relative min-w-24">
-                  <select
-                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    :value="panFilter"
-                    @change="
-                      updateFilter(
-                        'pan',
-                        ($event.target as HTMLSelectElement).value,
-                      )
-                    "
-                  >
-                    <option
-                      v-for="opt in panOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <HardDrive
-                    class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                  />
-                </div>
-
-                <!-- 排序 -->
-                <div class="flex-1 relative min-w-24">
-                  <select
-                    class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    :value="sortFilter"
-                    @change="
-                      updateFilter(
-                        'sort',
-                        ($event.target as HTMLSelectElement).value,
-                      )
-                    "
-                  >
-                    <option
-                      v-for="opt in sortOptions"
-                      :key="opt.value"
-                      :value="opt.value"
-                    >
-                      {{ opt.label }}
-                    </option>
-                  </select>
-                  <ArrowUpDown
-                    class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                  />
-                </div>
-
-                <!-- 精准搜索 -->
                 <button
                   class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
                   :class="
@@ -829,7 +655,6 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   精准搜索
                 </button>
 
-                <!-- 清除筛选 -->
                 <button
                   class="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-gray-800 disabled:hover:text-gray-400"
                   @click="clearFilters"
@@ -839,104 +664,278 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   清除筛选
                 </button>
               </div>
-            </template>
 
-            <div v-if="currentPage === 1" class="flex items-center gap-2 !my-3">
-              <Folder class="w-4 h-4 text-primary-400" />
-              <h2 class="text-gray-500 text-sm">本地资源</h2>
-            </div>
-            <template v-if="results.length > 0">
-              <LocalResourceItem
-                v-for="item in results"
-                :key="item.id"
-                :item="item"
-                :check-status="getCheckStatus(item.id)"
-                :highlight-html="highlight(item.title)"
-                :highlight-menu="highlight(item.menu)"
-                @click-title="router.push(`/source/${item.id}`)"
-                @open-tree="openTreeModal({ item, type: 'id' })"
-                @open-modal="openModal({ item, type: 'id' })"
-              />
-            </template>
-            <template v-else>
-              <div class="text-center py-20">
-                <div
-                  class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
-                  aria-hidden="true"
-                >
-                  <CircleSlash />
+              <article
+                v-for="music in results"
+                :key="music.id"
+                class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
+                @click="goToDetail(music)"
+                role="article"
+              >
+                <div class="flex items-center gap-3">
+                  <img
+                    :src="music.cover || config.app.baseURL + 'img/cover.png'"
+                    :alt="music.title"
+                    class="w-12 h-12 rounded-lg object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    @error="
+                      ($event.target as HTMLImageElement).src =
+                        config.app.baseURL + 'img/cover.png'
+                    "
+                  />
+                  <div class="flex-1 min-w-0">
+                    <h3
+                      class="text-sm font-medium text-white truncate"
+                      v-html="highlight(music.title)"
+                    />
+                    <p class="text-xs text-gray-500 truncate">
+                      <span v-html="highlight(music.artist)" /><span
+                        v-if="music.album"
+                      >
+                        - <span v-html="highlight(music.album)"
+                      /></span>
+                    </p>
+                  </div>
+                  <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
                 </div>
-                <p class="text-gray-500">
-                  {{ "本地搜索暂无结果" }}
-                </p>
+              </article>
+
+              <template v-if="results.length === 0">
+                <div class="text-center py-20">
+                  <div
+                    class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                    aria-hidden="true"
+                  >
+                    <CircleSlash />
+                  </div>
+                  <p class="text-gray-500">
+                    {{ "此搜索关键词暂无结果" }}
+                  </p>
+                </div>
+              </template>
+            </template>
+
+            <template v-else>
+              <template v-if="searchKeyword">
+                <div class="flex items-center gap-2 !my-3">
+                  <Filter class="w-4 h-4 text-primary-400" />
+                  <h2 class="text-gray-500 text-sm">筛选条件</h2>
+                </div>
+
+                <!-- 资源筛选条件 -->
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                  <!-- 文件类型（多选） -->
+                  <MultiSelectCombobox
+                    class="flex-1 min-w-32"
+                    :model-value="fileTypeFilter"
+                    :options="RESOURCE_FILE_TYPE_OPTIONS"
+                    placeholder="所有文件"
+                    clear-label="清空选择"
+                    aria-label="选择文件类型"
+                    @update:model-value="updateFilter('fileType', $event)"
+                  />
+
+                  <!-- 入库时间 -->
+                  <div class="flex-1 relative min-w-24">
+                    <select
+                      class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      :value="timeFilter"
+                      @change="
+                        updateFilter(
+                          'time',
+                          ($event.target as HTMLSelectElement).value,
+                        )
+                      "
+                    >
+                      <option
+                        v-for="opt in timeOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                    <Calendar
+                      class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                    />
+                  </div>
+
+                  <!-- 网盘类型 -->
+                  <div class="flex-1 relative min-w-24">
+                    <select
+                      class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      :value="panFilter"
+                      @change="
+                        updateFilter(
+                          'pan',
+                          ($event.target as HTMLSelectElement).value,
+                        )
+                      "
+                    >
+                      <option
+                        v-for="opt in panOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                    <HardDrive
+                      class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                    />
+                  </div>
+
+                  <!-- 排序 -->
+                  <div class="flex-1 relative min-w-24">
+                    <select
+                      class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      :value="sortFilter"
+                      @change="
+                        updateFilter(
+                          'sort',
+                          ($event.target as HTMLSelectElement).value,
+                        )
+                      "
+                    >
+                      <option
+                        v-for="opt in sortOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                    <ArrowUpDown
+                      class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                    />
+                  </div>
+
+                  <!-- 精准搜索 -->
+                  <button
+                    class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
+                    :class="
+                      exactFilter
+                        ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+                        : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                    "
+                    @click="updateFilter('exact', !exactFilter)"
+                  >
+                    <Target class="w-3.5 h-3.5" />
+                    精准搜索
+                  </button>
+
+                  <!-- 清除筛选 -->
+                  <button
+                    class="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-gray-800 disabled:hover:text-gray-400"
+                    @click="clearFilters"
+                    :disabled="!hasFilters"
+                  >
+                    <RotateCcwSquare class="w-3.5 h-3.5" />
+                    清除筛选
+                  </button>
+                </div>
+              </template>
+
+              <div
+                v-if="currentPage === 1"
+                class="flex items-center gap-2 !my-3"
+              >
+                <Folder class="w-4 h-4 text-primary-400" />
+                <h2 class="text-gray-500 text-sm">本地资源</h2>
               </div>
+              <template v-if="results.length > 0">
+                <LocalResourceItem
+                  v-for="item in results"
+                  :key="item.id"
+                  :item="item"
+                  :check-status="getCheckStatus(item.id)"
+                  :highlight-html="highlight(item.title)"
+                  :highlight-menu="highlight(item.menu)"
+                  @click-title="router.push(`/source/${item.id}`)"
+                  @open-tree="openTreeModal({ item, type: 'id' })"
+                  @open-modal="openModal({ item, type: 'id' })"
+                />
+              </template>
+              <template v-else>
+                <div class="text-center py-20">
+                  <div
+                    class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                    aria-hidden="true"
+                  >
+                    <CircleSlash />
+                  </div>
+                  <p class="text-gray-500">
+                    {{ "本地搜索暂无结果" }}
+                  </p>
+                </div>
+              </template>
+
+              <template v-if="currentPage === 1">
+                <WebSearchResults
+                  :keyword="searchKeyword"
+                  :disabled="isMusic"
+                  :highlight-html="highlight"
+                  @open-tree-modal="
+                    (item) => openTreeModal({ item, type: 'url' })
+                  "
+                  @open-modal="(item) => openModal({ item, type: 'url' })"
+                />
+              </template>
             </template>
 
-            <template v-if="currentPage === 1">
-              <WebSearchResults
-                :keyword="searchKeyword"
-                :disabled="isMusic"
-                :highlight-html="highlight"
-                @open-tree-modal="
-                  (item) => openTreeModal({ item, type: 'url' })
-                "
-                @open-modal="(item) => openModal({ item, type: 'url' })"
-              />
-            </template>
-          </template>
-
-          <div
-            v-if="totalPages > 1"
-            class="flex items-center justify-center gap-2 mt-8 flex-wrap"
-            role="navigation"
-            aria-label="分页"
-          >
-            <button
-              class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="currentPage <= 1"
-              @click="goToPage(currentPage - 1)"
+            <div
+              v-if="totalPages > 1"
+              class="flex items-center justify-center gap-2 mt-8 flex-wrap"
+              role="navigation"
+              aria-label="分页"
             >
-              上一页
-            </button>
-
-            <template v-for="(pageNum, idx) in getPageNumbers()" :key="idx">
-              <span v-if="pageNum === '...'" class="px-3 py-2 text-gray-500"
-                >...</span
-              >
               <button
-                v-else
-                class="px-4 py-2 rounded-lg transition-colors"
-                :class="
-                  pageNum === currentPage
-                    ? 'bg-primary-500 text-white font-medium'
-                    : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                "
-                @click="goToPage(pageNum as number)"
-                :aria-current="pageNum === currentPage ? 'page' : undefined"
+                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="currentPage <= 1"
+                @click="goToPage(currentPage - 1)"
               >
-                {{ pageNum }}
+                上一页
               </button>
-            </template>
 
-            <button
-              class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="currentPage >= totalPages"
-              @click="goToPage(currentPage + 1)"
+              <template v-for="(pageNum, idx) in getPageNumbers()" :key="idx">
+                <span v-if="pageNum === '...'" class="px-3 py-2 text-gray-500"
+                  >...</span
+                >
+                <button
+                  v-else
+                  class="px-4 py-2 rounded-lg transition-colors"
+                  :class="
+                    pageNum === currentPage
+                      ? 'bg-primary-500 text-white font-medium'
+                      : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                  "
+                  @click="goToPage(pageNum as number)"
+                  :aria-current="pageNum === currentPage ? 'page' : undefined"
+                >
+                  {{ pageNum }}
+                </button>
+              </template>
+
+              <button
+                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="currentPage >= totalPages"
+                @click="goToPage(currentPage + 1)"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="text-center py-20">
+            <div
+              class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+              aria-hidden="true"
             >
-              下一页
-            </button>
+              <CircleSlash />
+            </div>
+            <p class="text-gray-500">请输入搜索关键词</p>
           </div>
-        </div>
-
-        <div v-else class="text-center py-20">
-          <div
-            class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
-            aria-hidden="true"
-          >
-            <CircleSlash />
-          </div>
-          <p class="text-gray-500">请输入搜索关键词</p>
-        </div>
         </template>
       </main>
 

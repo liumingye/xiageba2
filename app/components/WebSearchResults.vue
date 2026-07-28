@@ -36,16 +36,45 @@ let eventSource: EventSource | null = null;
 
 const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
   mode: "urls",
+  batchSize: 10,
 });
+
+// 防抖 + 去重：记录已经提交过的 url
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+const submittedUrls = new Set<string>();
+
+const triggerPanCheckDebounced = () => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    const urlsToSubmit: string[] = [];
+    for (const item of results.value) {
+      if (item.url && !submittedUrls.has(item.url)) {
+        submittedUrls.add(item.url);
+        urlsToSubmit.push(item.url);
+      }
+    }
+    if (urlsToSubmit.length > 0) {
+      // ✅ 这里是追加 submit，不会清空之前批次的 validItems
+      submitPanCheck(urlsToSubmit);
+    }
+    debounceTimer = null;
+  }, 1000);
+};
 
 const startWebSearch = () => {
   if (eventSource) {
     eventSource.close();
     eventSource = null;
   }
+  // ✅ 只有【开始一次全新搜索】时才 stopPanCheck —— 重置所有状态、清空 validItems
   stopPanCheck();
   results.value = [];
   error.value = "";
+  submittedUrls.clear();
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
 
   if (props.disabled || !props.keyword.trim()) {
     searching.value = false;
@@ -65,13 +94,25 @@ const startWebSearch = () => {
       const msg = JSON.parse(event.data);
       if (msg.type === "result" && msg.data) {
         results.value.push(msg.data);
+        triggerPanCheckDebounced();
       } else if (msg.type === "done") {
         searching.value = false;
         es.close();
         eventSource = null;
-        if (results.value.length > 0) {
-          const urls = results.value.map((item) => item.url);
-          submitPanCheck(urls);
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+          debounceTimer = null;
+          const urlsToSubmit: string[] = [];
+          for (const item of results.value) {
+            if (item.url && !submittedUrls.has(item.url)) {
+              submittedUrls.add(item.url);
+              urlsToSubmit.push(item.url);
+            }
+          }
+          if (urlsToSubmit.length > 0) {
+            // ✅ 最后一批追加 submit
+            submitPanCheck(urlsToSubmit);
+          }
         }
       } else if (msg.type === "error") {
         error.value = msg.message || "全网搜失败";
@@ -96,6 +137,7 @@ const stopWebSearch = () => {
     eventSource.close();
     eventSource = null;
   }
+  // ✅ 用户手动停止，才真的重置
   stopPanCheck();
   searching.value = false;
 };
