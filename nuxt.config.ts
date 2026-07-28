@@ -285,7 +285,7 @@ export default defineNuxtConfig({
       }) as any,
     ],
     optimizeDeps: {
-      include: ["@lucide/vue", "@vueuse/core", "pinia", "qrcode"],
+      include: ["@lucide/vue", "@vueuse/core", "pinia", "qrcode", "marked"],
     },
   },
   alias: {

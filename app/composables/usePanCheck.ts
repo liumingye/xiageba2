@@ -1,35 +1,57 @@
-import { ref, onBeforeUnmount } from "vue";
+import { ref, onBeforeUnmount, reactive } from "vue";
 
 interface UsePanCheckOptions {
   enabled?: boolean;
   mode?: "ids" | "urls";
+  batchSize?: number;
+}
+
+interface BatchState {
+  submissionId: number;
+  serverIndex: number | null;
+  pollTimer: ReturnType<typeof setInterval> | null;
+  pollCancel: AbortController | null;
+  pending: boolean;
+  success: boolean;
 }
 
 export function usePanCheck(options: UsePanCheckOptions = {}) {
-  const { enabled = true, mode = "ids" } = options;
+  const { enabled = true, mode = "ids", batchSize = 10 } = options;
 
-  const submissionId = ref<number | null>(null);
-  const serverIndex = ref<number | null>(null);
   const checking = ref(false);
   const skipCheck = ref(true);
   const validItems = ref<Set<string>>(new Set());
 
-  let pollTimer: ReturnType<typeof setInterval> | null = null;
-  let pollCancel: AbortController | null = null;
+  const batches = reactive<Map<number, BatchState>>(new Map());
+  let nextBatchId = 0;
+  let overallDoneCount = 0;
+  let totalBatches = 0;
 
   const submitPanCheck = async (items: string[]) => {
     if (!enabled) return;
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-    }
+    stopPanCheck();
 
     if (items.length === 0) return;
 
     checking.value = true;
     skipCheck.value = true;
     validItems.value.clear();
+    batches.clear();
+    overallDoneCount = 0;
 
+    const slices: string[][] = [];
+    for (let i = 0; i < items.length; i += batchSize) {
+      slices.push(items.slice(i, i + batchSize));
+    }
+    totalBatches = slices.length;
+
+    for (const slice of slices) {
+      await submitOneBatch(slice);
+    }
+  };
+
+  const submitOneBatch = async (items: string[]) => {
+    const batchId = nextBatchId++;
     try {
       const body = mode === "ids" ? { ids: items } : { urls: items };
       const res = await fetch("/api/source/check", {
@@ -39,60 +61,72 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
       });
       const data = await res.json();
       if (data.success && data.submission_id) {
-        submissionId.value = data.submission_id;
-        serverIndex.value = data.server_index;
-        startPanCheckPoll();
+        const state: BatchState = {
+          submissionId: data.submission_id,
+          serverIndex: data.server_index ?? null,
+          pollTimer: null,
+          pollCancel: null,
+          pending: true,
+          success: true,
+        };
+        batches.set(batchId, state);
+        startBatchPoll(batchId, state);
       } else {
-        checking.value = false;
-        skipCheck.value = true;
+        markBatchDone(batchId);
       }
     } catch {
-      checking.value = false;
-      skipCheck.value = true;
+      markBatchDone(batchId);
     }
   };
 
-  const startPanCheckPoll = () => {
-    pollCancel?.abort();
-    pollCancel = null;
-    if (pollTimer) clearInterval(pollTimer);
-
-    pollTimer = setInterval(async () => {
-      if (!submissionId.value) {
-        clearInterval(pollTimer!);
-        pollTimer = null;
-        return;
-      }
-
+  const startBatchPoll = (batchId: number, state: BatchState) => {
+    if (state.pollTimer) clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(async () => {
+      if (!batches.has(batchId)) return;
       try {
-        pollCancel = new AbortController();
+        state.pollCancel?.abort();
+        state.pollCancel = new AbortController();
         const res = await fetch(
-          `/api/source/check?submission_id=${submissionId.value}${serverIndex.value !== null ? `&server_index=${serverIndex.value}` : ""}`,
+          `/api/source/check?submission_id=${state.submissionId}${state.serverIndex !== null ? `&server_index=${state.serverIndex}` : ""}`,
           {
-            signal: pollCancel.signal,
+            signal: state.pollCancel.signal,
           },
         );
         const data = await res.json();
-        // 实时更新 validItems
         if (data.validIds && data.validIds.length > 0) {
           for (const id of data.validIds) validItems.value.add(id);
         }
         if (data.success) {
-          skipCheck.value = false;
-          // validItems.value.clear();
-          // for (const id of data.validIds) validItems.value.add(id);
-          if (data.pendingIds.length === 0) {
-            clearInterval(pollTimer!);
-            pollTimer = null;
-            checking.value = false;
+          state.success = true;
+          if (data.pendingIds && data.pendingIds.length === 0) {
+            finishBatch(batchId, state);
           }
         } else {
-          skipCheck.value = true;
+          finishBatch(batchId, state);
         }
-      } catch (error) {
-        console.error("PanCheck轮询失败", error);
+      } catch (e) {
+        console.error("PanCheck批次轮询失败", batchId, e);
       }
     }, 3000);
+  };
+
+  const finishBatch = (batchId: number, state: BatchState) => {
+    if (state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
+    state.pollCancel?.abort();
+    state.pollCancel = null;
+    state.pending = false;
+    markBatchDone(batchId);
+  };
+
+  const markBatchDone = (_batchId: number) => {
+    overallDoneCount++;
+    if (overallDoneCount >= totalBatches) {
+      checking.value = false;
+      skipCheck.value = false;
+    }
   };
 
   const getCheckStatus = (
@@ -107,12 +141,18 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   };
 
   const stopPanCheck = () => {
-    pollCancel?.abort();
-    pollCancel = null;
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = null;
+    for (const state of batches.values()) {
+      if (state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+      state.pollCancel?.abort();
+      state.pollCancel = null;
+      state.pending = false;
     }
+    batches.clear();
+    overallDoneCount = 0;
+    totalBatches = 0;
     checking.value = false;
     skipCheck.value = true;
   };
@@ -122,8 +162,6 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   });
 
   return {
-    submissionId,
-    serverIndex,
     checking,
     skipCheck,
     validItems,
