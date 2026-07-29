@@ -61,11 +61,7 @@ export default defineEventHandler(async (event) => {
     id: item.id,
     title: item.title,
     // description: item.description,
-    menu: truncateString(
-      item.menu || "",
-      TREE_MAX_LINE,
-      "\n(文件过多，已截断显示)",
-    ),
+    menu: truncateString(item.menu || "", TREE_MAX_LINE),
     type: getStorageType(item.url),
     createdAt: item.createdAt,
     isSelf: item.isSelf,

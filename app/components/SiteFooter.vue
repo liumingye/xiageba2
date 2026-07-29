@@ -29,14 +29,6 @@ const year = new Date().getFullYear();
       >
         网站地图
       </a>
-      <a
-        href="https://github.com/liumingye/xiageba2"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="link"
-      >
-        GitHub
-      </a>
       <a href="/admin" class="link" target="_blank" rel="noopener noreferrer">
         管理员登录
       </a>

@@ -45,6 +45,10 @@ export default defineEventHandler(async (event) => {
       return { success: false, message: "没有有效的链接" };
     }
 
+    if (links.length > 20) {
+      return { success: false, message: "请求检测链接过多" };
+    }
+
     // 提交检测请求，支持指定服务器索引
     const result = await submitCheckRequest(links.map(([url]) => url));
     if (!result) {

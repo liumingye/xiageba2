@@ -61,13 +61,13 @@ export default defineEventHandler(async (event) => {
   // 🚀 一级防御：读取分布式高速缓存 Redis
   const cached = await getRedisCache<string>(cacheKey);
   if (cached !== null) {
-    return { tree: cached, success: true, redis: true };
+    return { tree: cached, success: true, cache: "redis" };
   }
 
   // 🔒 二级防御：互斥单飞锁，阻断多层网盘递归请求对连接池的瞬间榨干
   if (treeInflightRequests.has(cacheKey)) {
     const activeTree = await treeInflightRequests.get(cacheKey);
-    return { tree: activeTree, success: true, inflight: true };
+    return { tree: activeTree, success: true, cache: "inflight" };
   }
 
   if (id) {
@@ -87,12 +87,13 @@ export default defineEventHandler(async (event) => {
     url = source.url;
     sourceTitle = source.title || "";
     sourceDescription = source.description || "";
-    // 目录文件数太多，直接返回目录
+    // 目录文件数太多，直接返回数据库内容，不获取新目录了
     if (source.menu) {
       const lineNum = source.menu.split(/\r?\n/).length;
       if (lineNum >= TREE_MAX_LINE) {
         return {
-          tree: source.menu + "\n(文件过多，已截断显示)",
+          cache: "db",
+          tree: source.menu,
           success: true,
         };
       }
@@ -118,7 +119,11 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "不支持的该网盘类型" });
     }
 
-    const truncateTree = truncateString(generatedTree, TREE_MAX_LINE + 1);
+    const truncateTree = truncateString(
+      generatedTree,
+      TREE_MAX_LINE,
+      "\n(文件过多，已截断显示)",
+    );
 
     // 写入 Redis 缓存（保存24小时）
     await setRedisCache(cacheKey, truncateTree, 24 * 60 * 60);
@@ -144,7 +149,10 @@ export default defineEventHandler(async (event) => {
 
   try {
     const tree = await generateTreePromise;
-    return { tree, success: true };
+    return {
+      tree,
+      success: true,
+    };
   } finally {
     // 🔒 办完手续，释放锁
     treeInflightRequests.delete(cacheKey);

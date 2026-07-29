@@ -233,11 +233,7 @@ export default defineCachedEventHandler(
 
       sources.forEach((item) => {
         item.type = item.type || getStorageType(item.url);
-        item.menu = truncateString(
-          item.menu || "",
-          TREE_MAX_LINE,
-          "\n(文件过多，已截断显示)",
-        );
+        item.menu = truncateString(item.menu || "", TREE_MAX_LINE);
         delete item.url;
       });
 

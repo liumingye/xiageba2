@@ -644,13 +644,13 @@ export default defineEventHandler(async (event) => {
   // 🚀 一级防御：读取大并发下的分布式 Redis 缓存
   const redisCache = await getRedisCache<string>(cacheKey);
   if (redisCache !== null) {
-    return { url: redisCache, redis: true };
+    return { url: redisCache, cache: "redis" };
   }
 
   // 🔒 二级防御：并发互斥单飞锁（防止击穿网盘 SDK 和账号限制）
   if (inflightRequests.has(cacheKey)) {
     const url = await inflightRequests.get(cacheKey);
-    return { url, inflight: true };
+    return { url, cache: "inflight" };
   }
 
   if (id) {
