@@ -1,44 +1,44 @@
-import { ref, onBeforeUnmount, reactive } from "vue";
+import { ref, reactive, onBeforeUnmount } from "vue";
+
+export type CheckStatus = "checking" | "valid" | "invalid";
 
 interface UsePanCheckOptions {
+  enabled?: boolean;
   mode?: "ids" | "urls";
   batchSize?: number;
-}
-
-interface BatchState {
-  submissionId: number;
-  serverIndex: number | null;
-  pollTimer: ReturnType<typeof setInterval> | null;
-  pollCancel: AbortController | null;
-  pending: boolean;
-  success: boolean;
-  urls: string[]; // ✅ 新增：记录这个批次检测的是哪些 URL
+  pollInterval?: number;
 }
 
 export function usePanCheck(options: UsePanCheckOptions = {}) {
-  const { mode = "ids", batchSize = 10 } = options;
+  const { enabled = true, mode = "ids", batchSize = 10, pollInterval = 3000 } = options;
 
   const checking = ref(false);
-  const skipCheck = ref(true);
+  // 用 Map 统一管理每一个 item (URL/ID) 的状态：checking | valid | invalid
+  const itemStatusMap = reactive<Map<string, CheckStatus>>(new Map());
+  // 仅存放检测为有效的 item，方便外部快速获取结果集
   const validItems = ref<Set<string>>(new Set());
 
-  const batches = reactive<Map<number, BatchState>>(new Map());
+  // 跟踪活跃批次，用于在组件销毁或 stop 时取消 Fetch/Timer
+  const activePollers = new Map<number, { timer: ReturnType<typeof setTimeout> | null; controller: AbortController | null }>();
   let nextBatchId = 0;
-  let pendingBatchCount = 0;
 
+  /**
+   * 提交一批 URLs / IDs 进行异步校验
+   */
   const submitPanCheck = async (items: string[]) => {
-    if (items.length === 0) return;
+    if (!enabled || items.length === 0) return;
 
+    // 未标记过的 item 统一初始化为 checking 状态
+    const newItems = items.filter((item) => !itemStatusMap.has(item));
+    if (newItems.length === 0) return;
+
+    newItems.forEach((item) => itemStatusMap.set(item, "checking"));
     checking.value = true;
 
-    const slices: string[][] = [];
-    for (let i = 0; i < items.length; i += batchSize) {
-      slices.push(items.slice(i, i + batchSize));
-    }
-    pendingBatchCount += slices.length;
-
-    for (const slice of slices) {
-      await submitOneBatch(slice);
+    // 切片分批
+    for (let i = 0; i < newItems.length; i += batchSize) {
+      const slice = newItems.slice(i, i + batchSize);
+      submitOneBatch(slice);
     }
   };
 
@@ -52,127 +52,118 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
         body: JSON.stringify(body),
       });
       const data = await res.json();
+
       if (data.success && data.submission_id) {
-        const state: BatchState = {
-          submissionId: data.submission_id,
-          serverIndex: data.server_index ?? null,
-          pollTimer: null,
-          pollCancel: null,
-          pending: true,
-          success: true,
-          urls: [...items], // ✅ 保存这个批次的 URL 列表
-        };
-        batches.set(batchId, state);
-        startBatchPoll(batchId, state);
+        // 开始链式轮询
+        pollBatch(batchId, data.submission_id, data.server_index ?? null, items);
       } else {
-        markBatchDone(batchId);
+        // 创建任务失败，直接标记该批次全不合法
+        markItemsStatus(items, "invalid");
       }
     } catch {
-      markBatchDone(batchId);
+      markItemsStatus(items, "invalid");
     }
   };
 
-  const startBatchPoll = (batchId: number, state: BatchState) => {
-    if (state.pollTimer) clearInterval(state.pollTimer);
-    state.pollTimer = setInterval(async () => {
-      if (!batches.has(batchId)) return;
+  /**
+   * 链式 setTimeout 轮询，避免并发重发与无效 Cancel
+   */
+  const pollBatch = (batchId: number, submissionId: number, serverIndex: number | null, items: string[]) => {
+    const controller = new AbortController();
+    activePollers.set(batchId, { timer: null, controller });
+
+    const doPoll = async () => {
+      // 检查当前批次是否已被停止
+      if (!activePollers.has(batchId)) return;
+
       try {
-        state.pollCancel?.abort();
-        state.pollCancel = new AbortController();
-        const res = await fetch(
-          `/api/source/check?submission_id=${state.submissionId}${state.serverIndex !== null ? `&server_index=${state.serverIndex}` : ""}`,
-          {
-            signal: state.pollCancel.signal,
-          },
-        );
+        const url = `/api/source/check?submission_id=${submissionId}${serverIndex !== null ? `&server_index=${serverIndex}` : ""}`;
+        const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
-        if (data.validIds && data.validIds.length > 0) {
-          for (const id of data.validIds) validItems.value.add(id);
+
+        // 1. 处理已出的有效项
+        if (Array.isArray(data.validIds) && data.validIds.length > 0) {
+          data.validIds.forEach((id: string) => {
+            validItems.value.add(id);
+            itemStatusMap.set(id, "valid");
+          });
         }
-        if (data.success) {
-          state.success = true;
-          if (data.pendingIds && data.pendingIds.length === 0) {
-            finishBatch(batchId, state);
-          }
-        } else {
-          finishBatch(batchId, state);
+
+        // 2. 判断轮询是否结束
+        const isDone = !data.success || (Array.isArray(data.pendingIds) && data.pendingIds.length === 0);
+
+        if (isDone) {
+          // 将剩余未标为 valid 的项标为 invalid
+          items.forEach((id) => {
+            if (itemStatusMap.get(id) === "checking") {
+              itemStatusMap.set(id, "invalid");
+            }
+          });
+          cleanBatch(batchId);
+          return;
         }
       } catch (e) {
-        console.error("PanCheck批次轮询失败", batchId, e);
+        if (e instanceof DOMException && e.name === "AbortError") return; // 主动中断，直接退出
+        console.error(`Batch ${batchId} poll failed:`, e);
       }
-    }, 3000);
+
+      // 3. 递归调度下一次轮询 (仅当请求彻底结束后才计时)
+      if (activePollers.has(batchId)) {
+        const poller = activePollers.get(batchId)!;
+        poller.timer = setTimeout(doPoll, pollInterval);
+      }
+    };
+
+    doPoll();
   };
 
-  const finishBatch = (batchId: number, state: BatchState) => {
-    if (state.pollTimer) {
-      clearInterval(state.pollTimer);
-      state.pollTimer = null;
-    }
-    state.pollCancel?.abort();
-    state.pollCancel = null;
-    state.pending = false;
-    markBatchDone(batchId);
+  const markItemsStatus = (items: string[], status: CheckStatus) => {
+    items.forEach((item) => itemStatusMap.set(item, status));
+    checkAllFinished();
   };
 
-  const markBatchDone = (_batchId: number) => {
-    if (pendingBatchCount > 0) pendingBatchCount--;
-    if (pendingBatchCount <= 0) {
-      pendingBatchCount = 0;
+  const cleanBatch = (batchId: number) => {
+    const poller = activePollers.get(batchId);
+    if (poller?.timer) clearTimeout(poller.timer);
+    activePollers.delete(batchId);
+    checkAllFinished();
+  };
+
+  const checkAllFinished = () => {
+    if (activePollers.size === 0) {
       checking.value = false;
-      skipCheck.value = false;
-      // 全部批次结束后，可以清理已完成的 batch 状态（可选，防止 Map 无限增长）
-      for (const [id, st] of Array.from(batches.entries())) {
-        if (!st.pending) batches.delete(id);
-      }
     }
   };
 
-  // ✅ 核心修复：getCheckStatus 按「URL 粒度」判断，不再受全局 checking 影响
-  const getCheckStatus = (
-    item: string,
-  ): "valid" | "invalid" | "checking" | null => {
-    if (!import.meta.client) return null;
-
-    // ✅ 关键：只有这个 URL 自己在某个 pending 批次的 urls 列表里，才显示 checking
-    // 已经出结果的 URL（valid / invalid）不受其他新批次影响
-    for (const state of batches.values()) {
-      if (state.pending && state.urls.includes(item)) {
-        return "checking";
-      }
-    }
-
-    if (skipCheck.value) return null;
-
-    // 这个 URL 不在任何 pending 批次里 → 看最终结果
-    if (validItems.value.has(item)) return "valid";
-    return "invalid";
+  /**
+   * O(1) 复杂度直接读取查询状态
+   */
+  const getCheckStatus = (item: string): CheckStatus | null => {
+    if (!enabled || !import.meta.client) return null;
+    return itemStatusMap.get(item) || null;
   };
 
+  /**
+   * 重置/停止所有检测
+   */
   const stopPanCheck = () => {
-    for (const state of batches.values()) {
-      if (state.pollTimer) {
-        clearInterval(state.pollTimer);
-        state.pollTimer = null;
-      }
-      state.pollCancel?.abort();
-      state.pollCancel = null;
-      state.pending = false;
-    }
-    batches.clear();
-    pendingBatchCount = 0;
+    activePollers.forEach((poller) => {
+      if (poller.timer) clearTimeout(poller.timer);
+      poller.controller?.abort();
+    });
+    activePollers.clear();
+
     checking.value = false;
-    skipCheck.value = true;
+    itemStatusMap.clear();
     validItems.value.clear();
   };
 
-  onBeforeUnmount(() => {
-    stopPanCheck();
-  });
+  onBeforeUnmount(stopPanCheck);
 
   return {
     checking,
-    skipCheck,
     validItems,
+    itemStatusMap,
     submitPanCheck,
     getCheckStatus,
     stopPanCheck,

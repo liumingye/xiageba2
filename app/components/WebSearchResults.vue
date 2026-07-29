@@ -32,56 +32,69 @@ const emit = defineEmits<{
 const results = ref<WebSearchResult[]>([]);
 const searching = ref(false);
 const error = ref("");
-let eventSource: EventSource | null = null;
 
+// 实例化 panCheck Hook
 const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
   mode: "urls",
   batchSize: 10,
 });
 
-// 防抖 + 去重：记录已经提交过的 url
+let eventSource: EventSource | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+// 待提交校验的 URL 缓冲区
+const pendingBuffer = new Set<string>();
 const submittedUrls = new Set<string>();
 
-const triggerPanCheckDebounced = () => {
+/**
+ * 管道化处理：将接收到的新数据放入缓存区并触发防抖
+ */
+const queuePanCheck = (url?: string) => {
+  if (url && !submittedUrls.has(url)) {
+    pendingBuffer.add(url);
+    submittedUrls.add(url);
+  }
+
   if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    const urlsToSubmit: string[] = [];
-    for (const item of results.value) {
-      if (item.url && !submittedUrls.has(item.url)) {
-        submittedUrls.add(item.url);
-        urlsToSubmit.push(item.url);
-      }
-    }
-    if (urlsToSubmit.length > 0) {
-      // ✅ 这里是追加 submit，不会清空之前批次的 validItems
-      submitPanCheck(urlsToSubmit);
-    }
-    debounceTimer = null;
-  }, 1000);
+
+  debounceTimer = setTimeout(flushPanCheck, 2000); // 防抖时间可自由调整
 };
 
-const startWebSearch = () => {
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
-  }
-  // ✅ 只有【开始一次全新搜索】时才 stopPanCheck —— 重置所有状态、清空 validItems
-  stopPanCheck();
-  results.value = [];
-  error.value = "";
-  submittedUrls.clear();
+/**
+ * 冲刷缓冲区，发起校验
+ */
+const flushPanCheck = () => {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
+  if (pendingBuffer.size === 0) return;
 
-  if (props.disabled || !props.keyword.trim()) {
+  const urlsToSubmit = Array.from(pendingBuffer);
+  pendingBuffer.clear();
+
+  // 增量追加提交
+  submitPanCheck(urlsToSubmit);
+};
+
+const startWebSearch = () => {
+  // 1. 清理上一轮网络与检测状态
+  closeEventSource();
+  stopPanCheck();
+
+  results.value = [];
+  error.value = "";
+  submittedUrls.clear();
+  pendingBuffer.clear();
+
+  if (
+    props.disabled ||
+    !props.keyword.trim() ||
+    typeof EventSource === "undefined"
+  ) {
     searching.value = false;
     return;
   }
-
-  if (typeof EventSource === "undefined") return;
 
   searching.value = true;
   const es = new EventSource(
@@ -92,53 +105,48 @@ const startWebSearch = () => {
   es.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+
       if (msg.type === "result" && msg.data) {
         results.value.push(msg.data);
-        triggerPanCheckDebounced();
+        // 数据进入缓冲区
+        queuePanCheck(msg.data.url);
       } else if (msg.type === "done") {
         searching.value = false;
-        es.close();
-        eventSource = null;
-        if (debounceTimer) {
-          clearTimeout(debounceTimer);
-          debounceTimer = null;
-          const urlsToSubmit: string[] = [];
-          for (const item of results.value) {
-            if (item.url && !submittedUrls.has(item.url)) {
-              submittedUrls.add(item.url);
-              urlsToSubmit.push(item.url);
-            }
-          }
-          if (urlsToSubmit.length > 0) {
-            // ✅ 最后一批追加 submit
-            submitPanCheck(urlsToSubmit);
-          }
-        }
+        closeEventSource();
+        // 结束时立即冲刷剩余的缓冲区
+        flushPanCheck();
       } else if (msg.type === "error") {
         error.value = msg.message || "全网搜失败";
         searching.value = false;
-        es.close();
-        eventSource = null;
+        closeEventSource();
       }
     } catch {
-      // 忽略解析失败的推送
+      // 忽略无法解析的 JSON 数据
     }
   };
 
   es.onerror = () => {
     searching.value = false;
-    es.close();
-    eventSource = null;
+    closeEventSource();
   };
 };
 
-const stopWebSearch = () => {
+const closeEventSource = () => {
   if (eventSource) {
     eventSource.close();
     eventSource = null;
   }
-  // ✅ 用户手动停止，才真的重置
+};
+
+const stopWebSearch = () => {
+  closeEventSource();
   stopPanCheck();
+
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  pendingBuffer.clear();
   searching.value = false;
 };
 
