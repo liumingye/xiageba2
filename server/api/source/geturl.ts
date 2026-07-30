@@ -1,7 +1,12 @@
 import { prisma } from "#server/lib/prisma";
 import { getConfigValues, getConfigValue } from "#server/lib/configCache";
 import { decryptUrl } from "#server/lib/crypto";
-import { parseShareParam, BaiduFSOpenApi } from "@netdisk-sdk/baidu-sdk";
+import {
+  parseShareParam,
+  BaiduFSOpenApi,
+  ITransferShareResult,
+  ICreateShareResult,
+} from "@netdisk-sdk/baidu-sdk";
 import { QuarkUCFSApi } from "@netdisk-sdk/quarkUC-sdk";
 import { XunleiFSApi } from "@netdisk-sdk/xunlei-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
@@ -472,15 +477,64 @@ async function transferBaidu(
   }
 
   const fsids = shareInfo.list.map((f: { fs_id: any }) => f.fs_id);
-  const result = await client.fsShareApi.transfer(
-    {
-      shareid: shareInfo.shareid,
-      from: shareInfo.uk,
-      sekey: shareInfo.seckey,
-    },
-    tempDir,
-    ...fsids,
-  );
+
+  async function retryOnCode4<T>(
+    fn: () => Promise<T>,
+    options: { maxRetries?: number; delayMs?: number } = {},
+  ): Promise<T> {
+    const { maxRetries = 2, delayMs = 2000 } = options;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (err: any) {
+        const info = err.info();
+
+        // code 4: 请求超时，请稍后再试
+
+        const isCode4 = info?.errno === 4;
+        const isLastAttempt = attempt === maxRetries;
+
+        // 如果不是 code 4，或者达到了最大重试次数，直接向上抛出错误
+        if (!isCode4 || isLastAttempt) {
+          throw err;
+        }
+
+        // 计算延迟时间（指数退避：1s, 2s...）
+        const waitTime = delayMs * Math.pow(2, attempt);
+        console.warn(
+          `[转存] 触发错误码 4，将在 ${waitTime}ms 后进行第 ${attempt + 1} 次重试...`,
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+    }
+
+    throw new Error("转存失败：超过最大重试次数");
+  }
+
+  let result: ITransferShareResult | null = null;
+
+  try {
+    result = await retryOnCode4(() =>
+      client.fsShareApi.transfer(
+        {
+          shareid: shareInfo.shareid,
+          from: shareInfo.uk,
+          sekey: shareInfo.seckey,
+        },
+        tempDir,
+        ...fsids,
+      ),
+    );
+  } catch (err: any) {
+    // 此时能捕获到所有的失败（包括重试失败和非 code 4 的错误）
+    throw createError({ statusCode: 500, message: "请求超时，请稍后再试" });
+  }
+
+  if (!result) {
+    throw createError({ statusCode: 500, message: "请求超时，请稍后再试" });
+  }
 
   let list: {
     from: string;
@@ -505,11 +559,21 @@ async function transferBaidu(
   const fids = list.map((item) => item.to);
 
   const pwd = shareParam.pwd || "6666";
-  const shareResult = await client.fsShareApi.createShare({
-    fsidList: list.map((item) => item.to_fs_id),
-    pwd,
-    period: 1,
-  });
+
+  let shareResult: ICreateShareResult | null = null;
+
+  try {
+    shareResult = await retryOnCode4(() =>
+      client.fsShareApi.createShare({
+        fsidList: list.map((item) => item.to_fs_id),
+        pwd,
+        period: 0,
+      }),
+    );
+  } catch (err: any) {
+    // 此时能捕获到所有的失败（包括重试失败和非 code 4 的错误）
+    throw createError({ statusCode: 500, message: "请求超时，请稍后再试" });
+  }
 
   // 异步删除广告文件（后台执行，不阻塞分享创建）
   const adFilterConfig = await getAdFilterConfig();
@@ -609,15 +673,13 @@ async function transferXunlei(
 }
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  let inputUrl = query.url as string | undefined;
-  let id = query.id as string | undefined;
-
-  if (event.method === "POST") {
-    const body = await readBody(event);
-    if (body.url) inputUrl = body.url;
-    if (body.id) id = body.id;
+  if (event.method !== "POST") {
+    throw createError({ statusCode: 403, message: "请求方法错误" });
   }
+
+  const body = await readBody(event);
+  let inputUrl = body.url as string | undefined;
+  let id = body.id as string | undefined;
 
   if (!inputUrl && !id) {
     throw createError({ statusCode: 400, message: "缺少参数 url 或 id" });

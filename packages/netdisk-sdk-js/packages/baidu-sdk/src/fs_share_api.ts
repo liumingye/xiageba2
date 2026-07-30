@@ -65,29 +65,31 @@ export class BaiduShareFSApi {
     fsidList: number[]; // 要分享的文件 fsid 列表
     pwd: string; // 提取码（4位，schannel=4 时必填）
     period?: 0 | 1 | 7; // 有效期：0=永久，1=1天，7=7天
-  }): Promise<{
-    aheadmsg: string;
-    command_word: string;
-    createsharetips_ldlj: string;
-    ctime: number;
-    errno: number;
-    expiredType: number;
-    expiretime: number;
-    imagetype: number;
-    kid: number;
-    link: string;
-    newno: string;
-    premis: boolean;
-    prompt_type: number;
-    qrcodeurl: string;
-    request_id: number;
-    shareid: number;
-    shorturl: string;
-    show_msg: string;
-    tailmsg: string;
-  }> {
+  }): Promise<ICreateShareResult> {
     throw "";
   }
+}
+
+export interface ICreateShareResult {
+  aheadmsg: string;
+  command_word: string;
+  createsharetips_ldlj: string;
+  ctime: number;
+  errno: number;
+  expiredType: number;
+  expiretime: number;
+  imagetype: number;
+  kid: number;
+  link: string;
+  newno: string;
+  premis: boolean;
+  prompt_type: number;
+  qrcodeurl: string;
+  request_id: number;
+  shareid: number;
+  shorturl: string;
+  show_msg: string;
+  tailmsg: string;
 }
 
 export type IShareParam = { pwd?: string } & (

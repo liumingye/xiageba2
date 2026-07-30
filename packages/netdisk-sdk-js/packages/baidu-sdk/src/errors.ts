@@ -3,6 +3,8 @@ import { isIBaiduResult, isIBaiduResult2 } from "./types"
 import { SError } from "error"
 import { Response } from "superagent";
 
+export { SError };
+
 export class ApiError extends SError { }
 /** http 请求错误 */
 export class HttpError extends SError { }
