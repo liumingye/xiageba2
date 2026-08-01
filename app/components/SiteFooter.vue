@@ -22,6 +22,14 @@ const year = new Date().getFullYear();
         >吉ICP备2026000231号</a
       >
       <a
+        href="https://xiageba.apifox.cn/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link"
+      >
+        API
+      </a>
+      <a
         href="/sitemap.xml"
         target="_blank"
         rel="noopener noreferrer"

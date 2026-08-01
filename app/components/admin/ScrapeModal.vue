@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { X, Search, ExternalLink, CheckCircle, Loader2 } from "@lucide/vue";
+import { ref, watch, reactive, computed } from "vue";
+import {
+  X,
+  Search,
+  Check,
+  CheckCircle,
+  Loader2,
+  Disc3,
+  Music,
+  User,
+  FileText,
+  Image as ImageIcon,
+  ExternalLink,
+} from "@lucide/vue";
 
 interface SearchItem {
   sourceId: string;
@@ -21,16 +33,30 @@ interface ScrapeResult {
   downloads: Array<{ quality: string; url: string }>;
 }
 
+interface ExistingMusic {
+  title?: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+  lyrics?: string;
+}
+
+type ScrapeField = "title" | "artist" | "album" | "cover" | "lyrics";
+
 const { getAuthHeaders } = useAuth();
 
 const props = defineProps<{
   show: boolean;
   initialKeyword?: string;
+  existingMusic?: ExistingMusic;
 }>();
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "select", data: ScrapeResult): void;
+  (
+    e: "select",
+    data: Partial<ScrapeResult> & { __selectedFields: ScrapeField[] },
+  ): void;
 }>();
 
 const platforms = [
@@ -43,9 +69,34 @@ const selectedPlatform = ref("kuwo");
 const keyword = ref("");
 const results = ref<SearchItem[]>([]);
 const isSearching = ref(false);
-const selectedItem = ref<SearchItem | null>(null);
-const isLoadingDetail = ref(false);
 const errorMsg = ref("");
+
+const scrapeResult = ref<ScrapeResult | null>(null);
+const isLoadingDetail = ref(false);
+
+const selectedFields = reactive<Record<ScrapeField, boolean>>({
+  title: true,
+  artist: true,
+  album: true,
+  cover: true,
+  lyrics: true,
+});
+
+const existing = computed<ExistingMusic>(() => props.existingMusic || {});
+const ALL_FIELDS: ScrapeField[] = [
+  "title",
+  "artist",
+  "album",
+  "cover",
+  "lyrics",
+];
+const FIELD_LABEL: Record<ScrapeField, string> = {
+  title: "歌名",
+  artist: "歌手",
+  album: "专辑",
+  cover: "封面",
+  lyrics: "歌词",
+};
 
 watch(
   () => props.show,
@@ -53,8 +104,11 @@ watch(
     if (show) {
       keyword.value = props.initialKeyword || "";
       results.value = [];
-      selectedItem.value = null;
+      scrapeResult.value = null;
       errorMsg.value = "";
+      ALL_FIELDS.forEach((f) => {
+        selectedFields[f] = true;
+      });
     }
   },
 );
@@ -65,7 +119,7 @@ const handleSearch = async () => {
 
   isSearching.value = true;
   errorMsg.value = "";
-  selectedItem.value = null;
+  scrapeResult.value = null;
 
   try {
     const res = await fetch("/api/admin/music/scrape", {
@@ -100,7 +154,7 @@ const handleSearch = async () => {
 };
 
 const selectItem = async (item: SearchItem) => {
-  selectedItem.value = item;
+  scrapeResult.value = null;
   isLoadingDetail.value = true;
   errorMsg.value = "";
 
@@ -121,22 +175,97 @@ const selectItem = async (item: SearchItem) => {
     if (!res.ok) {
       const data = await res.json();
       errorMsg.value = data.message || "获取详情失败";
-      selectedItem.value = null;
       return;
     }
 
     const data = await res.json();
-    emit("select", data.result);
+    scrapeResult.value = data.result;
+    selectDiffFields();
   } catch {
     errorMsg.value = "网络错误，请检查网络连接";
-    selectedItem.value = null;
   } finally {
     isLoadingDetail.value = false;
   }
 };
 
+const backToSearch = () => {
+  scrapeResult.value = null;
+};
+
+const hasDiff = (field: ScrapeField): boolean => {
+  if (!scrapeResult.value) return false;
+  const norm = (v: any) =>
+    v === null || v === undefined ? "" : String(v).trim();
+  return (
+    norm((scrapeResult.value as any)[field]) !==
+    norm((existing.value as any)[field])
+  );
+};
+
+const selectAllFields = () => {
+  ALL_FIELDS.forEach((f) => {
+    selectedFields[f] = true;
+  });
+};
+
+const selectDiffFields = () => {
+  ALL_FIELDS.forEach((f) => {
+    selectedFields[f] = hasDiff(f);
+  });
+};
+
+const unselectAllFields = () => {
+  ALL_FIELDS.forEach((f) => {
+    selectedFields[f] = false;
+  });
+};
+
+const toggleField = (field: ScrapeField) => {
+  selectedFields[field] = !selectedFields[field];
+};
+
+const anySelected = computed(() => ALL_FIELDS.some((f) => selectedFields[f]));
+
+const confirmSelect = () => {
+  if (!scrapeResult.value || !anySelected.value) return;
+
+  const fields: ScrapeField[] = ALL_FIELDS.filter((f) => selectedFields[f]);
+  const data: Partial<ScrapeResult> & { __selectedFields: ScrapeField[] } = {
+    __selectedFields: fields,
+  };
+  fields.forEach((f) => {
+    (data as any)[f] = (scrapeResult.value as any)[f];
+  });
+  emit("select", data);
+};
+
 const handleClose = () => {
   emit("close");
+};
+
+// -------------- FieldCompareRow sub-component via composable --------------
+const FIELD_ICON: Record<ScrapeField, any> = {
+  title: Music,
+  artist: User,
+  album: Disc3,
+  cover: ImageIcon,
+  lyrics: FileText,
+};
+
+const normVal = (v: any): string => {
+  if (v === undefined || v === null) return "";
+  if (typeof v === "string") return v.trim() || "（空）";
+  return String(v);
+};
+
+const rowIcon = (f: ScrapeField) => FIELD_ICON[f] ?? FileText;
+
+const coverSame = (cover: string) => {
+  if (!cover || !existing.value?.cover) return false;
+  return (
+    cover.substring(cover.lastIndexOf("/") + 1) ===
+    existing.value.cover.substring(existing.value.cover.lastIndexOf("/") + 1)
+  );
 };
 </script>
 
@@ -153,10 +282,10 @@ const handleClose = () => {
         ></div>
 
         <div
-          class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800 max-h-[85vh] flex flex-col"
+          class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-4xl w-full border border-gray-800 max-h-[92vh] flex flex-col"
         >
           <button
-            class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors z-10"
             @click="handleClose"
           >
             <X class="w-5 h-5 text-gray-400" />
@@ -166,108 +295,340 @@ const handleClose = () => {
             class="text-xl font-medium text-white mb-4 flex items-center gap-2"
           >
             <Search class="w-5 h-5 text-primary-500" />
-            音乐刮削
+            {{ scrapeResult ? "对比 & 选择更新字段" : "音乐刮削" }}
           </h3>
 
-          <!-- 平台选择 -->
-          <div class="flex gap-2 mb-4">
-            <button
-              v-for="p in platforms"
-              :key="p.value"
-              class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
-              :class="
-                selectedPlatform === p.value
-                  ? 'bg-primary-500 text-white border-primary-500'
-                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
-              "
-              @click="
-                selectedPlatform = p.value;
-                results = [];
-                selectedItem = null;
-              "
-            >
-              {{ p.label }}
-            </button>
-          </div>
-
-          <!-- 搜索框 -->
-          <div class="flex gap-2 mb-4">
-            <input
-              v-model="keyword"
-              type="text"
-              :placeholder="`输入歌名或歌手（当前：${platforms.find((p) => p.value === selectedPlatform)?.label}）`"
-              class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500/50"
-              @keydown.enter="handleSearch"
-            />
-            <button
-              class="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-              :disabled="isSearching || !keyword.trim()"
-              @click="handleSearch"
-            >
-              <Loader2 v-if="isSearching" class="w-4 h-4 animate-spin" />
-              <Search v-else class="w-4 h-4" />
-              {{ isSearching ? "搜索中..." : "搜索" }}
-            </button>
-          </div>
-
-          <p v-if="errorMsg" class="text-red-400 text-sm mb-3">
-            {{ errorMsg }}
-          </p>
-
-          <!-- 搜索结果 -->
-          <div class="flex-1 overflow-y-auto space-y-2 min-h-0">
-            <div
-              v-if="results.length === 0 && !errorMsg && !isSearching"
-              class="text-center py-8 text-gray-500 text-sm"
-            >
-              选择平台并输入关键词搜索
-            </div>
-
-            <div
-              v-for="item in results"
-              :key="item.sourceId"
-              class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
-              :class="
-                selectedItem?.sourceId === item.sourceId
-                  ? 'bg-primary-500/20 border border-primary-500/50'
-                  : 'bg-gray-800 hover:bg-gray-750 border border-transparent'
-              "
-              @click="selectItem(item)"
-            >
-              <img
-                :src="item.cover || '/img/cover.png'"
-                :alt="item.title"
-                class="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                loading="lazy"
-                @error="
-                  ($event.target as HTMLImageElement).src = '/img/cover.png'
+          <!-- ================= 第一阶段：搜索列表 ================= -->
+          <template v-if="!scrapeResult">
+            <div class="flex gap-2 mb-4">
+              <button
+                v-for="p in platforms"
+                :key="p.value"
+                class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors border"
+                :class="
+                  selectedPlatform === p.value
+                    ? 'bg-primary-500 text-white border-primary-500'
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
                 "
-              />
-              <div class="flex-1 min-w-0">
-                <p class="text-white text-sm font-medium truncate">
-                  {{ item.title }}
-                </p>
-                <p class="text-gray-400 text-xs truncate">{{ item.artist }}</p>
-                <p v-if="item.album" class="text-gray-500 text-xs truncate">
-                  {{ item.album }}
-                </p>
-              </div>
-              <div
-                v-if="selectedItem?.sourceId === item.sourceId"
-                class="flex-shrink-0"
+                @click="
+                  selectedPlatform = p.value;
+                  results = [];
+                "
               >
-                <Loader2
-                  v-if="isLoadingDetail"
-                  class="w-5 h-5 text-primary-400 animate-spin"
+                {{ p.label }}
+              </button>
+            </div>
+
+            <div class="flex gap-2 mb-4">
+              <input
+                v-model="keyword"
+                type="text"
+                :placeholder="`输入歌名或歌手（当前：${platforms.find((p) => p.value === selectedPlatform)?.label}）`"
+                class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500/50"
+                @keydown.enter="handleSearch"
+              />
+              <button
+                class="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                :disabled="isSearching || !keyword.trim()"
+                @click="handleSearch"
+              >
+                <Loader2 v-if="isSearching" class="w-4 h-4 animate-spin" />
+                <Search v-else class="w-4 h-4" />
+                {{ isSearching ? "搜索中..." : "搜索" }}
+              </button>
+            </div>
+
+            <p v-if="errorMsg" class="text-red-400 text-sm mb-3">
+              {{ errorMsg }}
+            </p>
+
+            <div class="flex-1 overflow-y-auto space-y-2 min-h-0">
+              <div
+                v-if="results.length === 0 && !errorMsg && !isSearching"
+                class="text-center py-8 text-gray-500 text-sm"
+              >
+                选择平台并输入关键词搜索
+              </div>
+
+              <div
+                v-for="item in results"
+                :key="item.sourceId"
+                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
+                :class="
+                  isLoadingDetail &&
+                  scrapeResult === null &&
+                  results[0]?.sourceId
+                    ? ''
+                    : 'bg-gray-800 hover:bg-gray-750 border border-transparent hover:border-gray-700'
+                "
+                @click="selectItem(item)"
+              >
+                <img
+                  :src="item.cover || '/img/cover.png'"
+                  :alt="item.title"
+                  class="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                  loading="lazy"
+                  @error="
+                    ($event.target as HTMLImageElement).src = '/img/cover.png'
+                  "
                 />
-                <CheckCircle v-else class="w-5 h-5 text-primary-400" />
+                <div class="flex-1 min-w-0">
+                  <p
+                    class="text-sm font-medium truncate"
+                    :class="[
+                      item.title === existingMusic?.title
+                        ? 'text-orange-500'
+                        : 'text-white',
+                    ]"
+                  >
+                    {{ item.title }}
+                  </p>
+                  <p
+                    class="text-xs truncate"
+                    :class="[
+                      item.artist === existingMusic?.artist
+                        ? 'text-orange-400'
+                        : 'text-gray-400',
+                    ]"
+                  >
+                    {{ item.artist }}
+                  </p>
+                  <p
+                    v-if="item.album"
+                    class="text-xs truncate"
+                    :class="[
+                      item.album === existingMusic?.album
+                        ? 'text-orange-400'
+                        : 'text-gray-500',
+                    ]"
+                  >
+                    {{ item.album }}
+                  </p>
+                  <p
+                    v-if="coverSame(item.cover)"
+                    class="text-orange-400 text-xs truncate"
+                  >
+                    {{ item.cover }}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
 
-          <div class="mt-3 text-xs text-gray-600 text-center">
-            刮削结果可能不完整，请核对后保存
-          </div>
+          <!-- ================= 第二阶段：对比 + 勾选 ================= -->
+          <template v-else>
+            <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+              <button
+                v-if="isLoadingDetail"
+                class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800 text-gray-400 rounded-lg text-sm cursor-wait"
+                disabled
+              >
+                <Loader2 class="w-4 h-4 animate-spin" />
+                加载详情中...
+              </button>
+              <button
+                v-else
+                class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+                @click="backToSearch"
+              >
+                ← 返回搜索列表
+              </button>
+
+              <div
+                class="flex items-center gap-2 text-xs text-gray-500 ml-auto"
+              >
+                <span
+                  class="px-2 py-1 rounded bg-primary-500/20 text-primary-400"
+                >
+                  {{
+                    platforms.find(
+                      (p) => scrapeResult && p.value === scrapeResult.source,
+                    )?.label
+                  }}
+                </span>
+              </div>
+            </div>
+
+            <div
+              class="flex items-center justify-between mb-4 text-sm flex-wrap gap-3"
+            >
+              <div class="text-gray-400">
+                勾选需要更新的字段，点击确认后仅更新勾选的内容
+              </div>
+              <div class="flex items-center gap-3">
+                <button
+                  class="text-primary-400 hover:text-primary-300"
+                  @click="selectAllFields"
+                >
+                  全选
+                </button>
+                <span class="text-gray-700">|</span>
+                <button
+                  class="text-gray-500 hover:text-gray-400"
+                  @click="unselectAllFields"
+                >
+                  全不选
+                </button>
+              </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-3 min-h-0 pr-1">
+              <!-- 5 行对比：字段名 + 勾选 | 当前 | 刮削 -->
+              <div
+                v-for="field in ALL_FIELDS"
+                :key="field"
+                class="grid grid-cols-[1fr_1fr] sm:grid-cols-[44px_110px_1fr_1fr] gap-3 items-start p-3 rounded-xl border transition-colors cursor-pointer select-none"
+                :class="
+                  selectedFields[field]
+                    ? 'bg-primary-500/10 border-primary-500/40'
+                    : 'bg-gray-800/60 border-gray-800 hover:border-gray-700'
+                "
+                @click="toggleField(field)"
+              >
+                <!-- 勾选框 -->
+                <div class="flex items-center justify-center w-full h-8">
+                  <div
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0"
+                    :class="
+                      selectedFields[field]
+                        ? 'bg-primary-500 border-primary-500'
+                        : 'border-gray-600'
+                    "
+                  >
+                    <CheckCircle
+                      v-if="selectedFields[field]"
+                      class="w-3.5 h-3.5 text-white"
+                    />
+                  </div>
+                </div>
+
+                <!-- 字段名 -->
+                <div
+                  class="mt-1 flex items-center gap-1.5 text-gray-300 flex-shrink-0"
+                >
+                  <component
+                    :is="rowIcon(field)"
+                    class="w-4 h-4 text-gray-500 flex-shrink-0"
+                  />
+                  <span>{{ FIELD_LABEL[field] }}</span>
+                  <span
+                    v-if="hasDiff(field)"
+                    class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 flex-shrink-0"
+                    >变</span
+                  >
+                </div>
+
+                <!-- 当前值 -->
+                <div
+                  class="min-w-0 rounded-lg bg-gray-900/80 px-3 py-2 text-xs text-gray-500"
+                  :class="{ 'max-h-40 overflow-y-auto': field === 'lyrics' }"
+                >
+                  <div
+                    class="text-[10px] uppercase tracking-wider text-gray-600 mb-1"
+                  >
+                    当前
+                  </div>
+                  <!-- 封面 -->
+                  <template v-if="field === 'cover'">
+                    <img
+                      v-if="(existing as any)[field]"
+                      :src="(existing as any)[field]"
+                      class="w-16 h-16 rounded object-cover"
+                      @error="
+                        ($event.target as HTMLImageElement).src =
+                          '/img/cover.png'
+                      "
+                    />
+                    <div
+                      v-else
+                      class="w-16 h-16 rounded bg-gray-800 flex items-center justify-center text-gray-600 text-xs"
+                    >
+                      无
+                    </div>
+                  </template>
+                  <!-- 其他文本 -->
+                  <template v-else>
+                    <div
+                      :class="{
+                        'break-words whitespace-pre-wrap': true,
+                        'font-mono': field === 'lyrics',
+                      }"
+                    >
+                      {{ normVal((existing as any)[field]) }}
+                    </div>
+                  </template>
+                </div>
+
+                <!-- 新值 -->
+                <div
+                  class="min-w-0 rounded-lg bg-gray-900/80 px-3 py-2 text-xs"
+                  :class="[
+                    hasDiff(field) ? 'text-white' : 'text-gray-400',
+                    { 'max-h-40 overflow-y-auto': field === 'lyrics' },
+                  ]"
+                >
+                  <div
+                    class="text-[10px] uppercase tracking-wider mb-1"
+                    :class="
+                      hasDiff(field) ? 'text-primary-400' : 'text-gray-600'
+                    "
+                  >
+                    刮削
+                  </div>
+                  <template v-if="field === 'cover'">
+                    <img
+                      v-if="(scrapeResult as any)[field]"
+                      :src="(scrapeResult as any)[field]"
+                      class="w-16 h-16 rounded object-cover"
+                      @error="
+                        ($event.target as HTMLImageElement).src =
+                          '/img/cover.png'
+                      "
+                    />
+                    <div
+                      v-else
+                      class="w-16 h-16 rounded bg-gray-800 flex items-center justify-center text-gray-600 text-xs"
+                    >
+                      无
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div
+                      :class="{
+                        'break-words whitespace-pre-wrap': true,
+                        'font-mono': field === 'lyrics',
+                      }"
+                    >
+                      {{ normVal((scrapeResult as any)[field]) }}
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div
+              class="mt-5 flex items-center justify-end gap-3 border-t border-gray-800 pt-4"
+            >
+              <button
+                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+                @click="backToSearch"
+              >
+                返回
+              </button>
+              <button
+                class="flex items-center gap-2 px-5 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="!anySelected || isLoadingDetail"
+                @click="confirmSelect"
+              >
+                <Check class="w-4 h-4" />
+                确认更新（{{
+                  ALL_FIELDS.filter((f) => selectedFields[f]).length
+                }}
+                项）
+              </button>
+            </div>
+          </template>
         </div>
       </div>
     </Transition>

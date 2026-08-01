@@ -80,11 +80,12 @@ const openScrapeModal = () => {
 };
 
 const handleScrapeSelect = (data: any) => {
-  form.value.title = data.title || form.value.title;
-  form.value.artist = data.artist || form.value.artist;
-  form.value.album = data.album || form.value.album;
-  form.value.cover = data.cover || form.value.cover;
-  form.value.lyrics = data.lyrics || form.value.lyrics;
+  const fields: string[] = data.__selectedFields || [];
+  fields.forEach((f) => {
+    if (f in data) {
+      (form.value as any)[f] = data[f];
+    }
+  });
   showScrapeModal.value = false;
 };
 
@@ -280,6 +281,7 @@ const handleSubmit = async () => {
     <ScrapeModal
       :show="showScrapeModal"
       :initial-keyword="`${form.title} ${form.artist}`.trim()"
+      :existing-music="form"
       @close="showScrapeModal = false"
       @select="handleScrapeSelect"
     />

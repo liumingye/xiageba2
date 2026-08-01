@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import "dotenv/config";
 
 const getSecret = (): string => {
   const SECRET = process.env.ADMIN_SECRET;
