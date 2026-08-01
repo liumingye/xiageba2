@@ -10,11 +10,12 @@ export class KuwoScraper extends MusicScraper {
   unescapeHtml(str: string) {
     if (!str) return str;
     return str
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&apos;/g, "'");
+      .replaceAll("&amp;", "&")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&quot;", '"')
+      .replaceAll("&apos;", "'")
+      .replaceAll("&nbsp;", " ");
   }
 
   async search(keyword: string): Promise<SearchResult[]> {
@@ -25,7 +26,7 @@ export class KuwoScraper extends MusicScraper {
           Referer: "https://www.kuwo.cn/",
         },
       );
-      data = data.replace(/'/g, '"').replace(/&nbsp;/g, " ");
+      data = data.replaceAll("'", '"').replaceAll("\\\\\\\\u", "\\u");
 
       const json = JSON.parse(data);
 
