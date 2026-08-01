@@ -198,7 +198,7 @@ export default defineNuxtConfig({
         path: "/api/music/search",
         max: 30,
         duration: 60,
-        ban: 120,
+        ban: 180,
       },
       {
         path: "/api/music/recent",
@@ -227,20 +227,20 @@ export default defineNuxtConfig({
       {
         path: "/api/source/geturl",
         max: 10,
-        duration: 45,
-        ban: 120,
+        duration: 30,
+        ban: 150,
       },
       {
         path: "/api/source/tree",
         max: 10,
-        duration: 45,
-        ban: 120,
+        duration: 30,
+        ban: 150,
       },
       {
         path: "/api/source/search",
         max: 30,
         duration: 60,
-        ban: 120,
+        ban: 180,
       },
       {
         path: "/api/ai-search",

@@ -43,7 +43,7 @@ async function searchSourcesForAi(keyword: string, panType: PanFilter = "all") {
   const panHosts = PAN_HOST_MAP[panFilter];
   if (panHosts.length > 0) {
     const likeConditions = panHosts.map((host) => {
-      baseParams.push(`http%://${host}/%`);
+      baseParams.push(`https://${host}/%`);
       return `url LIKE $${paramIndex++}`;
     });
     conditions.push(`(${likeConditions.join(" OR ")})`);

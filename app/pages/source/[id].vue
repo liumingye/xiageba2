@@ -60,24 +60,39 @@ interface SourceResponse {
   similar?: SimilarItem[];
 }
 
-const { data: responseData, pending: loading } = await useFetch<SourceResponse>(
-  () => `/api/source/${sourceId}?similar=1`,
-  {
-    key: () => `source-${sourceId}`,
-    lazy: true,
-    server: true,
-    default: () => ({
-      data: {
-        id: sourceId,
-        title: "",
-        description: "",
-        menu: "",
-        createdAt: "",
-        type: "",
-      },
-      similar: [],
-    }),
+const {
+  data: responseData,
+  pending: loading,
+  error: fetchApiError,
+} = await useFetch<SourceResponse>(() => `/api/source/${sourceId}?similar=1`, {
+  key: () => `source-${sourceId}`,
+  lazy: true,
+  server: true,
+  default: () => ({
+    data: {
+      id: sourceId,
+      title: "",
+      description: "",
+      menu: "",
+      createdAt: "",
+      type: "",
+    },
+    similar: [],
+  }),
+});
+
+// ID 不存在时显示 404
+watch(
+  fetchApiError,
+  (err) => {
+    if (err) {
+      throw createError({
+        statusCode: err.status || 404,
+        message: err?.data?.message || "资源不存在",
+      });
+    }
   },
+  { immediate: true },
 );
 
 const source = computed(() => responseData.value?.data);

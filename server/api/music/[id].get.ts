@@ -8,6 +8,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const music = await prisma.music.findUnique({
+    select: {
+      id: true,
+      title: true,
+      artist: true,
+      album: true,
+      cover: true,
+      lyrics: true,
+      playUrl: true,
+      downloads: true,
+    },
     where: { id },
   });
 

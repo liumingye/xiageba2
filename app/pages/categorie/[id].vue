@@ -37,17 +37,18 @@ interface CategoryListData {
   totalPages: number;
 }
 
-const { data, pending, refresh } = await useAsyncData(
-  () => `category-${categoryId.value}-page-${route.query.page || 1}`,
-  async () => {
-    const page = Number(route.query.page) || 1;
-    const res = await $fetch<CategoryListData>(
-      `/api/category/${categoryId.value}`,
-      { query: { page, pageSize: 20 } },
-    );
-    return res;
-  },
+const {
+  data,
+  pending,
+  error: fetchApiError,
+} = await useFetch<CategoryListData>(
+  () => `/api/category/${categoryId.value}`,
   {
+    key: `category-${categoryId.value}-page-${route.query.page || 1}`,
+    query: computed(() => ({
+      page: Number(route.query.page) || 1,
+      pageSize: 20,
+    })),
     server: true,
     default: () => ({
       category: { id: 0, name: "", image: "", sort: 0 },
@@ -58,6 +59,20 @@ const { data, pending, refresh } = await useAsyncData(
       totalPages: 0,
     }),
   },
+);
+
+// 分类不存在时显示 404
+watch(
+  fetchApiError,
+  (err) => {
+    if (err) {
+      throw createError({
+        statusCode: err.status || 404,
+        message: err?.data?.message || "分类不存在",
+      });
+    }
+  },
+  { immediate: true },
 );
 
 const currentPage = computed(() => data.value?.page || 1);

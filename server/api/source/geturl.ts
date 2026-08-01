@@ -482,7 +482,7 @@ async function transferBaidu(
     fn: () => Promise<T>,
     options: { maxRetries?: number; delayMs?: number } = {},
   ): Promise<T> {
-    const { maxRetries = 2, delayMs = 2000 } = options;
+    const { maxRetries = 2, delayMs = 1500 } = options;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {

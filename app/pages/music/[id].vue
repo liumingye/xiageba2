@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { Download, Play, Pause, Disc3 } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
@@ -14,25 +14,40 @@ const router = useRouter();
 
 const musicId = route.params.id as string;
 
-const { data: music, pending: loading } = await useFetch<Music>(
-  () => `/api/music/${musicId}`,
-  {
-    key: () => `music-${musicId}`,
-    lazy: true,
-    server: true,
-    default: () => {
-      return {
-        id: musicId,
-        title: "",
-        artist: "",
-        album: "",
-        cover: "",
-        lyrics: "",
-        playUrl: "",
-        downloads: [],
-      };
-    },
+const {
+  data: music,
+  pending: loading,
+  error: fetchApiError,
+} = await useFetch<Music>(() => `/api/music/${musicId}`, {
+  key: () => `music-${musicId}`,
+  lazy: true,
+  server: true,
+  default: () => {
+    return {
+      id: musicId,
+      title: "",
+      artist: "",
+      album: "",
+      cover: "",
+      lyrics: "",
+      playUrl: "",
+      downloads: [],
+    };
   },
+});
+
+// ID 不存在时显示 404
+watch(
+  fetchApiError,
+  (err) => {
+    if (err) {
+      throw createError({
+        statusCode: err.status || 404,
+        message: err?.data?.message || "音乐不存在",
+      });
+    }
+  },
+  { immediate: true },
 );
 
 const pageTitle = computed(() => {

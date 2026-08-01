@@ -19,41 +19,22 @@ interface Announcement {
   id: string;
   title: string;
   content: string;
-  displayType: "NORMAL" | "BANNER" | "DIALOG";
   icon: "INFO" | "WARN" | "ERROR" | "SUCCESS";
-  status: "ACTIVE" | "ARCHIVED";
-  sort: number;
   createdAt: string;
-  updatedAt: string;
 }
 
 const route = useRoute();
 const announcementId = route.params.id as string;
 
-const { data } = await useAsyncData<{
+const { data: responseData } = await useFetch<{
   data: Announcement;
-}>(
-  `announcement-${announcementId}`,
-  async () => {
-    try {
-      const res = await $fetch<{ data: Announcement }>(
-        `/api/announcement/${announcementId}`,
-      );
-      return res;
-    } catch (e: any) {
-      if (e?.statusCode === 404) {
-        return { data: null as any };
-      }
-      throw e;
-    }
-  },
-  {
-    server: true,
-    default: () => ({ data: null as any }),
-  },
-);
+}>(`/api/announcement/${announcementId}`, {
+  key: `announcement-${announcementId}`,
+  server: true,
+  default: () => ({ data: null as any }),
+});
 
-const announcement = computed(() => data.value?.data || null);
+const announcement = computed(() => responseData.value?.data || null);
 const isNotFound = computed(() => !announcement.value);
 
 const renderedContent = computed(() =>
