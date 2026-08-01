@@ -1,5 +1,6 @@
 import { MusicScraper, type ScrapeResult, type SearchResult } from "../index";
 import "dotenv/config";
+import { parseTools } from "../utils";
 
 const MUSICU_URL = "https://u.y.qq.com/cgi-bin/musicu.fcg";
 
@@ -143,8 +144,9 @@ export class QQScraper extends MusicScraper {
 
       // 获取歌词
       let lyrics = "";
+
       try {
-        const data = await $fetch<any>(
+        let data1 = await $fetch<any>(
           "https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg",
           {
             method: "GET",
@@ -155,12 +157,41 @@ export class QQScraper extends MusicScraper {
               outCharset: "utf-8",
               pcachetime: Date.now(),
             },
-            headers: HEADERS,
+            headers: {
+              ...HEADERS,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
           },
         );
-        const json = JSON.parse(data);
-        lyrics = this.lrcToTxt(json?.lyric || "");
-      } catch {
+
+        let data2 = await $fetch<any>(
+          "https://c.y.qq.com/qqmusic/fcgi-bin/lyric_download.fcg",
+          {
+            method: "GET",
+            params: {
+              version: "15",
+              miniversion: "87",
+              lrctype: "4",
+              musicid: data.track_info.id,
+            },
+            headers: {
+              ...HEADERS,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          },
+        );
+
+        const regex = /<!\[CDATA\[([\s\S]*?)\]\]>/g;
+        const lrc_ts = [];
+        let match;
+        while ((match = regex.exec(data2)) !== null) {
+          lrc_ts.push(match[1]);
+        }
+
+        const json = JSON.parse(data1);
+        lyrics = this.lrcToTxt(parseTools.parse(json?.lyric || "", lrc_ts[1]));
+      } catch (e) {
+        console.error("[QQScraper] detail error:", e);
         // 歌词获取失败不影响主流程
       }
 

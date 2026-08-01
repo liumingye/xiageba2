@@ -1,6 +1,6 @@
 import { MusicScraper, type ScrapeResult, type SearchResult } from "../index";
 import { eapi, weapi } from "./crypto";
-import { parseTools } from "./utils";
+import { parseTools } from "../utils";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/2.10.2.200154";
@@ -131,9 +131,9 @@ export class NetEaseScraper extends MusicScraper {
       }),
     });
 
-    const info = parseTools.parse("", "", "", data.lrc?.lyric, "", "");
-
-    return this.lrcToTxt(info.lyric);
+    return this.lrcToTxt(
+      parseTools.parse(data.lrc?.lyric || "", data.tlyric?.lyric || ""),
+    );
   }
 
   async getUrl(sourceId: string) {

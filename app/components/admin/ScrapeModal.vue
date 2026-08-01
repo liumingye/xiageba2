@@ -353,13 +353,13 @@ const coverSame = (cover: string) => {
               <div
                 v-for="item in results"
                 :key="item.sourceId"
-                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
+                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors bg-gray-800 border border-transparent"
                 :class="
                   isLoadingDetail &&
                   scrapeResult === null &&
                   results[0]?.sourceId
-                    ? ''
-                    : 'bg-gray-800 hover:bg-gray-750 border border-transparent hover:border-gray-700'
+                    ? 'pointer-events-none'
+                    : 'hover:bg-gray-750 hover:border-gray-700'
                 "
                 @click="selectItem(item)"
               >
