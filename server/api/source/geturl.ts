@@ -343,7 +343,7 @@ export function parseShareUrl(url: string): ParsedShare {
   if (match && match[1])
     return { type: "baidu", fid: match[1], passcode: extractPwd(url), url };
 
-  // 百度: 	https://pan.baidu.com/share/init?surl=xxxx&pwd=yyyy
+  // 百度: 	https://pan.baidu.com/share/init?surl=xxxx?pwd=yyyy
   match = url.match(/pan\.baidu\.com\/share\/init\?surl=([^&]+)/);
   if (match && match[1])
     return {
@@ -585,7 +585,7 @@ async function transferBaidu(
 
   let shareUrl = shareResult.link;
   if (pwd) {
-    shareUrl += `&pwd=${pwd}`;
+    shareUrl += `?pwd=${pwd}`;
   }
 
   return {

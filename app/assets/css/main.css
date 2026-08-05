@@ -192,3 +192,64 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-900 border border-gray-800 rounded-xl overflow-hidden;
   }
 }
+
+/* Markdown 渲染样式（prose-resource） */
+.prose-resource h2 {
+  @apply text-lg font-bold text-white mb-3;
+}
+.prose-resource h3 {
+  @apply text-base font-semibold text-gray-200 mb-2 mt-4;
+}
+.prose-resource h4 {
+  @apply text-sm font-medium text-gray-300 mb-1 mt-3;
+}
+.prose-resource p {
+  @apply mb-3 leading-relaxed;
+}
+.prose-resource ul {
+  @apply list-disc pl-5 mb-3 space-y-1;
+}
+.prose-resource ol {
+  @apply list-decimal pl-5 mb-3 space-y-1;
+}
+.prose-resource li {
+  @apply leading-relaxed;
+}
+.prose-resource strong {
+  @apply text-white font-semibold;
+}
+.prose-resource code {
+  @apply bg-gray-800 text-primary-400 px-1.5 py-0.5 rounded text-xs;
+}
+.prose-resource a {
+  @apply text-primary-400 hover:text-primary-300 underline;
+}
+.prose-resource blockquote {
+  @apply border-l-2 border-primary-500 pl-4 text-gray-400 italic my-3;
+}
+.prose-resource table {
+  @apply w-full text-sm border-collapse mb-3;
+}
+.prose-resource th {
+  @apply border border-gray-700 px-3 py-2 text-left text-gray-300 bg-gray-800;
+}
+.prose-resource td {
+  @apply border border-gray-700 px-3 py-2 text-gray-400;
+}
+.prose-resource hr {
+  @apply border-gray-700 my-4;
+}
+
+html[data-theme="light"] .prose-resource strong {
+  color: #0f172a;
+}
+html[data-theme="light"] .prose-resource h2 {
+  color: #0f172a;
+}
+html[data-theme="light"] .prose-resource h3 {
+  color: #1e293b;
+}
+html[data-theme="light"] .prose-resource code {
+  background-color: #f1f5f9;
+  color: #6366f1;
+}

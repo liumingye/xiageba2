@@ -87,9 +87,8 @@ export class QQScraper extends MusicScraper {
           grp: 1,
           num_per_page: 20,
           page_num: 1,
-          remoteplace: "txt.newclient.top",
+          remoteplace: "search.android.keyboard",
           search_type: 0,
-          searchid: this.generateId(37),
           query: keyword,
         },
       });

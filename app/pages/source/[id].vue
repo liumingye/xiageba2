@@ -106,7 +106,7 @@ const renderedDescription = computed(() =>
 
 const pageTitle = computed(() => {
   if (source.value) {
-    return `${source.value.title} - ${getTypeName(source.value.type)}资源分享 - 下歌吧`;
+    return `${source.value.title} - ${getTypeName(source.value.type)}网盘资源分享 - 下歌吧`;
   }
   return "资源详情 - 下歌吧";
 });

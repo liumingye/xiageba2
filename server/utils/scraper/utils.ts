@@ -21,7 +21,7 @@ export const parseTools = {
     if (!str) return null;
     const lines = str.split("\n");
     return lines.map((line: string) => {
-      if (line === "[00:00.00]//") return "";
+      if (/\[\d{2}:\d{2}\.\d{2,3}\]\/\//.test(line)) return "";
       if (!this.rxps.info.test(line)) return line;
       try {
         const info = JSON.parse(line);
