@@ -506,7 +506,6 @@ watch(
       stopPanCheck();
       if (!isMusic.value && results.value.length > 0) {
         const ids = (results.value as SourceItem[]).map((item) => item.id);
-        console.log(results.value, searchType.value, isMusic.value, ids);
         submitPanCheck(ids);
       }
     }

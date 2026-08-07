@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { Plus, Search, Trash2, Edit3 } from "@lucide/vue";
+import { Plus, Search, Trash2, Edit3, Loader2 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -204,8 +204,11 @@ const goToPage = (page: number) => {
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                加载中...
+              <td colspan="5" class="px-4 py-8 text-center">
+                <Loader2
+                  class="w-6 h-6 text-primary-500 animate-spin mx-auto"
+                />
+                <p class="text-gray-500 text-sm mt-2">加载中...</p>
               </td>
             </tr>
             <tr v-else-if="musics.length === 0">

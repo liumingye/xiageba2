@@ -156,7 +156,7 @@ prisma/               # schema 与 migrations
 
 在 [nuxt.config.ts](nuxt.config.ts) 的 `nitro.scheduledTasks` 配置：
 
-- `*/10 * * * *` → `source:clean_temp`：清理临时转存资源，UC 网盘用独立阈值 `THIRTY_MINUTES_UC`
+- `*/10 * * * *` → `source:clean_temp`：清理临时转存资源
 - `*/5 * * * *` → `source:check_account`：检查网盘 Client 过期状态
 
 ## 测试

@@ -33,7 +33,7 @@ const pageSize = ref(20);
 const total = ref(0);
 const totalPages = ref(0);
 const isLoading = ref(false);
-const statusFilter = ref<"" | "PENDING" | "DONE">("");
+const statusFilter = ref<"" | "pending" | "done">("");
 
 onMounted(async () => {
   if (!initialized.value) {
@@ -51,7 +51,7 @@ onMounted(async () => {
     currentPage.value = page;
   }
   const status = route.query.status as string;
-  if (status === "PENDING" || status === "DONE") {
+  if (status === "pending" || status === "done") {
     statusFilter.value = status;
   }
 
@@ -66,7 +66,7 @@ watch(
     const status = (query.status as string) || "";
     currentPage.value = page;
     statusFilter.value =
-      status === "PENDING" || status === "DONE" ? status : "";
+      status === "pending" || status === "done" ? status : "";
     loadFeedback();
   },
 );
@@ -99,7 +99,7 @@ const loadFeedback = async () => {
   }
 };
 
-const handleStatusFilter = (status: "" | "PENDING" | "DONE") => {
+const handleStatusFilter = (status: "" | "pending" | "done") => {
   statusFilter.value = status;
   currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
@@ -121,7 +121,7 @@ const goToPage = (page: number) => {
 
 const checkResults = ref<Record<string, any>>({});
 const checkingId = ref<string | null>(null);
-const activePolls = ref<Record<string, number>>({});
+const activePolls = ref<Record<string, string>>({});
 
 const { pause: pausePolling, resume: resumePolling } = useIntervalFn(
   async () => {
@@ -134,13 +134,14 @@ const { pause: pausePolling, resume: resumePolling } = useIntervalFn(
 );
 
 const stopPolling = (musicId: string) => {
+  if (!(musicId in activePolls.value)) return;
   delete activePolls.value[musicId];
   if (Object.keys(activePolls.value).length === 0) {
     pausePolling();
   }
 };
 
-const pollSubmission = async (musicId: string, submissionId: number) => {
+const pollSubmission = async (musicId: string, submissionId: string) => {
   try {
     const res = await fetch(
       `/api/admin/music/check-links/submission/${submissionId}`,
@@ -161,32 +162,40 @@ const pollSubmission = async (musicId: string, submissionId: number) => {
     const current = checkResults.value[musicId];
     if (!current) return;
 
-    const downloads = JSON.parse(current.downloadsRaw || "[]") as Array<{
+    const downloads = current.downloads as Array<{
       quality: string;
       url: string;
     }>;
 
-    const resultWithDetails = downloads.map((d) => ({
-      ...d,
-      status: data.invalid_links?.includes(d.url)
-        ? "invalid"
-        : data.valid_links?.includes(d.url)
-          ? "valid"
-          : "pending",
-    }));
+    // 规则：valid_links / pending_links 来自上游，
+    // invalid_links = 总链接 - valid - pending（前端始终自己算，不信任服务端）
+    const valid_links: string[] = Array.isArray(data.valid_links)
+      ? data.valid_links
+      : [];
+    const pending_links: string[] = Array.isArray(data.pending_links)
+      ? data.pending_links
+      : [];
+    const validSet = new Set(valid_links);
+    const pendingSet = new Set(pending_links);
+    const invalid_links = downloads
+      .map((d) => d.url)
+      .filter((u) => !validSet.has(u) && !pendingSet.has(u));
+
+    const resultWithDetails = downloads.map((d) => {
+      if (validSet.has(d.url)) return { ...d, status: "valid" };
+      if (pendingSet.has(d.url)) return { ...d, status: "pending" };
+      return { ...d, status: "invalid" };
+    });
 
     checkResults.value[musicId] = {
-      ...current,
-      ...data,
+      valid_links,
+      invalid_links,
+      pending_links,
       downloads: resultWithDetails,
     };
 
-    // 当 status 为 checked 且没有 pending_links 时停止轮询
-    if (
-      data.status === "checked" ||
-      !data.pending_links ||
-      data.pending_links.length === 0
-    ) {
+    // 没有 pending 下载或检测完成时停止轮询
+    if (pending_links.length === 0 || data.status === "checked") {
       stopPolling(musicId);
     }
   } catch {
@@ -194,10 +203,15 @@ const pollSubmission = async (musicId: string, submissionId: number) => {
   }
 };
 
-const startPolling = (musicId: string, submissionId: number) => {
-  stopPolling(musicId);
-  activePolls.value[musicId] = submissionId;
-  resumePolling();
+const startPolling = (musicId: string, submissionId: string) => {
+  if (!(musicId in activePolls.value)) {
+    activePolls.value[musicId] = submissionId;
+    resumePolling();
+    // 立即触发首次轮询，不等待 3 秒间隔
+    pollSubmission(musicId, submissionId);
+  } else {
+    activePolls.value[musicId] = submissionId;
+  }
 };
 
 const checkLinks = async (musicId: string) => {
@@ -221,27 +235,12 @@ const checkLinks = async (musicId: string) => {
     }
     const data = await res.json();
 
-    const current = checkResults.value[musicId];
-    const downloadsRaw = current?.downloadsRaw
-      ? current.downloadsRaw
-      : JSON.stringify(
-          data.downloads?.map((d: any) => ({
-            quality: d.quality,
-            url: d.url,
-          })) || [],
-        );
+    checkResults.value[musicId] = data;
 
-    checkResults.value[musicId] = {
-      ...data,
-      downloadsRaw,
-    };
-
-    if (
-      data.pending_links &&
-      data.pending_links.length > 0 &&
-      data.submission_id
-    ) {
-      startPolling(musicId, data.submission_id);
+    // 有 pending 下载且有 submission_id 时启动轮询
+    const hasPending = data.downloads?.some((d: any) => d.status === "pending");
+    if (hasPending && data.submission_id) {
+      startPolling(musicId, String(data.submission_id));
     }
   } finally {
     checkingId.value = null;
@@ -304,7 +303,7 @@ const clearDoneFeedback = async () => {
       headers: getAuthHeaders(),
     });
     if (res.ok) {
-      if (statusFilter.value === "DONE") {
+      if (statusFilter.value === "done") {
         currentPage.value = 1;
       }
       await loadFeedback();
@@ -358,22 +357,22 @@ const typeColor: Record<string, string> = {
           <button
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
             :class="
-              statusFilter === 'PENDING'
+              statusFilter === 'pending'
                 ? 'bg-yellow-600 text-white'
                 : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
             "
-            @click="handleStatusFilter('PENDING')"
+            @click="handleStatusFilter('pending')"
           >
             待处理
           </button>
           <button
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
             :class="
-              statusFilter === 'DONE'
+              statusFilter === 'done'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
             "
-            @click="handleStatusFilter('DONE')"
+            @click="handleStatusFilter('done')"
           >
             已完成
           </button>
@@ -431,8 +430,11 @@ const typeColor: Record<string, string> = {
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                加载中...
+              <td colspan="7" class="px-4 py-8 text-center">
+                <Loader2
+                  class="w-6 h-6 text-primary-500 animate-spin mx-auto"
+                />
+                <p class="text-gray-500 text-sm mt-2">加载中...</p>
               </td>
             </tr>
             <tr v-else-if="feedbacks.length === 0">
@@ -483,7 +485,7 @@ const typeColor: Record<string, string> = {
               </td>
               <td class="px-4 py-4">
                 <span
-                  v-if="fb.status === 'DONE'"
+                  v-if="fb.status === 'done'"
                   class="inline-flex items-center gap-1 text-green-400 text-sm"
                 >
                   <CheckCircle class="w-4 h-4" />
@@ -582,7 +584,7 @@ const typeColor: Record<string, string> = {
                     <Edit3 class="w-4 h-4" />
                   </a>
                   <button
-                    v-if="fb.status === 'PENDING'"
+                    v-if="fb.status === 'pending'"
                     class="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-700 hover:bg-green-600 text-white rounded-lg transition-colors"
                     @click="resolveFeedback(fb.id)"
                   >

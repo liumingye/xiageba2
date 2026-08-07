@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import {
   Plus,
@@ -10,6 +10,7 @@ import {
   Search,
   Folder,
   FileUp,
+  Loader2,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -37,6 +38,7 @@ interface Category {
 }
 
 const router = useRouter();
+const route = useRoute();
 const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
   useAuth();
 const toast = useToast();
@@ -48,6 +50,7 @@ const totalPages = ref(1);
 const total = ref(0);
 const filterCid = ref("");
 const keyword = ref("");
+const isLoading = ref(false);
 
 const showAddModal = ref(false);
 const showEditModal = ref(false);
@@ -56,23 +59,23 @@ const newTitle = ref("");
 const newUrl = ref("");
 const newDescription = ref("");
 const newMenu = ref("");
-  const newIsSelf = ref(false);
-  const editId = ref("");
+const newIsSelf = ref(false);
+const editId = ref("");
 const editCid = ref<string>("");
 const editTitle = ref("");
 const editUrl = ref("");
 const editDescription = ref("");
 const editMenu = ref("");
-  const editIsSelf = ref(false);
-  const menuLoading = ref(false);
+const editIsSelf = ref(false);
+const menuLoading = ref(false);
 const menuAbortController = ref<AbortController | null>(null);
 const error = ref("");
 
 const showImportModal = ref(false);
 const importCid = ref<string>("");
 const importHasHeader = ref(true);
-  const importIsSelf = ref(false);
-  const importFile = ref<File | null>(null);
+const importIsSelf = ref(false);
+const importFile = ref<File | null>(null);
 const importing = ref(false);
 const importResult = ref<{
   total: number;
@@ -90,19 +93,26 @@ const loadSources = async () => {
     url += `&keyword=${encodeURIComponent(keyword.value)}`;
   }
 
-  const res = await fetch(url, {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
+  isLoading.value = true;
+  try {
+    const res = await fetch(url, {
+      headers: { ...getAuthHeaders() },
+    });
+    if (res.status === 401) {
+      logout();
+      router.push("/admin/login");
+      return;
+    }
+    const data = await res.json();
+    sources.value = data.data;
+    categories.value = data.categories;
+    totalPages.value = data.totalPages;
+    total.value = data.total;
+  } catch {
+    // ignore
+  } finally {
+    isLoading.value = false;
   }
-  const data = await res.json();
-  sources.value = data.data;
-  categories.value = data.categories;
-  totalPages.value = data.totalPages;
-  total.value = data.total;
 };
 
 onMounted(async () => {
@@ -114,21 +124,70 @@ onMounted(async () => {
     router.push("/admin/login");
     return;
   }
+
+  // 从 URL 读取分页/筛选参数
+  const page = parseInt(route.query.page as string);
+  if (page && page > 0) {
+    currentPage.value = page;
+  }
+  const cid = route.query.cid as string;
+  if (cid) {
+    filterCid.value = cid;
+  }
+  const q = route.query.q as string;
+  if (q) {
+    keyword.value = q;
+  }
+
   await loadSources();
 });
 
+// 监听浏览器前进/后退
+watch(
+  () => route.query,
+  (query) => {
+    const page = parseInt(query.page as string) || 1;
+    const cid = (query.cid as string) || "";
+    const q = (query.q as string) || "";
+    currentPage.value = page;
+    filterCid.value = cid;
+    keyword.value = q;
+    loadSources();
+  },
+);
+
 const goToPage = (page: number) => {
+  if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
+  router.push({
+    query: { ...route.query, page: page.toString() },
+  });
   loadSources();
 };
 
 const handleSearch = () => {
   currentPage.value = 1;
+  const query: Record<string, string> = { page: "1" };
+  if (filterCid.value) {
+    query.cid = filterCid.value;
+  }
+  if (keyword.value.trim()) {
+    query.q = keyword.value.trim();
+  }
+  router.push({ query });
   loadSources();
 };
 
 const handleFilterChange = () => {
   currentPage.value = 1;
+  const query: Record<string, string> = { page: "1" };
+  if (filterCid.value) {
+    query.cid = filterCid.value;
+  }
+  if (keyword.value.trim()) {
+    query.q = keyword.value.trim();
+  }
+  router.push({ query });
   loadSources();
 };
 
@@ -472,7 +531,21 @@ const importSources = async () => {
             </tr>
           </thead>
           <tbody>
+            <tr v-if="isLoading">
+              <td colspan="7" class="px-4 py-8 text-center">
+                <Loader2
+                  class="w-6 h-6 text-primary-500 animate-spin mx-auto"
+                />
+                <p class="text-gray-500 text-sm mt-2">加载中...</p>
+              </td>
+            </tr>
+            <tr v-else-if="sources.length === 0">
+              <td colspan="7" class="px-4 py-12 text-center">
+                <p class="text-gray-500">暂无资源</p>
+              </td>
+            </tr>
             <tr
+              v-else
               v-for="item in sources"
               :key="item.id"
               class="border-t border-gray-800 hover:bg-gray-800/50"
@@ -546,10 +619,6 @@ const importSources = async () => {
           item-label="个资源"
           @page-change="goToPage"
         />
-
-        <div v-if="sources.length === 0" class="py-12 text-center">
-          <p class="text-gray-500">暂无资源</p>
-        </div>
       </div>
     </main>
 

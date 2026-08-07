@@ -273,7 +273,6 @@ const deleteApi = async (id: string) => {
 };
 
 const goToPage = async (page: number) => {
-  console.log(page);  
   currentPage.value = page;
   const query: any = {};
   if (page > 1) query.page = page;
