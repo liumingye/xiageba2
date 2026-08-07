@@ -13,16 +13,25 @@ import {
   UserCog,
   Webhook,
   Megaphone,
+  Cloud,
+  FileText,
+  HardDrive,
 } from "@lucide/vue";
 
 const route = useRoute();
 const router = useRouter();
 
 const resourceOpen = ref(false);
+const fileOpen = ref(false);
 const dropdownRef = ref<HTMLElement | null>(null);
+const fileDropdownRef = ref<HTMLElement | null>(null);
 
 onClickOutside(dropdownRef, () => {
   resourceOpen.value = false;
+});
+
+onClickOutside(fileDropdownRef, () => {
+  fileOpen.value = false;
 });
 
 const isActive = (path: string) => {
@@ -34,11 +43,18 @@ const isActive = (path: string) => {
 
 const navigate = (path: string) => {
   resourceOpen.value = false;
+  fileOpen.value = false;
   router.push(path);
 };
 
 const toggleResource = () => {
+  fileOpen.value = false;
   resourceOpen.value = !resourceOpen.value;
+};
+
+const toggleFile = () => {
+  resourceOpen.value = false;
+  fileOpen.value = !fileOpen.value;
 };
 </script>
 
@@ -126,6 +142,66 @@ const toggleResource = () => {
           >
             <Webhook class="w-4 h-4" />
             接口配置
+          </button>
+        </div>
+      </div>
+
+      <!-- 文件下拉菜单 -->
+      <div ref="fileDropdownRef" class="relative">
+        <button
+          class="flex items-center gap-2 transition-colors py-3"
+          :class="
+            fileOpen ||
+            isActive('/admin/storage/files') ||
+            isActive('/admin/storage/config')
+              ? 'text-primary-500 font-medium'
+              : 'text-gray-400 hover:text-gray-200'
+          "
+          @click="toggleFile"
+        >
+          <Cloud class="w-5 h-5" />
+          文件
+          <svg
+            class="w-4 h-4 transition-transform"
+            :class="fileOpen ? 'rotate-180' : ''"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+
+        <div
+          v-if="fileOpen"
+          class="absolute left-0 top-full mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden"
+        >
+          <button
+            class="w-full flex items-center gap-2 px-4 py-2.5 text-left transition-colors"
+            :class="
+              isActive('/admin/storage/files')
+                ? 'bg-primary-500/10 text-primary-500'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            "
+            @click="navigate('/admin/storage/files')"
+          >
+            <FileText class="w-4 h-4" />
+            文件管理
+          </button>
+          <button
+            class="w-full flex items-center gap-2 px-4 py-2.5 text-left transition-colors"
+            :class="
+              isActive('/admin/storage/config')
+                ? 'bg-primary-500/10 text-primary-500'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            "
+            @click="navigate('/admin/storage/config')"
+          >
+            <HardDrive class="w-4 h-4" />
+            存储配置
           </button>
         </div>
       </div>

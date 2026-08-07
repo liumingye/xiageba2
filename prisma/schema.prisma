@@ -84,11 +84,8 @@ model Source {
   searchVector  Unsupported("tsvector")?
 
   @@index([cid])
-  @@index([createdAt])
-  @@index([status])
-  @@index([isSelf])
-  @@index([url])
-  @@index([searchVector], type: Gin)
+  @@index([cid, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Config {
@@ -153,6 +150,44 @@ enum AnnouncementIcon {
 enum AnnouncementStatus {
   ACTIVE
   ARCHIVED
+}
+
+model S3Config {
+  id         Int           @id @default(autoincrement())
+  name       String        @db.VarChar(100)
+  baseUrl    String        @default("") @db.VarChar(2048)
+  bucket     String        @db.VarChar(255)
+  prefix     String        @default("") @db.VarChar(255)
+  endpoint   String        @default("") @db.VarChar(2048)
+  region     String        @default("") @db.VarChar(100)
+  accessKey  String        @db.VarChar(255)
+  secretKey  String        @db.VarChar(255)
+  isHidden   Boolean       @default(false)
+  files      StorageFile[]
+  createdAt  DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime?     @updatedAt @db.Timestamptz(3)
+
+  @@index([isHidden])
+}
+
+model StorageFile {
+  id         String    @id @default(cuid(2)) @db.VarChar(32)
+  configId   Int
+  config     S3Config  @relation(fields: [configId], references: [id], onDelete: Cascade)
+  path       String    @db.VarChar(2048)
+  name       String    @db.VarChar(255)
+  size       Int       @default(0)
+  mimeType   String    @default("") @db.VarChar(100)
+  url        String    @db.VarChar(2048)
+  isDeleted  Boolean   @default(false)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime? @updatedAt @db.Timestamptz(3)
+
+  @@index([configId])
+  @@index([path])
+  @@index([name])
+  @@index([isDeleted])
+  @@index([createdAt])
 }
 
 enum FeedbackStatus {

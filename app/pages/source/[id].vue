@@ -337,9 +337,15 @@ onMounted(() => {
                         打开链接
                       </a>
                     </div>
-                    <p class="text-xs text-gray-400 mt-2">
-                      本站链接由程序自动收集自公开网盘，不存储、不传播任何文件，跳转链接指向网盘官网。<br />
-                      文件内容请自行辨别，如发现违规请向网盘平台举报。本站仅供学习交流，无任何收费行为。
+                    <p class="text-xs text-gray-400">
+                      网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
+                      文件内容请自行辨别，如发现违规请通过<a
+                        href="/version"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-primary-500"
+                        >版权说明</a
+                      >联系我们删除。本站仅供学习交流，无任何收费行为。
                     </p>
                   </div>
                 </div>

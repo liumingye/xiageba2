@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { ArrowLeft, Save, Plus, X, Search } from "@lucide/vue";
+import { ArrowLeft, Save, Plus, X, Search, FolderOpen, ImageIcon } from "@lucide/vue";
 import ScrapeModal from "~/components/admin/ScrapeModal.vue";
+import FilePickerModal from "~/components/admin/FilePickerModal.vue";
 
 interface DownloadOption {
   quality: string;
@@ -31,6 +32,17 @@ const form = ref({
 
 const error = ref("");
 const showScrapeModal = ref(false);
+const showCoverPicker = ref(false);
+
+const handleCoverPicked = (url: string) => {
+  form.value.cover = url;
+  showCoverPicker.value = false;
+};
+
+const coverImgError = ref(false);
+watch(() => form.value.cover, () => {
+  coverImgError.value = false;
+});
 
 onMounted(async () => {
   if (!initialized.value) {
@@ -199,12 +211,46 @@ const handleSubmit = async () => {
 
         <div>
           <label class="block text-gray-400 text-sm mb-2">封面图片URL</label>
-          <input
-            v-model="form.cover"
-            type="text"
-            placeholder="请输入封面图片链接"
-            class="input-search"
-          />
+          <div class="flex gap-2 items-start">
+            <div class="flex-1 space-y-3">
+              <div class="flex gap-2">
+                <input
+                  v-model="form.cover"
+                  type="text"
+                  placeholder="请输入封面图片链接或点击右侧选择文件"
+                  class="input-search flex-1"
+                />
+                <button
+                  type="button"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors whitespace-nowrap shrink-0"
+                  @click="showCoverPicker = true"
+                >
+                  <FolderOpen class="w-4 h-4" />
+                  选择文件
+                </button>
+              </div>
+              <div v-if="form.cover" class="flex items-start gap-3">
+                <div
+                  class="w-24 h-24 rounded-lg border border-gray-700 overflow-hidden flex items-center justify-center bg-gray-800 shrink-0"
+                >
+                  <img
+                    v-if="!coverImgError"
+                    :src="form.cover"
+                    alt="封面预览"
+                    class="w-full h-full object-cover"
+                    @error="coverImgError = true"
+                  />
+                  <ImageIcon
+                    v-else
+                    class="w-8 h-8 text-gray-600"
+                  />
+                </div>
+                <div class="text-xs text-gray-500 pt-1 break-all flex-1">
+                  预览：<span class="text-gray-400">{{ form.cover }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -284,6 +330,12 @@ const handleSubmit = async () => {
       :existing-music="form"
       @close="showScrapeModal = false"
       @select="handleScrapeSelect"
+    />
+
+    <FilePickerModal
+      :show="showCoverPicker"
+      @close="showCoverPicker = false"
+      @select="handleCoverPicked"
     />
   </div>
 </template>

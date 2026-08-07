@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
     { loc: "/agree", changefreq: "yearly", priority: "0.3" },
     { loc: "/privacy-policy", changefreq: "yearly", priority: "0.3" },
     { loc: "/version", changefreq: "yearly", priority: "0.3" },
+    { loc: "/forbidden-keywords", changefreq: "weekly", priority: "0.3" },
   ];
 
   const urls = [

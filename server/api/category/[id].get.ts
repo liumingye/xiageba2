@@ -31,6 +31,18 @@ export default defineEventHandler(async (event) => {
       ? { isTemp: false, status: 1 }
       : { cid, isTemp: false, status: 1 };
 
+  const getTotalCount = async () => {
+    if (cid === 0) {
+      const [{ estimate }] = await prisma.$queryRaw<
+        [{ estimate: bigint }]
+      >`SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'Source'`;
+      return Number(estimate);
+    }
+
+    // cid > 0 时走分类复合索引，数据量小，精准 count 性能极高 (< 1ms)
+    return prisma.source.count({ where });
+  };
+
   const [category, sources, total] = await Promise.all([
     cid === 0
       ? Promise.resolve({ id: 0, name: "最新资源", image: "", sort: 0 })
@@ -45,12 +57,11 @@ export default defineEventHandler(async (event) => {
         title: true,
         url: true,
         menu: true,
-        // description: true,
         createdAt: true,
         isSelf: true,
       },
     }),
-    prisma.source.count({ where }),
+    getTotalCount(),
   ]);
 
   if (!category) {
@@ -60,7 +71,6 @@ export default defineEventHandler(async (event) => {
   const items = sources.map((item) => ({
     id: item.id,
     title: item.title,
-    // description: item.description,
     menu: truncateString(item.menu || "", TREE_MAX_LINE),
     type: getStorageType(item.url),
     createdAt: item.createdAt,

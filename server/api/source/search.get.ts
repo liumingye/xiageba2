@@ -11,6 +11,10 @@ import {
   getResourceFileExtensions,
   normalizeResourceFileTypes,
 } from "#shared/resource-file-types";
+import {
+  automaton_websearch_filter_keywords,
+  SimpleAC,
+} from "#server/lib/simpleAC";
 
 const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;
@@ -83,6 +87,18 @@ export default defineCachedEventHandler(
       });
     }
 
+    // 关键词屏蔽：命中黑名单则拒绝搜索
+    if (
+      automaton_websearch_filter_keywords &&
+      automaton_websearch_filter_keywords.hasFullMatch(term.toLowerCase())
+    ) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "关键词被禁止",
+        message: "该搜索关键词已被禁止",
+      });
+    }
+
     // 1. 利用结巴分词获取干净的 tokens 数组
     const keywordTokens = prioritizeSearchTokens(cutForSearch(term));
 
@@ -120,11 +136,10 @@ export default defineCachedEventHandler(
     // 网盘类型筛选
     const panHosts = PAN_HOST_MAP[panFilter];
     if (panHosts.length > 0) {
-      const likeConditions = panHosts.map((host) => {
-        baseParams.push(`https://${host}/%`);
-        return `url LIKE $${paramIndex++}`;
-      });
-      conditions.push(`(${likeConditions.join(" OR ")})`);
+      conditions.push(
+        `split_part(split_part(url, '//'::text, 2), '/'::text, 1) = ANY($${paramIndex++}::text[])`,
+      );
+      baseParams.push(panHosts);
     }
 
     // 关键词与扩展名分别构造 tsquery，避免 websearch 括号改变 OR 优先级。
@@ -142,6 +157,7 @@ export default defineCachedEventHandler(
     conditions.push(`"searchVector" @@ search_query.value`);
 
     // 组装统一的 WHERE 语句
+    // const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
     const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
 
     // 4. 复制克隆一份 Count 参数，避免被后面的分页参数污染
