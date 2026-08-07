@@ -19,10 +19,10 @@ import {
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import { get, post } from "~/utils/request";
 
 const router = useRouter();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const isRebuilding = ref(false);
 const rebuildMsg = ref("");
@@ -134,116 +134,65 @@ onMounted(async () => {
 });
 
 const loadRedisConfig = async () => {
-  const res = await fetch("/api/admin/config/redis", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/redis");
   redisConfig.value = { ...redisConfig.value, ...data.data };
 };
 
 const saveRedisConfig = async () => {
   savingRedis.value = true;
   savedRedis.value = false;
-
-  const res = await fetch("/api/admin/config/redis", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(redisConfig.value),
-  });
-
-  savingRedis.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/redis", redisConfig.value);
     savedRedis.value = true;
     setTimeout(() => {
       savedRedis.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 保存失败
+  } finally {
+    savingRedis.value = false;
   }
 };
 
 const loadAesConfig = async () => {
-  const res = await fetch("/api/admin/config/aes", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/aes");
   aesConfig.value = { ...aesConfig.value, ...data.data };
 };
 
 const saveAesConfig = async () => {
   savingAes.value = true;
   savedAes.value = false;
-
-  const res = await fetch("/api/admin/config/aes", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(aesConfig.value),
-  });
-
-  savingAes.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/aes", aesConfig.value);
     savedAes.value = true;
     setTimeout(() => {
       savedAes.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 保存失败
+  } finally {
+    savingAes.value = false;
   }
 };
 
 const loadPancheckConfig = async () => {
-  const res = await fetch("/api/admin/config/pancheck", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/pancheck");
   pancheckServers.value = data.data?.servers || [];
 };
 
 const savePancheckConfig = async () => {
   savingPancheck.value = true;
   savedPancheck.value = false;
-
-  const res = await fetch("/api/admin/config/pancheck", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({ servers: pancheckServers.value }),
-  });
-
-  savingPancheck.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/pancheck", { servers: pancheckServers.value });
     savedPancheck.value = true;
     setTimeout(() => {
       savedPancheck.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 保存失败
+  } finally {
+    savingPancheck.value = false;
   }
 };
 
@@ -256,40 +205,23 @@ const removePancheckServer = (index: number) => {
 };
 
 const loadHotwordsConfig = async () => {
-  const res = await fetch("/api/admin/config/hotwords", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/hotwords");
   hotwords.value = data.data || [];
 };
 
 const saveHotwordsConfig = async () => {
   savingHotwords.value = true;
   savedHotwords.value = false;
-
-  const res = await fetch("/api/admin/config/hotwords", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({ hotwords: hotwords.value }),
-  });
-
-  savingHotwords.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/hotwords", { hotwords: hotwords.value });
     savedHotwords.value = true;
     setTimeout(() => {
       savedHotwords.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 保存失败
+  } finally {
+    savingHotwords.value = false;
   }
 };
 
@@ -302,15 +234,7 @@ const removeHotword = (index: number) => {
 };
 
 const loadAdFilterConfig = async () => {
-  const res = await fetch("/api/admin/config/ad-filter", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/ad-filter");
   if (data.data) {
     adFilterConfig.value = { ...adFilterConfig.value, ...data.data };
   }
@@ -319,38 +243,21 @@ const loadAdFilterConfig = async () => {
 const saveAdFilterConfig = async () => {
   savingAdFilter.value = true;
   savedAdFilter.value = false;
-
-  const res = await fetch("/api/admin/config/ad-filter", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(adFilterConfig.value),
-  });
-
-  savingAdFilter.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/ad-filter", adFilterConfig.value);
     savedAdFilter.value = true;
     setTimeout(() => {
       savedAdFilter.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 保存失败
+  } finally {
+    savingAdFilter.value = false;
   }
 };
 
 const loadAiSearchConfig = async () => {
-  const res = await fetch("/api/admin/config/ai-search", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/ai-search");
   if (data.data) {
     aiSearchConfig.value = { ...aiSearchConfig.value, ...data.data };
   }
@@ -359,39 +266,22 @@ const loadAiSearchConfig = async () => {
 const saveAiSearchConfig = async () => {
   savingAiSearch.value = true;
   savedAiSearch.value = false;
-
-  const res = await fetch("/api/admin/config/ai-search", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(aiSearchConfig.value),
-  });
-
-  savingAiSearch.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/ai-search", aiSearchConfig.value);
     savedAiSearch.value = true;
     setTimeout(() => {
       savedAiSearch.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 保存失败
+  } finally {
+    savingAiSearch.value = false;
   }
 };
 
 // 全网搜过滤词配置
 const loadWebSearchFilterConfig = async () => {
-  const res = await fetch("/api/admin/config/web-search-filter", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/web-search-filter");
   if (data.data) {
     webSearchFilterConfig.value = {
       ...webSearchFilterConfig.value,
@@ -403,25 +293,16 @@ const loadWebSearchFilterConfig = async () => {
 const saveWebSearchFilterConfig = async () => {
   savingWebSearchFilter.value = true;
   savedWebSearchFilter.value = false;
-
-  const res = await fetch("/api/admin/config/web-search-filter", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(webSearchFilterConfig.value),
-  });
-
-  savingWebSearchFilter.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/web-search-filter", webSearchFilterConfig.value);
     savedWebSearchFilter.value = true;
     setTimeout(() => {
       savedWebSearchFilter.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 保存失败
+  } finally {
+    savingWebSearchFilter.value = false;
   }
 };
 
@@ -430,10 +311,7 @@ let timer: NodeJS.Timeout | null = null;
 // 新增：轮询进度的函数
 const checkStatus = async (type: "music" | "source") => {
   try {
-    const res = await fetch(`/api/admin/${type}/rebuild-status`, {
-      headers: getAuthHeaders(),
-    });
-    const data = await res.json();
+    const data = await get(`/api/admin/${type}/rebuild-status`);
 
     if (data.status === "running") {
       rebuildMsg.value = `服务器正在疯狂分批处理中... 目前已完成: ${data.current} 条`;
@@ -462,15 +340,9 @@ const rebuildSearch = async (all: boolean, type: "music" | "source") => {
   rebuildMsg.value = "正在启动后台任务...";
 
   try {
-    const res = await fetch(`/api/admin/${type}/rebuild-search`, {
-      method: "POST",
-      body: JSON.stringify({ all }),
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    });
+    const data = await post(`/api/admin/${type}/rebuild-search`, { all });
 
-    const data = await res.json();
-
-    if (res.ok && data.success) {
+    if (data.success) {
       // 启动每 2 秒一次的轻量级 Redis 状态轮询
       timer = setInterval(() => checkStatus(type), 2000);
     } else {
@@ -491,22 +363,10 @@ const clearISRCache = async (route?: string) => {
   isClearing.value = true;
   clearMsg.value = "";
   try {
-    const res = await fetch("/api/admin/cache/clear", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify({ route }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      clearMsg.value = `已清理 ${label}，共 ${data.total} 项`;
-    } else {
-      clearMsg.value = data.message || "清理失败";
-    }
-  } catch {
-    clearMsg.value = "请求失败";
+    const data = await post("/api/admin/cache/clear", { route });
+    clearMsg.value = `已清理 ${label}，共 ${data.total} 项`;
+  } catch (err: any) {
+    clearMsg.value = err?.response?.data?.message || "请求失败";
   } finally {
     isClearing.value = false;
   }

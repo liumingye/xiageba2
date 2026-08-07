@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   ExternalLink,
 } from "@lucide/vue";
+import { post } from "~/utils/request";
 
 interface SearchItem {
   sourceId: string;
@@ -42,8 +43,6 @@ interface ExistingMusic {
 }
 
 type ScrapeField = "title" | "artist" | "album" | "cover" | "lyrics";
-
-const { getAuthHeaders } = useAuth();
 
 const props = defineProps<{
   show: boolean;
@@ -122,32 +121,17 @@ const handleSearch = async () => {
   scrapeResult.value = null;
 
   try {
-    const res = await fetch("/api/admin/music/scrape", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify({
-        action: "search",
-        platform: selectedPlatform.value,
-        keyword: kw,
-      }),
+    const data = await post("/api/admin/music/scrape", {
+      action: "search",
+      platform: selectedPlatform.value,
+      keyword: kw,
     });
-
-    if (!res.ok) {
-      const data = await res.json();
-      errorMsg.value = data.message || "搜索失败";
-      return;
-    }
-
-    const data = await res.json();
     results.value = data.results || [];
     if (results.value.length === 0) {
       errorMsg.value = "未找到相关歌曲，请尝试其他关键词";
     }
-  } catch {
-    errorMsg.value = "网络错误，请检查网络连接";
+  } catch (e: any) {
+    errorMsg.value = e?.response?.data?.message || "网络错误，请检查网络连接";
   } finally {
     isSearching.value = false;
   }
@@ -159,30 +143,15 @@ const selectItem = async (item: SearchItem) => {
   errorMsg.value = "";
 
   try {
-    const res = await fetch("/api/admin/music/scrape", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify({
-        action: "detail",
-        platform: selectedPlatform.value,
-        sourceId: item.sourceId,
-      }),
+    const data = await post("/api/admin/music/scrape", {
+      action: "detail",
+      platform: selectedPlatform.value,
+      sourceId: item.sourceId,
     });
-
-    if (!res.ok) {
-      const data = await res.json();
-      errorMsg.value = data.message || "获取详情失败";
-      return;
-    }
-
-    const data = await res.json();
     scrapeResult.value = data.result;
     selectDiffFields();
-  } catch {
-    errorMsg.value = "网络错误，请检查网络连接";
+  } catch (e: any) {
+    errorMsg.value = e?.response?.data?.message || "网络错误，请检查网络连接";
   } finally {
     isLoadingDetail.value = false;
   }

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useIntervalFn } from "@vueuse/core";
 import { useAuth } from "~/composables/useAuth";
+import { get, post, put, del } from "~/utils/request";
 import {
   CheckCircle,
   ExternalLink,
@@ -18,14 +19,7 @@ import AdminPagination from "~/components/admin/AdminPagination.vue";
 
 const router = useRouter();
 const route = useRoute();
-const {
-  isLoggedIn,
-  username,
-  logout,
-  checkLogin,
-  initialized,
-  getAuthHeaders,
-} = useAuth();
+const { isLoggedIn, username, checkLogin, initialized } = useAuth();
 
 const feedbacks = ref<any[]>([]);
 const currentPage = ref(1);
@@ -33,7 +27,7 @@ const pageSize = ref(20);
 const total = ref(0);
 const totalPages = ref(0);
 const isLoading = ref(false);
-const statusFilter = ref<"" | "pending" | "done">("");
+const statusFilter = ref<"" | "PENDING" | "DONE">("");
 
 onMounted(async () => {
   if (!initialized.value) {
@@ -51,7 +45,7 @@ onMounted(async () => {
     currentPage.value = page;
   }
   const status = route.query.status as string;
-  if (status === "pending" || status === "done") {
+  if (status === "PENDING" || status === "DONE") {
     statusFilter.value = status;
   }
 
@@ -66,7 +60,7 @@ watch(
     const status = (query.status as string) || "";
     currentPage.value = page;
     statusFilter.value =
-      status === "pending" || status === "done" ? status : "";
+      status === "PENDING" || status === "DONE" ? status : "";
     loadFeedback();
   },
 );
@@ -82,15 +76,7 @@ const loadFeedback = async () => {
       params.set("status", statusFilter.value);
     }
 
-    const res = await fetch(`/api/admin/feedback?${params}`, {
-      headers: getAuthHeaders(),
-    });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    const data = await res.json();
+    const data = await get(`/api/admin/feedback?${params}`);
     feedbacks.value = data.data;
     total.value = data.total;
     totalPages.value = data.totalPages;
@@ -99,7 +85,7 @@ const loadFeedback = async () => {
   }
 };
 
-const handleStatusFilter = (status: "" | "pending" | "done") => {
+const handleStatusFilter = (status: "" | "PENDING" | "DONE") => {
   statusFilter.value = status;
   currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
@@ -143,21 +129,9 @@ const stopPolling = (musicId: string) => {
 
 const pollSubmission = async (musicId: string, submissionId: string) => {
   try {
-    const res = await fetch(
+    const data = await get(
       `/api/admin/music/check-links/submission/${submissionId}`,
-      {
-        headers: getAuthHeaders(),
-      },
     );
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      stopPolling(musicId);
-      return;
-    }
-    if (!res.ok) return;
-
-    const data = await res.json();
 
     const current = checkResults.value[musicId];
     if (!current) return;
@@ -219,21 +193,7 @@ const checkLinks = async (musicId: string) => {
 
   checkingId.value = musicId;
   try {
-    const res = await fetch(`/api/admin/music/${musicId}/check-links`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-    });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    if (!res.ok) {
-      const err = await res.json();
-      alert(err.message || "检测失败");
-      return;
-    }
-    const data = await res.json();
+    const data = await post(`/api/admin/music/${musicId}/check-links`);
 
     checkResults.value[musicId] = data;
 
@@ -242,6 +202,10 @@ const checkLinks = async (musicId: string) => {
     if (hasPending && data.submission_id) {
       startPolling(musicId, String(data.submission_id));
     }
+  } catch (e: any) {
+    if (e?.response?.status === 401) return;
+    const err = e?.response?.data;
+    alert(err?.message || "检测失败");
   } finally {
     checkingId.value = null;
   }
@@ -255,38 +219,24 @@ onUnmounted(() => {
 const resolveFeedback = async (id: string) => {
   if (!confirm("确定要将此反馈标记为已完成吗？")) return;
 
-  const res = await fetch(`/api/admin/feedback/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({ resolvedBy: username.value }),
-  });
-
-  if (res.ok) {
+  try {
+    await put(`/api/admin/feedback/${id}`, {
+      resolvedBy: username.value,
+    });
     await loadFeedback();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 忽略，401 由拦截器处理
   }
 };
 
 const deleteFeedback = async (id: string) => {
   if (!confirm("确定要删除这条反馈吗？")) return;
 
-  const res = await fetch(`/api/admin/feedback/${id}`, {
-    method: "DELETE",
-    headers: {
-      ...getAuthHeaders(),
-    },
-  });
-
-  if (res.ok) {
+  try {
+    await del(`/api/admin/feedback/${id}`);
     await loadFeedback();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 忽略，401 由拦截器处理
   }
 };
 
@@ -298,19 +248,11 @@ const clearDoneFeedback = async () => {
 
   isClearing.value = true;
   try {
-    const res = await fetch("/api/admin/feedback", {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    if (res.ok) {
-      if (statusFilter.value === "done") {
-        currentPage.value = 1;
-      }
-      await loadFeedback();
-    } else if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
+    await del("/api/admin/feedback");
+    if (statusFilter.value === "DONE") {
+      currentPage.value = 1;
     }
+    await loadFeedback();
   } finally {
     isClearing.value = false;
   }
@@ -357,22 +299,22 @@ const typeColor: Record<string, string> = {
           <button
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
             :class="
-              statusFilter === 'pending'
+              statusFilter === 'PENDING'
                 ? 'bg-yellow-600 text-white'
                 : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
             "
-            @click="handleStatusFilter('pending')"
+            @click="handleStatusFilter('PENDING')"
           >
             待处理
           </button>
           <button
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
             :class="
-              statusFilter === 'done'
+              statusFilter === 'DONE'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
             "
-            @click="handleStatusFilter('done')"
+            @click="handleStatusFilter('DONE')"
           >
             已完成
           </button>
@@ -485,7 +427,7 @@ const typeColor: Record<string, string> = {
               </td>
               <td class="px-4 py-4">
                 <span
-                  v-if="fb.status === 'done'"
+                  v-if="fb.status === 'DONE'"
                   class="inline-flex items-center gap-1 text-green-400 text-sm"
                 >
                   <CheckCircle class="w-4 h-4" />
@@ -584,7 +526,7 @@ const typeColor: Record<string, string> = {
                     <Edit3 class="w-4 h-4" />
                   </a>
                   <button
-                    v-if="fb.status === 'pending'"
+                    v-if="fb.status === 'PENDING'"
                     class="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-700 hover:bg-green-600 text-white rounded-lg transition-colors"
                     @click="resolveFeedback(fb.id)"
                   >

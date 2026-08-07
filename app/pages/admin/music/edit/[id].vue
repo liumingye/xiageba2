@@ -5,6 +5,7 @@ import { useAuth } from "~/composables/useAuth";
 import { ArrowLeft, Save, Plus, X, Search, FolderOpen, ImageIcon } from "@lucide/vue";
 import ScrapeModal from "~/components/admin/ScrapeModal.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
+import { get, put } from "~/utils/request";
 
 interface DownloadOption {
   quality: string;
@@ -15,8 +16,7 @@ interface DownloadOption {
 
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, checkLogin, initialized, getAuthHeaders, logout } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const id = ref("");
 
@@ -59,9 +59,8 @@ onMounted(async () => {
   id.value = route.params.id as string;
 
   if (id.value) {
-    const res = await fetch(`/api/music/${id.value}?timestamp=${Date.now()}`);
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await get(`/api/music/${id.value}?timestamp=${Date.now()}`);
       form.value = {
         title: data.title,
         artist: data.artist,
@@ -71,6 +70,8 @@ onMounted(async () => {
         playUrl: data.playUrl || "",
         downloads: data.downloads || [],
       };
+    } catch {
+      // 加载失败，保持表单为空
     }
   }
 });
@@ -111,27 +112,15 @@ const handleSubmit = async () => {
     (d) => d.quality.trim() && d.url.trim(),
   );
 
-  const res = await fetch("/api/admin/music", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await put("/api/admin/music", {
       id: id.value,
       ...form.value,
       downloads,
-    }),
-  });
-
-  if (res.ok) {
+    });
     router.push("/admin");
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "保存失败";
+  } catch (err: any) {
+    error.value = err?.response?.data?.message || "保存失败";
   }
 };
 </script>

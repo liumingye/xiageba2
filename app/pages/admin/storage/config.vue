@@ -14,6 +14,7 @@ import {
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import { get, post, put, del } from "~/utils/request";
 
 defineOptions({ name: "StorageConfigPage" });
 
@@ -32,8 +33,7 @@ interface S3Config {
 }
 
 const router = useRouter();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const configs = ref<S3Config[]>([]);
 const showModal = ref(false);
@@ -62,15 +62,7 @@ const formatDate = (dateStr: string) => {
 };
 
 const loadConfigs = async () => {
-  const res = await fetch("/api/admin/storage/config", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/storage/config");
   configs.value = data.data;
 };
 
@@ -145,30 +137,15 @@ const saveConfig = async () => {
 
   saving.value = true;
   try {
-    const url = isEdit.value
-      ? `/api/admin/storage/config/${editId.value}`
-      : "/api/admin/storage/config";
-    const method = isEdit.value ? "PUT" : "POST";
-    const res = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify(form.value),
-    });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    if (res.ok) {
-      showModal.value = false;
-      await loadConfigs();
+    if (isEdit.value) {
+      await put(`/api/admin/storage/config/${editId.value}`, form.value);
     } else {
-      const data = await res.json();
-      error.value = data.message || "保存失败";
+      await post("/api/admin/storage/config", form.value);
     }
+    showModal.value = false;
+    await loadConfigs();
+  } catch (err: any) {
+    error.value = err?.response?.data?.message || "保存失败";
   } finally {
     saving.value = false;
   }
@@ -176,15 +153,7 @@ const saveConfig = async () => {
 
 const deleteConfig = async (id: string) => {
   if (!confirm("确定删除此存储配置？")) return;
-  const res = await fetch(`/api/admin/storage/config/${id}`, {
-    method: "DELETE",
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
+  await del(`/api/admin/storage/config/${id}`);
   await loadConfigs();
 };
 </script>

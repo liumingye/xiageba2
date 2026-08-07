@@ -14,6 +14,7 @@ import {
   FileVideo,
   File,
 } from "@lucide/vue";
+import { get, post, del } from "~/utils/request";
 
 interface S3ConfigItem {
   id: string;
@@ -30,7 +31,6 @@ interface FileItem {
   mimeType?: string;
 }
 
-const { getAuthHeaders } = useAuth();
 const toast = useToast();
 
 const props = defineProps<{
@@ -108,15 +108,10 @@ watch(
 
 const loadConfigs = async () => {
   try {
-    const res = await fetch("/api/admin/storage/config", {
-      headers: { ...getAuthHeaders() },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      configs.value = data.data || [];
-      if (configs.value.length > 0 && !selectedConfigId.value) {
-        selectedConfigId.value = configs.value[0].id;
-      }
+    const data = await get("/api/admin/storage/config");
+    configs.value = data.data || [];
+    if (configs.value.length > 0 && !selectedConfigId.value) {
+      selectedConfigId.value = configs.value[0].id;
     }
   } catch {
     // ignore
@@ -135,17 +130,9 @@ const loadFiles = async () => {
     if (searchKeyword.value.trim()) {
       params.set("search", searchKeyword.value.trim());
     }
-    const res = await fetch(`/api/admin/storage/files?${params}`, {
-      headers: { ...getAuthHeaders() },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      files.value = data.data || [];
-      total.value = data.total || 0;
-    } else {
-      files.value = [];
-      total.value = 0;
-    }
+    const data = await get(`/api/admin/storage/files?${params}`);
+    files.value = data.data || [];
+    total.value = data.total || 0;
   } catch {
     files.value = [];
     total.value = 0;
@@ -194,27 +181,20 @@ const handleUpload = async () => {
     if (uploadPath.value.trim()) {
       formData.append("path", uploadPath.value.trim());
     }
-    const res = await fetch(
+    const data = await post(
       `/api/admin/storage/files/upload?configId=${selectedConfigId.value}`,
-      {
-        method: "POST",
-        headers: { ...getAuthHeaders() },
-        body: formData,
-      },
+      formData,
     );
-    if (res.ok) {
-      const data = await res.json();
-      showUpload.value = false;
-      uploadFile.value = null;
-      uploadPath.value = "";
-      await loadFiles();
-      if (data.skipped) {
-        toast.info(data.message || "文件已存在，已跳过");
-      }
-      // 自动选中新上传的文件
-      if (data.data?.url) {
-        selectedFileUrl.value = data.data.url;
-      }
+    showUpload.value = false;
+    uploadFile.value = null;
+    uploadPath.value = "";
+    await loadFiles();
+    if (data.skipped) {
+      toast.info(data.message || "文件已存在，已跳过");
+    }
+    // 自动选中新上传的文件
+    if (data.data?.url) {
+      selectedFileUrl.value = data.data.url;
     }
   } catch {
     // ignore
@@ -227,19 +207,13 @@ const handleDelete = async (file: FileItem) => {
   if (!confirm(`确定删除文件 ${file.name}？`)) return;
   deletingKey.value = file.key;
   try {
-    const res = await fetch(
+    await del(
       `/api/admin/storage/files/${encodeURIComponent(file.key)}?configId=${selectedConfigId.value}`,
-      {
-        method: "DELETE",
-        headers: { ...getAuthHeaders() },
-      },
     );
-    if (res.ok) {
-      if (selectedFileUrl.value === file.url) {
-        selectedFileUrl.value = null;
-      }
-      await loadFiles();
+    if (selectedFileUrl.value === file.url) {
+      selectedFileUrl.value = null;
     }
+    await loadFiles();
   } catch {
     // ignore
   } finally {

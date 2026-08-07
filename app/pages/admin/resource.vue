@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
+import { get, post, put, del } from "~/utils/request";
 import {
   Plus,
   Trash2,
@@ -39,8 +40,7 @@ interface Category {
 
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 const toast = useToast();
 
 const sources = ref<Source[]>([]);
@@ -95,15 +95,7 @@ const loadSources = async () => {
 
   isLoading.value = true;
   try {
-    const res = await fetch(url, {
-      headers: { ...getAuthHeaders() },
-    });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    const data = await res.json();
+    const data = await get(url);
     sources.value = data.data;
     categories.value = data.categories;
     totalPages.value = data.totalPages;
@@ -235,11 +227,10 @@ const fetchMenu = async () => {
   menuAbortController.value = controller;
   menuLoading.value = true;
   try {
-    const res = await fetch(`/api/source/tree?id=${editId.value}`, {
+    const data = await get(`/api/source/tree?id=${editId.value}`, {
       signal: controller.signal,
     });
-    const data = await res.json();
-    if (res.ok && data.success) {
+    if (data.success) {
       editMenu.value = data.tree || "";
     } else {
       error.value = data.message || "获取目录失败";
@@ -266,32 +257,21 @@ const addSource = async () => {
 
   addSourceing.value = true;
 
-  const res = await fetch("/api/admin/source", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await post("/api/admin/source", {
       cid: newCid.value,
       title: newTitle.value,
       url: newUrl.value,
       description: newDescription.value,
       menu: newMenu.value,
       isSelf: newIsSelf.value,
-    }),
-  });
-
-  if (res.ok) {
-    await loadSources();
+    });
     closeAddModal();
-    addSourceing.value = false;
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "添加失败";
+    await loadSources();
+  } catch (e: any) {
+    const err = e?.response?.data;
+    error.value = err?.message || "添加失败";
+  } finally {
     addSourceing.value = false;
   }
 };
@@ -310,32 +290,21 @@ const saveEdit = async () => {
   }
 
   saveEditing.value = true;
-  const res = await fetch(`/api/admin/source/${editId.value}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await put(`/api/admin/source/${editId.value}`, {
       cid: editCid.value,
       title: editTitle.value,
       url: editUrl.value,
       description: editDescription.value,
       menu: editMenu.value,
       isSelf: editIsSelf.value,
-    }),
-  });
-
-  if (res.ok) {
-    await loadSources();
+    });
     closeEditModal();
-    saveEditing.value = false;
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "保存失败";
+    await loadSources();
+  } catch (e: any) {
+    const err = e?.response?.data;
+    error.value = err?.message || "保存失败";
+  } finally {
     saveEditing.value = false;
   }
 };
@@ -347,38 +316,24 @@ const toggleStatus = async (item: Source) => {
     throw createError({ statusCode: 400, message: "缺少资源ID" });
   }
 
-  const res = await fetch(`/api/admin/source/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await put(`/api/admin/source/${id}`, {
       status: newStatus,
-    }),
-  });
-
-  if (res.ok) {
+    });
     await loadSources();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 忽略，401 由拦截器处理
   }
 };
 
 const deleteSource = async (id: string) => {
   if (!confirm("确定要删除该资源吗？")) return;
 
-  const res = await fetch(`/api/admin/source/${id}`, {
-    method: "DELETE",
-    headers: { ...getAuthHeaders() },
-  });
-
-  if (res.ok) {
+  try {
+    await del(`/api/admin/source/${id}`);
     await loadSources();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 忽略，401 由拦截器处理
   }
 };
 
@@ -419,20 +374,9 @@ const importSources = async () => {
     formData.append("hasHeader", String(importHasHeader.value));
     formData.append("isSelf", String(importIsSelf.value));
 
-    const res = await fetch("/api/admin/source/import", {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: formData,
-    });
+    const data = await post("/api/admin/source/import", formData);
 
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-
-    const data = await res.json();
-    if (res.ok && data.success) {
+    if (data.success) {
       importResult.value = data;
       toast.success(
         `导入完成：成功 ${data.inserted} 条，重复 ${data.duplicate} 条，失败 ${data.failed} 条`,
@@ -441,8 +385,10 @@ const importSources = async () => {
     } else {
       error.value = data.message || "导入失败";
     }
-  } catch {
-    error.value = "导入失败，请重试";
+  } catch (e: any) {
+    if (e?.response?.status !== 401) {
+      error.value = "导入失败，请重试";
+    }
   } finally {
     importing.value = false;
   }

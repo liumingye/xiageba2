@@ -5,6 +5,7 @@ import { useAuth } from "~/composables/useAuth";
 import { ArrowLeft, Save, Plus, X, Search, FolderOpen, ImageIcon } from "@lucide/vue";
 import ScrapeModal from "~/components/admin/ScrapeModal.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
+import { post } from "~/utils/request";
 
 interface DownloadOption {
   quality: string;
@@ -14,8 +15,7 @@ interface DownloadOption {
 }
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized, getAuthHeaders, logout } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const form = ref({
   title: "",
@@ -89,26 +89,14 @@ const handleSubmit = async () => {
     (d) => d.quality.trim() && d.url.trim(),
   );
 
-  const res = await fetch("/api/admin/music", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await post("/api/admin/music", {
       ...form.value,
       downloads,
-    }),
-  });
-
-  if (res.ok) {
+    });
     router.push("/admin");
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "保存失败";
+  } catch (err: any) {
+    error.value = err?.response?.data?.message || "保存失败";
   }
 };
 </script>

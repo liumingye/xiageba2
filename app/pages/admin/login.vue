@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
+import { post } from '~/utils/request'
 import { Music, Lock, User } from '@lucide/vue'
 
 const router = useRouter()
+const route = useRoute()
 const { login, isLoggedIn } = useAuth()
 
 const username = ref('')
@@ -21,27 +23,19 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username: username.value,
-        password: password.value
-      })
+    const data = await post('/api/admin/login', {
+      username: username.value,
+      password: password.value
     })
-    
-    if (res.ok) {
-      const data = await res.json()
-      login(data.username, data.token)
-      router.push('/admin')
+    login(data.username, data.token)
+    const redirect = route.query.redirect as string
+    router.push(redirect && redirect.startsWith('/') ? redirect : '/admin')
+  } catch (e: any) {
+    if (e.response) {
+      error.value = e.response.data.message || '登录失败'
     } else {
-      const err = await res.json()
-      error.value = err.message || '登录失败'
+      error.value = '网络错误'
     }
-  } catch (e) {
-    error.value = '网络错误'
   } finally {
     loading.value = false
   }

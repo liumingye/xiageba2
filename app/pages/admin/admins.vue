@@ -2,12 +2,8 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import {
-  Plus,
-  Trash2,
-  User,
-  Edit3,
-} from "@lucide/vue";
+import { get, post, put, del } from "~/utils/request";
+import { Plus, Trash2, User, Edit3 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 
@@ -18,13 +14,7 @@ interface Admin {
 }
 
 const router = useRouter();
-const {
-  isLoggedIn,
-  logout,
-  checkLogin,
-  initialized,
-  getAuthHeaders,
-} = useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const admins = ref<Admin[]>([]);
 const showAddModal = ref(false);
@@ -37,15 +27,8 @@ const editAdminId = ref("");
 const error = ref("");
 
 const loadAdmins = async () => {
-  const res = await fetch("/api/admin", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  admins.value = await res.json();
+  const data = await get("/api/admin");
+  admins.value = data;
 };
 
 onMounted(async () => {
@@ -91,27 +74,15 @@ const addAdmin = async () => {
     return;
   }
 
-  const res = await fetch("/api/admin", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await post("/api/admin", {
       username: newUsername.value,
       password: newPassword.value,
-    }),
-  });
-
-  if (res.ok) {
+    });
     await loadAdmins();
     closeAddModal();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "添加失败";
+  } catch (e: any) {
+    error.value = e.response?.data?.message || "添加失败";
   }
 };
 
@@ -132,45 +103,20 @@ const editAdmin = async () => {
     return;
   }
 
-  const res = await fetch("/api/admin", {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(updateData),
-  });
-
-  if (res.ok) {
+  try {
+    await put("/api/admin", updateData);
     await loadAdmins();
     closeEditModal();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "更新失败";
+  } catch (e: any) {
+    error.value = e.response?.data?.message || "更新失败";
   }
 };
 
 const deleteAdmin = async (id: string) => {
   if (!confirm("确定要删除该管理员吗？")) return;
 
-  const res = await fetch("/api/admin", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({ id }),
-  });
-
-  if (res.ok) {
-    await loadAdmins();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  }
+  await del("/api/admin", { data: { id } });
+  await loadAdmins();
 };
 </script>
 
@@ -201,7 +147,9 @@ const deleteAdmin = async (id: string) => {
               <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
                 用户名
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-48">
+              <th
+                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-48"
+              >
                 创建时间
               </th>
               <th

@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
+import { get, post, put, del } from "~/utils/request";
 import { Plus, Trash2, Edit3, Tag } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -18,8 +19,7 @@ interface Category {
 }
 
 const router = useRouter();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const categories = ref<Category[]>([]);
 const currentPage = ref(1);
@@ -40,18 +40,9 @@ const editIsShow = ref(true);
 const error = ref("");
 
 const loadCategories = async () => {
-  const res = await fetch(
+  const data = await get(
     `/api/admin/category?page=${currentPage.value}&pageSize=20`,
-    {
-      headers: { ...getAuthHeaders() },
-    },
   );
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
   categories.value = data.data;
   totalPages.value = data.totalPages;
   total.value = data.total;
@@ -107,29 +98,18 @@ const addCategory = async () => {
     return;
   }
 
-  const res = await fetch("/api/admin/category", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await post("/api/admin/category", {
       name: newName.value,
       image: newImage.value,
       sort: newSort.value,
       isShow: newIsShow.value,
-    }),
-  });
-
-  if (res.ok) {
+    });
     await loadCategories();
     closeAddModal();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "添加失败";
+  } catch (e: any) {
+    const err = e?.response?.data;
+    error.value = err?.message || "添加失败";
   }
 };
 
@@ -140,45 +120,29 @@ const saveEdit = async () => {
     return;
   }
 
-  const res = await fetch(`/api/admin/category/${editId.value}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await put(`/api/admin/category/${editId.value}`, {
       name: editName.value,
       image: editImage.value,
       sort: editSort.value,
       isShow: editIsShow.value,
-    }),
-  });
-
-  if (res.ok) {
+    });
     await loadCategories();
     closeEditModal();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "保存失败";
+  } catch (e: any) {
+    const err = e?.response?.data;
+    error.value = err?.message || "保存失败";
   }
 };
 
 const deleteCategory = async (id: string) => {
   if (!confirm("确定要删除该分类吗？")) return;
 
-  const res = await fetch(`/api/admin/category/${id}`, {
-    method: "DELETE",
-    headers: { ...getAuthHeaders() },
-  });
-
-  if (res.ok) {
+  try {
+    await del(`/api/admin/category/${id}`);
     await loadCategories();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 忽略，401 由拦截器处理
   }
 };
 </script>

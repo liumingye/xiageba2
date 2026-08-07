@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
+import { get, del } from "~/utils/request";
 import { Plus, Search, Trash2, Edit3, Loader2 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -11,8 +12,7 @@ import type { Music as MusicType } from "~/stores/music";
 const config = useRuntimeConfig();
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, logout, checkLogin, initialized } = useAuth();
 
 const musics = ref<MusicType[]>([]);
 const searchQuery = ref("");
@@ -69,11 +69,9 @@ const loadMusic = async () => {
     }
     controller = new AbortController();
 
-    const res = await fetch(`/api/admin/music?${params}`, {
-      headers: getAuthHeaders(),
+    const data = await get(`/api/admin/music?${params}`, {
       signal: controller.signal,
     });
-    const data = await res.json();
 
     if (wordkey !== searchQuery.value.trim()) return;
 
@@ -117,21 +115,8 @@ const editMusic = (id: string) => {
 const deleteMusic = async (id: string) => {
   if (!confirm("确定要删除这首歌吗？")) return;
 
-  const res = await fetch("/api/admin/music", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({ id }),
-  });
-
-  if (res.ok) {
-    await loadMusic();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  }
+  await del("/api/admin/music", { data: { id } });
+  await loadMusic();
 };
 
 const goToPage = (page: number) => {

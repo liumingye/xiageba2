@@ -20,8 +20,7 @@ interface Announcement {
 }
 
 const router = useRouter();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const announcements = ref<Announcement[]>([]);
 const currentPage = ref(1);
@@ -119,18 +118,9 @@ const formatDate = (dateStr: string) => {
 };
 
 const loadAnnouncements = async () => {
-  const res = await fetch(
+  const data = await get(
     `/api/admin/announcement?page=${currentPage.value}&pageSize=20`,
-    {
-      headers: { ...getAuthHeaders() },
-    },
   );
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
   announcements.value = data.data;
   totalPages.value = data.totalPages;
   total.value = data.total;
@@ -189,30 +179,19 @@ const addAnnouncement = async () => {
     return;
   }
 
-  const res = await fetch("/api/admin/announcement", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await post("/api/admin/announcement", {
       title: newTitle.value,
       content: newContent.value,
       displayType: newDisplayType.value,
       icon: newIcon.value,
       sort: newSort.value,
-    }),
-  });
-
-  if (res.ok) {
+    });
     await loadAnnouncements();
     closeAddModal();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "添加失败";
+  } catch (e: any) {
+    const err = e?.response?.data;
+    error.value = err?.message || "添加失败";
   }
 };
 
@@ -223,74 +202,49 @@ const saveEdit = async () => {
     return;
   }
 
-  const res = await fetch(`/api/admin/announcement/${editId.value}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await put(`/api/admin/announcement/${editId.value}`, {
       title: editTitle.value,
       content: editContent.value,
       displayType: editDisplayType.value,
       icon: editIcon.value,
       sort: editSort.value,
       status: editStatus.value,
-    }),
-  });
-
-  if (res.ok) {
+    });
     await loadAnnouncements();
     closeEditModal();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-  } else {
-    const err = await res.json();
-    error.value = err.message || "保存失败";
+  } catch (e: any) {
+    const err = e?.response?.data;
+    error.value = err?.message || "保存失败";
   }
 };
 
 const archiveAnnouncement = async (item: Announcement) => {
   if (!confirm("确定要归档该公告吗？")) return;
 
-  const res = await fetch(`/api/admin/announcement/${item.id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
+  try {
+    await put(`/api/admin/announcement/${item.id}`, {
       title: item.title,
       content: item.content,
       displayType: item.displayType,
       icon: item.icon,
       sort: item.sort,
       status: "ARCHIVED",
-    }),
-  });
-
-  if (res.ok) {
+    });
     await loadAnnouncements();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 401 已由拦截器处理
   }
 };
 
 const deleteAnnouncement = async (id: string) => {
   if (!confirm("确定要删除该公告吗？")) return;
 
-  const res = await fetch(`/api/admin/announcement/${id}`, {
-    method: "DELETE",
-    headers: { ...getAuthHeaders() },
-  });
-
-  if (res.ok) {
+  try {
+    await del(`/api/admin/announcement/${id}`);
     await loadAnnouncements();
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 401 已由拦截器处理
   }
 };
 </script>

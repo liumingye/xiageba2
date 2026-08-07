@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
+import { get, post } from "~/utils/request";
 import { Save, UserCog, Check, Loader2, Link2, KeyRound } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -21,8 +22,7 @@ interface AccountConfig {
 }
 
 const router = useRouter();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 const toast = useToast();
 
 const config = ref<AccountConfig>({
@@ -51,16 +51,7 @@ const gettingOauthToken = ref(false);
 const getBaiduOauthUrl = async () => {
   gettingOauthUrl.value = true;
   try {
-    const res = await fetch("/api/admin/baidu/oauth-authorize", {
-      method: "POST",
-      headers: { ...getAuthHeaders() },
-    });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    const data = await res.json();
+    const data = await post("/api/admin/baidu/oauth-authorize");
     baiduOauthUrl.value = data.url;
     baiduOauthCodeVerifier.value = data.codeVerifier;
     baiduOauthCode.value = "";
@@ -79,23 +70,10 @@ const getBaiduOauthToken = async () => {
   }
   gettingOauthToken.value = true;
   try {
-    const res = await fetch("/api/admin/baidu/oauth-token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify({
-        code: baiduOauthCode.value.trim(),
-        codeVerifier: baiduOauthCodeVerifier.value,
-      }),
+    const data = await post("/api/admin/baidu/oauth-token", {
+      code: baiduOauthCode.value.trim(),
+      codeVerifier: baiduOauthCodeVerifier.value,
     });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    const data = await res.json();
     if (data.accessToken) {
       config.value.baidu_access_token = data.accessToken;
       config.value.baidu_refresh_token = data.refreshToken || "";
@@ -130,17 +108,7 @@ const checking = ref<Record<string, boolean>>({
 const checkAccount = async (type: string) => {
   checking.value[type] = true;
   try {
-    const res = await fetch(`/api/admin/check-account?type=${type}`, {
-      headers: getAuthHeaders(),
-    });
-
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-
-    const data = await res.json();
+    const data = await get(`/api/admin/check-account?type=${type}`);
     const label = TYPE_LABELS[type];
     if (data.success) {
       toast.success(`${label}账号有效`);
@@ -155,15 +123,7 @@ const checkAccount = async (type: string) => {
 };
 
 const loadConfig = async () => {
-  const res = await fetch("/api/admin/config/accounts", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/config/accounts");
   config.value = data.data;
 };
 
@@ -183,24 +143,16 @@ const saveConfig = async () => {
   saving.value = true;
   saved.value = false;
 
-  const res = await fetch("/api/admin/config/accounts", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(config.value),
-  });
-
-  saving.value = false;
-  if (res.ok) {
+  try {
+    await post("/api/admin/config/accounts", config.value);
     saved.value = true;
     setTimeout(() => {
       saved.value = false;
     }, 2000);
-  } else if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
+  } catch {
+    // 401 已由拦截器处理
+  } finally {
+    saving.value = false;
   }
 };
 </script>

@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
+import { get, post, put, del } from "~/utils/request";
 import {
   Plus,
   Trash2,
@@ -40,8 +41,7 @@ interface ApiItem {
 
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const apis = ref<ApiItem[]>([]);
 const currentPage = ref(1);
@@ -108,13 +108,7 @@ const loadApis = async () => {
   if (keyword.value) {
     url += `&keyword=${encodeURIComponent(keyword.value)}`;
   }
-  const res = await fetch(url, { headers: { ...getAuthHeaders() } });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get(url);
   apis.value = data.data;
   totalPages.value = data.totalPages;
   total.value = data.total;
@@ -205,26 +199,17 @@ const saveApi = async () => {
   error.value = validateForm();
   if (error.value) return;
 
-  const url = isEdit.value
-    ? `/api/admin/apiList/${editId.value}`
-    : "/api/admin/apiList";
-  const method = isEdit.value ? "PUT" : "POST";
-  const res = await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify(form.value),
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  if (res.ok) {
+  try {
+    if (isEdit.value) {
+      await put(`/api/admin/apiList/${editId.value}`, form.value);
+    } else {
+      await post("/api/admin/apiList", form.value);
+    }
     showModal.value = false;
     await loadApis();
-  } else {
-    const data = await res.json();
-    error.value = data.message || "保存失败";
+  } catch (e: any) {
+    const data = e?.response?.data;
+    error.value = data?.message || "保存失败";
   }
 };
 
@@ -235,17 +220,10 @@ const testApi = async () => {
   }
   testing.value = true;
   try {
-    const res = await fetch("/api/admin/apiList/test", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify({ config: form.value, keyword: "凡人" }),
+    const data = await post("/api/admin/apiList/test", {
+      config: form.value,
+      keyword: "凡人",
     });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    const data = await res.json();
     if (data.success) {
       toast.add(`测试成功，搜索「凡人」找到 ${data.count} 条结果`, "success");
     } else {
@@ -260,14 +238,10 @@ const testApi = async () => {
 
 const deleteApi = async (id: string) => {
   if (!confirm("确定删除该接口配置？")) return;
-  const res = await fetch(`/api/admin/apiList/${id}`, {
-    method: "DELETE",
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
+  try {
+    await del(`/api/admin/apiList/${id}`);
+  } catch {
+    // 401 已由拦截器处理
   }
   await loadApis();
 };

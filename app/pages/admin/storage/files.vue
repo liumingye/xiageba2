@@ -22,6 +22,7 @@ import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { useToast } from "~/composables/useToast";
+import { get, post, del, patch } from "~/utils/request";
 
 defineOptions({ name: "StorageFilesPage" });
 
@@ -42,8 +43,7 @@ interface StorageFile {
 }
 
 const router = useRouter();
-const { isLoggedIn, logout, checkLogin, initialized, getAuthHeaders } =
-  useAuth();
+const { isLoggedIn, checkLogin, initialized } = useAuth();
 const toast = useToast();
 
 const configs = ref<StorageConfig[]>([]);
@@ -94,15 +94,7 @@ const isVideo = (file: StorageFile) => {
 };
 
 const loadConfigs = async () => {
-  const res = await fetch("/api/admin/storage/config", {
-    headers: { ...getAuthHeaders() },
-  });
-  if (res.status === 401) {
-    logout();
-    router.push("/admin/login");
-    return;
-  }
-  const data = await res.json();
+  const data = await get("/api/admin/storage/config");
   configs.value = data.data || [];
   if (configs.value.length > 0 && !selectedConfigId.value) {
     selectedConfigId.value = configs.value[0].id;
@@ -121,15 +113,7 @@ const loadFiles = async () => {
     if (searchKeyword.value) {
       url += `&search=${encodeURIComponent(searchKeyword.value)}`;
     }
-    const res = await fetch(url, {
-      headers: { ...getAuthHeaders() },
-    });
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    const data = await res.json();
+    const data = await get(url);
     files.value = data.data || [];
     total.value = data.total || 0;
   } catch {
@@ -178,36 +162,21 @@ const handleUpload = async () => {
     if (uploadPath.value) {
       formData.append("path", uploadPath.value);
     }
-    const res = await fetch(
+    const data = await post(
       `/api/admin/storage/files/upload?configId=${encodeURIComponent(selectedConfigId.value)}`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: formData,
-      },
+      formData,
     );
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    if (res.ok) {
-      const data = await res.json().catch(() => ({}));
-      if (data.skipped) {
-        toast.info(data.message || "文件已存在，已跳过");
-      } else {
-        toast.success("上传成功");
-      }
-      uploadFile.value = null;
-      uploadPath.value = "";
-      showUpload.value = false;
-      await loadFiles();
+    if (data.skipped) {
+      toast.info(data.message || "文件已存在，已跳过");
     } else {
-      const err = await res.json().catch(() => ({}));
-      toast.error(err.message || "上传失败");
+      toast.success("上传成功");
     }
-  } catch {
-    toast.error("上传失败，请重试");
+    uploadFile.value = null;
+    uploadPath.value = "";
+    showUpload.value = false;
+    await loadFiles();
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || "上传失败，请重试");
   } finally {
     isUploading.value = false;
   }
@@ -220,27 +189,13 @@ const handleDelete = async (file: StorageFile) => {
   if (!confirm(`确定要删除文件 ${file.name} 吗？`)) return;
   deletingKey.value = file.key;
   try {
-    const res = await fetch(
+    await del(
       `/api/admin/storage/files/${encodeURIComponent(file.key)}?configId=${encodeURIComponent(selectedConfigId.value)}`,
-      {
-        method: "DELETE",
-        headers: { ...getAuthHeaders() },
-      },
     );
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    if (res.ok) {
-      toast.success("删除成功");
-      await loadFiles();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      toast.error(err.message || "删除失败");
-    }
-  } catch {
-    toast.error("删除失败，请重试");
+    toast.success("删除成功");
+    await loadFiles();
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || "删除失败，请重试");
   } finally {
     deletingKey.value = null;
   }
@@ -283,29 +238,15 @@ const confirmRename = async () => {
   }
   isRenaming.value = true;
   try {
-    const res = await fetch(
+    await patch(
       `/api/admin/storage/files/${encodeURIComponent(renameTarget.value.key)}?configId=${encodeURIComponent(selectedConfigId.value)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ newName }),
-      },
+      { newName },
     );
-    if (res.status === 401) {
-      logout();
-      router.push("/admin/login");
-      return;
-    }
-    if (res.ok) {
-      toast.success("重命名成功");
-      cancelRename();
-      await loadFiles();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      toast.error(err.message || "重命名失败");
-    }
-  } catch {
-    toast.error("重命名失败，请重试");
+    toast.success("重命名成功");
+    cancelRename();
+    await loadFiles();
+  } catch (err: any) {
+    toast.error(err?.response?.data?.message || "重命名失败，请重试");
   } finally {
     isRenaming.value = false;
   }
