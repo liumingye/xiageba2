@@ -30,7 +30,7 @@
     "ioredis": "^5.11.1",
     "marked": "^18.0.6",
     "nodemailer": "^9.0.1",
-    "nuxt": "^4.4.8",
+    "nuxt": "^4.5.1",
     "nuxt-api-shield": "^1.0.0",
     "openai": "^6.48.0",
     "pg": "^8.21.0",
