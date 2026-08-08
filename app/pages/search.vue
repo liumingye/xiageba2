@@ -1039,7 +1039,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                     <p class="text-xs text-gray-400">
                       网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
                       文件内容请自行辨别，如发现违规请通过<a
-                        href="/version"
+                        href="/page/version"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="text-primary-500"

@@ -335,9 +335,9 @@ export function parseShareUrl(url: string): ParsedShare {
     return { type: "quark", fid: match[1], passcode: extractPwd(url), url };
 
   // UC: https://drive.uc.cn/s/xxxx?pwd=yyyy
-  match = url.match(/(drive|fast)\.uc\.cn\/s\/([^/?#&]+)/);
-  if (match && match[2])
-    return { type: "uc", fid: match[2], passcode: extractPwd(url), url };
+  match = url.match(/(?:drive|fast)\.uc\.cn\/s\/([^/?#&]+)/);
+  if (match && match[1])
+    return { type: "uc", fid: match[1], passcode: extractPwd(url), url };
 
   // 百度: https://pan.baidu.com/s/xxxx?pwd=yyyy
   match = url.match(/pan\.baidu\.com\/s\/([^/?#&]+)/);

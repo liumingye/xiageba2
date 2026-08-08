@@ -19,11 +19,11 @@ export default defineEventHandler(async (event) => {
 
   const staticPages = [
     { loc: "/", changefreq: "daily", priority: "1.0" },
-    { loc: "/policy", changefreq: "yearly", priority: "0.3" },
-    { loc: "/agree", changefreq: "yearly", priority: "0.3" },
-    { loc: "/privacy-policy", changefreq: "yearly", priority: "0.3" },
-    { loc: "/version", changefreq: "yearly", priority: "0.3" },
-    { loc: "/forbidden-keywords", changefreq: "weekly", priority: "0.3" },
+    { loc: "/page/policy", changefreq: "yearly", priority: "0.3" },
+    { loc: "/page/agree", changefreq: "yearly", priority: "0.3" },
+    { loc: "/page/privacy-policy", changefreq: "yearly", priority: "0.3" },
+    { loc: "/page/version", changefreq: "yearly", priority: "0.3" },
+    { loc: "/page/forbidden-keywords", changefreq: "weekly", priority: "0.3" },
   ];
 
   const urls = [

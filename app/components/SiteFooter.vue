@@ -14,11 +14,11 @@ const year = new Date().getFullYear();
       &copy; {{ year }} 下歌吧 - 公开网盘资源搜索引擎
     </p>
     <div class="flex items-center justify-center gap-x-3 mt-2 flex-wrap">
-      <NuxtLink to="/policy" class="link">免责声明</NuxtLink>
-      <NuxtLink to="/agree" class="link">服务协议</NuxtLink>
-      <NuxtLink to="/privacy-policy" class="link">隐私政策</NuxtLink>
-      <NuxtLink to="/version" class="link">版权说明</NuxtLink>
-      <NuxtLink to="/forbidden-keywords" class="link">违禁词列表</NuxtLink>
+      <NuxtLink to="/page/policy" class="link">免责声明</NuxtLink>
+      <NuxtLink to="/page/agree" class="link">服务协议</NuxtLink>
+      <NuxtLink to="/page/privacy-policy" class="link">隐私政策</NuxtLink>
+      <NuxtLink to="/page/version" class="link">版权说明</NuxtLink>
+      <NuxtLink to="/page/forbidden-keywords" class="link">违禁词列表</NuxtLink>
     </div>
     <div class="flex items-center justify-center gap-x-4 mt-2 flex-wrap">
       <a

@@ -40,8 +40,9 @@ app/                  # 业务代码（srcDir）
       maintain.vue, resource.vue, account.vue, admins.vue, login.vue
     announcement/     # 公告（index.vue, [id].vue）
     music/[id].vue, source/[id].vue, categorie/[id].vue
-    policy.vue, agree.vue, privacy-policy.vue, version.vue   # 静态法律页面
-    forbidden-keywords.vue                                    # 违禁词展示
+    page/
+      policy.vue, agree.vue, privacy-policy.vue, version.vue   # 静态法律页面
+      forbidden-keywords.vue                                    # 违禁词展示
   stores/             # Pinia
   utils/              # 自动导入（含 request.ts axios 封装、highlight.ts）
 server/               # Nitro 服务端

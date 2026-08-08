@@ -1,6 +1,6 @@
 import { prisma } from "#server/lib/prisma";
 import { getStorageType } from "#shared/utils";
-import { cutForSearch } from "#server/utils/jieba";
+import { cutForSearch, buildSearchWebQuery } from "#server/utils/jieba";
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id as string;
@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     }> = [];
 
     if (tokens.length > 0) {
-      const formattedWebQuery = tokens.join(" OR ");
+      const formattedWebQuery = buildSearchWebQuery(tokens, true);
 
       const rows = await prisma.$queryRaw<
         Array<{ id: string; title: string; url: string }>

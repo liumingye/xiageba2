@@ -18,7 +18,7 @@ useHead({
 const { data, pending, error } = await useFetch<{
   data: string[];
   total: number;
-}>("/api/forbidden-keywords", { server: true });
+}>("/api/forbidden-keywords", { server: false });
 </script>
 
 <template>
@@ -55,18 +55,18 @@ const { data, pending, error } = await useFetch<{
         <!-- 词表 -->
         <template v-else>
           <p class="text-sm text-gray-400 mb-4">
-            共 <span class="text-primary-400 font-semibold">{{ data?.total || 0 }}</span>
+            共
+            <span class="text-primary-400 font-semibold">{{
+              data?.total || 0
+            }}</span>
             个违禁词，搜索时将屏蔽
           </p>
 
-          <div
-            v-if="data?.data?.length"
-            class="flex flex-wrap gap-2"
-          >
+          <div v-if="data?.data?.length" class="flex flex-wrap gap-2">
             <span
               v-for="(word, i) in data.data"
               :key="`${word}-${i}`"
-              class="inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-gray-800/80 text-gray-300 border border-gray-700"
+              class="word"
             >
               {{ word }}
             </span>
@@ -80,3 +80,9 @@ const { data, pending, error } = await useFetch<{
     </div>
   </div>
 </template>
+
+<style scoped>
+.word {
+  @apply inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-gray-800/80 text-gray-300 border border-gray-700;
+}
+</style>
