@@ -192,7 +192,7 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
             <Sparkles class="w-8 h-8 text-primary-400" />
           </div>
           <h2 class="text-lg font-medium text-white mb-2">AI 智能搜索</h2>
-          <p class="text-sm text-gray-500 max-w-md mx-auto">
+          <p class="text-sm text-zinc-500 max-w-md mx-auto">
             告诉我你想找什么音乐或资源，即使描述模糊也没关系，我会帮你找到。
           </p>
         </div>
@@ -205,9 +205,9 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
         >
           <div
             class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            :class="msg.role === 'user' ? 'bg-gray-700' : 'bg-primary-500/20'"
+            :class="msg.role === 'user' ? 'bg-zinc-700' : 'bg-primary-500/20'"
           >
-            <User v-if="msg.role === 'user'" class="w-4 h-4 text-gray-300" />
+            <User v-if="msg.role === 'user'" class="w-4 h-4 text-zinc-300" />
             <Sparkles v-else class="w-4 h-4 text-primary-400" />
           </div>
 
@@ -216,7 +216,7 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
             :class="
               msg.role === 'user'
                 ? 'bg-primary-500 text-white rounded-tr-md'
-                : 'bg-gray-800 rounded-tl-md'
+                : 'bg-zinc-800 rounded-tl-md'
             "
           >
             <template v-if="msg.role === 'assistant'">
@@ -226,15 +226,15 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
                 class="flex items-center gap-1 py-0.5"
               >
                 <span
-                  class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  class="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
                   style="animation-delay: 0ms"
                 ></span>
                 <span
-                  class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  class="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
                   style="animation-delay: 150ms"
                 ></span>
                 <span
-                  class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                  class="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
                   style="animation-delay: 300ms"
                 ></span>
               </div>

@@ -13,7 +13,7 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <header class="bg-gray-900 border-b border-gray-800 px-6 py-4">
+  <header class="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
     <div class="flex items-center justify-between max-w-7xl mx-auto">
       <div class="flex items-center gap-3">
         <div
@@ -25,9 +25,9 @@ const handleLogout = () => {
       </div>
 
       <div class="flex items-center gap-4">
-        <span class="text-gray-400">{{ username }}</span>
+        <span class="text-zinc-400">{{ username }}</span>
         <button
-          class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+          class="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
           @click="handleLogout"
         >
           <LogOut class="w-4 h-4" />

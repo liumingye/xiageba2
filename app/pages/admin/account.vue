@@ -158,7 +158,7 @@ const saveConfig = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300">
+  <div class="min-h-screen">
     <AdminHeader />
     <AdminNav />
 
@@ -182,19 +182,19 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <h3 class="text-white font-medium">夸克网盘</h3>
-                <p class="text-gray-500 text-sm">
+                <p class="text-zinc-500 text-sm">
                   配置夸克网盘 Cookie 和临时目录
                 </p>
               </div>
             </div>
             <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               :disabled="checking.quark"
               @click="checkAccount('quark')"
             >
@@ -204,7 +204,7 @@ const saveConfig = async () => {
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Cookie</label>
+              <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
               <textarea
                 v-model="config.quark_cookie"
                 rows="3"
@@ -213,7 +213,7 @@ const saveConfig = async () => {
               ></textarea>
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
               <input
@@ -230,19 +230,19 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <h3 class="text-white font-medium">百度网盘</h3>
-                <p class="text-gray-500 text-sm">
+                <p class="text-zinc-500 text-sm">
                   配置百度网盘 Cookie 和临时目录
                 </p>
               </div>
             </div>
             <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               :disabled="checking.baidu"
               @click="checkAccount('baidu')"
             >
@@ -252,7 +252,7 @@ const saveConfig = async () => {
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Cookie</label>
+              <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
               <textarea
                 v-model="config.baidu_cookie"
                 rows="3"
@@ -263,15 +263,15 @@ const saveConfig = async () => {
 
             <!-- OAuth2 授权 -->
             <div
-              class="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50 space-y-3"
+              class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
             >
-              <div class="flex items-center gap-2 text-sm text-gray-400">
+              <div class="flex items-center gap-2 text-sm text-zinc-400">
                 <KeyRound class="w-4 h-4" />
                 <span>OAuth2 授权获取 Token</span>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <button
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   :disabled="gettingOauthUrl"
                   @click="getBaiduOauthUrl"
                 >
@@ -314,7 +314,7 @@ const saveConfig = async () => {
             </div>
 
             <!-- <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >Access Token</label
               >
               <input
@@ -325,7 +325,7 @@ const saveConfig = async () => {
               />
             </div> -->
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >Refresh Token</label
               >
               <input
@@ -336,7 +336,7 @@ const saveConfig = async () => {
               />
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
               <input
@@ -353,19 +353,19 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <h3 class="text-white font-medium">UC 网盘</h3>
-                <p class="text-gray-500 text-sm">
+                <p class="text-zinc-500 text-sm">
                   配置 UC 网盘 Cookie 和临时目录
                 </p>
               </div>
             </div>
             <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               :disabled="checking.uc"
               @click="checkAccount('uc')"
             >
@@ -375,7 +375,7 @@ const saveConfig = async () => {
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Cookie</label>
+              <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
               <textarea
                 v-model="config.uc_cookie"
                 rows="3"
@@ -384,7 +384,7 @@ const saveConfig = async () => {
               ></textarea>
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
               <input
@@ -401,19 +401,19 @@ const saveConfig = async () => {
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-gray-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
               >
                 <UserCog class="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <h3 class="text-white font-medium">迅雷云盘</h3>
-                <p class="text-gray-500 text-sm">
+                <p class="text-zinc-500 text-sm">
                   配置迅雷云盘 Refresh Token 和临时目录
                 </p>
               </div>
             </div>
             <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               :disabled="checking.xunlei"
               @click="checkAccount('xunlei')"
             >
@@ -423,7 +423,7 @@ const saveConfig = async () => {
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >Refresh Token</label
               >
               <textarea
@@ -434,7 +434,7 @@ const saveConfig = async () => {
               ></textarea>
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
               <input

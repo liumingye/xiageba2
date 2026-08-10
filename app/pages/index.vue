@@ -9,6 +9,7 @@ import {
   FolderKanban,
   Flame,
   History,
+  CircleCheck,
 } from "@lucide/vue";
 import SearchBarBig from "~/components/SearchBarBig.vue";
 import { useMediaQuery, useResizeObserver } from "@vueuse/core";
@@ -174,8 +175,6 @@ const handleHotwordClick = (hotword: HotWord) => {
     searchBarRef.value?.handleSearch(hotword.word);
   });
 };
-
-const isMobile = useMediaQuery("(max-width: 768px)");
 
 interface DoubanFilterOption {
   name: string;
@@ -386,30 +385,46 @@ const getPic = (url: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-8 px-2 sm:px-4">
-    <ClientOnly>
-      <ThemeSwitcher class="absolute right-3 top-3" />
-    </ClientOnly>
-    <div class="max-w-4xl mx-auto">
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar :showSearch="false" :showThemeSwitcher="true" />
+    <div class="max-w-4xl mx-auto px-2">
       <header class="text-center mb-6">
-        <div class="flex items-center justify-center gap-3 mb-6">
+        <div class="mb-6">
           <div
-            class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white"
-            aria-hidden="true"
+            class="md:block hidden font-bold text-white text-2xl md:text-3xl"
           >
-            <MusicIcon />
+            找网盘资源，<span class="slogan">全盘搜</span>帮你搞定
           </div>
-          <h1 class="text-4xl font-bold text-white">下歌吧</h1>
+          <div class="md:hidden flex items-center justify-center gap-3">
+            <div
+              class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white"
+              aria-hidden="true"
+            >
+              <MusicIcon />
+            </div>
+            <h1 class="text-4xl font-bold text-white">下歌吧</h1>
+          </div>
         </div>
         <SearchBarBig ref="searchBarRef" />
-        <div class="text-sm text-gray-400 mt-3">
-          {{
-            !isClientMounted
-              ? "&nbsp;"
-              : isMobile
-                ? "打开浏览器菜单，点击加入书签不迷路"
-                : "按下Ctrl + D收藏网站不迷路"
-          }}
+        <div class="text-sm text-zinc-400 justify-center gap-4 hidden md:flex">
+          <span class="flex items-center"
+            ><CircleCheck
+              class="w-4 h-4 mr-1 text-primary-400"
+            />百万网盘资源无偿分享</span
+          >
+          <span class="flex items-center"
+            ><CircleCheck
+              class="w-4 h-4 mr-1 text-primary-400"
+            />链接有效性检测</span
+          >
+          <span class="flex items-center"
+            ><CircleCheck
+              class="w-4 h-4 mr-1 text-primary-400"
+            />真免费无广告</span
+          >
+        </div>
+        <div class="text-sm text-zinc-400 md:hidden">
+          打开浏览器菜单，点击加入书签不迷路
         </div>
       </header>
 
@@ -424,14 +439,14 @@ const getPic = (url: string) => {
         class="mb-8 overflow-hidden"
         aria-labelledby="history-title"
       >
-        <div class="flex items-center border-b border-gray-800 mb-4">
+        <div class="flex items-center border-b border-zinc-800 mb-4">
           <button
             v-if="hasHotwords"
             class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeHistoryTab === 'hot'
                 ? 'text-primary-400 border-b-2 border-primary-400'
-                : 'text-gray-500 hover:text-gray-300'
+                : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeHistoryTab = 'hot'"
           >
@@ -444,7 +459,7 @@ const getPic = (url: string) => {
             :class="
               activeHistoryTab === 'history'
                 ? 'text-primary-400 border-b-2 border-primary-400'
-                : 'text-gray-500 hover:text-gray-300'
+                : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeHistoryTab = 'history'"
           >
@@ -454,7 +469,7 @@ const getPic = (url: string) => {
           <div class="flex ml-auto">
             <button
               v-if="activeHistoryTab === 'history'"
-              class="flex items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors px-2 border-gray-500/50"
+              class="flex items-center gap-1 text-zinc-500 hover:text-zinc-300 transition-colors px-2 border-zinc-500/50"
               :class="{
                 'border-r': sectionOverflowing,
               }"
@@ -483,7 +498,7 @@ const getPic = (url: string) => {
           <button
             v-for="(hotword, index) in hotwords"
             :key="hotword.word"
-            class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full text-sm transition-colors"
+            class="button-radius"
             @click="handleHotwordClick(hotword)"
           >
             <span
@@ -510,7 +525,7 @@ const getPic = (url: string) => {
           <button
             v-for="keyword in musicStore.searchHistory"
             :key="keyword"
-            class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full text-sm transition-colors"
+            class="button-radius"
             @click="searchBarRef?.handleSearch(keyword)"
           >
             {{ keyword }}
@@ -523,14 +538,14 @@ const getPic = (url: string) => {
         aria-labelledby="content-title"
         class="mb-8"
       >
-        <div class="flex items-center border-b border-gray-800 mb-4">
+        <div class="flex items-center border-b border-zinc-800 mb-4">
           <button
             v-if="hasCategory"
             class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeContentTab === 'category'
                 ? 'text-primary-400 border-b-2 border-primary-400'
-                : 'text-gray-500 hover:text-gray-300'
+                : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeContentTab = 'category'"
           >
@@ -543,7 +558,7 @@ const getPic = (url: string) => {
             :class="
               activeContentTab === 'douban'
                 ? 'text-primary-400 border-b-2 border-primary-400'
-                : 'text-gray-500 hover:text-gray-300'
+                : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeContentTab = 'douban'"
           >
@@ -576,13 +591,13 @@ const getPic = (url: string) => {
               <li
                 v-for="music in hotMusic.slice(0, 11)"
                 :key="music.id"
-                class="flex items-center gap-2 min-w-0"
+                class="flex items-center gap-1 md:gap-1.5 min-w-0"
               >
                 <MusicIcon class="w-3 h-3 text-primary-400 flex-shrink-0" />
                 <NuxtLink
                   :to="`/music/${music.id}`"
-                  class="text-sm text-gray-400 hover:text-primary-400 truncate transition-colors"
-                  :title="music.title"
+                  class="link"
+                  :title="music.title + ' - ' + music.artist"
                 >
                   {{ music.title }} - {{ music.artist }}
                 </NuxtLink>
@@ -618,29 +633,28 @@ const getPic = (url: string) => {
               <li
                 v-for="item in cat.latest.slice(0, 10)"
                 :key="item.id"
-                class="flex items-center gap-2 min-w-0"
+                class="flex items-center gap-1 md:gap-1.5 min-w-0"
               >
-                <img
+                <div
                   v-if="item.type !== 'other'"
-                  :src="`/img/pan/${item.type}.png`"
-                  class="w-3 h-3 flex-shrink-0"
-                />
+                  :class="`icon-${item.type} w-3 h-3`"
+                ></div>
                 <NuxtLink
                   :to="`/source/${item.id}`"
-                  class="text-sm text-gray-400 hover:text-primary-400 truncate transition-colors"
+                  class="link"
                   :title="item.title"
                 >
                   {{ item.title }}
                 </NuxtLink>
               </li>
-              <li v-if="cat.latest.length === 0" class="text-sm text-gray-600">
+              <li v-if="cat.latest.length === 0" class="text-sm text-zinc-600">
                 暂无资源
               </li>
             </ul>
 
             <NuxtLink
               :to="`/categorie/${cat.id}`"
-              class="flex items-center justify-center gap-1 mt-3 pt-3 border-t border-gray-800 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              class="flex items-center justify-center gap-1 mt-3 pt-3 border-t border-zinc-800 text-xs text-primary-400 hover:text-primary-300 transition-colors"
             >
               查看更多
               <ArrowRight class="w-3 h-3" />
@@ -653,7 +667,7 @@ const getPic = (url: string) => {
           <div class="space-y-3 mb-4">
             <div class="flex items-center gap-3">
               <div
-                class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
+                class="text-xs text-zinc-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
               >
                 分类
               </div>
@@ -674,8 +688,8 @@ const getPic = (url: string) => {
                     class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
                     :class="
                       activeCategoryId === cls.type_id
-                        ? 'bg-gray-700 text-white shadow-sm'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                        ? 'bg-zinc-700 text-white shadow-sm'
+                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                     "
                     @click="onCategoryChange(cls.type_id)"
                   >
@@ -691,7 +705,7 @@ const getPic = (url: string) => {
               class="flex items-center gap-3"
             >
               <div
-                class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
+                class="text-xs text-zinc-500 whitespace-nowrap flex-shrink-0 flex items-center h-8"
               >
                 {{ filter.name }}
               </div>
@@ -712,8 +726,8 @@ const getPic = (url: string) => {
                     class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
                     :class="
                       activeFilters[filter.key] === opt.value
-                        ? 'bg-gray-700 text-white shadow-sm'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                        ? 'bg-zinc-700 text-white shadow-sm'
+                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                     "
                     @click="
                       activeFilters[filter.key] = opt.value;
@@ -737,14 +751,14 @@ const getPic = (url: string) => {
               :key="i"
               class="card p-2 md:p-4 animate-pulse"
             >
-              <div class="aspect-[2/3] bg-gray-700 rounded-lg mb-3" />
-              <div class="h-4 bg-gray-700 rounded w-3/4 mb-2" />
-              <div class="h-3 bg-gray-700 rounded w-full" />
+              <div class="aspect-[2/3] bg-zinc-700 rounded-lg mb-3" />
+              <div class="h-4 bg-zinc-700 rounded w-3/4 mb-2" />
+              <div class="h-3 bg-zinc-700 rounded w-full" />
             </div>
           </div>
 
           <div v-else-if="doubanList.length === 0" class="text-center py-12">
-            <p class="text-gray-500">暂无豆瓣推荐数据</p>
+            <p class="text-zinc-500">暂无豆瓣推荐数据</p>
           </div>
 
           <div
@@ -758,7 +772,7 @@ const getPic = (url: string) => {
               @click="goToResourceSearch(item)"
             >
               <div
-                class="aspect-[2/3] rounded-lg overflow-hidden mb-3 bg-gray-800"
+                class="aspect-[2/3] rounded-lg overflow-hidden mb-3 bg-zinc-800"
               >
                 <img
                   v-if="item.vod_pic"
@@ -773,7 +787,7 @@ const getPic = (url: string) => {
                 />
                 <div
                   v-else
-                  class="w-full h-full flex items-center justify-center text-gray-600 text-sm"
+                  class="w-full h-full flex items-center justify-center text-zinc-600 text-sm"
                 >
                   暂无封面
                 </div>
@@ -785,7 +799,7 @@ const getPic = (url: string) => {
                 {{ item.vod_name }}
               </h3>
               <p
-                class="text-xs text-gray-500 truncate mt-1"
+                class="text-xs text-zinc-500 truncate mt-1"
                 :title="item.vod_subtitle.replaceAll(/\s/g, '')"
               >
                 {{ item.vod_subtitle || "-" }}
@@ -795,7 +809,7 @@ const getPic = (url: string) => {
 
           <div
             v-if="doubanLoading && doubanPage > 1"
-            class="text-center py-4 text-sm text-gray-500"
+            class="text-center py-4 text-sm text-zinc-500"
             aria-busy="true"
           >
             加载中...
@@ -805,7 +819,7 @@ const getPic = (url: string) => {
             v-if="doubanList.length > 0 && doubanPage < doubanPageCount"
             @infinite-load="loadMoreDouban"
           />
-          <div v-else class="text-center py-4 text-sm text-gray-500">
+          <div v-else class="text-center py-4 text-sm text-zinc-500">
             — 已经到底了 —
           </div>
         </div>
@@ -829,5 +843,23 @@ const getPic = (url: string) => {
     hsla(0deg, 0%, 100%, 0.6) 85%,
     hsla(0deg, 0%, 100%, 0)
   );
+}
+
+.slogan {
+  background: url(/img/title_bg.webp) no-repeat right 95%;
+  background-size: 100%;
+  padding-bottom: 5px;
+}
+
+.link {
+  @apply text-sm hover:text-primary-400 truncate transition-colors text-[--color-text-300];
+}
+
+.button-radius {
+  @apply px-4 py-2 rounded-full text-sm transition-colors bg-[--bg-color-800];
+  color: var(--color-text-300);
+  &:hover {
+    background-color: var(--bg-color-700);
+  }
 }
 </style>

@@ -10,12 +10,12 @@ export class KuwoScraper extends MusicScraper {
   unescapeHtml(str: string) {
     if (!str) return str;
     return str
-      .replaceAll("&amp;", "&")
       .replaceAll("&lt;", "<")
       .replaceAll("&gt;", ">")
       .replaceAll("&quot;", '"')
       .replaceAll("&apos;", "'")
-      .replaceAll("&nbsp;", " ");
+      .replaceAll("&nbsp;", " ")
+      .replaceAll("&amp;", "&");
   }
 
   async search(keyword: string): Promise<SearchResult[]> {

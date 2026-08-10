@@ -202,7 +202,7 @@ export default defineNuxtConfig({
       },
       {
         path: "/api/music/recent",
-        max: 15,
+        max: 30,
         duration: 60,
         ban: 30,
       },

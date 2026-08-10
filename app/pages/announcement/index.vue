@@ -93,7 +93,7 @@ const iconConfig: Record<
 const getIconConfig = (icon: Announcement["icon"]) => {
   return (
     iconConfig[icon] || {
-      class: "bg-gray-500/20 text-gray-400",
+      class: "bg-zinc-500/20 text-zinc-400",
       component: Megaphone,
     }
   );
@@ -166,7 +166,7 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-8 px-4">
+  <div class="min-h-screen py-8 px-4">
     <div class="max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
@@ -175,7 +175,7 @@ watch(
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
         >
           <ArrowLeft class="w-4 h-4" />
           返回首页
@@ -183,13 +183,13 @@ watch(
       </div>
 
       <!-- Tab 切换 -->
-      <div class="flex items-center gap-1 mb-6 border-b border-gray-800">
+      <div class="flex items-center gap-1 mb-6 border-b border-zinc-800">
         <button
           class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
           :class="
             activeTab === 'ACTIVE'
               ? 'text-primary-400 border-primary-400'
-              : 'text-gray-400 border-transparent hover:text-gray-300'
+              : 'text-zinc-400 border-transparent hover:text-zinc-300'
           "
           @click="switchTab('ACTIVE')"
         >
@@ -201,7 +201,7 @@ watch(
           :class="
             activeTab === 'ARCHIVED'
               ? 'text-primary-400 border-primary-400'
-              : 'text-gray-400 border-transparent hover:text-gray-300'
+              : 'text-zinc-400 border-transparent hover:text-zinc-300'
           "
           @click="switchTab('ARCHIVED')"
         >
@@ -213,19 +213,19 @@ watch(
       <div v-if="pending" class="space-y-4">
         <div v-for="i in 3" :key="i" class="card p-6 animate-pulse">
           <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-lg bg-gray-800 flex-shrink-0"></div>
+            <div class="w-10 h-10 rounded-lg bg-zinc-700 flex-shrink-0"></div>
             <div class="flex-1 space-y-2">
-              <div class="h-4 bg-gray-800 rounded w-1/3"></div>
-              <div class="h-3 bg-gray-800/50 rounded w-1/4"></div>
-              <div class="h-3 bg-gray-800/50 rounded w-full"></div>
+              <div class="h-4 bg-zinc-700 rounded w-1/3"></div>
+              <div class="h-3 bg-zinc-800 rounded w-1/4"></div>
+              <div class="h-3 bg-zinc-800 rounded w-full"></div>
             </div>
           </div>
         </div>
       </div>
 
       <div v-else-if="announcements.length === 0" class="card p-12 text-center">
-        <Megaphone class="w-12 h-12 mx-auto text-gray-600 mb-3" />
-        <p class="text-gray-500">
+        <Megaphone class="w-12 h-12 mx-auto text-zinc-600 mb-3" />
+        <p class="text-zinc-500">
           {{ activeTab === "ARCHIVED" ? "暂无归档公告" : "暂无公告" }}
         </p>
       </div>
@@ -254,19 +254,19 @@ watch(
                 </h2>
                 <span
                   v-if="item.status === 'ARCHIVED'"
-                  class="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 flex-shrink-0"
+                  class="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 flex-shrink-0"
                 >
                   已归档
                 </span>
               </div>
-              <p class="text-xs text-gray-500 mt-1">
+              <p class="text-xs text-zinc-500 mt-1">
                 {{ formatDate(item.createdAt) }}
               </p>
             </div>
           </div>
           <div
             v-if="item.content"
-            class="text-[0.875rem] text-gray-400 mt-2 line-clamp-2 prose-resource"
+            class="text-[0.875rem] text-zinc-400 mt-2 line-clamp-2 prose-resource"
           >
             <span v-html="renderMarkdown(item.content)" />
           </div>
@@ -278,11 +278,11 @@ watch(
         v-if="totalPages > 1"
         class="flex items-center justify-between mt-6 px-4"
       >
-        <div class="text-sm text-gray-400">共 {{ total }} 条</div>
+        <div class="text-sm text-zinc-400">共 {{ total }} 条</div>
         <div class="flex items-center gap-1">
           <button
             :disabled="currentPage === 1"
-            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             @click="onPageChange(currentPage - 1)"
           >
             <ChevronLeft class="w-4 h-4" />
@@ -295,8 +295,8 @@ watch(
               p === currentPage
                 ? 'bg-primary-500 text-white'
                 : p === '...'
-                  ? 'text-gray-500 cursor-default'
-                  : 'text-gray-400 hover:text-white',
+                  ? 'text-zinc-500 cursor-default'
+                  : 'text-zinc-400 hover:text-white',
             ]"
             @click="typeof p === 'number' && onPageChange(p)"
           >
@@ -304,7 +304,7 @@ watch(
           </button>
           <button
             :disabled="currentPage === totalPages"
-            class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             @click="onPageChange(currentPage + 1)"
           >
             <ChevronRight class="w-4 h-4" />

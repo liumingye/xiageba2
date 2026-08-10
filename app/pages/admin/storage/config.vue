@@ -159,7 +159,7 @@ const deleteConfig = async (id: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300">
+  <div class="min-h-screen">
     <AdminHeader />
     <AdminNav />
 
@@ -177,27 +177,27 @@ const deleteConfig = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-gray-800">
+          <thead class="bg-zinc-800">
             <tr>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-32">
+              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-32">
                 名称
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40">
+              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-40">
                 存储桶
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-32">
+              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-32">
                 前缀
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
                 端点
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-24">
+              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-24">
                 可用区
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40">
+              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-40">
                 AccessKey
               </th>
-              <th class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24">
+              <th class="px-4 py-3 text-center text-zinc-400 text-sm font-medium w-24">
                 操作
               </th>
             </tr>
@@ -206,40 +206,40 @@ const deleteConfig = async (id: string) => {
             <tr
               v-for="item in configs"
               :key="item.id"
-              class="border-t border-gray-800 hover:bg-gray-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800/50"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                  <HardDrive class="w-4 h-4 text-gray-500 shrink-0" />
+                  <HardDrive class="w-4 h-4 text-zinc-500 shrink-0" />
                   <span class="text-white truncate" :title="item.name">{{ item.name }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-300 truncate" :title="item.bucket">
+              <td class="px-4 py-3 text-zinc-300 truncate" :title="item.bucket">
                 {{ item.bucket }}
               </td>
-              <td class="px-4 py-3 text-gray-300 truncate" :title="item.prefix">
+              <td class="px-4 py-3 text-zinc-300 truncate" :title="item.prefix">
                 {{ item.prefix || "-" }}
               </td>
-              <td class="px-4 py-3 text-gray-400 truncate" :title="item.endpoint">
+              <td class="px-4 py-3 text-zinc-400 truncate" :title="item.endpoint">
                 {{ item.endpoint || "-" }}
               </td>
-              <td class="px-4 py-3 text-gray-300">
+              <td class="px-4 py-3 text-zinc-300">
                 {{ item.region || "-" }}
               </td>
-              <td class="px-4 py-3 text-gray-400 truncate" :title="item.accessKey">
+              <td class="px-4 py-3 text-zinc-400 truncate" :title="item.accessKey">
                 {{ item.accessKey }}
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-2">
                   <button
-                    class="p-2 text-gray-400 hover:text-primary-500 transition-colors"
+                    class="p-2 text-zinc-400 hover:text-primary-500 transition-colors"
                     title="编辑"
                     @click="openEdit(item)"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
                     title="删除"
                     @click="deleteConfig(item.id)"
                   >
@@ -252,7 +252,7 @@ const deleteConfig = async (id: string) => {
         </table>
 
         <div v-if="configs.length === 0" class="py-12 text-center">
-          <p class="text-gray-500">暂无存储配置</p>
+          <p class="text-zinc-500">暂无存储配置</p>
         </div>
       </div>
     </main>
@@ -268,14 +268,14 @@ const deleteConfig = async (id: string) => {
             @click="closeModal"
           ></div>
           <div
-            class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-lg w-full border border-gray-800"
+            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-lg w-full border border-zinc-800"
           >
             <div class="flex items-center justify-between mb-6">
               <h3 class="text-xl font-medium text-white">
                 {{ isEdit ? "编辑存储配置" : "添加存储配置" }}
               </h3>
               <button
-                class="text-gray-400 hover:text-white transition-colors"
+                class="text-zinc-400 hover:text-white transition-colors"
                 @click="closeModal"
               >
                 <X class="w-5 h-5" />
@@ -291,7 +291,7 @@ const deleteConfig = async (id: string) => {
 
             <div class="space-y-4">
               <div>
-                <label class="block text-gray-400 text-sm mb-2">配置名称 *</label>
+                <label class="block text-zinc-400 text-sm mb-2">配置名称 *</label>
                 <input
                   v-model="form.name"
                   type="text"
@@ -300,7 +300,7 @@ const deleteConfig = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-2">存储桶 *</label>
+                <label class="block text-zinc-400 text-sm mb-2">存储桶 *</label>
                 <input
                   v-model="form.bucket"
                   type="text"
@@ -309,7 +309,7 @@ const deleteConfig = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-2">BaseURL</label>
+                <label class="block text-zinc-400 text-sm mb-2">BaseURL</label>
                 <input
                   v-model="form.baseUrl"
                   type="text"
@@ -318,7 +318,7 @@ const deleteConfig = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-2">前缀</label>
+                <label class="block text-zinc-400 text-sm mb-2">前缀</label>
                 <input
                   v-model="form.prefix"
                   type="text"
@@ -327,7 +327,7 @@ const deleteConfig = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-2">端点</label>
+                <label class="block text-zinc-400 text-sm mb-2">端点</label>
                 <input
                   v-model="form.endpoint"
                   type="text"
@@ -336,7 +336,7 @@ const deleteConfig = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-2">可用区</label>
+                <label class="block text-zinc-400 text-sm mb-2">可用区</label>
                 <input
                   v-model="form.region"
                   type="text"
@@ -345,7 +345,7 @@ const deleteConfig = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-2">AccessKey *</label>
+                <label class="block text-zinc-400 text-sm mb-2">AccessKey *</label>
                 <input
                   v-model="form.accessKey"
                   type="text"
@@ -354,7 +354,7 @@ const deleteConfig = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-2">SecretKey *</label>
+                <label class="block text-zinc-400 text-sm mb-2">SecretKey *</label>
                 <div class="relative">
                   <input
                     v-model="form.secretKey"
@@ -364,7 +364,7 @@ const deleteConfig = async (id: string) => {
                   />
                   <button
                     type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
                     @click="showSecret = !showSecret"
                   >
                     <Eye v-if="!showSecret" class="w-4 h-4" />
@@ -375,7 +375,7 @@ const deleteConfig = async (id: string) => {
 
               <div class="flex gap-4 pt-2">
                 <button
-                  class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
                   @click="closeModal"
                 >
                   取消

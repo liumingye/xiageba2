@@ -184,7 +184,7 @@ defineExpose({ results, searching, error });
 <template>
   <div class="flex items-center gap-2 !my-3">
     <Globe class="w-4 h-4 text-primary-400" />
-    <h2 class="text-gray-500 text-sm">全网搜</h2>
+    <h2 class="text-zinc-500 text-sm">全网搜</h2>
   </div>
   <template v-if="results.length !== 0 || searching">
     <template v-if="results.length > 0">
@@ -210,11 +210,10 @@ defineExpose({ results, searching, error });
             <div
               class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
             >
-              <img
+              <div
                 v-if="item.type !== 'other'"
-                :src="`/img/pan/${item.type}.png`"
-                class="w-4 h-4 mr-1"
-              />
+                :class="`icon-${item.type} w-3 h-3 mr-1`"
+              ></div>
               {{ getTypeName(item.type) }}网盘
             </div>
             <ClientOnly>
@@ -236,7 +235,7 @@ defineExpose({ results, searching, error });
               </div>
               <div
                 v-if="getCheckStatus(item.url) === 'checking'"
-                class="bg-gray-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+                class="bg-zinc-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
                 <Loader2
                   class="w-4 h-4 text-white animate-spin flex-shrink-0 mr-1"
@@ -246,9 +245,9 @@ defineExpose({ results, searching, error });
           </div>
         </div>
         <div
-          class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
+          class="flex justify-between items-center gap-2 border-t border-zinc-700 mt-3 pt-3"
         >
-          <span class="text-xs text-gray-500 flex items-center gap-1"
+          <span class="text-xs text-zinc-500 flex items-center gap-1"
             >来源: {{ item.source }}</span
           >
           <div class="flex items-center gap-2">
@@ -274,7 +273,7 @@ defineExpose({ results, searching, error });
 
     <div v-if="searching" class="card p-6 text-center">
       <Loader2 class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2" />
-      <p class="text-gray-400 text-sm">正在全网搜索中...</p>
+      <p class="text-zinc-400 text-sm">正在全网搜索中...</p>
     </div>
 
     <div v-else-if="error && results.length === 0" class="card p-5 text-center">
@@ -284,12 +283,12 @@ defineExpose({ results, searching, error });
   <template v-else>
     <div class="text-center py-20">
       <div
-        class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+        class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
         aria-hidden="true"
       >
         <CircleSlash />
       </div>
-      <p class="text-gray-500">
+      <p class="text-zinc-500">
         {{ "全网搜索暂无结果" }}
       </p>
     </div>

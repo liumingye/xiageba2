@@ -4,14 +4,14 @@ const year = new Date().getFullYear();
 
 <style scoped>
 .link {
-  @apply text-sm text-gray-600 hover:text-gray-400 transition-colors;
+  @apply text-sm text-zinc-600 hover:text-zinc-400 transition-colors;
 }
 </style>
 
 <template>
   <footer class="mt-8 text-center">
-    <p class="text-sm text-gray-600">
-      &copy; {{ year }} 下歌吧 - 公开网盘资源搜索引擎
+    <p class="text-sm text-zinc-400">
+      &copy; {{ year }} 全盘搜 - 下歌吧 - 公开网盘资源搜索引擎
     </p>
     <div class="flex items-center justify-center gap-x-3 mt-2 flex-wrap">
       <NuxtLink to="/page/policy" class="link">免责声明</NuxtLink>

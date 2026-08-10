@@ -53,10 +53,10 @@ const iconColorMap: Record<string, string> = {
 };
 
 const bannerBgMap: Record<string, string> = {
-  INFO: "bg-blue-900/50 border-blue-700/50",
-  WARN: "bg-yellow-900/50 border-yellow-700/50",
-  ERROR: "bg-red-900/50 border-red-700/50",
-  SUCCESS: "bg-green-900/50 border-green-700/50",
+  INFO: "bg-blue-900 border-blue-700 !text-white",
+  WARN: "bg-yellow-900 border-yellow-700 !text-white",
+  ERROR: "bg-red-900 border-red-700 !text-white",
+  SUCCESS: "bg-green-900 border-green-700 !text-white",
 };
 
 const dialogIconBgMap: Record<string, string> = {
@@ -154,7 +154,7 @@ const formatTime = (dateStr?: string) => {
       v-for="item in bannerList"
       :key="item.id"
       :to="`/announcement/${item.id}`"
-      class="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-colors hover:opacity-80"
+      class="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition hover:opacity-90"
       :class="bannerBgMap[item.icon] || bannerBgMap.INFO"
     >
       <component
@@ -162,16 +162,14 @@ const formatTime = (dateStr?: string) => {
         class="w-5 h-5 flex-shrink-0"
         :class="iconColorMap[item.icon]"
       />
-      <span class="text-white text-sm font-medium truncate">{{
-        item.title
-      }}</span>
+      <span class="text-sm font-medium truncate">{{ item.title }}</span>
     </NuxtLink>
   </div>
 
   <!-- 滚动公告（正常显示方式） -->
   <div
     v-if="normalList.length > 0"
-    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-gray-800/50 rounded-lg"
+    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-[--bg-color-800] rounded-lg"
   >
     <div class="items-center gap-1.5 flex-shrink-0 md:flex hidden">
       <Megaphone class="w-4 h-4 text-primary-400" />
@@ -183,7 +181,7 @@ const formatTime = (dateStr?: string) => {
         <NuxtLink
           :key="normalList[scrollIndex]?.id"
           :to="`/announcement/${normalList[scrollIndex]?.id}`"
-          class="absolute inset-0 flex items-center text-sm text-gray-300 hover:text-primary-400 transition-colors truncate"
+          class="absolute inset-0 flex items-center text-sm text-zinc-300 hover:text-primary-400 transition-colors truncate"
         >
           <component
             :is="iconMap[normalList[scrollIndex]?.icon || 'INFO'] || Info"
@@ -191,7 +189,7 @@ const formatTime = (dateStr?: string) => {
             :class="iconColorMap[normalList[scrollIndex]?.icon || 'INFO']"
           />
           <span class="truncate">{{ normalList[scrollIndex]?.title }}</span>
-          <span class="text-gray-600 text-sm ml-1 flex-shrink-0">
+          <span class="text-zinc-600 text-sm ml-1 flex-shrink-0">
             {{ formatTime(normalList[scrollIndex]?.createdAt) }}
           </span>
         </NuxtLink>
@@ -208,7 +206,7 @@ const formatTime = (dateStr?: string) => {
         :key="i"
         class="w-1.5 h-1.5 rounded-full transition-colors"
         :class="
-          i === scrollIndex ? 'bg-primary-400' : 'bg-gray-600 hover:bg-gray-500'
+          i === scrollIndex ? 'bg-primary-400' : 'bg-zinc-600 hover:bg-zinc-500'
         "
         @click="goToScrollItem(i)"
       />
@@ -216,7 +214,7 @@ const formatTime = (dateStr?: string) => {
 
     <NuxtLink
       to="/announcement"
-      class="flex items-center text-sm text-gray-500 hover:text-primary-400 transition-colors flex-shrink-0"
+      class="flex items-center text-sm text-zinc-500 hover:text-primary-400 transition-colors flex-shrink-0"
     >
       更多
       <ChevronRight class="w-3 h-3" />
@@ -236,10 +234,10 @@ const formatTime = (dateStr?: string) => {
             @click="closeDialog"
           ></div>
           <div
-            class="modal-content relative bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-800"
+            class="modal-content relative bg-zinc-900 rounded-2xl p-6 max-w-md w-full border border-zinc-800"
           >
             <button
-              class="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors"
+              class="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
               @click="closeDialog"
             >
               <X class="w-5 h-5" />
@@ -259,14 +257,14 @@ const formatTime = (dateStr?: string) => {
                 <h3 class="text-lg font-medium text-white">
                   {{ currentDialog.title }}
                 </h3>
-                <p class="text-xs text-gray-500 mt-1">
+                <p class="text-xs text-zinc-500 mt-1">
                   {{ formatTime(currentDialog.createdAt) }}
                 </p>
               </div>
             </div>
 
             <div
-              class="text-sm text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto mb-6 leading-relaxed"
+              class="text-sm text-zinc-300 whitespace-pre-wrap max-h-60 overflow-y-auto mb-6 leading-relaxed"
             >
               {{ currentDialog.content || "暂无内容" }}
             </div>
@@ -281,7 +279,7 @@ const formatTime = (dateStr?: string) => {
               </NuxtLink>
               <div class="flex items-center justify-end">
                 <button
-                  class="text-xs text-gray-400 hover:text-gray-300 transition-colors"
+                  class="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
                   @click="dismissDialogForever"
                 >
                   知道了，不再提醒

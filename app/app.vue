@@ -11,7 +11,7 @@ const keepalive = {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300">
+  <div class="min-h-screen">
     <NuxtPage :keepalive="keepalive" />
     <Toast :toasts="toasts" @remove="remove" />
   </div>

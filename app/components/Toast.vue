@@ -39,7 +39,7 @@ const colors = {
           :class="colors[toast.type]"
         >
           <component :is="icons[toast.type]" class="w-5 h-5 flex-shrink-0" />
-          <span class="text-sm text-gray-200 flex-1">{{ toast.message }}</span>
+          <span class="text-sm text-zinc-200 flex-1">{{ toast.message }}</span>
           <button
             class="text-white hover:text-white transition-colors flex-shrink-0"
             @click="emit('remove', toast.id)"

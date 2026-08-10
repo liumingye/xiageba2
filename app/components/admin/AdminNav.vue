@@ -59,7 +59,7 @@ const toggleFile = () => {
 </script>
 
 <template>
-  <nav class="bg-gray-900/50 border-b border-gray-800 px-6">
+  <nav class="bg-zinc-900/50 border-b border-zinc-800 px-6">
     <div class="flex items-center gap-6 max-w-7xl mx-auto">
       <div ref="dropdownRef" class="relative">
         <button
@@ -71,7 +71,7 @@ const toggleFile = () => {
             isActive('/admin/account') ||
             isActive('/admin/apiList')
               ? 'text-primary-500 font-medium'
-              : 'text-gray-400 hover:text-gray-200'
+              : 'text-zinc-400 hover:text-zinc-200'
           "
           @click="toggleResource"
         >
@@ -93,14 +93,14 @@ const toggleFile = () => {
 
         <div
           v-if="resourceOpen"
-          class="absolute left-0 top-full mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden"
+          class="absolute left-0 top-full mt-2 w-40 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden"
         >
           <button
             class="w-full flex items-center gap-2 px-4 py-2.5 text-left transition-colors"
             :class="
               isActive('/admin/resource')
                 ? 'bg-primary-500/10 text-primary-500'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-zinc-300 hover:bg-zinc-700 hover:text-white'
             "
             @click="navigate('/admin/resource')"
           >
@@ -112,7 +112,7 @@ const toggleFile = () => {
             :class="
               isActive('/admin/category')
                 ? 'bg-primary-500/10 text-primary-500'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-zinc-300 hover:bg-zinc-700 hover:text-white'
             "
             @click="navigate('/admin/category')"
           >
@@ -124,7 +124,7 @@ const toggleFile = () => {
             :class="
               isActive('/admin/account')
                 ? 'bg-primary-500/10 text-primary-500'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-zinc-300 hover:bg-zinc-700 hover:text-white'
             "
             @click="navigate('/admin/account')"
           >
@@ -136,7 +136,7 @@ const toggleFile = () => {
             :class="
               isActive('/admin/apiList')
                 ? 'bg-primary-500/10 text-primary-500'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-zinc-300 hover:bg-zinc-700 hover:text-white'
             "
             @click="navigate('/admin/apiList')"
           >
@@ -155,7 +155,7 @@ const toggleFile = () => {
             isActive('/admin/storage/files') ||
             isActive('/admin/storage/config')
               ? 'text-primary-500 font-medium'
-              : 'text-gray-400 hover:text-gray-200'
+              : 'text-zinc-400 hover:text-zinc-200'
           "
           @click="toggleFile"
         >
@@ -177,14 +177,14 @@ const toggleFile = () => {
 
         <div
           v-if="fileOpen"
-          class="absolute left-0 top-full mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden"
+          class="absolute left-0 top-full mt-2 w-40 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden"
         >
           <button
             class="w-full flex items-center gap-2 px-4 py-2.5 text-left transition-colors"
             :class="
               isActive('/admin/storage/files')
                 ? 'bg-primary-500/10 text-primary-500'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-zinc-300 hover:bg-zinc-700 hover:text-white'
             "
             @click="navigate('/admin/storage/files')"
           >
@@ -196,7 +196,7 @@ const toggleFile = () => {
             :class="
               isActive('/admin/storage/config')
                 ? 'bg-primary-500/10 text-primary-500'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                : 'text-zinc-300 hover:bg-zinc-700 hover:text-white'
             "
             @click="navigate('/admin/storage/config')"
           >
@@ -211,7 +211,7 @@ const toggleFile = () => {
         :class="
           isActive('/admin')
             ? 'text-primary-500 font-medium'
-            : 'text-gray-400 hover:text-gray-200'
+            : 'text-zinc-400 hover:text-zinc-200'
         "
         @click="navigate('/admin')"
       >
@@ -223,7 +223,7 @@ const toggleFile = () => {
         :class="
           isActive('/admin/feedback')
             ? 'text-primary-500 font-medium'
-            : 'text-gray-400 hover:text-gray-200'
+            : 'text-zinc-400 hover:text-zinc-200'
         "
         @click="navigate('/admin/feedback')"
       >
@@ -235,7 +235,7 @@ const toggleFile = () => {
         :class="
           isActive('/admin/announcement')
             ? 'text-primary-500 font-medium'
-            : 'text-gray-400 hover:text-gray-200'
+            : 'text-zinc-400 hover:text-zinc-200'
         "
         @click="navigate('/admin/announcement')"
       >
@@ -248,7 +248,7 @@ const toggleFile = () => {
         :class="
           isActive('/admin/admins')
             ? 'text-primary-500 font-medium'
-            : 'text-gray-400 hover:text-gray-200'
+            : 'text-zinc-400 hover:text-zinc-200'
         "
         @click="navigate('/admin/admins')"
       >
@@ -260,7 +260,7 @@ const toggleFile = () => {
         :class="
           isActive('/admin/maintain')
             ? 'text-primary-500 font-medium'
-            : 'text-gray-400 hover:text-gray-200'
+            : 'text-zinc-400 hover:text-zinc-200'
         "
         @click="navigate('/admin/maintain')"
       >

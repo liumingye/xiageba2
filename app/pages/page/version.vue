@@ -97,7 +97,7 @@ const rendered = marked.parse(content) as string;
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-8 px-4">
+  <div class="min-h-screen py-8 px-4">
     <div class="max-w-3xl mx-auto">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
@@ -106,7 +106,7 @@ const rendered = marked.parse(content) as string;
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
         >
           返回首页
         </NuxtLink>
@@ -114,7 +114,7 @@ const rendered = marked.parse(content) as string;
 
       <article class="card p-6">
         <div
-          class="text-sm text-gray-300 break-words leading-relaxed prose-resource"
+          class="text-sm text-zinc-300 break-words leading-relaxed prose-resource"
         >
           <span v-html="rendered" />
         </div>

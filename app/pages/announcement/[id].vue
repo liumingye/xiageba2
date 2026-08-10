@@ -80,7 +80,7 @@ const iconConfig: Record<
 const getIconConfig = (icon: Announcement["icon"]) => {
   return (
     iconConfig[icon] || {
-      class: "bg-gray-500/20 text-gray-400",
+      class: "bg-zinc-500/20 text-zinc-400",
       component: Megaphone,
     }
   );
@@ -100,7 +100,7 @@ const formatDate = (dateStr: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-8 px-4">
+  <div class="min-h-screen py-8 px-4">
     <div class="max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
@@ -109,7 +109,7 @@ const formatDate = (dateStr: string) => {
         </h1>
         <NuxtLink
           to="/announcement"
-          class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
         >
           <ArrowLeft class="w-4 h-4" />
           返回公告列表
@@ -117,8 +117,8 @@ const formatDate = (dateStr: string) => {
       </div>
 
       <div v-if="isNotFound" class="card p-12 text-center">
-        <Megaphone class="w-12 h-12 mx-auto text-gray-600 mb-3" />
-        <p class="text-gray-500">公告不存在</p>
+        <Megaphone class="w-12 h-12 mx-auto text-zinc-600 mb-3" />
+        <p class="text-zinc-500">公告不存在</p>
       </div>
 
       <article v-else class="card p-6">
@@ -136,7 +136,7 @@ const formatDate = (dateStr: string) => {
             <h1 class="text-xl font-bold text-white break-words">
               {{ announcement!.title }}
             </h1>
-            <p class="text-xs text-gray-500 mt-1">
+            <p class="text-xs text-zinc-500 mt-1">
               {{ formatDate(announcement!.createdAt) }}
             </p>
           </div>
@@ -145,11 +145,11 @@ const formatDate = (dateStr: string) => {
         <div>
           <div
             v-if="renderedContent"
-            class="text-sm text-gray-300 break-words leading-relaxed prose-resource"
+            class="text-sm text-zinc-300 break-words leading-relaxed prose-resource"
           >
             <span v-html="renderedContent" />
           </div>
-          <p v-else class="text-sm text-gray-500">暂无内容</p>
+          <p v-else class="text-sm text-zinc-500">暂无内容</p>
         </div>
       </article>
     </div>

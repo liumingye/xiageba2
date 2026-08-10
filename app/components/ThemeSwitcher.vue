@@ -7,18 +7,22 @@ import type { ThemePreference } from "~/composables/useTheme";
 const { preference, setTheme } = useTheme();
 const menuRef = ref<HTMLDetailsElement | null>(null);
 
-const options: Array<{
+interface ThemeOption {
   value: ThemePreference;
   label: string;
   icon: Component;
-}> = [
+}
+
+const options: Array<ThemeOption> = [
   { value: "system", label: "跟随系统", icon: Monitor },
   { value: "light", label: "亮色", icon: Sun },
   { value: "dark", label: "暗色", icon: Moon },
 ];
 
 const selectedOption = computed(
-  () => options.find((option) => option.value === preference.value) || options[0],
+  () =>
+    options.find((option) => option.value === preference.value) ||
+    (options[0] as ThemeOption),
 );
 
 const close = () => {
@@ -47,12 +51,12 @@ const handleFocusOut = (event: FocusEvent) => {
 <template>
   <details
     ref="menuRef"
-    class="group z-30"
+    class="group z-30 relative"
     @focusout="handleFocusOut"
     @keydown.esc.prevent="close"
   >
     <summary
-      class="list-none flex h-9 w-9 items-center justify-center rounded-full border border-gray-700 bg-gray-900 text-gray-300 shadow-sm cursor-pointer hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
+      class="list-none flex h-9 w-9 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-300 shadow-sm cursor-pointer hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
       :aria-label="`当前主题：${selectedOption.label}`"
       title="切换主题"
     >
@@ -60,7 +64,7 @@ const handleFocusOut = (event: FocusEvent) => {
     </summary>
 
     <div
-      class="absolute right-0 top-full mt-2 w-36 rounded-xl border border-gray-700 bg-gray-900 p-1.5 shadow-xl"
+      class="absolute right-0 top-full mt-2 w-36 rounded-xl border border-zinc-700 bg-zinc-900 p-1.5 shadow-xl"
       role="menu"
       aria-label="主题"
     >
@@ -68,7 +72,7 @@ const handleFocusOut = (event: FocusEvent) => {
         v-for="option in options"
         :key="option.value"
         type="button"
-        class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-gray-300 hover:bg-gray-800"
+        class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800"
         role="menuitemradio"
         :aria-checked="preference === option.value"
         @click="selectTheme(option.value)"

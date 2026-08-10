@@ -11,10 +11,7 @@ import {
   getResourceFileExtensions,
   normalizeResourceFileTypes,
 } from "#shared/resource-file-types";
-import {
-  automaton_websearch_filter_keywords,
-  SimpleAC,
-} from "#server/lib/simpleAC";
+import { automaton_websearch_filter_keywords } from "#server/lib/simpleAC";
 
 const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;
@@ -242,10 +239,7 @@ export default defineCachedEventHandler(
       ]);
 
       const sources = dataResult.rows;
-      const totalCount = Math.min(
-        MAX_PAGE * pageSize,
-        parseInt(countResult.rows[0]?.count || "0", 10),
-      );
+      const totalCount = countResult.rows[0]?.count || 0;
 
       sources.forEach((item) => {
         item.type = item.type || getStorageType(item.url);
@@ -266,7 +260,7 @@ export default defineCachedEventHandler(
     }
   },
   {
-    name: "source-search-v4",
+    name: "api-source-search-v1",
     maxAge: 30,
     staleMaxAge: 120,
     swr: true,

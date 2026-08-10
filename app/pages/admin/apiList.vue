@@ -269,7 +269,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300">
+  <div class="min-h-screen">
     <AdminHeader />
     <AdminNav />
 
@@ -295,7 +295,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             @keyup.enter="search"
           />
           <button
-            class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            class="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
             @click="search"
           >
             <Search class="w-4 h-4" />
@@ -306,7 +306,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 
       <div class="card overflow-x-auto">
         <table class="table-auto w-full text-sm text-left">
-          <thead class="bg-gray-800 text-gray-400">
+          <thead class="bg-zinc-800 text-zinc-400">
             <tr>
               <th class="px-4 py-3 w-32">类型</th>
               <th class="px-4 py-3">线路名称</th>
@@ -321,7 +321,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             <tr
               v-for="item in apis"
               :key="item.id"
-              class="border-t border-gray-800 hover:bg-gray-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800/50"
             >
               <td class="px-4 py-3">
                 <span
@@ -343,13 +343,13 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
               </td>
               <td class="px-4 py-3 text-white">{{ item.name }}</td>
               <td
-                class="px-4 py-3 text-gray-400 truncate max-w-xs"
+                class="px-4 py-3 text-zinc-400 truncate max-w-xs"
                 :title="item.url"
               >
                 {{ item.url }}
               </td>
-              <td class="px-4 py-3 text-gray-400">{{ item.count }}</td>
-              <td class="px-4 py-3 text-gray-400">{{ item.weight }}</td>
+              <td class="px-4 py-3 text-zinc-400">{{ item.count }}</td>
+              <td class="px-4 py-3 text-zinc-400">{{ item.weight }}</td>
               <td class="px-4 py-3">
                 <span
                   class="px-2 py-1 rounded text-xs"
@@ -382,7 +382,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
               </td>
             </tr>
             <tr v-if="apis.length === 0">
-              <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+              <td colspan="7" class="px-4 py-8 text-center text-zinc-500">
                 暂无接口配置
               </td>
             </tr>
@@ -406,15 +406,15 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       >
         <div
-          class="bg-dark-300 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-700"
+          class="bg-dark-300 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-zinc-700"
         >
           <div
-            class="flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-dark-300"
+            class="flex items-center justify-between p-4 border-b border-zinc-800 sticky top-0 bg-dark-300"
           >
             <h3 class="text-white font-medium">
               {{ isEdit ? "编辑线路" : "添加线路" }}
             </h3>
-            <button class="text-gray-400 hover:text-white" @click="closeModal">
+            <button class="text-zinc-400 hover:text-white" @click="closeModal">
               <X class="w-5 h-5" />
             </button>
           </div>
@@ -429,7 +429,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-gray-400 text-sm mb-1">线路名称</label>
+                <label class="block text-zinc-400 text-sm mb-1">线路名称</label>
                 <input
                   v-model="form.name"
                   type="text"
@@ -438,7 +438,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-1">类型</label>
+                <label class="block text-zinc-400 text-sm mb-1">类型</label>
                 <select v-model="form.type" class="input-search w-full">
                   <option value="api">API接口</option>
                   <option value="pansou">PanSou</option>
@@ -448,7 +448,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             </div>
 
             <div>
-              <label class="block text-gray-400 text-sm mb-1">{{
+              <label class="block text-zinc-400 text-sm mb-1">{{
                 form.type === "html" ? "目标网址" : "接口地址"
               }}</label>
               <input
@@ -462,7 +462,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             <template v-if="form.type === 'api' || form.type === 'pansou'">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >请求方式</label
                   >
                   <select v-model="form.method" class="input-search w-full">
@@ -471,7 +471,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   </select>
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >总数限制</label
                   >
                   <input
@@ -485,7 +485,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 
               <template v-if="form.type === 'pansou'">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >认证令牌（可选）</label
                   >
                   <input
@@ -496,7 +496,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   />
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >图片加速域名（可选）</label
                   >
                   <input
@@ -510,7 +510,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 
               <template v-if="form.type === 'api'">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >请求头 (JSON)</label
                   >
                   <textarea
@@ -520,7 +520,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   ></textarea>
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >接口参数 (JSON)</label
                   >
                   <textarea
@@ -530,7 +530,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   ></textarea>
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >字段映射 (JSON)</label
                   >
                   <textarea
@@ -545,7 +545,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             <template v-else>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >内容标签</label
                   >
                   <input
@@ -556,7 +556,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   />
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >标题标签</label
                   >
                   <input
@@ -569,7 +569,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >是否需要详情页</label
                   >
                   <select
@@ -581,7 +581,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   </select>
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-1"
+                  <label class="block text-zinc-400 text-sm mb-1"
                     >总数限制</label
                   >
                   <input
@@ -593,7 +593,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 </div>
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-1"
+                <label class="block text-zinc-400 text-sm mb-1"
                   >详情页标签</label
                 >
                 <input
@@ -604,7 +604,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-1"
+                <label class="block text-zinc-400 text-sm mb-1"
                   >网盘链接标签</label
                 >
                 <input
@@ -618,7 +618,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-gray-400 text-sm mb-1">权重</label>
+                <label class="block text-zinc-400 text-sm mb-1">权重</label>
                 <input
                   v-model.number="form.weight"
                   type="number"
@@ -626,7 +626,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 />
               </div>
               <div>
-                <label class="block text-gray-400 text-sm mb-1">状态</label>
+                <label class="block text-zinc-400 text-sm mb-1">状态</label>
                 <select
                   v-model.number="form.status"
                   class="input-search w-full"
@@ -639,7 +639,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
           </div>
 
           <div
-            class="flex justify-between items-center gap-3 p-4 border-t border-gray-800"
+            class="flex justify-between items-center gap-3 p-4 border-t border-zinc-800"
           >
             <button
               :disabled="testing"
@@ -651,7 +651,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             </button>
             <div class="flex gap-3">
               <button
-                class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                class="px-4 py-2 text-zinc-400 hover:text-white transition-colors"
                 @click="closeModal"
               >
                 取消

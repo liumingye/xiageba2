@@ -374,7 +374,7 @@ const clearISRCache = async (route?: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300">
+  <div class="min-h-screen">
     <AdminHeader />
 
     <AdminNav />
@@ -392,13 +392,13 @@ const clearISRCache = async (route?: string) => {
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div class="text-white">重建音乐搜索向量</div>
-              <div class="text-sm text-gray-400 mt-1">
+              <div class="text-sm text-zinc-400 mt-1">
                 使用 jieba 分词重新生成所有音乐的搜索向量，用于全文搜索
               </div>
             </div>
             <div class="flex items-center gap-2">
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(false, 'music')"
               >
@@ -409,7 +409,7 @@ const clearISRCache = async (route?: string) => {
                 {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
               </button>
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(true, 'music')"
               >
@@ -424,13 +424,13 @@ const clearISRCache = async (route?: string) => {
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div class="text-white">重建资源搜索向量</div>
-              <div class="text-sm text-gray-400 mt-1">
+              <div class="text-sm text-zinc-400 mt-1">
                 使用 jieba 分词重新生成所有资源的搜索向量，用于全文搜索
               </div>
             </div>
             <div class="flex items-center gap-2">
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(false, 'source')"
               >
@@ -441,7 +441,7 @@ const clearISRCache = async (route?: string) => {
                 {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
               </button>
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(true, 'source')"
               >
@@ -465,7 +465,7 @@ const clearISRCache = async (route?: string) => {
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div class="text-white">清理全部 ISR 缓存</div>
-              <div class="text-sm text-gray-400 mt-1">
+              <div class="text-sm text-zinc-400 mt-1">
                 让所有启用 ISR 的路由重新生成静态页面
               </div>
             </div>
@@ -509,7 +509,7 @@ const clearISRCache = async (route?: string) => {
             </div>
             <div>
               <h3 class="text-white font-medium">缓存服务</h3>
-              <p class="text-gray-500 text-sm">
+              <p class="text-zinc-500 text-sm">
                 配置 Redis 用于缓存全网搜结果，空 host 表示不启用缓存
               </p>
             </div>
@@ -517,7 +517,7 @@ const clearISRCache = async (route?: string) => {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Host</label>
+              <label class="block text-zinc-400 text-sm mb-2">Host</label>
               <input
                 v-model="redisConfig.redis_host"
                 type="text"
@@ -526,7 +526,7 @@ const clearISRCache = async (route?: string) => {
               />
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Port</label>
+              <label class="block text-zinc-400 text-sm mb-2">Port</label>
               <input
                 v-model="redisConfig.redis_port"
                 type="text"
@@ -535,7 +535,7 @@ const clearISRCache = async (route?: string) => {
               />
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">DB</label>
+              <label class="block text-zinc-400 text-sm mb-2">DB</label>
               <input
                 v-model="redisConfig.redis_db"
                 type="text"
@@ -544,7 +544,7 @@ const clearISRCache = async (route?: string) => {
               />
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Password</label>
+              <label class="block text-zinc-400 text-sm mb-2">Password</label>
               <input
                 v-model="redisConfig.redis_password"
                 type="password"
@@ -580,7 +580,7 @@ const clearISRCache = async (route?: string) => {
             </div>
             <div>
               <h3 class="text-white font-medium">AES-CBC 密钥</h3>
-              <p class="text-gray-500 text-sm">
+              <p class="text-zinc-500 text-sm">
                 Key 需为 16/24/32 字节 base64，IV 需为 16 字节 base64
               </p>
             </div>
@@ -588,7 +588,7 @@ const clearISRCache = async (route?: string) => {
 
           <div class="space-y-4">
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >Key (base64)</label
               >
               <input
@@ -599,7 +599,7 @@ const clearISRCache = async (route?: string) => {
               />
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2"
+              <label class="block text-zinc-400 text-sm mb-2"
                 >IV (base64)</label
               >
               <input
@@ -637,14 +637,14 @@ const clearISRCache = async (route?: string) => {
             </div>
             <div>
               <h3 class="text-white font-medium">搜索结果过滤词</h3>
-              <p class="text-gray-500 text-sm">
+              <p class="text-zinc-500 text-sm">
                 配置全网搜中需要过滤掉的资源关键词，关键词用英文逗号隔开
               </p>
             </div>
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-gray-400 text-sm mb-2">
+              <label class="block text-zinc-400 text-sm mb-2">
                 过滤关键词（英文逗号隔开）
               </label>
               <textarea
@@ -653,7 +653,7 @@ const clearISRCache = async (route?: string) => {
                 placeholder="例如：加微信,关注公众号,推广,广告,赌博"
                 class="input-search"
               />
-              <p class="text-gray-500 text-xs mt-2">
+              <p class="text-zinc-500 text-xs mt-2">
                 标题中包含任一关键词的资源都会被过滤掉，关键词不区分大小写
               </p>
             </div>
@@ -685,7 +685,7 @@ const clearISRCache = async (route?: string) => {
             </div>
             <div>
               <h3 class="text-white font-medium">转存广告过滤</h3>
-              <p class="text-gray-500 text-sm">
+              <p class="text-zinc-500 text-sm">
                 转存网盘资源后，自动删除包含广告词的文件或目录（最深2层）
               </p>
             </div>
@@ -697,14 +697,14 @@ const clearISRCache = async (route?: string) => {
                 id="adFilterEnabled"
                 v-model="adFilterConfig.enabled"
                 type="checkbox"
-                class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                class="w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
               />
               <label for="adFilterEnabled" class="text-white">
                 启用广告过滤
               </label>
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">
+              <label class="block text-zinc-400 text-sm mb-2">
                 广告关键词（英文逗号隔开）
               </label>
               <textarea
@@ -713,7 +713,7 @@ const clearISRCache = async (route?: string) => {
                 placeholder="例如：关注公众号,加微信,广告,推广"
                 class="input-search"
               />
-              <p class="text-gray-500 text-xs mt-2">
+              <p class="text-zinc-500 text-xs mt-2">
                 文件名或目录名包含任一关键词即被删除，关键词不区分大小写
               </p>
             </div>
@@ -745,7 +745,7 @@ const clearISRCache = async (route?: string) => {
             </div>
             <div>
               <h3 class="text-white font-medium">AI 智能搜索</h3>
-              <p class="text-gray-500 text-sm">
+              <p class="text-zinc-500 text-sm">
                 配置 AI 模型接口，支持 OpenAI 兼容协议（DeepSeek、通义千问等）
               </p>
             </div>
@@ -757,43 +757,43 @@ const clearISRCache = async (route?: string) => {
                 id="aiSearchEnabled"
                 v-model="aiSearchConfig.enabled"
                 type="checkbox"
-                class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500"
+                class="w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
               />
               <label for="aiSearchEnabled" class="text-white">
                 启用 AI 搜索
               </label>
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">Base URL</label>
+              <label class="block text-zinc-400 text-sm mb-2">Base URL</label>
               <input
                 v-model="aiSearchConfig.baseURL"
                 type="text"
                 placeholder="https://api.deepseek.com/v1"
                 class="input-search font-mono text-xs"
               />
-              <p class="text-gray-500 text-xs mt-2">
+              <p class="text-zinc-500 text-xs mt-2">
                 OpenAI 兼容的 API 地址，需包含 /v1 路径
               </p>
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">API Key</label>
+              <label class="block text-zinc-400 text-sm mb-2">API Key</label>
               <input
                 v-model="aiSearchConfig.apiKey"
                 type="password"
                 placeholder="sk-..."
                 class="input-search font-mono text-xs"
               />
-              <p class="text-gray-500 text-xs mt-2">模型服务商提供的密钥</p>
+              <p class="text-zinc-500 text-xs mt-2">模型服务商提供的密钥</p>
             </div>
             <div>
-              <label class="block text-gray-400 text-sm mb-2">模型名称</label>
+              <label class="block text-zinc-400 text-sm mb-2">模型名称</label>
               <input
                 v-model="aiSearchConfig.model"
                 type="text"
                 placeholder="qwen-plus"
                 class="input-search font-mono text-xs"
               />
-              <p class="text-gray-500 text-xs mt-2">
+              <p class="text-zinc-500 text-xs mt-2">
                 调用的模型标识，如 qwen-plus、deepseek-chat 等
               </p>
             </div>
@@ -825,7 +825,7 @@ const clearISRCache = async (route?: string) => {
             </div>
             <div>
               <h3 class="text-white font-medium">热门搜索词</h3>
-              <p class="text-gray-500 text-sm">
+              <p class="text-zinc-500 text-sm">
                 配置首页热门搜索词，权重越高排名越靠前
               </p>
             </div>
@@ -839,7 +839,7 @@ const clearISRCache = async (route?: string) => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-2">搜索词</label>
+                  <label class="block text-zinc-400 text-sm mb-2">搜索词</label>
                   <input
                     v-model="hotword.word"
                     type="text"
@@ -848,7 +848,7 @@ const clearISRCache = async (route?: string) => {
                   />
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-2">类型</label>
+                  <label class="block text-zinc-400 text-sm mb-2">类型</label>
                   <select
                     v-model="hotword.type"
                     class="input-search appearance-none cursor-pointer"
@@ -858,7 +858,7 @@ const clearISRCache = async (route?: string) => {
                   </select>
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-2">权重</label>
+                  <label class="block text-zinc-400 text-sm mb-2">权重</label>
                   <input
                     v-model.number="hotword.weight"
                     type="number"
@@ -878,14 +878,14 @@ const clearISRCache = async (route?: string) => {
             </div>
 
             <button
-              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              class="flex items-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
               @click="addHotword"
             >
               <Plus class="w-4 h-4" />
               添加搜索词
             </button>
 
-            <div v-if="hotwords.length === 0" class="text-gray-500 text-sm">
+            <div v-if="hotwords.length === 0" class="text-zinc-500 text-sm">
               未配置热搜词，首页热门搜索区域将不显示
             </div>
           </div>
@@ -916,7 +916,7 @@ const clearISRCache = async (route?: string) => {
             </div>
             <div>
               <h3 class="text-white font-medium">PanCheck 接口</h3>
-              <p class="text-gray-500 text-sm">
+              <p class="text-zinc-500 text-sm">
                 配置网盘链接检测服务接口，格式：接口地址 + 密码
               </p>
             </div>
@@ -930,7 +930,7 @@ const clearISRCache = async (route?: string) => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-gray-400 text-sm mb-2"
+                  <label class="block text-zinc-400 text-sm mb-2"
                     >接口地址</label
                   >
                   <input
@@ -941,7 +941,7 @@ const clearISRCache = async (route?: string) => {
                   />
                 </div>
                 <div>
-                  <label class="block text-gray-400 text-sm mb-2">密码</label>
+                  <label class="block text-zinc-400 text-sm mb-2">密码</label>
                   <input
                     v-model="server.password"
                     type="text"
@@ -959,7 +959,7 @@ const clearISRCache = async (route?: string) => {
             </div>
 
             <button
-              class="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+              class="flex items-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
               @click="addPancheckServer"
             >
               <Plus class="w-4 h-4" />
@@ -968,7 +968,7 @@ const clearISRCache = async (route?: string) => {
 
             <div
               v-if="pancheckServers.length === 0"
-              class="text-gray-500 text-sm"
+              class="text-zinc-500 text-sm"
             >
               未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
             </div>

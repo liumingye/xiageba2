@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
   // 🔥 将 to_tsquery 替换为 websearch_to_tsquery，参数传递完全保持 Prisma 的参数化安全机制
   const [musics, totalResult] = await Promise.all([
     prisma.$queryRaw<any[]>`
-      SELECT id, title, artist, m.album, m.cover
+      SELECT id, title, artist, m.album, m.cover, m.downloads
       FROM "Music" m
       WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
       ORDER BY 
@@ -58,11 +58,17 @@ export default defineEventHandler(async (event) => {
       SELECT COUNT(*)::int as count
       FROM "Music"
       WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
+      LIMIT ${MAX_PAGE * pageSize}
     `,
   ]);
 
   const rawCount = totalResult[0]?.count ?? 0;
   const totalCount = Math.min(MAX_PAGE * pageSize, rawCount);
+
+  musics.forEach((music) => {
+    music.quality = music.downloads.map((v: { quality: string }) => v.quality);
+    delete music.downloads;
+  });
 
   return {
     data: musics,

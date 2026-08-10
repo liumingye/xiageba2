@@ -309,7 +309,9 @@ const {
   },
 );
 
-const results = computed(() => pageData.value?.data || []);
+const results = computed<MusicSearch[] | SourceItem[]>(
+  () => pageData.value?.data || [],
+);
 const total = computed(() => pageData.value?.total || 0);
 const totalPages = computed(() => pageData.value?.totalPages || 0);
 const tokens = computed(() => (pageData.value as any)?.tokens || []);
@@ -490,7 +492,7 @@ const getPageNumbers = (): (number | "...")[] => {
   return pages;
 };
 
-const goToDetail = (music: Music) => {
+const goToDetail = (music: MusicSearch) => {
   musicStore.setCurrentMusic(music);
   router.push(`/music/${music.id}`);
 };
@@ -525,14 +527,25 @@ const copyUrl = async (url: string) => {
   }
 };
 
-const isMobile = useMediaQuery("(max-width: 768px)");
+const isMobile = useMediaQuery("(max-width: 767px)");
 </script>
 
-<template>
-  <div class="min-h-screen bg-dark-300 py-4 md:py-6 px-2">
-    <div class="max-w-4xl mx-auto">
-      <TopBar :search-query="searchQuery" @search="performSearch" />
+<style scoped>
+.badge {
+  @apply border border-primary-600 text-primary-600 text-xs;
+  padding: 1px 3px;
+  border-radius: 4px;
+  margin-right: 2px;
+  &:last-child {
+    margin-right: 0;
+  }
+}
+</style>
 
+<template>
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar :search-query="searchQuery" @search="performSearch" />
+    <div class="max-w-4xl mx-auto px-2">
       <!-- 搜索类型 tab -->
       <div class="flex items-center gap-2 mb-4">
         <button
@@ -540,7 +553,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
           :class="
             isMusic
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
           "
           @click="switchType('music')"
         >
@@ -552,7 +565,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
           :class="
             searchType === 'resource'
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
           "
           @click="switchType('resource')"
         >
@@ -564,12 +577,12 @@ const isMobile = useMediaQuery("(max-width: 768px)");
           :class="
             isAi
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
           "
           @click="switchType('ai')"
         >
           <Sparkles class="w-4 h-4" />
-          AI 搜索(Beta)
+          AI 搜索
         </button>
       </div>
 
@@ -599,7 +612,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             <h3 class="text-lg font-medium text-white mb-1">
               {{ errorInfo.title }}
             </h3>
-            <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
+            <p class="text-sm text-zinc-500">{{ errorInfo.message }}</p>
             <button
               v-if="errorInfo.canRetry"
               class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
@@ -617,24 +630,24 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             aria-busy="true"
             aria-label="正在加载搜索结果"
           >
-            <div class="h-3 bg-gray-700 rounded w-1/4 animate-pulse mb-2" />
+            <div class="h-3 bg-zinc-700 rounded w-1/4 animate-pulse mb-2" />
             <article
               v-for="(_, i) in skeletonList"
               :key="i"
               class="card p-3 animate-pulse"
             >
               <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gray-700 rounded-lg" />
+                <div class="w-12 h-12 bg-zinc-700 rounded-lg" />
                 <div class="flex-1 space-y-1">
-                  <div class="h-3 bg-gray-700 rounded w-3/4" />
-                  <div class="h-2 bg-gray-700 rounded w-1/3" />
+                  <div class="h-3 bg-zinc-700 rounded w-3/4" />
+                  <div class="h-2 bg-zinc-700 rounded w-1/3" />
                 </div>
               </div>
             </article>
           </div>
 
           <div v-else-if="searchKeyword" class="space-y-2">
-            <h2 v-if="results.length > 0" class="text-gray-500 text-sm mb-3">
+            <h2 v-if="results.length > 0" class="text-zinc-500 text-sm mb-3">
               搜索"<span class="text-primary-400">{{ searchKeyword }}</span
               >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
               <span v-if="totalPages > 1" class="ml-2"
@@ -650,7 +663,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   :class="
                     exactFilter
                       ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
-                      : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
                   "
                   @click="updateFilter('exact', !exactFilter)"
                 >
@@ -659,7 +672,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                 </button>
 
                 <button
-                  class="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-gray-800 disabled:hover:text-gray-400"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-zinc-800 disabled:hover:text-zinc-400"
                   @click="clearFilters"
                   :disabled="!hasFilters"
                 >
@@ -669,7 +682,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               </div>
 
               <article
-                v-for="music in results"
+                v-for="music in <MusicSearch[]>results"
                 :key="music.id"
                 class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
                 @click="goToDetail(music)"
@@ -692,27 +705,37 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       class="text-sm font-medium text-white truncate"
                       v-html="highlight(music.title)"
                     />
-                    <p class="text-xs text-gray-500 truncate">
+                    <p class="text-xs text-zinc-500 truncate">
                       <span v-html="highlight(music.artist)" /><span
                         v-if="music.album"
                       >
                         - <span v-html="highlight(music.album)"
                       /></span>
                     </p>
+                    <div class="flex mt-0.5">
+                      <span
+                        v-if="music.quality"
+                        v-for="q in music.quality"
+                        :key="q"
+                        class="badge"
+                      >
+                        {{ q }}
+                      </span>
+                    </div>
                   </div>
-                  <ArrowRight class="w-4 h-4 text-gray-600 flex-shrink-0" />
+                  <ArrowRight class="w-4 h-4 text-zinc-600 flex-shrink-0" />
                 </div>
               </article>
 
               <template v-if="results.length === 0">
                 <div class="text-center py-20">
                   <div
-                    class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                    class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
                     aria-hidden="true"
                   >
                     <CircleSlash />
                   </div>
-                  <p class="text-gray-500">
+                  <p class="text-zinc-500">
                     {{ "此搜索关键词暂无结果" }}
                   </p>
                 </div>
@@ -723,7 +746,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               <template v-if="searchKeyword">
                 <div class="flex items-center gap-2 !my-3">
                   <Filter class="w-4 h-4 text-primary-400" />
-                  <h2 class="text-gray-500 text-sm">筛选条件</h2>
+                  <h2 class="text-zinc-500 text-sm">筛选条件</h2>
                 </div>
 
                 <!-- 资源筛选条件 -->
@@ -742,7 +765,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   <!-- 入库时间 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="w-full appearance-none bg-zinc-800 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       :value="timeFilter"
                       @change="
                         updateFilter(
@@ -760,14 +783,14 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       </option>
                     </select>
                     <Calendar
-                      class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                      class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
                     />
                   </div>
 
                   <!-- 网盘类型 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="w-full appearance-none bg-zinc-800 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       :value="panFilter"
                       @change="
                         updateFilter(
@@ -785,14 +808,14 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       </option>
                     </select>
                     <HardDrive
-                      class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                      class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
                     />
                   </div>
 
                   <!-- 排序 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-gray-800 text-gray-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="w-full appearance-none bg-zinc-800 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       :value="sortFilter"
                       @change="
                         updateFilter(
@@ -810,7 +833,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       </option>
                     </select>
                     <ArrowUpDown
-                      class="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                      class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
                     />
                   </div>
 
@@ -820,7 +843,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                     :class="
                       exactFilter
                         ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
-                        : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                        : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
                     "
                     @click="updateFilter('exact', !exactFilter)"
                   >
@@ -830,7 +853,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
 
                   <!-- 清除筛选 -->
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-gray-800 disabled:hover:text-gray-400"
+                    class="flex items-center gap-1.5 px-3 py-2 bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-zinc-800 disabled:hover:text-zinc-400"
                     @click="clearFilters"
                     :disabled="!hasFilters"
                   >
@@ -845,11 +868,11 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                 class="flex items-center gap-2 !my-3"
               >
                 <Folder class="w-4 h-4 text-primary-400" />
-                <h2 class="text-gray-500 text-sm">本地资源</h2>
+                <h2 class="text-zinc-500 text-sm">本地资源</h2>
               </div>
               <template v-if="results.length > 0">
                 <LocalResourceItem
-                  v-for="item in results"
+                  v-for="item in <SourceItem[]>results"
                   :key="item.id"
                   :item="item"
                   :check-status="getCheckStatus(item.id)"
@@ -863,12 +886,12 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               <template v-else>
                 <div class="text-center py-20">
                   <div
-                    class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                    class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
                     aria-hidden="true"
                   >
                     <CircleSlash />
                   </div>
-                  <p class="text-gray-500">
+                  <p class="text-zinc-500">
                     {{ "本地搜索暂无结果" }}
                   </p>
                 </div>
@@ -894,7 +917,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               aria-label="分页"
             >
               <button
-                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="currentPage <= 1"
                 @click="goToPage(currentPage - 1)"
               >
@@ -902,7 +925,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               </button>
 
               <template v-for="(pageNum, idx) in getPageNumbers()" :key="idx">
-                <span v-if="pageNum === '...'" class="px-3 py-2 text-gray-500"
+                <span v-if="pageNum === '...'" class="px-3 py-2 text-zinc-500"
                   >...</span
                 >
                 <button
@@ -911,7 +934,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   :class="
                     pageNum === currentPage
                       ? 'bg-primary-500 text-white font-medium'
-                      : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
                   "
                   @click="goToPage(pageNum as number)"
                   :aria-current="pageNum === currentPage ? 'page' : undefined"
@@ -921,7 +944,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
               </template>
 
               <button
-                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 :disabled="currentPage >= totalPages"
                 @click="goToPage(currentPage + 1)"
               >
@@ -932,12 +955,12 @@ const isMobile = useMediaQuery("(max-width: 768px)");
 
           <div v-else class="text-center py-20">
             <div
-              class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+              class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
               aria-hidden="true"
             >
               <CircleSlash />
             </div>
-            <p class="text-gray-500">请输入搜索关键词</p>
+            <p class="text-zinc-500">请输入搜索关键词</p>
           </div>
         </template>
       </main>
@@ -954,14 +977,14 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             @click.self="closeModal"
           >
             <div
-              class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl overflow-hidden"
+              class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-zinc-700 shadow-2xl overflow-hidden"
             >
               <div
-                class="flex items-center justify-between p-4 border-b border-gray-800"
+                class="flex items-center justify-between p-4 border-b border-zinc-800"
               >
                 <h3 class="text-white font-medium">获取下载链接</h3>
                 <button
-                  class="text-gray-400 hover:text-white transition-colors"
+                  class="text-zinc-400 hover:text-white transition-colors"
                   @click="closeModal"
                 >
                   <X class="w-5 h-5" />
@@ -972,7 +995,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-gray-400 text-sm">
+                  <p class="text-zinc-400 text-sm">
                     {{ funnyText }}<br />请耐心等待，这可能需要几秒钟
                   </p>
                 </div>
@@ -998,9 +1021,9 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       </div>
                       <div
                         v-else
-                        class="w-28 h-28 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                        class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0"
                       >
-                        <QrCode class="w-10 h-10 text-gray-600" />
+                        <QrCode class="w-10 h-10 text-zinc-600" />
                       </div>
                     </template>
                     <p
@@ -1036,7 +1059,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                         打开链接
                       </a>
                     </div>
-                    <p class="text-xs text-gray-400">
+                    <p class="text-xs text-zinc-400">
                       网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
                       文件内容请自行辨别，如发现违规请通过<a
                         href="/page/version"
@@ -1062,18 +1085,18 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             @click.self="closeTreeModal"
           >
             <div
-              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-gray-700 shadow-2xl"
+              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-zinc-700 shadow-2xl"
             >
               <div
-                class="flex items-center justify-between p-4 border-b border-gray-800"
+                class="flex items-center justify-between p-4 border-b border-zinc-800"
               >
                 <h3 class="text-white font-medium">
-                  目录结构<span class="text-xs text-gray-400"
+                  目录结构<span class="text-xs text-zinc-400"
                     >（最多显示5层、150个文件）</span
                   >
                 </h3>
                 <button
-                  class="text-gray-400 hover:text-white transition-colors"
+                  class="text-zinc-400 hover:text-white transition-colors"
                   @click="closeTreeModal"
                 >
                   <X class="w-5 h-5" />
@@ -1090,14 +1113,14 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-gray-400 text-sm">{{ funnyText }}</p>
+                  <p class="text-zinc-400 text-sm">{{ funnyText }}</p>
                 </div>
                 <div v-else-if="treeModalError" class="text-center py-8">
                   <p class="text-red-400 text-sm">{{ treeModalError }}</p>
                 </div>
                 <pre
                   v-else
-                  class="bg-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
+                  class="bg-zinc-800 rounded-lg p-4 text-sm text-zinc-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
                   >{{ treeModalContent }}</pre
                 >
               </div>

@@ -272,7 +272,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300">
+  <div class="min-h-screen">
     <AdminHeader />
     <AdminNav />
 
@@ -298,11 +298,11 @@ onMounted(async () => {
               @keyup.enter="handleSearch"
             />
             <Search
-              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
             />
           </div>
           <button
-            class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
             @click="handleSearch"
           >
             <Search class="w-4 h-4" />
@@ -323,15 +323,15 @@ onMounted(async () => {
         class="card p-4 mb-4 flex flex-wrap items-end gap-4"
       >
         <div class="flex-1 min-w-[200px]">
-          <label class="block text-gray-400 text-sm mb-2">选择文件 *</label>
+          <label class="block text-zinc-400 text-sm mb-2">选择文件 *</label>
           <input
             type="file"
-            class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-700 file:text-white hover:file:bg-gray-600"
+            class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-zinc-700 file:text-white hover:file:bg-zinc-600"
             @change="handleFileChange"
           />
         </div>
         <div class="flex-1 min-w-[200px]">
-          <label class="block text-gray-400 text-sm mb-2">上传路径（可选）</label>
+          <label class="block text-zinc-400 text-sm mb-2">上传路径（可选）</label>
           <input
             v-model="uploadPath"
             type="text"
@@ -350,7 +350,7 @@ onMounted(async () => {
             {{ isUploading ? "上传中..." : "开始上传" }}
           </button>
           <button
-            class="p-2 text-gray-400 hover:text-white transition-colors"
+            class="p-2 text-zinc-400 hover:text-white transition-colors"
             title="关闭"
             @click="toggleUpload"
           >
@@ -363,19 +363,19 @@ onMounted(async () => {
         <!-- 加载中 -->
         <div v-if="isLoading" class="py-16 text-center">
           <Loader2 class="w-6 h-6 text-primary-500 animate-spin mx-auto" />
-          <p class="text-gray-500 text-sm mt-2">加载中...</p>
+          <p class="text-zinc-500 text-sm mt-2">加载中...</p>
         </div>
 
         <!-- 未选择配置 -->
         <div v-else-if="!selectedConfigId" class="py-16 text-center">
-          <HardDrive class="w-10 h-10 text-gray-600 mx-auto mb-2" />
-          <p class="text-gray-500">请选择存储配置</p>
+          <HardDrive class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+          <p class="text-zinc-500">请选择存储配置</p>
         </div>
 
         <!-- 空状态 -->
         <div v-else-if="files.length === 0" class="py-16 text-center">
-          <FileText class="w-10 h-10 text-gray-600 mx-auto mb-2" />
-          <p class="text-gray-500">暂无文件</p>
+          <FileText class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+          <p class="text-zinc-500">暂无文件</p>
         </div>
 
         <!-- Grid 文件列表 -->
@@ -386,11 +386,11 @@ onMounted(async () => {
           <div
             v-for="file in files"
             :key="file.key"
-            class="group bg-gray-800/50 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-600 transition-colors"
+            class="group bg-zinc-800/50 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-600 transition-colors"
           >
             <!-- 预览区域 -->
             <div
-              class="aspect-square flex items-center justify-center bg-gray-900/50 relative overflow-hidden"
+              class="aspect-square flex items-center justify-center bg-zinc-900/50 relative overflow-hidden"
             >
               <img
                 v-if="isImage(file)"
@@ -402,27 +402,27 @@ onMounted(async () => {
               />
               <FileAudio
                 v-else-if="isAudio(file)"
-                class="w-10 h-10 text-gray-600"
+                class="w-10 h-10 text-zinc-600"
               />
               <FileVideo
                 v-else-if="isVideo(file)"
-                class="w-10 h-10 text-gray-600"
+                class="w-10 h-10 text-zinc-600"
               />
-              <File v-else class="w-10 h-10 text-gray-600" />
+              <File v-else class="w-10 h-10 text-zinc-600" />
 
               <!-- 悬浮操作 -->
               <div
                 class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
               >
                 <button
-                  class="p-2 text-gray-300 hover:text-primary-500 transition-colors bg-gray-800/80 rounded-lg"
+                  class="p-2 text-zinc-300 hover:text-primary-500 transition-colors bg-zinc-800/80 rounded-lg"
                   title="复制链接"
                   @click="copyUrl(file)"
                 >
                   <Copy class="w-4 h-4" />
                 </button>
                 <button
-                  class="p-2 text-gray-300 hover:text-primary-500 transition-colors bg-gray-800/80 rounded-lg"
+                  class="p-2 text-zinc-300 hover:text-primary-500 transition-colors bg-zinc-800/80 rounded-lg"
                   title="重命名"
                   :disabled="deletingKey === file.key"
                   @click="startRename(file)"
@@ -430,7 +430,7 @@ onMounted(async () => {
                   <Pencil class="w-4 h-4" />
                 </button>
                 <button
-                  class="p-2 text-gray-300 hover:text-red-500 transition-colors bg-gray-800/80 rounded-lg disabled:opacity-50 disabled:cursor-wait"
+                  class="p-2 text-zinc-300 hover:text-red-500 transition-colors bg-zinc-800/80 rounded-lg disabled:opacity-50 disabled:cursor-wait"
                   title="删除"
                   :disabled="deletingKey === file.key"
                   @click="handleDelete(file)"
@@ -451,7 +451,7 @@ onMounted(async () => {
                 <input
                   v-model="renameValue"
                   type="text"
-                  class="w-full bg-gray-900 border border-primary-500 rounded text-xs text-white px-1.5 py-1 focus:outline-none"
+                  class="w-full bg-zinc-900 border border-primary-500 rounded text-xs text-white px-1.5 py-1 focus:outline-none"
                   @keyup.enter="confirmRename"
                   @keyup.esc="cancelRename"
                 />
@@ -465,7 +465,7 @@ onMounted(async () => {
                   <Check v-else class="w-3.5 h-3.5" />
                 </button>
                 <button
-                  class="p-1 text-gray-500 hover:text-gray-400 shrink-0"
+                  class="p-1 text-zinc-500 hover:text-zinc-400 shrink-0"
                   title="取消"
                   @click="cancelRename"
                 >
@@ -481,10 +481,10 @@ onMounted(async () => {
                   {{ file.name }}
                 </p>
                 <div class="flex items-center justify-between mt-1">
-                  <span class="text-[10px] text-gray-500">{{
+                  <span class="text-[10px] text-zinc-500">{{
                     formatSize(file.size)
                   }}</span>
-                  <span class="text-[10px] text-gray-600">{{
+                  <span class="text-[10px] text-zinc-600">{{
                     formatDate(file.lastModified).split(" ")[0]
                   }}</span>
                 </div>

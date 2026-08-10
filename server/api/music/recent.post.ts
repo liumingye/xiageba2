@@ -8,6 +8,7 @@ export default defineEventHandler(async () => {
       id: true,
       title: true,
       artist: true,
+      cover: true,
     },
     orderBy: { createdAt: "desc" },
     take: limit,

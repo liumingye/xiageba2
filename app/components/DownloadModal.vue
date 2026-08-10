@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
-import { useClipboard, useTimeoutFn, useMediaQuery } from "@vueuse/core";
+import {
+  useClipboard,
+  useTimeoutFn,
+  useMediaQuery,
+  useVModels,
+} from "@vueuse/core";
 import { X, Download, QrCode, MessageSquare, Copy, Check } from "@lucide/vue";
 import type { Music, DownloadOption } from "~/stores/music";
 import FeedbackModal from "~/components/FeedbackModal.vue";
@@ -8,6 +13,7 @@ import FeedbackModal from "~/components/FeedbackModal.vue";
 const props = defineProps<{
   show: boolean;
   music: Music | null;
+  selectedDownload: DownloadOption | null;
 }>();
 
 const emit = defineEmits<{
@@ -15,9 +21,10 @@ const emit = defineEmits<{
 }>();
 
 const showFeedbackModal = ref(false);
-const isMobile = useMediaQuery("(max-width: 768px)");
+const isMobile = useMediaQuery("(max-width: 767px)");
 const qrCodeUrl = ref("");
-const selectedDownload = ref<DownloadOption | null>(null);
+
+const { selectedDownload, music, show } = useVModels(props);
 
 const extractPwd = (url: string): string => {
   try {
@@ -39,8 +46,8 @@ const selectedPwd = computed(() => {
 });
 
 const pwdList = computed(() => {
-  if (!props.music?.downloads) return [];
-  return props.music.downloads
+  if (!music.value?.downloads) return [];
+  return music.value.downloads
     .filter((d) => d.url && extractPwd(d.url))
     .map((d) => ({
       quality: d.quality,
@@ -100,16 +107,21 @@ const generateQrCode = async (url: string) => {
 };
 
 watch(
-  () => props.show,
+  () => show.value,
   async (show) => {
     if (
       show &&
-      props.music &&
-      props.music.downloads &&
-      props.music.downloads.length > 0
+      music.value &&
+      music.value.downloads &&
+      music.value.downloads.length > 0
     ) {
-      selectedDownload.value = props.music.downloads[0];
+      // 初始化时，默认选择第一个下载选项
+      if (!selectedDownload.value && music.value.downloads[0]) {
+        selectedDownload.value = music.value.downloads[0];
+      }
+      // 非移动端时，默认生成二维码
       if (!isMobile.value) {
+        if (!selectedDownload.value?.url) return;
         await generateQrCode(selectedDownload.value.url);
       }
     }
@@ -146,13 +158,13 @@ const openFeedbackModal = () => {
         ></div>
 
         <div
-          class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-md w-full border border-gray-800"
+          class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
         >
           <button
-            class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
             @click="handleClose"
           >
-            <X class="w-5 h-5 text-gray-400" />
+            <X class="w-5 h-5 text-zinc-400" />
           </button>
 
           <h3 class="text-xl font-medium text-white mb-4 text-center">
@@ -163,7 +175,7 @@ const openFeedbackModal = () => {
             v-if="music?.downloads && music.downloads.length > 0"
             class="space-y-4"
           >
-            <div class="text-center text-gray-400 mb-4">
+            <div class="text-center text-zinc-400 mb-4">
               <p>选择音质</p>
             </div>
 
@@ -172,7 +184,7 @@ const openFeedbackModal = () => {
                 <a
                   v-for="download in music.downloads"
                   :key="download.quality"
-                  class="flex flex-col w-full items-center gap-2 p-4 rounded-lg transition-colors bg-gray-800 hover:bg-gray-700 text-white"
+                  class="flex flex-col w-full items-center gap-2 p-4 rounded-lg transition-colors bg-zinc-800 hover:bg-zinc-700 text-white"
                   :href="download.url"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -185,21 +197,21 @@ const openFeedbackModal = () => {
 
               <div
                 v-if="pwdList.length > 0"
-                class="space-y-2 p-3 bg-gray-800 rounded-lg"
+                class="space-y-2 p-3 bg-zinc-800 rounded-lg"
               >
-                <p class="text-gray-400 text-sm text-center mb-2">提取码</p>
+                <p class="text-zinc-400 text-sm text-center mb-2">提取码</p>
                 <div
                   v-for="(item, index) in pwdList"
                   :key="index"
                   class="flex items-center justify-between"
                 >
-                  <span class="text-gray-300 text-sm">{{ item.quality }}</span>
+                  <span class="text-zinc-300 text-sm">{{ item.quality }}</span>
                   <div class="flex items-center gap-2">
                     <span class="text-white font-mono font-medium">{{
                       item.pwd
                     }}</span>
                     <button
-                      class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
+                      class="p-1.5 text-zinc-400 hover:text-primary-400 transition-colors"
                       @click.stop="copyPwdByIndex(index, item.pwd)"
                       title="复制提取码"
                     >
@@ -213,7 +225,7 @@ const openFeedbackModal = () => {
                 </div>
               </div>
 
-              <div class="text-center text-gray-500 text-sm">
+              <div class="text-center text-zinc-500 text-sm">
                 <p>点击音质按钮开始下载</p>
               </div>
             </div>
@@ -227,7 +239,7 @@ const openFeedbackModal = () => {
                   :class="
                     selectedDownload?.quality === download.quality
                       ? 'bg-primary-500 text-white'
-                      : 'bg-gray-700 hover:bg-gray-600 text-white'
+                      : 'bg-zinc-700 hover:bg-zinc-600 text-white'
                   "
                   @click="selectDownload(download)"
                 >
@@ -235,7 +247,7 @@ const openFeedbackModal = () => {
                 </button>
               </div>
 
-              <div class="text-center text-gray-400 mb-2">
+              <div class="text-center text-zinc-400 mb-2">
                 <p>使用手机扫码下载</p>
                 <p
                   v-if="selectedDownload"
@@ -255,9 +267,9 @@ const openFeedbackModal = () => {
                   />
                   <div
                     v-else
-                    class="w-48 h-48 bg-gray-100 flex items-center justify-center"
+                    class="w-48 h-48 bg-zinc-100 flex items-center justify-center"
                   >
-                    <QrCode class="w-12 h-12 text-gray-400" />
+                    <QrCode class="w-12 h-12 text-zinc-400" />
                   </div>
                 </div>
               </div>
@@ -266,12 +278,12 @@ const openFeedbackModal = () => {
                 v-if="selectedPwd"
                 class="flex items-center justify-center gap-2"
               >
-                <span class="text-gray-400 text-sm">提取码：</span>
+                <span class="text-zinc-400 text-sm">提取码：</span>
                 <span class="text-white font-mono font-medium">{{
                   selectedPwd
                 }}</span>
                 <button
-                  class="p-1.5 text-gray-400 hover:text-primary-400 transition-colors"
+                  class="p-1.5 text-zinc-400 hover:text-primary-400 transition-colors"
                   @click="copyPwd"
                   title="复制提取码"
                 >
@@ -286,7 +298,7 @@ const openFeedbackModal = () => {
                 v-if="music?.id"
                 @click="openFeedbackModal"
                 aria-label="反馈问题"
-                class="text-gray-600"
+                class="text-zinc-600"
               >
                 反馈问题
               </button>
@@ -294,7 +306,7 @@ const openFeedbackModal = () => {
               <a
                 v-if="!isMobile"
                 aria-label="直接下载"
-                class="text-gray-600 ml-2"
+                class="text-zinc-600 ml-2"
                 :href="selectedDownload?.url"
                 target="_blank"
               >
@@ -303,7 +315,7 @@ const openFeedbackModal = () => {
             </div>
           </div>
 
-          <div v-else class="text-center text-gray-500 py-8">暂无下载链接</div>
+          <div v-else class="text-center text-zinc-500 py-8">暂无下载链接</div>
         </div>
 
         <FeedbackModal

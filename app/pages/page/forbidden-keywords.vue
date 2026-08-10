@@ -22,7 +22,7 @@ const { data, pending, error } = await useFetch<{
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-8 px-4">
+  <div class="min-h-screen py-8 px-4">
     <div class="max-w-3xl mx-auto">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-white flex items-center gap-2">
@@ -31,7 +31,7 @@ const { data, pending, error } = await useFetch<{
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
         >
           返回首页
         </NuxtLink>
@@ -41,20 +41,20 @@ const { data, pending, error } = await useFetch<{
         <!-- 加载中 -->
         <div
           v-if="pending"
-          class="flex items-center justify-center py-12 text-gray-400"
+          class="flex items-center justify-center py-12 text-zinc-400"
         >
           <Loader2 class="w-5 h-5 animate-spin mr-2" />
           加载中...
         </div>
 
         <!-- 加载失败 -->
-        <div v-else-if="error" class="py-12 text-center text-gray-400">
+        <div v-else-if="error" class="py-12 text-center text-zinc-400">
           加载失败，请稍后重试
         </div>
 
         <!-- 词表 -->
         <template v-else>
-          <p class="text-sm text-gray-400 mb-4">
+          <p class="text-sm text-zinc-400 mb-4">
             共
             <span class="text-primary-400 font-semibold">{{
               data?.total || 0
@@ -72,7 +72,7 @@ const { data, pending, error } = await useFetch<{
             </span>
           </div>
 
-          <p v-else class="py-8 text-center text-gray-500 text-sm">
+          <p v-else class="py-8 text-center text-zinc-500 text-sm">
             暂无违禁词
           </p>
         </template>
@@ -83,6 +83,6 @@ const { data, pending, error } = await useFetch<{
 
 <style scoped>
 .word {
-  @apply inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-gray-800/80 text-gray-300 border border-gray-700;
+  @apply inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-zinc-800/80 text-zinc-300 border border-zinc-700;
 }
 </style>

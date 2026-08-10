@@ -256,28 +256,27 @@ const copyUrl = async (url: string) => {
   }
 };
 
-const isMobile = useMediaQuery("(max-width: 768px)");
+const isMobile = useMediaQuery("(max-width: 767px)");
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-6 px-4">
-    <div class="max-w-4xl mx-auto">
-      <TopBar />
-
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+    <div class="max-w-4xl mx-auto px-2">
       <div v-if="category" class="mb-6">
         <h1 class="text-2xl font-bold text-white mb-2">
           {{ category.name }}
         </h1>
-        <p class="text-gray-500 text-sm">共 {{ data?.total || 0 }} 个资源</p>
+        <p class="text-zinc-500 text-sm">共 {{ data?.total || 0 }} 个资源</p>
       </div>
 
       <div v-if="pending" class="text-center py-12" aria-busy="true">
         <Loader2 class="w-8 h-8 text-primary-400 animate-spin mx-auto" />
-        <p class="text-gray-500 mt-3">加载中...</p>
+        <p class="text-zinc-500 mt-3">加载中...</p>
       </div>
 
       <div v-else-if="!items || items.length === 0" class="text-center py-12">
-        <p class="text-gray-500">暂无资源</p>
+        <p class="text-zinc-500">暂无资源</p>
       </div>
 
       <div v-else class="space-y-3">
@@ -297,21 +296,21 @@ const isMobile = useMediaQuery("(max-width: 768px)");
         class="flex items-center justify-center gap-2 mt-8 flex-wrap"
       >
         <button
-          class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="currentPage <= 1"
           @click="goToPage(currentPage - 1)"
         >
           上一页
         </button>
         <template v-for="(p, idx) in pages" :key="idx">
-          <span v-if="p === '...'" class="text-gray-500 px-2"> ... </span>
+          <span v-if="p === '...'" class="text-zinc-500 px-2"> ... </span>
           <button
             v-else
             class="w-9 h-9 rounded text-sm transition-colors"
             :class="
               p === currentPage
                 ? 'bg-primary-500 text-white'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
             "
             @click="goToPage(p as number)"
           >
@@ -319,7 +318,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
           </button>
         </template>
         <button
-          class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="currentPage >= totalPages"
           @click="goToPage(currentPage + 1)"
         >
@@ -339,14 +338,14 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             @click.self="closeModal"
           >
             <div
-              class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-gray-700 shadow-2xl overflow-hidden"
+              class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-zinc-700 shadow-2xl overflow-hidden"
             >
               <div
-                class="flex items-center justify-between p-4 border-b border-gray-800"
+                class="flex items-center justify-between p-4 border-b border-zinc-800"
               >
                 <h3 class="text-white font-medium">获取下载链接</h3>
                 <button
-                  class="text-gray-400 hover:text-white transition-colors"
+                  class="text-zinc-400 hover:text-white transition-colors"
                   @click="closeModal"
                 >
                   <X class="w-5 h-5" />
@@ -357,7 +356,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-gray-400 text-sm">
+                  <p class="text-zinc-400 text-sm">
                     {{ funnyText }}<br />请耐心等待，这可能需要几秒钟
                   </p>
                 </div>
@@ -383,9 +382,9 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                       </div>
                       <div
                         v-else
-                        class="w-28 h-28 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                        class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0"
                       >
-                        <QrCode class="w-10 h-10 text-gray-600" />
+                        <QrCode class="w-10 h-10 text-zinc-600" />
                       </div>
                     </template>
                     <p
@@ -421,7 +420,7 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                         打开链接
                       </a>
                     </div>
-                    <p class="text-xs text-gray-400">
+                    <p class="text-xs text-zinc-400">
                       网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
                       文件内容请自行辨别，如发现违规请通过<a
                         href="/page/version"
@@ -447,18 +446,18 @@ const isMobile = useMediaQuery("(max-width: 768px)");
             @click.self="closeTreeModal"
           >
             <div
-              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-gray-700 shadow-2xl"
+              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-zinc-700 shadow-2xl"
             >
               <div
-                class="flex items-center justify-between p-4 border-b border-gray-800"
+                class="flex items-center justify-between p-4 border-b border-zinc-800"
               >
                 <h3 class="text-white font-medium">
-                  目录结构<span class="text-xs text-gray-400"
+                  目录结构<span class="text-xs text-zinc-400"
                     >（最多显示5层、150个文件）</span
                   >
                 </h3>
                 <button
-                  class="text-gray-400 hover:text-white transition-colors"
+                  class="text-zinc-400 hover:text-white transition-colors"
                   @click="closeTreeModal"
                 >
                   <X class="w-5 h-5" />
@@ -475,14 +474,14 @@ const isMobile = useMediaQuery("(max-width: 768px)");
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-gray-400 text-sm">{{ funnyText }}</p>
+                  <p class="text-zinc-400 text-sm">{{ funnyText }}</p>
                 </div>
                 <div v-else-if="treeModalError" class="text-center py-8">
                   <p class="text-red-400 text-sm">{{ treeModalError }}</p>
                 </div>
                 <pre
                   v-else
-                  class="bg-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
+                  class="bg-zinc-800 rounded-lg p-4 text-sm text-zinc-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
                   >{{ treeModalContent }}</pre
                 >
               </div>

@@ -253,13 +253,13 @@ const pageNumbers = computed<(number | string)[]>(() => {
         ></div>
 
         <div
-          class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-3xl w-full border border-gray-800 max-h-[90vh] flex flex-col"
+          class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-3xl w-full border border-zinc-800 max-h-[90vh] flex flex-col"
         >
           <button
-            class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors z-10"
+            class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors z-10"
             @click="handleClose"
           >
-            <X class="w-5 h-5 text-gray-400" />
+            <X class="w-5 h-5 text-zinc-400" />
           </button>
 
           <h3 class="text-xl font-medium text-white mb-4">选择文件</h3>
@@ -270,7 +270,7 @@ const pageNumbers = computed<(number | string)[]>(() => {
             <select
               v-if="!props.configId"
               v-model="selectedConfigId"
-              class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+              class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
               @change="selectConfig"
             >
               <option value="" disabled>选择存储配置</option>
@@ -285,11 +285,11 @@ const pageNumbers = computed<(number | string)[]>(() => {
                 v-model="searchKeyword"
                 type="text"
                 placeholder="搜索文件名..."
-                class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500"
                 @keydown.enter="handleSearch"
               />
               <button
-                class="flex items-center gap-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+                class="flex items-center gap-1 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
                 @click="handleSearch"
               >
                 <Search class="w-4 h-4" />
@@ -309,19 +309,19 @@ const pageNumbers = computed<(number | string)[]>(() => {
           <!-- 上传面板 -->
           <div
             v-if="showUpload"
-            class="mb-4 p-4 bg-gray-800/50 border border-gray-700 rounded-xl space-y-3"
+            class="mb-4 p-4 bg-zinc-800/50 border border-zinc-700 rounded-xl space-y-3"
           >
             <div class="flex items-center gap-3 flex-wrap">
               <input
                 type="file"
-                class="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary-500 file:text-white file:cursor-pointer"
+                class="text-sm text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary-500 file:text-white file:cursor-pointer"
                 @change="handleUploadChange"
               />
               <input
                 v-model="uploadPath"
                 type="text"
                 placeholder="自定义路径（可选，如 images/covers）"
-                class="flex-1 min-w-[160px] bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="flex-1 min-w-[160px] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500"
               />
               <button
                 class="flex items-center gap-1 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
@@ -339,7 +339,7 @@ const pageNumbers = computed<(number | string)[]>(() => {
           <div class="flex-1 overflow-y-auto min-h-0">
             <div
               v-if="isLoading"
-              class="flex items-center justify-center py-12 text-gray-500"
+              class="flex items-center justify-center py-12 text-zinc-500"
             >
               <Loader2 class="w-6 h-6 animate-spin mr-2" />
               加载中...
@@ -347,17 +347,17 @@ const pageNumbers = computed<(number | string)[]>(() => {
 
             <div
               v-else-if="!selectedConfigId"
-              class="flex flex-col items-center justify-center py-12 text-gray-500"
+              class="flex flex-col items-center justify-center py-12 text-zinc-500"
             >
-              <HardDrive class="w-10 h-10 mb-2 text-gray-600" />
+              <HardDrive class="w-10 h-10 mb-2 text-zinc-600" />
               <p class="text-sm">请选择存储配置</p>
             </div>
 
             <div
               v-else-if="files.length === 0"
-              class="flex flex-col items-center justify-center py-12 text-gray-500"
+              class="flex flex-col items-center justify-center py-12 text-zinc-500"
             >
-              <FileText class="w-10 h-10 mb-2 text-gray-600" />
+              <FileText class="w-10 h-10 mb-2 text-zinc-600" />
               <p class="text-sm">暂无文件</p>
             </div>
 
@@ -369,17 +369,17 @@ const pageNumbers = computed<(number | string)[]>(() => {
               <div
                 v-for="file in files"
                 :key="file.key"
-                class="group relative bg-gray-800/50 border rounded-xl overflow-hidden cursor-pointer transition-colors"
+                class="group relative bg-zinc-800/50 border rounded-xl overflow-hidden cursor-pointer transition-colors"
                 :class="
                   selectedFileUrl === file.url
                     ? 'border-primary-500 ring-1 ring-primary-500/30'
-                    : 'border-gray-800 hover:border-gray-600'
+                    : 'border-zinc-800 hover:border-zinc-600'
                 "
                 @click="handleFileSelect(file)"
               >
                 <!-- 预览区域 -->
                 <div
-                  class="aspect-square flex items-center justify-center bg-gray-900/50 relative overflow-hidden"
+                  class="aspect-square flex items-center justify-center bg-zinc-900/50 relative overflow-hidden"
                 >
                   <img
                     v-if="isImage(file)"
@@ -391,13 +391,13 @@ const pageNumbers = computed<(number | string)[]>(() => {
                   />
                   <FileAudio
                     v-else-if="isAudio(file)"
-                    class="w-8 h-8 text-gray-600"
+                    class="w-8 h-8 text-zinc-600"
                   />
                   <FileVideo
                     v-else-if="isVideo(file)"
-                    class="w-8 h-8 text-gray-600"
+                    class="w-8 h-8 text-zinc-600"
                   />
-                  <File v-else class="w-8 h-8 text-gray-600" />
+                  <File v-else class="w-8 h-8 text-zinc-600" />
 
                   <!-- 选中指示 -->
                   <div
@@ -409,7 +409,7 @@ const pageNumbers = computed<(number | string)[]>(() => {
 
                   <!-- 悬浮删除按钮 -->
                   <button
-                    class="absolute top-2 left-2 p-1.5 text-gray-300 hover:text-red-500 bg-gray-800/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-wait"
+                    class="absolute top-2 left-2 p-1.5 text-zinc-300 hover:text-red-500 bg-zinc-800/80 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-wait"
                     :disabled="deletingKey === file.key"
                     :class="{ '!opacity-100': deletingKey === file.key }"
                     @click.stop="handleDelete(file)"
@@ -427,7 +427,7 @@ const pageNumbers = computed<(number | string)[]>(() => {
                   >
                     {{ file.name }}
                   </p>
-                  <p class="text-[10px] text-gray-500 mt-0.5">
+                  <p class="text-[10px] text-zinc-500 mt-0.5">
                     {{ formatSize(file.size) }}
                   </p>
                 </div>
@@ -438,13 +438,13 @@ const pageNumbers = computed<(number | string)[]>(() => {
           <!-- 分页 -->
           <div
             v-if="totalPages > 1"
-            class="flex items-center justify-between mt-4 pt-4 border-t border-gray-800"
+            class="flex items-center justify-between mt-4 pt-4 border-t border-zinc-800"
           >
-            <div class="text-sm text-gray-500">共 {{ total }} 个文件</div>
+            <div class="text-sm text-zinc-500">共 {{ total }} 个文件</div>
             <div class="flex items-center gap-1">
               <button
                 :disabled="currentPage === 1"
-                class="p-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                class="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                 @click="onPageChange(currentPage - 1)"
               >
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -463,8 +463,8 @@ const pageNumbers = computed<(number | string)[]>(() => {
                   p === currentPage
                     ? 'bg-primary-500 text-white'
                     : p === '...'
-                      ? 'text-gray-500 cursor-default'
-                      : 'text-gray-400 hover:text-white',
+                      ? 'text-zinc-500 cursor-default'
+                      : 'text-zinc-400 hover:text-white',
                 ]"
                 @click="typeof p === 'number' && onPageChange(p)"
               >
@@ -472,7 +472,7 @@ const pageNumbers = computed<(number | string)[]>(() => {
               </button>
               <button
                 :disabled="currentPage === totalPages"
-                class="p-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                class="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                 @click="onPageChange(currentPage + 1)"
               >
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -488,10 +488,10 @@ const pageNumbers = computed<(number | string)[]>(() => {
 
           <!-- 底部按钮 -->
           <div
-            class="mt-4 flex items-center justify-end gap-3 border-t border-gray-800 pt-4"
+            class="mt-4 flex items-center justify-end gap-3 border-t border-zinc-800 pt-4"
           >
             <button
-              class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+              class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
               @click="handleClose"
             >
               取消

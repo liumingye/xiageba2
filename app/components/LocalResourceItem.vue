@@ -59,11 +59,10 @@ const emit = defineEmits<{
           <div
             class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
           >
-            <img
+            <div
               v-if="item.type !== 'other'"
-              :src="`/img/pan/${item.type}.png`"
-              class="w-4 h-4 mr-1"
-            />
+              :class="`icon-${item.type} w-3 h-3 mr-1`"
+            ></div>
             {{ getTypeName(item.type) }}网盘
           </div>
           <div
@@ -91,7 +90,7 @@ const emit = defineEmits<{
             </div>
             <div
               v-if="checkStatus === 'checking'"
-              class="bg-gray-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+              class="bg-zinc-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <Loader2
                 class="w-4 h-4 text-white animate-spin flex-shrink-0 mr-1"
@@ -101,22 +100,23 @@ const emit = defineEmits<{
         </div>
       </div>
       <template v-if="item.menu">
-        <div class="text-sm mb-2 text-gray-300 font-bold">文件内容:</div>
+        <div class="text-sm mb-2 text-zinc-300 font-bold">文件内容:</div>
         <pre
           v-if="highlightMenu"
-          class="bg-gray-700 p-2 rounded-sm text-xs border border-gray-600 max-h-36 overflow-auto text-gray-300"
+          class="bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-36 overflow-auto text-zinc-300"
           v-html="highlightMenu"
         ></pre>
         <pre
           v-else
-          class="bg-gray-700 p-2 rounded-sm text-xs border border-gray-600 max-h-36 overflow-auto text-gray-300"
-        >{{ item.menu }}</pre>
+          class="bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-36 overflow-auto text-zinc-300"
+          >{{ item.menu }}</pre
+        >
       </template>
     </div>
     <div
-      class="flex justify-between items-center gap-2 border-t border-gray-700 mt-3 pt-3"
+      class="flex justify-between items-center gap-2 border-t border-zinc-700 mt-3 pt-3"
     >
-      <span class="text-xs text-gray-500 flex items-center gap-1">
+      <span class="text-xs text-zinc-500 flex items-center gap-1">
         <Calendar class="w-3 h-3" />
         {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
       </span>

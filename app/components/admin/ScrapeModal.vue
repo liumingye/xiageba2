@@ -251,13 +251,13 @@ const coverSame = (cover: string) => {
         ></div>
 
         <div
-          class="modal-content relative bg-gray-900 rounded-3xl p-6 max-w-4xl w-full border border-gray-800 max-h-[92vh] flex flex-col"
+          class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-4xl w-full border border-zinc-800 max-h-[92vh] flex flex-col"
         >
           <button
-            class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors z-10"
+            class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors z-10"
             @click="handleClose"
           >
-            <X class="w-5 h-5 text-gray-400" />
+            <X class="w-5 h-5 text-zinc-400" />
           </button>
 
           <h3
@@ -277,7 +277,7 @@ const coverSame = (cover: string) => {
                 :class="
                   selectedPlatform === p.value
                     ? 'bg-primary-500 text-white border-primary-500'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+                    : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-600'
                 "
                 @click="
                   selectedPlatform = p.value;
@@ -293,7 +293,7 @@ const coverSame = (cover: string) => {
                 v-model="keyword"
                 type="text"
                 :placeholder="`输入歌名或歌手（当前：${platforms.find((p) => p.value === selectedPlatform)?.label}）`"
-                class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500/50"
+                class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500/50"
                 @keydown.enter="handleSearch"
               />
               <button
@@ -314,7 +314,7 @@ const coverSame = (cover: string) => {
             <div class="flex-1 overflow-y-auto space-y-2 min-h-0">
               <div
                 v-if="results.length === 0 && !errorMsg && !isSearching"
-                class="text-center py-8 text-gray-500 text-sm"
+                class="text-center py-8 text-zinc-500 text-sm"
               >
                 选择平台并输入关键词搜索
               </div>
@@ -322,13 +322,13 @@ const coverSame = (cover: string) => {
               <div
                 v-for="item in results"
                 :key="item.sourceId"
-                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors bg-gray-800 border border-transparent"
+                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors bg-zinc-800 border border-transparent"
                 :class="
                   isLoadingDetail &&
                   scrapeResult === null &&
                   results[0]?.sourceId
                     ? 'pointer-events-none'
-                    : 'hover:bg-gray-750 hover:border-gray-700'
+                    : 'hover:bg-zinc-750 hover:border-zinc-700'
                 "
                 @click="selectItem(item)"
               >
@@ -357,7 +357,7 @@ const coverSame = (cover: string) => {
                     :class="[
                       item.artist === existingMusic?.artist
                         ? 'text-orange-400'
-                        : 'text-gray-400',
+                        : 'text-zinc-400',
                     ]"
                   >
                     {{ item.artist }}
@@ -368,7 +368,7 @@ const coverSame = (cover: string) => {
                     :class="[
                       item.album === existingMusic?.album
                         ? 'text-orange-400'
-                        : 'text-gray-500',
+                        : 'text-zinc-500',
                     ]"
                   >
                     {{ item.album }}
@@ -389,7 +389,7 @@ const coverSame = (cover: string) => {
             <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
               <button
                 v-if="isLoadingDetail"
-                class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800 text-gray-400 rounded-lg text-sm cursor-wait"
+                class="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm cursor-wait"
                 disabled
               >
                 <Loader2 class="w-4 h-4 animate-spin" />
@@ -397,14 +397,14 @@ const coverSame = (cover: string) => {
               </button>
               <button
                 v-else
-                class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+                class="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
                 @click="backToSearch"
               >
                 ← 返回搜索列表
               </button>
 
               <div
-                class="flex items-center gap-2 text-xs text-gray-500 ml-auto"
+                class="flex items-center gap-2 text-xs text-zinc-500 ml-auto"
               >
                 <span
                   class="px-2 py-1 rounded bg-primary-500/20 text-primary-400"
@@ -421,7 +421,7 @@ const coverSame = (cover: string) => {
             <div
               class="flex items-center justify-between mb-4 text-sm flex-wrap gap-3"
             >
-              <div class="text-gray-400">
+              <div class="text-zinc-400">
                 勾选需要更新的字段，点击确认后仅更新勾选的内容
               </div>
               <div class="flex items-center gap-3">
@@ -431,9 +431,9 @@ const coverSame = (cover: string) => {
                 >
                   全选
                 </button>
-                <span class="text-gray-700">|</span>
+                <span class="text-zinc-700">|</span>
                 <button
-                  class="text-gray-500 hover:text-gray-400"
+                  class="text-zinc-500 hover:text-zinc-400"
                   @click="unselectAllFields"
                 >
                   全不选
@@ -450,7 +450,7 @@ const coverSame = (cover: string) => {
                 :class="
                   selectedFields[field]
                     ? 'bg-primary-500/10 border-primary-500/40'
-                    : 'bg-gray-800/60 border-gray-800 hover:border-gray-700'
+                    : 'bg-zinc-800/60 border-zinc-800 hover:border-zinc-700'
                 "
                 @click="toggleField(field)"
               >
@@ -461,7 +461,7 @@ const coverSame = (cover: string) => {
                     :class="
                       selectedFields[field]
                         ? 'bg-primary-500 border-primary-500'
-                        : 'border-gray-600'
+                        : 'border-zinc-600'
                     "
                   >
                     <CheckCircle
@@ -473,11 +473,11 @@ const coverSame = (cover: string) => {
 
                 <!-- 字段名 -->
                 <div
-                  class="mt-1 flex items-center gap-1.5 text-gray-300 flex-shrink-0"
+                  class="mt-1 flex items-center gap-1.5 text-zinc-300 flex-shrink-0"
                 >
                   <component
                     :is="rowIcon(field)"
-                    class="w-4 h-4 text-gray-500 flex-shrink-0"
+                    class="w-4 h-4 text-zinc-500 flex-shrink-0"
                   />
                   <span>{{ FIELD_LABEL[field] }}</span>
                   <span
@@ -489,11 +489,11 @@ const coverSame = (cover: string) => {
 
                 <!-- 当前值 -->
                 <div
-                  class="min-w-0 rounded-lg bg-gray-900/80 px-3 py-2 text-xs text-gray-500"
+                  class="min-w-0 rounded-lg bg-zinc-900/80 px-3 py-2 text-xs text-zinc-500"
                   :class="{ 'max-h-40 overflow-y-auto': field === 'lyrics' }"
                 >
                   <div
-                    class="text-[10px] uppercase tracking-wider text-gray-600 mb-1"
+                    class="text-[10px] uppercase tracking-wider text-zinc-600 mb-1"
                   >
                     当前
                   </div>
@@ -510,7 +510,7 @@ const coverSame = (cover: string) => {
                     />
                     <div
                       v-else
-                      class="w-16 h-16 rounded bg-gray-800 flex items-center justify-center text-gray-600 text-xs"
+                      class="w-16 h-16 rounded bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs"
                     >
                       无
                     </div>
@@ -530,16 +530,16 @@ const coverSame = (cover: string) => {
 
                 <!-- 新值 -->
                 <div
-                  class="min-w-0 rounded-lg bg-gray-900/80 px-3 py-2 text-xs"
+                  class="min-w-0 rounded-lg bg-zinc-900/80 px-3 py-2 text-xs"
                   :class="[
-                    hasDiff(field) ? 'text-white' : 'text-gray-400',
+                    hasDiff(field) ? 'text-white' : 'text-zinc-400',
                     { 'max-h-40 overflow-y-auto': field === 'lyrics' },
                   ]"
                 >
                   <div
                     class="text-[10px] uppercase tracking-wider mb-1"
                     :class="
-                      hasDiff(field) ? 'text-primary-400' : 'text-gray-600'
+                      hasDiff(field) ? 'text-primary-400' : 'text-zinc-600'
                     "
                   >
                     刮削
@@ -556,7 +556,7 @@ const coverSame = (cover: string) => {
                     />
                     <div
                       v-else
-                      class="w-16 h-16 rounded bg-gray-800 flex items-center justify-center text-gray-600 text-xs"
+                      class="w-16 h-16 rounded bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs"
                     >
                       无
                     </div>
@@ -577,10 +577,10 @@ const coverSame = (cover: string) => {
 
             <!-- 底部按钮 -->
             <div
-              class="mt-5 flex items-center justify-end gap-3 border-t border-gray-800 pt-4"
+              class="mt-5 flex items-center justify-end gap-3 border-t border-zinc-800 pt-4"
             >
               <button
-                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors"
                 @click="backToSearch"
               >
                 返回

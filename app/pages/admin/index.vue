@@ -129,7 +129,7 @@ const goToPage = (page: number) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300">
+  <div class="min-h-screen">
     <AdminHeader />
     <AdminNav />
 
@@ -148,7 +148,7 @@ const goToPage = (page: number) => {
       </div>
       <form @submit.prevent="inputSearch" class="relative mb-4 max-w-md">
         <Search
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500"
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500"
         />
         <input
           v-model="searchQuery"
@@ -160,28 +160,28 @@ const goToPage = (page: number) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-gray-800">
+          <thead class="bg-zinc-800">
             <tr>
               <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-[80px] min-w-[80px]"
+                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-[80px] min-w-[80px]"
               >
                 封面
               </th>
-              <th class="px-4 py-3 text-left text-gray-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
                 歌名
               </th>
               <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-32"
+                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-32"
               >
                 歌手
               </th>
               <th
-                class="px-4 py-3 text-left text-gray-400 text-sm font-medium w-40"
+                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-40"
               >
                 专辑
               </th>
               <th
-                class="px-4 py-3 text-center text-gray-400 text-sm font-medium w-24"
+                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium w-24"
               >
                 操作
               </th>
@@ -193,19 +193,19 @@ const goToPage = (page: number) => {
                 <Loader2
                   class="w-6 h-6 text-primary-500 animate-spin mx-auto"
                 />
-                <p class="text-gray-500 text-sm mt-2">加载中...</p>
+                <p class="text-zinc-500 text-sm mt-2">加载中...</p>
               </td>
             </tr>
             <tr v-else-if="musics.length === 0">
               <td colspan="5" class="px-4 py-12 text-center">
-                <p class="text-gray-500">暂无音乐</p>
+                <p class="text-zinc-500">暂无音乐</p>
               </td>
             </tr>
             <tr
               v-else
               v-for="music in musics"
               :key="music.id"
-              class="border-t border-gray-800 hover:bg-gray-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800/50"
             >
               <td class="px-4 py-4">
                 <img
@@ -221,13 +221,13 @@ const goToPage = (page: number) => {
                 {{ music.title }}
               </td>
               <td
-                class="px-4 py-4 text-gray-400 truncate max-w-[200px]"
+                class="px-4 py-4 text-zinc-400 truncate max-w-[200px]"
                 :title="music.artist"
               >
                 {{ music.artist }}
               </td>
               <td
-                class="px-4 py-4 text-gray-400 truncate max-w-[200px]"
+                class="px-4 py-4 text-zinc-400 truncate max-w-[200px]"
                 :title="music.album || '-'"
               >
                 {{ music.album || "-" }}
@@ -235,14 +235,14 @@ const goToPage = (page: number) => {
               <td class="px-4 py-4">
                 <div class="flex items-center justify-center gap-2">
                   <button
-                    class="p-2 text-gray-400 hover:text-primary-500 transition-colors"
+                    class="p-2 text-zinc-400 hover:text-primary-500 transition-colors"
                     title="编辑"
                     @click="editMusic(music.id)"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
                     title="删除"
                     @click="deleteMusic(music.id)"
                   >

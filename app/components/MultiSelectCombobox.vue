@@ -78,27 +78,27 @@ const handleFocusOut = (event: FocusEvent) => {
     @keydown.esc.prevent="close"
   >
     <summary
-      class="list-none w-full flex items-center justify-between gap-2 bg-gray-800 text-gray-300 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+      class="list-none w-full flex items-center justify-between gap-2 bg-zinc-800 text-zinc-300 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
       :aria-label="ariaLabel"
     >
       <span class="flex items-center gap-1.5 truncate">
-        <ListFilter class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        <ListFilter class="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
         {{ summary }}
       </span>
       <ChevronDown
-        class="w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform group-open:rotate-180"
+        class="w-3.5 h-3.5 text-zinc-400 flex-shrink-0 transition-transform group-open:rotate-180"
       />
     </summary>
 
     <div
-      class="absolute left-0 top-full z-20 mt-1 w-full min-w-36 rounded-lg border border-gray-700 bg-gray-800 p-1.5 shadow-xl"
+      class="absolute left-0 top-full z-20 mt-1 w-full min-w-36 rounded-lg border border-zinc-700 bg-zinc-800 p-1.5 shadow-xl"
       role="listbox"
       :aria-label="ariaLabel"
       aria-multiselectable="true"
     >
       <button
         type="button"
-        class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-gray-300 hover:bg-gray-700"
+        class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-zinc-300 hover:bg-zinc-700"
         role="option"
         :aria-selected="modelValue.length === 0"
         @click="clear"
@@ -109,7 +109,7 @@ const handleFocusOut = (event: FocusEvent) => {
       <label
         v-for="option in options"
         :key="option.value"
-        class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-gray-300 hover:bg-gray-700"
+        class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-zinc-300 hover:bg-zinc-700"
         role="option"
         :aria-selected="modelValue.includes(option.value)"
       >
@@ -125,7 +125,7 @@ const handleFocusOut = (event: FocusEvent) => {
           :class="
             modelValue.includes(option.value)
               ? 'border-primary-500 bg-primary-500 text-white'
-              : 'border-gray-600 text-transparent'
+              : 'border-zinc-600 text-transparent'
           "
           aria-hidden="true"
         >

@@ -57,13 +57,13 @@ const getPageNumbers = (): (number | string)[] => {
     v-if="totalPages > 1"
     class="flex items-center justify-between px-4 py-3"
   >
-    <div class="text-sm text-gray-400">
+    <div class="text-sm text-zinc-400">
       共 {{ total }} {{ itemLabel || "条" }}
     </div>
     <div class="flex items-center gap-1">
       <button
         :disabled="currentPage === 1"
-        class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         @click="goToPage(currentPage - 1)"
       >
         <ChevronLeft class="w-4 h-4" />
@@ -76,8 +76,8 @@ const getPageNumbers = (): (number | string)[] => {
           p === currentPage
             ? 'bg-primary-500 text-white'
             : p === '...'
-              ? 'text-gray-500 cursor-default'
-              : 'text-gray-400 hover:text-white',
+              ? 'text-zinc-500 cursor-default'
+              : 'text-zinc-400 hover:text-white',
         ]"
         @click="typeof p === 'number' && goToPage(p)"
       >
@@ -85,7 +85,7 @@ const getPageNumbers = (): (number | string)[] => {
       </button>
       <button
         :disabled="currentPage === totalPages"
-        class="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         @click="goToPage(currentPage + 1)"
       >
         <ChevronRight class="w-4 h-4" />

@@ -49,14 +49,14 @@ const handleKeydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 flex items-center justify-center p-4">
+  <div class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
         <div class="w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
           <Music class="w-10 h-10 text-white" />
         </div>
         <h1 class="text-2xl font-bold text-white">下歌吧管理后台</h1>
-        <p class="text-gray-500 mt-2">管理员登录</p>
+        <p class="text-zinc-500 mt-2">管理员登录</p>
       </div>
       
       <div class="card p-6">
@@ -66,9 +66,9 @@ const handleKeydown = (e: KeyboardEvent) => {
         
         <div class="space-y-4">
           <div>
-            <label class="block text-gray-400 text-sm mb-2">用户名</label>
+            <label class="block text-zinc-400 text-sm mb-2">用户名</label>
             <div class="relative">
-              <User class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <User class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
               <input
                 v-model="username"
                 type="text"
@@ -80,9 +80,9 @@ const handleKeydown = (e: KeyboardEvent) => {
           </div>
           
           <div>
-            <label class="block text-gray-400 text-sm mb-2">密码</label>
+            <label class="block text-zinc-400 text-sm mb-2">密码</label>
             <div class="relative">
-              <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
               <input
                 v-model="password"
                 type="password"
@@ -102,7 +102,7 @@ const handleKeydown = (e: KeyboardEvent) => {
           </button>
         </div>
         
-        <p class="text-center text-gray-600 text-sm mt-4">
+        <p class="text-center text-zinc-600 text-sm mt-4">
           还没有账号？请联系超级管理员
         </p>
       </div>

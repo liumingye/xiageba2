@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from "vue";
+import { ref, watch, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore, storeToRefs } from "~/stores/music";
 import { Search, X, Music, FolderOpen, Sparkles } from "@lucide/vue";
+import SearchSuggestions from "./SearchSuggestions.vue";
 
 const props = defineProps<{
   modelValue?: string;
@@ -76,13 +77,23 @@ const handleKeydown = (e: KeyboardEvent) => {
 const clearInput = () => {
   searchQuery.value = "";
   emit("update:modelValue", "");
+  nextTick(() => {
+    searchInput.value?.focus();
+  });
+};
+
+const handleSuggestionSelect = (word: string) => {
+  searchQuery.value = word;
+  emit("update:modelValue", word);
+  handleSearch(word);
 };
 
 const placeholderText = computed(() => {
   if (!isClientMounted.value) return "";
   if (searchType.value === "music") return "搜你想要的音乐";
   if (searchType.value === "resource") return "搜你想要的网盘资源";
-  if (searchType.value === "ai") return "和 AI 聊聊你想找什么... 例如：推荐一些搞笑的动漫、推荐一些周杰伦的热门歌曲";
+  if (searchType.value === "ai")
+    return "和 AI 聊聊你想找什么... 例如：推荐一些搞笑的动漫、推荐一些周杰伦的热门歌曲";
   return "";
 });
 
@@ -94,7 +105,7 @@ defineExpose({
 <template>
   <div class="w-full max-w-[720px] mx-auto mb-6">
     <div
-      class="border-2 rounded-3xl transition-all duration-300 h-32 relative bg-gray-800"
+      class="border-2 rounded-3xl transition-all duration-300 h-28 md:h-32 relative bg-zinc-900 px-4 py-4"
       :class="
         isFocused
           ? 'border-primary-500 shadow-lg shadow-primary-500/20'
@@ -102,14 +113,14 @@ defineExpose({
       "
       @click.stop="searchInput?.focus()"
     >
-      <div class="top-0 left-4 right-4 absolute flex items-center py-4">
+      <div class="flex-1 flex">
         <input
           ref="searchInput"
           :value="searchQuery"
           :maxlength="MAX_KEYWORD_LENGTH"
           type="text"
           :placeholder="placeholderText"
-          class="flex-1 bg-transparent text-white text-lg outline-none placeholder-white/50"
+          class="w-full bg-transparent text-white text-lg outline-none placeholder-white/50"
           @input="updateSearchQuery"
           @keydown="handleKeydown"
           @focus="isFocused = true"
@@ -119,7 +130,7 @@ defineExpose({
         />
         <button
           v-if="searchQuery"
-          class="px-3 text-white/60 hover:text-white transition-colors"
+          class="px-3 text-white/60 hover:text-white transition-colors flex-shrink-0"
           @click="clearInput"
           aria-label="清除"
           type="button"
@@ -171,6 +182,11 @@ defineExpose({
           <Search class="w-4 h-4" />
         </button>
       </div>
+      <SearchSuggestions
+        :query="searchQuery"
+        :visible="isFocused"
+        @select="handleSuggestionSelect"
+      />
     </div>
   </div>
 </template>

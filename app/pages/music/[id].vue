@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useEventListener } from "@vueuse/core";
+import { useEventListener, useMediaQuery } from "@vueuse/core";
 import { Download, Play, Pause, Disc3 } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 import { useMusicStore } from "~/stores/music";
+import type { NuxtError } from "nuxt/app";
 
 const config = useRuntimeConfig();
 const route = useRoute();
@@ -39,7 +40,7 @@ const {
 // ID 不存在时显示 404
 watch(
   fetchApiError,
-  (err) => {
+  (err: any) => {
     if (err) {
       throw createError({
         statusCode: err.status || 404,
@@ -51,10 +52,20 @@ watch(
 );
 
 const pageTitle = computed(() => {
-  if (music.value) {
-    return `${music.value.title} - ${music.value.artist} - 下歌吧`;
+  let title = [];
+  if (music.value.title) {
+    title.push(music.value.title);
   }
-  return "下歌吧 - 免费下载高品质音乐";
+  if (music.value.artist) {
+    title.push(music.value.artist);
+  }
+  if (music.value.album) {
+    title.push(`《${music.value.album}》`);
+  }
+  if (title.length === 0) {
+    title.push("下歌吧 - 免费下载高品质音乐");
+  }
+  return `${title.join(" - ")} - 下歌吧`;
 });
 
 const pageDescription = computed(() => {
@@ -140,9 +151,11 @@ useHead({
     : [],
 });
 
+const showFeedbackModal = ref(false);
 const showDownloadModal = ref(false);
 const isPlaying = ref(false);
 const audioElement = ref<HTMLAudioElement | null>(null);
+const selectedDownload = ref<DownloadOption | null>(null);
 
 useEventListener(audioElement, "ended", () => {
   isPlaying.value = false;
@@ -182,8 +195,9 @@ const togglePlay = () => {
   }
 };
 
-const openDownloadModal = () => {
+const openDownloadModal = (download: DownloadOption) => {
   showDownloadModal.value = true;
+  selectedDownload.value = download;
 };
 
 const closeDownloadModal = () => {
@@ -194,13 +208,19 @@ const musicStore = useMusicStore();
 onMounted(() => {
   musicStore.searchType = "music";
 });
+
+const isMobile = useMediaQuery("(max-width: 767px)");
+const isMounted = ref(false);
+
+onMounted(() => {
+  isMounted.value = true;
+});
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-4 md:py-6 px-2">
-    <div class="max-w-4xl mx-auto">
-      <TopBar />
-
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+    <div class="max-w-4xl mx-auto px-2">
       <main>
         <!-- 骨架屏：数据还没回来时展示 -->
         <div
@@ -211,27 +231,27 @@ onMounted(() => {
         >
           <section class="card p-6 animate-pulse">
             <div class="flex flex-col sm:flex-row gap-6 items-center">
-              <div class="w-48 h-48 bg-gray-700 rounded-xl" />
+              <div class="w-48 h-48 bg-zinc-700 rounded-xl" />
               <div class="flex-1 w-full space-y-3">
-                <div class="h-6 bg-gray-700 rounded w-3/4 mx-auto sm:mx-0" />
-                <div class="h-4 bg-gray-700 rounded w-1/2 mx-auto sm:mx-0" />
+                <div class="h-6 bg-zinc-700 rounded w-3/4 mx-auto sm:mx-0" />
+                <div class="h-4 bg-zinc-700 rounded w-1/2 mx-auto sm:mx-0" />
                 <div
                   class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4"
                 >
-                  <div class="h-10 bg-gray-700 rounded-lg w-28" />
-                  <div class="h-10 bg-gray-700 rounded-lg w-28" />
+                  <div class="h-10 bg-zinc-700 rounded-lg w-28" />
+                  <div class="h-10 bg-zinc-700 rounded-lg w-28" />
                 </div>
               </div>
             </div>
           </section>
 
           <section class="card p-6 animate-pulse">
-            <div class="h-5 bg-gray-700 rounded w-1/4 mb-4" />
+            <div class="h-5 bg-zinc-700 rounded w-1/4 mb-4" />
             <div class="space-y-2">
               <div
                 v-for="i in 5"
                 :key="i"
-                class="h-4 bg-gray-700 rounded w-3/4"
+                class="h-4 bg-zinc-700 rounded w-3/4"
               />
             </div>
           </section>
@@ -287,7 +307,7 @@ onMounted(() => {
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">
                   {{ music.title }}
                 </h1>
-                <p class="text-gray-400 mb-4" itemprop="byArtist">
+                <p class="text-zinc-400 mb-4" itemprop="byArtist">
                   <button
                     class="hover:text-primary-400 transition-colors"
                     @click="
@@ -301,17 +321,21 @@ onMounted(() => {
                 </p>
 
                 <div class="flex flex-wrap gap-3 justify-center">
-                  <button
-                    class="flex items-center gap-2 px-14 sm:px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                    @click="openDownloadModal"
+                  <a
+                    v-for="(download, index) in music.downloads"
+                    :key="index"
+                    class="cursor-pointer flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
                     aria-label="下载歌曲"
+                    :target="isMobile && isMounted ? '_blank' : undefined"
+                    :href="isMobile && isMounted ? download.url : undefined"
+                    @click="!isMobile && openDownloadModal(download)"
                   >
                     <Download class="w-5 h-5" />
-                    点击下载
-                  </button>
+                    {{ download.quality }}
+                  </a>
                   <button
                     v-if="music.playUrl"
-                    class="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    class="flex items-center gap-2 px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
                     @click="togglePlay"
                     aria-label="播放或暂停"
                   >
@@ -320,6 +344,13 @@ onMounted(() => {
                     {{ isPlaying ? "暂停" : "播放" }}
                   </button>
                 </div>
+                <button
+                  @click="showFeedbackModal = true"
+                  aria-label="反馈问题"
+                  class="text-zinc-600 mt-2 md:hidden block"
+                >
+                  反馈问题
+                </button>
               </div>
             </div>
           </section>
@@ -330,7 +361,7 @@ onMounted(() => {
             itemscope
             itemtype="https://schema.org/MusicAlbum"
           >
-            <div class="flex items-center gap-2 text-gray-400 mb-4">
+            <div class="flex items-center gap-2 text-zinc-400 mb-4">
               <Disc3 class="w-5 h-5" />
               <span>所属专辑</span>
             </div>
@@ -341,7 +372,7 @@ onMounted(() => {
             <h3 class="text-lg font-medium text-white mb-4">歌词</h3>
             <div
               v-if="formattedLyrics.length > 0"
-              class="space-y-2 text-gray-300"
+              class="space-y-2 text-zinc-300"
               itemprop="lyrics"
             >
               <p
@@ -352,12 +383,12 @@ onMounted(() => {
                 {{ line }}
               </p>
             </div>
-            <p v-else class="text-gray-500 text-center py-8">暂无歌词</p>
+            <p v-else class="text-zinc-500 text-center py-8">暂无歌词</p>
           </section>
         </article>
 
         <div v-else class="text-center py-20">
-          <p class="text-gray-500">音乐不存在</p>
+          <p class="text-zinc-500">音乐不存在</p>
           <button
             class="mt-4 text-primary-500 hover:text-primary-400 transition-colors"
             @click="navigateTo('/')"
@@ -370,9 +401,18 @@ onMounted(() => {
       <Qrcode />
 
       <DownloadModal
+        v-if="!isMobile"
         :show="showDownloadModal"
         :music="music"
+        :selectedDownload="selectedDownload"
         @close="closeDownloadModal"
+      />
+
+      <FeedbackModal
+        v-else-if="music?.id"
+        :show="showFeedbackModal"
+        :music-id="music.id"
+        @close="showFeedbackModal = false"
       />
 
       <SiteFooter />

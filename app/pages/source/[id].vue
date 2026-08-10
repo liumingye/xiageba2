@@ -84,7 +84,7 @@ const {
 // ID 不存在时显示 404
 watch(
   fetchApiError,
-  (err) => {
+  (err: any) => {
     if (err) {
       throw createError({
         statusCode: err.status || 404,
@@ -105,24 +105,24 @@ const renderedDescription = computed(() =>
 );
 
 const pageTitle = computed(() => {
-  if (source.value) {
-    return `${source.value.title} - ${getTypeName(source.value.type)}网盘资源分享 - 下歌吧`;
+  if (source.value.title) {
+    return `${source.value.title} - ${getTypeName(source.value.type)}网盘资源分享 - 全盘搜`;
   }
-  return "资源详情 - 下歌吧";
+  return "资源详情 - 全盘搜";
 });
 
 const pageDescription = computed(() => {
   if (source.value) {
     return `${source.value.title} - ${source.value.description || "网盘资源分享"}`;
   }
-  return "下歌吧网盘资源详情页";
+  return "全盘搜网盘资源详情页";
 });
 
 const pageKeywords = computed(() => {
   if (source.value) {
     return `${source.value.title}, 网盘资源, 夸克网盘, 百度网盘, 迅雷网盘, UC网盘`;
   }
-  return "下歌吧, 网盘资源, 夸克网盘, 百度网盘";
+  return "全盘搜, 网盘资源, 夸克网盘, 百度网盘";
 });
 
 const canonicalUrl = `/source/${sourceId}`;
@@ -134,13 +134,13 @@ useHead({
     { name: "keywords", content: pageKeywords },
     { name: "robots", content: "index, follow" },
     { name: "viewport", content: "width=device-width, initial-scale=1" },
-    { name: "author", content: "下歌吧" },
+    { name: "author", content: "全盘搜" },
     { name: "theme-color", content: "#0f172a" },
 
     { property: "og:type", content: "article" },
     { property: "og:title", content: pageTitle },
     { property: "og:description", content: pageDescription },
-    { property: "og:site_name", content: "下歌吧" },
+    { property: "og:site_name", content: "全盘搜" },
     { property: "og:url", content: canonicalUrl },
 
     { name: "twitter:card", content: "summary" },
@@ -199,10 +199,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-300 py-4 md:py-6 px-2">
-    <div class="max-w-4xl mx-auto">
-      <TopBar />
-
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+    <div class="max-w-4xl mx-auto px-2">
       <main>
         <div
           v-if="loading"
@@ -212,10 +211,10 @@ onMounted(() => {
         >
           <section class="card sm:p-6 p-3 animate-pulse">
             <div class="flex flex-col gap-6">
-              <div class="w-full bg-gray-700 rounded-xl h-32" />
+              <div class="w-full bg-zinc-700 rounded-xl h-32" />
               <div class="space-y-3">
-                <div class="h-6 bg-gray-700 rounded w-3/4" />
-                <div class="h-4 bg-gray-700 rounded w-1/2" />
+                <div class="h-6 bg-zinc-700 rounded w-3/4" />
+                <div class="h-4 bg-zinc-700 rounded w-1/2" />
               </div>
             </div>
           </section>
@@ -224,13 +223,13 @@ onMounted(() => {
         <div v-else-if="source" class="space-y-6">
           <article class="card sm:p-6 p-3">
             <header
-              class="flex items-start gap-4 mb-4 border-b border-gray-800 pb-4"
+              class="flex items-start gap-4 mb-4 border-b border-zinc-800 pb-4"
             >
               <div class="flex-1 min-w-0">
                 <h1 class="text-xl font-semibold text-white mb-2 line-clamp-2">
                   {{ source.title }}
                 </h1>
-                <div class="flex items-center gap-3 text-sm text-gray-500">
+                <div class="flex items-center gap-3 text-sm text-zinc-500">
                   <span class="flex items-center gap-1">
                     <Link class="w-4 h-4" />
                     {{ getTypeName(source.type) }}网盘
@@ -244,30 +243,30 @@ onMounted(() => {
             </header>
 
             <div v-if="source.description" class="mb-6">
-              <div class="text-gray-400 text-sm leading-relaxed prose-resource">
-                <span class="text-gray-500">描述：</span>
+              <div class="text-zinc-400 text-sm leading-relaxed prose-resource">
+                <span class="text-zinc-500">描述：</span>
                 <div v-html="renderedDescription" />
               </div>
             </div>
 
             <section v-if="source.menu">
-              <div class="font-bold text-gray-300 mb-4 text-lg">文件内容:</div>
+              <div class="font-bold text-zinc-300 mb-4 text-lg">文件内容:</div>
               <pre
-                class="bg-gray-700 p-2 rounded-sm text-xs border border-gray-600 max-h-56 overflow-auto"
+                class="bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-56 overflow-auto"
                 >{{ source.menu }}</pre
               >
             </section>
 
             <footer
               :class="{
-                'border-t border-gray-800 pt-6':
+                'border-t border-zinc-800 pt-6':
                   source.description || source.menu,
               }"
             >
-              <h4 class="text-gray-300 mb-4">获取下载链接:</h4>
+              <h4 class="text-zinc-300 mb-4">获取下载链接:</h4>
               <div class="space-y-3">
                 <div v-if="!fetchedUrl" class="space-y-3">
-                  <p class="text-xs text-gray-500">
+                  <p class="text-xs text-zinc-500">
                     点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存，失效后可重新获取。
                   </p>
                   <button
@@ -301,9 +300,9 @@ onMounted(() => {
                     </div>
                     <div
                       v-else
-                      class="w-32 h-32 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                      class="w-32 h-32 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0"
                     >
-                      <QrCode class="w-12 h-12 text-gray-600" />
+                      <QrCode class="w-12 h-12 text-zinc-600" />
                     </div>
                     <p
                       class="w-full text-white font-medium truncate text-center text-lg"
@@ -337,7 +336,7 @@ onMounted(() => {
                         打开链接
                       </a>
                     </div>
-                    <p class="text-xs text-gray-400">
+                    <p class="text-xs text-zinc-400">
                       网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
                       文件内容请自行辨别，如发现违规请通过<a
                         href="/page/version"
@@ -354,19 +353,19 @@ onMounted(() => {
           </article>
 
           <section v-if="similarList.length" class="card sm:p-6 p-3">
-            <h4 class="text-gray-300 mb-4">相似资源</h4>
+            <h4 class="text-zinc-300 mb-4">相似资源</h4>
             <ul class="space-y-2">
               <li v-for="item in similarList" :key="item.id">
                 <NuxtLink
                   :to="`/source/${item.id}`"
-                  class="flex items-center gap-2 p-3 bg-gray-800/50 hover:bg-gray-800 rounded-lg transition-colors"
+                  class="flex items-center gap-2 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
                 >
                   <span
                     class="inline-flex items-center justify-center px-2 py-0.5 text-xs rounded bg-primary-500/20 text-primary-400 flex-shrink-0"
                   >
                     {{ getTypeName(item.type) }}
                   </span>
-                  <span class="text-gray-300 text-sm truncate">{{
+                  <span class="text-zinc-300 text-sm truncate">{{
                     item.title
                   }}</span>
                 </NuxtLink>
@@ -376,7 +375,7 @@ onMounted(() => {
 
           <section class="card sm:p-6 p-3">
             <button
-              class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+              class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
               @click="goBack"
             >
               返回上一页
@@ -385,9 +384,9 @@ onMounted(() => {
         </div>
 
         <div v-else class="card p-8 text-center">
-          <FolderOpen class="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h2 class="text-lg font-medium text-gray-400 mb-2">资源不存在</h2>
-          <p class="text-sm text-gray-500">该资源可能已被删除或不存在</p>
+          <FolderOpen class="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+          <h2 class="text-lg font-medium text-zinc-400 mb-2">资源不存在</h2>
+          <p class="text-sm text-zinc-500">该资源可能已被删除或不存在</p>
           <button
             class="mt-4 px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
             @click="goBack"

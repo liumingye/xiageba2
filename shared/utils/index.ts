@@ -1,5 +1,21 @@
-type PanFilter = "quark" | "baidu" | "xunlei" | "uc" | "other";
-type PanFilterFriend = "夸克" | "百度" | "迅雷" | "UC" | "其他";
+type PanFilter =
+  | "quark"
+  | "baidu"
+  | "xunlei"
+  | "uc"
+  | "ali"
+  | "tianyi"
+  | "115"
+  | "other";
+type PanFilterFriend =
+  | "夸克"
+  | "百度"
+  | "迅雷"
+  | "UC"
+  | "阿里"
+  | "天翼云"
+  | "115"
+  | "其他";
 
 // 将映射关系抽离到静态对象中，查询时间复杂度为 O(1) 且更易维护
 const STORAGE_HOST_MAP: Record<string, PanFilter> = {
@@ -8,6 +24,9 @@ const STORAGE_HOST_MAP: Record<string, PanFilter> = {
   "pan.xunlei.com": "xunlei",
   "pan.uc.cn": "uc",
   "drive.uc.cn": "uc",
+  "www.alipan.com": "ali",
+  "cloud.189.cn": "tianyi",
+  "115.com": "115",
 };
 
 export const getStorageType = (url: string): PanFilter => {
@@ -38,6 +57,9 @@ export const getStorageTypeFriend = (url: string): PanFilterFriend => {
     baidu: "百度",
     xunlei: "迅雷",
     uc: "UC",
+    ali: "阿里",
+    tianyi: "天翼云",
+    "115": "115",
     other: "其他",
   };
   return map[getStorageType(url)] || "其他";

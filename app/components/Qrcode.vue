@@ -24,19 +24,22 @@ onMounted(async () => {
     @mouseleave="isHovered = false"
   >
     <div
-      class="bg-dark-300 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50"
+      class="bg-dark-300 backdrop-blur-sm rounded-lg p-3 border border-zinc-700/50"
     >
-      <p class="text-gray-300 text-xs mb-2 text-center leading-relaxed">
-        手机扫码浏览保存更方便
-      </p>
-      <div class="w-32 h-32 mx-auto">
+      <div class="w-36 h-36 mx-auto bg-white rounded-lg">
         <img
           v-if="qrCodeUrl"
           :src="qrCodeUrl"
           alt="二维码"
-          class="w-full h-full rounded"
+          class="w-full h-full rounded-lg"
         />
       </div>
+      <p class="text-zinc-300 text-sm text-bold mt-2 text-center">
+        使用手机「扫一扫」
+      </p>
+      <p class="text-zinc-300 text-xs mt-1 text-center">
+        手机上浏览，获得更好体验
+      </p>
     </div>
   </div>
 </template>
