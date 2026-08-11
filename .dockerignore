@@ -1,11 +1,59 @@
+# 依赖与构建输出
 node_modules
 .nuxt
 .output
+.nitro
 .data
-.DS_Store
-*.log
+.cache
+.temp
+dist
+
+# Prisma 生成文件（构建时重新生成）
+prisma/generated
+
+# 环境与配置
 .env
 .env.*
-.dockerignore
+!.env.example
+
+# IDE 与工具
+.vscode
+.idea
+*.swp
+*.swo
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# Git
+.git
 .gitignore
+.gitattributes
+
+# 日志
+logs
+*.log
+
+# 测试与覆盖率
+coverage
+.nyc_output
+
+# CI/CD
+.github
+
+# 文档（非运行时必需）
 README.md
+AGENTS.md
+SECURITY.md
+LICENSE
+CHANGELOG.md
+
+# Docker 自身
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# 杂项
+.xunlei-token-cache.json
+.agents

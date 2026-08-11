@@ -410,7 +410,7 @@ const getPic = (url: string) => {
           <span class="flex items-center"
             ><CircleCheck
               class="w-4 h-4 mr-1 text-primary-400"
-            />百万网盘资源无偿分享</span
+            />百万网盘资源</span
           >
           <span class="flex items-center"
             ><CircleCheck
