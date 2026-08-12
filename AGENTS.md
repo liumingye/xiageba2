@@ -60,7 +60,7 @@ server/               # Nitro 服务端
   middleware/         # admin-auth.ts
   routes/             # sitemap.xml、/s/keyword 跳转
   tasks/              # 定时任务（nitro experimental tasks）
-  utils/              # jieba、password、auth、queue、scraper、netDiskLinkValidator、source
+  utils/              # jieba、password、auth、queue、scraper、source
 shared/utils/         # 前后端共享工具
 packages/netdisk-sdk-js/   # 网盘 SDK（workspace）
   packages/baidu-sdk/, quarkuc-sdk/, xunlei-sdk/
@@ -220,7 +220,6 @@ prisma/               # schema 与 migrations
 - 现有测试：
   - [app/utils/highlight.test.ts](app/utils/highlight.test.ts)
   - [server/utils/jieba.test.ts](server/utils/jieba.test.ts)
-  - [server/utils/netDiskLinkValidator.test.ts](server/utils/netDiskLinkValidator.test.ts)
   - [shared/resource-file-types.test.ts](shared/resource-file-types.test.ts)
 
 ## 提交规范

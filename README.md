@@ -148,7 +148,6 @@ MUSIC/
 │       ├── jieba.ts                      # 中文分词 + tsvector 构造
 │       ├── password.ts                   # scrypt 密码哈希
 │       ├── source.ts                     # 随机 IP/UA、目录树清理
-│       ├── netDiskLinkValidator.ts       # 网盘链接校验
 │       └── scraper/                      # 音乐抓取器
 │           ├── kuwo/                     # 酷我音乐
 │           ├── netease/                  # 网易云音乐

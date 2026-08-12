@@ -22,7 +22,7 @@ const STORAGE_HOST_MAP: Record<string, PanFilter> = {
   "pan.quark.cn": "quark",
   "pan.baidu.com": "baidu",
   "pan.xunlei.com": "xunlei",
-  "pan.uc.cn": "uc",
+  "fast.uc.cn": "uc",
   "drive.uc.cn": "uc",
   "www.alipan.com": "ali",
   "cloud.189.cn": "tianyi",

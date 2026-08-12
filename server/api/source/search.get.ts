@@ -33,7 +33,7 @@ export const PAN_HOST_MAP: Record<PanFilter, string[]> = {
   quark: ["pan.quark.cn"],
   baidu: ["pan.baidu.com"],
   xunlei: ["pan.xunlei.com"],
-  uc: ["pan.uc.cn", "drive.uc.cn"],
+  uc: ["fast.uc.cn", "drive.uc.cn"],
 };
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
