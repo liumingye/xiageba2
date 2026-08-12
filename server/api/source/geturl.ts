@@ -325,7 +325,7 @@ const ALLOWED_HOSTS = new Set([
  */
 export function parseShareUrl(url: string): ParsedShare {
   const extractPwd = (u: string) => {
-    const m = u.match(/[?&]pwd=([a-zA-Z0-9]+)/); // 严格限制提取码字符集，防正则穿透
+    const m = u.match(/[?&]pwd=([a-zA-Z0-9]{4})/); // 严格限制提取码字符集，防正则穿透
     return m && m[1] ? m[1] : "";
   };
 
