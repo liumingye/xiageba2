@@ -553,7 +553,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
           :class="
             isMusic
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
           "
           @click="switchType('music')"
         >
@@ -565,7 +565,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
           :class="
             searchType === 'resource'
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
           "
           @click="switchType('resource')"
         >
@@ -577,7 +577,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
           :class="
             isAi
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+              : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
           "
           @click="switchType('ai')"
         >
@@ -663,7 +663,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                   :class="
                     exactFilter
                       ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
-                      : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                      : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
                   "
                   @click="updateFilter('exact', !exactFilter)"
                 >
@@ -672,7 +672,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                 </button>
 
                 <button
-                  class="flex items-center gap-1.5 px-3 py-2 bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-zinc-800 disabled:hover:text-zinc-400"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 text-zinc-400 enabled:hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   @click="clearFilters"
                   :disabled="!hasFilters"
                 >
@@ -765,7 +765,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                   <!-- 入库时间 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-zinc-800 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       :value="timeFilter"
                       @change="
                         updateFilter(
@@ -790,7 +790,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                   <!-- 网盘类型 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-zinc-800 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       :value="panFilter"
                       @change="
                         updateFilter(
@@ -815,7 +815,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                   <!-- 排序 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-zinc-800 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       :value="sortFilter"
                       @change="
                         updateFilter(
@@ -842,8 +842,8 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                     class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
                     :class="
                       exactFilter
-                        ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
-                        : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                        ? 'bg-primary-500/20 text-primary-500 border border-primary-500/50'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
                     "
                     @click="updateFilter('exact', !exactFilter)"
                   >
@@ -853,7 +853,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
 
                   <!-- 清除筛选 -->
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-zinc-800 disabled:hover:text-zinc-400"
+                    class="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 text-zinc-400 enabled:hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                     @click="clearFilters"
                     :disabled="!hasFilters"
                   >

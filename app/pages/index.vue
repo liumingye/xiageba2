@@ -445,7 +445,7 @@ const getPic = (url: string) => {
             class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeHistoryTab === 'hot'
-                ? 'text-primary-400 border-b-2 border-primary-400'
+                ? 'text-primary-500 border-b-2 border-primary-400'
                 : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeHistoryTab = 'hot'"
@@ -458,7 +458,7 @@ const getPic = (url: string) => {
             class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeHistoryTab === 'history'
-                ? 'text-primary-400 border-b-2 border-primary-400'
+                ? 'text-primary-500 border-b-2 border-primary-400'
                 : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeHistoryTab = 'history'"
@@ -481,7 +481,7 @@ const getPic = (url: string) => {
             </button>
             <button
               v-if="sectionOverflowing"
-              class="text-primary-400 hover:text-primary-300 transition-colors px-2"
+              class="text-primary-500 hover:text-primary-400 transition-colors px-2"
               @click="sectionExpanded = !sectionExpanded"
             >
               {{ sectionExpanded ? "收起" : "展开" }}
@@ -544,7 +544,7 @@ const getPic = (url: string) => {
             class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeContentTab === 'category'
-                ? 'text-primary-400 border-b-2 border-primary-400'
+                ? 'text-primary-500 border-b-2 border-primary-400'
                 : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeContentTab = 'category'"
@@ -557,7 +557,7 @@ const getPic = (url: string) => {
             class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
             :class="
               activeContentTab === 'douban'
-                ? 'text-primary-400 border-b-2 border-primary-400'
+                ? 'text-primary-500 border-b-2 border-primary-400'
                 : 'text-zinc-500 hover:text-zinc-300'
             "
             @click="activeContentTab = 'douban'"

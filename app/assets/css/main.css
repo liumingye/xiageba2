@@ -129,6 +129,10 @@ html[data-theme="light"] .hover\:bg-zinc-700:hover {
   background-color: #e2e8f0;
 }
 
+html[data-theme="light"] .enabled\:hover\:bg-zinc-700:hover:enabled {
+  background-color: #e2e8f0;
+}
+
 html[data-theme="light"] .hover\:text-white:hover {
   color: #0f172a;
 }

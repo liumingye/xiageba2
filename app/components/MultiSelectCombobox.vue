@@ -78,7 +78,7 @@ const handleFocusOut = (event: FocusEvent) => {
     @keydown.esc.prevent="close"
   >
     <summary
-      class="list-none w-full flex items-center justify-between gap-2 bg-zinc-800 text-zinc-300 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+      class="list-none w-full flex items-center justify-between gap-2 bg-zinc-900 text-zinc-300 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
       :aria-label="ariaLabel"
     >
       <span class="flex items-center gap-1.5 truncate">

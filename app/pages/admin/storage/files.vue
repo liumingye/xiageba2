@@ -321,7 +321,7 @@ onMounted(async () => {
             {{ cfg.name }} ({{ cfg.bucket }})
           </option>
         </select>
-        <div class="relative flex-1">
+        <div class="relative flex-1 max-w-md">
           <input
             v-model="searchKeyword"
             type="text"

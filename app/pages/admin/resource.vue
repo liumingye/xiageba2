@@ -432,7 +432,7 @@ const importSources = async () => {
             {{ cat.name }}
           </option>
         </select>
-        <div class="relative flex-1">
+        <div class="relative flex-1 max-w-md">
           <input
             v-model="keyword"
             type="text"
