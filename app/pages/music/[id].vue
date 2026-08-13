@@ -222,7 +222,7 @@ onMounted(() => {
     <TopBar />
     <div class="max-w-4xl mx-auto px-2">
       <main>
-        <!-- 骨架屏：数据还没回来时展示 -->
+        <!-- 骨架屏 -->
         <div
           v-if="loading"
           class="space-y-6"
@@ -304,10 +304,17 @@ onMounted(() => {
               <div
                 class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left"
               >
-                <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">
+                <h1
+                  class="text-2xl sm:text-3xl font-bold text-white mb-2"
+                  :title="music.title"
+                >
                   {{ music.title }}
                 </h1>
-                <p class="text-zinc-400 mb-4" itemprop="byArtist">
+                <p
+                  class="text-zinc-400 mb-4"
+                  itemprop="byArtist"
+                  :title="music.artist"
+                >
                   <button
                     class="hover:text-primary-400 transition-colors"
                     @click="
@@ -325,10 +332,11 @@ onMounted(() => {
                     v-for="(download, index) in music.downloads"
                     :key="index"
                     class="cursor-pointer flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                    aria-label="下载歌曲"
+                    :aria-label="`${download.quality}下载`"
                     :target="isMobile && isMounted ? '_blank' : undefined"
                     :href="isMobile && isMounted ? download.url : undefined"
                     @click="!isMobile && openDownloadModal(download)"
+                    :title="`${download.quality}下载`"
                   >
                     <Download class="w-5 h-5" />
                     {{ download.quality }}

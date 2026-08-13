@@ -92,8 +92,7 @@ const placeholderText = computed(() => {
   if (!isClientMounted.value) return "";
   if (searchType.value === "music") return "搜你想要的音乐";
   if (searchType.value === "resource") return "搜你想要的网盘资源";
-  if (searchType.value === "ai")
-    return "和 AI 聊聊你想找什么... 例如：推荐一些搞笑的动漫、推荐一些周杰伦的热门歌曲";
+  if (searchType.value === "ai") return "和 AI 聊聊你想找什么...";
   return "";
 });
 

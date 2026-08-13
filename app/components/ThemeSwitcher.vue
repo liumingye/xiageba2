@@ -60,30 +60,34 @@ const handleFocusOut = (event: FocusEvent) => {
       :aria-label="`当前主题：${selectedOption.label}`"
       title="切换主题"
     >
-      <component :is="selectedOption.icon" class="h-4 w-4" />
+      <ClientOnly>
+        <component :is="selectedOption.icon" class="h-4 w-4" />
+      </ClientOnly>
     </summary>
 
-    <div
-      class="absolute right-0 top-full mt-2 w-36 rounded-xl border border-zinc-700 bg-zinc-900 p-1.5 shadow-xl"
-      role="menu"
-      aria-label="主题"
-    >
-      <button
-        v-for="option in options"
-        :key="option.value"
-        type="button"
-        class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800"
-        role="menuitemradio"
-        :aria-checked="preference === option.value"
-        @click="selectTheme(option.value)"
+    <ClientOnly>
+      <div
+        class="absolute right-0 top-full mt-2 w-36 rounded-xl border border-zinc-700 bg-zinc-900 p-1.5 shadow-xl"
+        role="menu"
+        aria-label="主题"
       >
-        <component :is="option.icon" class="h-4 w-4" />
-        <span class="flex-1">{{ option.label }}</span>
-        <Check
-          class="h-3.5 w-3.5 text-primary-500"
-          :class="preference === option.value ? 'opacity-100' : 'opacity-0'"
-        />
-      </button>
-    </div>
+        <button
+          v-for="option in options"
+          :key="option.value"
+          type="button"
+          class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-800"
+          role="menuitemradio"
+          :aria-checked="preference === option.value"
+          @click="selectTheme(option.value)"
+        >
+          <component :is="option.icon" class="h-4 w-4" />
+          <span class="flex-1">{{ option.label }}</span>
+          <Check
+            class="h-3.5 w-3.5 text-primary-500"
+            :class="preference === option.value ? 'opacity-100' : 'opacity-0'"
+          />
+        </button>
+      </div>
+    </ClientOnly>
   </details>
 </template>

@@ -386,7 +386,7 @@ const getPic = (url: string) => {
 
 <template>
   <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar :showSearch="false" :showThemeSwitcher="true" />
+    <TopBar :showSearch="false" :showThemeSwitcher="true" :showMenu="true" />
     <div class="max-w-4xl mx-auto px-2">
       <header class="text-center mb-6">
         <div class="mb-6">

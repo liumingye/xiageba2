@@ -685,7 +685,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-  const clientIp = getClientIp(event);
   let inputUrl = body.url as string | undefined;
   let id = body.id as string | undefined;
 
@@ -697,6 +696,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "同时传入 url 和 id 无效" });
   }
 
+  const clientIp = getClientIp(event);
   let sourceTitle = "临时资源";
   let sourceUrl = "";
 
