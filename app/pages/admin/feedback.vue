@@ -267,11 +267,11 @@ const typeLabel: Record<string, string> = {
 };
 
 const typeColor: Record<string, string> = {
-  BROKEN_LINK: "text-red-400 bg-red-900/30",
-  WRONG_CONTENT: "text-orange-400 bg-orange-900/30",
-  WRONG_CODE: "text-yellow-400 bg-yellow-900/30",
-  WRONG_QUALITY: "text-blue-400 bg-blue-900/30",
-  WRONG_INFO: "text-purple-400 bg-purple-900/30",
+  BROKEN_LINK: "text-[var(--white)] bg-red-600",
+  WRONG_CONTENT: "text-[var(--white)] bg-orange-600",
+  WRONG_CODE: "text-[var(--white)] bg-yellow-600",
+  WRONG_QUALITY: "text-[var(--white)] bg-blue-600",
+  WRONG_INFO: "text-[var(--white)] bg-purple-600",
 };
 </script>
 
@@ -281,8 +281,10 @@ const typeColor: Record<string, string> = {
 
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
-      <div class="flex items-center justify-between mb-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
+      <div
+        class="flex sm:items-center sm:justify-between flex-col sm:flex-row mb-6 gap-3"
+      >
         <h2 class="text-lg font-medium text-white">用户反馈</h2>
         <div class="flex items-center gap-2">
           <button
@@ -331,7 +333,7 @@ const typeColor: Record<string, string> = {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-800">
+          <thead class="bg-zinc-900">
             <tr>
               <th
                 class="px-4 py-3 text-left text-zinc-400 text-sm font-medium min-w-[220px]"
@@ -388,7 +390,7 @@ const typeColor: Record<string, string> = {
               v-else
               v-for="fb in feedbacks"
               :key="fb.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800"
             >
               <td class="px-4 py-4">
                 <div class="flex items-center gap-2">
@@ -527,7 +529,7 @@ const typeColor: Record<string, string> = {
                   </a>
                   <button
                     v-if="fb.status === 'PENDING'"
-                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-700 hover:bg-green-600 text-white rounded-lg transition-colors"
+                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-700 hover:bg-green-600 text-[var(--white)] rounded-lg transition-colors"
                     @click="resolveFeedback(fb.id)"
                   >
                     <CheckCircle class="w-3.5 h-3.5" />

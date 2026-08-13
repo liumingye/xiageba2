@@ -3,9 +3,10 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post } from "~/utils/request";
-import { Save, UserCog, Check, Loader2, Link2, KeyRound } from "@lucide/vue";
+import { Save, UserCog, Check, Loader2, Link2, KeyRound, FolderOpen } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { useToast } from "~/composables/useToast";
 
 interface AccountConfig {
@@ -40,6 +41,22 @@ const config = ref<AccountConfig>({
 
 const saving = ref(false);
 const saved = ref(false);
+
+// 目录选择弹窗
+const dirPickerShow = ref(false);
+const dirPickerType = ref<"quark" | "baidu" | "uc" | "xunlei">("quark");
+const dirPickerField = ref<"quark_temp_dir" | "baidu_temp_dir" | "uc_temp_dir" | "xunlei_temp_dir">("quark_temp_dir");
+
+const openDirPicker = (type: "quark" | "baidu" | "uc" | "xunlei") => {
+  dirPickerType.value = type;
+  dirPickerField.value = `${type}_temp_dir` as typeof dirPickerField.value;
+  dirPickerShow.value = true;
+};
+
+const handleDirSelect = (id: string) => {
+  config.value[dirPickerField.value] = id;
+  dirPickerShow.value = false;
+};
 
 // 百度 OAuth2 授权状态
 const baiduOauthUrl = ref("");
@@ -162,7 +179,7 @@ const saveConfig = async () => {
     <AdminHeader />
     <AdminNav />
 
-    <main class="max-w-4xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">账号管理</h2>
         <button
@@ -216,12 +233,22 @@ const saveConfig = async () => {
               <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
-              <input
-                v-model="config.quark_temp_dir"
-                type="text"
-                placeholder="输入目录 Id"
-                class="input-search"
-              />
+              <div class="flex gap-2">
+                <input
+                  v-model="config.quark_temp_dir"
+                  type="text"
+                  placeholder="输入目录 Id"
+                  class="input-search flex-1"
+                />
+                <button
+                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
+                  title="从网盘选择目录"
+                  @click="openDirPicker('quark')"
+                >
+                  <FolderOpen class="w-4 h-4" />
+                  选择
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -339,12 +366,22 @@ const saveConfig = async () => {
               <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
-              <input
-                v-model="config.baidu_temp_dir"
-                type="text"
-                placeholder="输入目录"
-                class="input-search"
-              />
+              <div class="flex gap-2">
+                <input
+                  v-model="config.baidu_temp_dir"
+                  type="text"
+                  placeholder="输入目录路径"
+                  class="input-search flex-1"
+                />
+                <button
+                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
+                  title="从网盘选择目录"
+                  @click="openDirPicker('baidu')"
+                >
+                  <FolderOpen class="w-4 h-4" />
+                  选择
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -387,12 +424,22 @@ const saveConfig = async () => {
               <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
-              <input
-                v-model="config.uc_temp_dir"
-                type="text"
-                placeholder="输入目录 Id"
-                class="input-search"
-              />
+              <div class="flex gap-2">
+                <input
+                  v-model="config.uc_temp_dir"
+                  type="text"
+                  placeholder="输入目录 Id"
+                  class="input-search flex-1"
+                />
+                <button
+                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
+                  title="从网盘选择目录"
+                  @click="openDirPicker('uc')"
+                >
+                  <FolderOpen class="w-4 h-4" />
+                  选择
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -437,16 +484,33 @@ const saveConfig = async () => {
               <label class="block text-zinc-400 text-sm mb-2"
                 >临时资源目录</label
               >
-              <input
-                v-model="config.xunlei_temp_dir"
-                type="text"
-                placeholder="输入目录 Id"
-                class="input-search"
-              />
+              <div class="flex gap-2">
+                <input
+                  v-model="config.xunlei_temp_dir"
+                  type="text"
+                  placeholder="输入目录 Id"
+                  class="input-search flex-1"
+                />
+                <button
+                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
+                  title="从网盘选择目录"
+                  @click="openDirPicker('xunlei')"
+                >
+                  <FolderOpen class="w-4 h-4" />
+                  选择
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </main>
+
+    <DirPickerModal
+      :show="dirPickerShow"
+      :type="dirPickerType"
+      @close="dirPickerShow = false"
+      @select="handleDirSelect"
+    />
   </div>
 </template>

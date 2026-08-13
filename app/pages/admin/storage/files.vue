@@ -78,19 +78,33 @@ const formatDate = (dateStr: string) => {
 const isImage = (file: StorageFile) => {
   if (file.mimeType?.startsWith("image/")) return true;
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "avif"].includes(ext);
+  return [
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "webp",
+    "svg",
+    "bmp",
+    "ico",
+    "avif",
+  ].includes(ext);
 };
 
 const isAudio = (file: StorageFile) => {
   if (file.mimeType?.startsWith("audio/")) return true;
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["mp3", "flac", "wav", "aac", "ogg", "m4a", "ape", "alac"].includes(ext);
+  return ["mp3", "flac", "wav", "aac", "ogg", "m4a", "ape", "alac"].includes(
+    ext,
+  );
 };
 
 const isVideo = (file: StorageFile) => {
   if (file.mimeType?.startsWith("video/")) return true;
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v"].includes(ext);
+  return ["mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v"].includes(
+    ext,
+  );
 };
 
 const loadConfigs = async () => {
@@ -276,31 +290,10 @@ onMounted(async () => {
     <AdminHeader />
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">文件管理</h2>
         <div class="flex items-center gap-3">
-          <select
-            v-model="selectedConfigId"
-            class="input-search py-2 px-3 text-sm w-56"
-          >
-            <option value="" disabled>请选择存储配置</option>
-            <option v-for="cfg in configs" :key="cfg.id" :value="cfg.id">
-              {{ cfg.name }} ({{ cfg.bucket }})
-            </option>
-          </select>
-          <div class="relative">
-            <input
-              v-model="searchKeyword"
-              type="text"
-              placeholder="搜索文件名"
-              class="input-search py-2 pl-9 pr-3 text-sm w-56"
-              @keyup.enter="handleSearch"
-            />
-            <Search
-              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
-            />
-          </div>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
             @click="handleSearch"
@@ -318,6 +311,30 @@ onMounted(async () => {
         </div>
       </div>
 
+      <div class="flex items-center gap-3 mb-3 justify-end">
+        <select
+          v-model="selectedConfigId"
+          class="input-search py-2 px-3 text-sm flex-1 max-w-24"
+        >
+          <option value="" disabled>请选择存储配置</option>
+          <option v-for="cfg in configs" :key="cfg.id" :value="cfg.id">
+            {{ cfg.name }} ({{ cfg.bucket }})
+          </option>
+        </select>
+        <div class="relative flex-1">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="搜索文件名"
+            class="input-search py-2 pl-9 pr-3 text-sm"
+            @keyup.enter="handleSearch"
+          />
+          <Search
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+          />
+        </div>
+      </div>
+
       <div
         v-if="showUpload"
         class="card p-4 mb-4 flex flex-wrap items-end gap-4"
@@ -331,7 +348,9 @@ onMounted(async () => {
           />
         </div>
         <div class="flex-1 min-w-[200px]">
-          <label class="block text-zinc-400 text-sm mb-2">上传路径（可选）</label>
+          <label class="block text-zinc-400 text-sm mb-2"
+            >上传路径（可选）</label
+          >
           <input
             v-model="uploadPath"
             type="text"
@@ -398,7 +417,7 @@ onMounted(async () => {
                 :alt="file.name"
                 loading="lazy"
                 class="w-full h-full object-cover"
-                @error="($event.target as any).style.display='none'"
+                @error="($event.target as any).style.display = 'none'"
               />
               <FileAudio
                 v-else-if="isAudio(file)"
@@ -435,7 +454,10 @@ onMounted(async () => {
                   :disabled="deletingKey === file.key"
                   @click="handleDelete(file)"
                 >
-                  <Loader2 v-if="deletingKey === file.key" class="w-4 h-4 animate-spin" />
+                  <Loader2
+                    v-if="deletingKey === file.key"
+                    class="w-4 h-4 animate-spin"
+                  />
                   <Trash2 v-else class="w-4 h-4" />
                 </button>
               </div>
@@ -474,10 +496,7 @@ onMounted(async () => {
               </div>
               <!-- 正常文件名 -->
               <template v-else>
-                <p
-                  class="text-xs text-white truncate"
-                  :title="file.name"
-                >
+                <p class="text-xs text-white truncate" :title="file.name">
                   {{ file.name }}
                 </p>
                 <div class="flex items-center justify-between mt-1">

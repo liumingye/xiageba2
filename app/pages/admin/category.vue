@@ -152,7 +152,7 @@ const deleteCategory = async (id: string) => {
     <AdminHeader />
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">分类管理</h2>
         <button
@@ -166,7 +166,7 @@ const deleteCategory = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-800">
+          <thead class="bg-zinc-900">
             <tr>
               <th
                 class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-20"
@@ -197,7 +197,7 @@ const deleteCategory = async (id: string) => {
             <tr
               v-for="cat in categories"
               :key="cat.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800"
             >
               <td class="px-4 py-3 text-zinc-400 text-xs font-mono truncate">
                 <span :title="String(cat.id)">{{ cat.id }}</span>
@@ -217,7 +217,7 @@ const deleteCategory = async (id: string) => {
               <td class="px-4 py-3 text-center">
                 <span
                   class="inline-flex items-center px-2 py-1 rounded-sm text-xs"
-                  :class="cat.isShow ? 'bg-green-900/50 text-green-400' : 'bg-zinc-800 text-zinc-500'"
+                  :class="cat.isShow ? 'bg-green-600 text-[var(--white)]' : 'bg-zinc-700 text-zinc-400'"
                 >
                   {{ cat.isShow ? "显示" : "隐藏" }}
                 </span>
@@ -275,7 +275,7 @@ const deleteCategory = async (id: string) => {
             <h3 class="text-xl font-medium text-white mb-6">添加分类</h3>
             <div
               v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+              class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
             >
               {{ error }}
             </div>
@@ -352,7 +352,7 @@ const deleteCategory = async (id: string) => {
             <h3 class="text-xl font-medium text-white mb-6">编辑分类</h3>
             <div
               v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+              class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
             >
               {{ error }}
             </div>

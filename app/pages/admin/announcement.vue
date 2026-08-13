@@ -59,13 +59,13 @@ const displayTypeLabel = (type: string) => {
 const displayTypeClass = (type: string) => {
   switch (type) {
     case "NORMAL":
-      return "bg-blue-900/50 text-blue-400";
+      return "bg-blue-600 text-[var(--white)]";
     case "BANNER":
-      return "bg-purple-900/50 text-purple-400";
+      return "bg-purple-600 text-[var(--white)]";
     case "DIALOG":
-      return "bg-orange-900/50 text-orange-400";
+      return "bg-orange-600 text-[var(--white)]";
     default:
-      return "bg-zinc-800 text-zinc-400";
+      return "bg-zinc-600 text-[var(--white)]";
   }
 };
 
@@ -87,15 +87,15 @@ const iconLabel = (icon: string) => {
 const iconClass = (icon: string) => {
   switch (icon) {
     case "INFO":
-      return "bg-blue-900/50 text-blue-400";
+      return "bg-blue-600 text-[var(--white)]";
     case "WARN":
-      return "bg-yellow-900/50 text-yellow-400";
+      return "bg-yellow-600 text-[var(--white)]";
     case "ERROR":
-      return "bg-red-900/50 text-red-400";
+      return "bg-red-600 text-[var(--white)]";
     case "SUCCESS":
-      return "bg-green-900/50 text-green-400";
+      return "bg-green-600 text-[var(--white)]";
     default:
-      return "bg-zinc-800 text-zinc-400";
+      return "bg-zinc-600 text-[var(--white)]";
   }
 };
 
@@ -105,8 +105,8 @@ const statusLabel = (status: string) => {
 
 const statusClass = (status: string) => {
   return status === "ACTIVE"
-    ? "bg-green-900/50 text-green-400"
-    : "bg-zinc-800 text-zinc-500";
+    ? "bg-green-600 text-[var(--white)]"
+    : "bg-zinc-600 text-[var(--white)]";
 };
 
 const formatDate = (dateStr: string) => {
@@ -254,7 +254,7 @@ const deleteAnnouncement = async (id: string) => {
     <AdminHeader />
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">公告管理</h2>
         <button
@@ -268,7 +268,7 @@ const deleteAnnouncement = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-800">
+          <thead class="bg-zinc-900">
             <tr>
               <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
                 标题
@@ -304,7 +304,7 @@ const deleteAnnouncement = async (id: string) => {
             <tr
               v-for="item in announcements"
               :key="item.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">

@@ -184,7 +184,9 @@ const savePancheckConfig = async () => {
   savingPancheck.value = true;
   savedPancheck.value = false;
   try {
-    await post("/api/admin/config/pancheck", { servers: pancheckServers.value });
+    await post("/api/admin/config/pancheck", {
+      servers: pancheckServers.value,
+    });
     savedPancheck.value = true;
     setTimeout(() => {
       savedPancheck.value = false;
@@ -294,7 +296,10 @@ const saveWebSearchFilterConfig = async () => {
   savingWebSearchFilter.value = true;
   savedWebSearchFilter.value = false;
   try {
-    await post("/api/admin/config/web-search-filter", webSearchFilterConfig.value);
+    await post(
+      "/api/admin/config/web-search-filter",
+      webSearchFilterConfig.value,
+    );
     savedWebSearchFilter.value = true;
     setTimeout(() => {
       savedWebSearchFilter.value = false;
@@ -379,7 +384,7 @@ const clearISRCache = async (route?: string) => {
 
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <!-- 搜索索引 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
@@ -503,9 +508,9 @@ const clearISRCache = async (route?: string) => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-red-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center"
             >
-              <Database class="w-5 h-5 text-red-400" />
+              <Database class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
               <h3 class="text-white font-medium">缓存服务</h3>
@@ -574,9 +579,9 @@ const clearISRCache = async (route?: string) => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-yellow-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center"
             >
-              <Key class="w-5 h-5 text-yellow-400" />
+              <Key class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
               <h3 class="text-white font-medium">AES-CBC 密钥</h3>
@@ -631,9 +636,9 @@ const clearISRCache = async (route?: string) => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-emerald-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center"
             >
-              <Filter class="w-5 h-5 text-emerald-400" />
+              <Filter class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
               <h3 class="text-white font-medium">搜索结果过滤词</h3>
@@ -679,9 +684,9 @@ const clearISRCache = async (route?: string) => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-purple-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center"
             >
-              <ShieldAlert class="w-5 h-5 text-purple-400" />
+              <ShieldAlert class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
               <h3 class="text-white font-medium">转存广告过滤</h3>
@@ -739,9 +744,9 @@ const clearISRCache = async (route?: string) => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-cyan-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center"
             >
-              <Sparkles class="w-5 h-5 text-cyan-400" />
+              <Sparkles class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
               <h3 class="text-white font-medium">AI 智能搜索</h3>
@@ -819,9 +824,9 @@ const clearISRCache = async (route?: string) => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-orange-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center"
             >
-              <TrendingUp class="w-5 h-5 text-orange-400" />
+              <TrendingUp class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
               <h3 class="text-white font-medium">热门搜索词</h3>
@@ -910,9 +915,9 @@ const clearISRCache = async (route?: string) => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center"
             >
-              <Link class="w-5 h-5 text-blue-400" />
+              <Link class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
               <h3 class="text-white font-medium">PanCheck 接口</h3>

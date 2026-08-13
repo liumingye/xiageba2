@@ -17,6 +17,12 @@ import {
   getXunleiClient,
 } from "#server/lib/pan-instance";
 import { THIRTY_MINUTES } from "#server/lib/const";
+import {
+  GETURL_DAILY_LIMIT,
+  getClientIp,
+  getTodayGeturlCount,
+  incrementTodayGeturlCount,
+} from "#server/lib/geturl-record";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -679,6 +685,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
+  const clientIp = getClientIp(event);
   let inputUrl = body.url as string | undefined;
   let id = body.id as string | undefined;
 
@@ -738,9 +745,18 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "白名单清洗失败" });
   }
 
+  // 🛡️ IP 今日 geturl 记录限流：超过上限不再转存，直接返回原始链接（按网盘类型分别计数）
+  const parsedShare = parseShareUrl(sourceUrl);
+  const netdiskType = parsedShare.type;
+
+  const todayCount = await getTodayGeturlCount(clientIp, netdiskType);
+  if (todayCount >= GETURL_DAILY_LIMIT) {
+    return { url: sourceUrl };
+  }
+
   // 构建核心转存处理链条
   const transferPromise = (async () => {
-    const { type, fid, passcode, url: sharePageUrl } = parseShareUrl(sourceUrl);
+    const { type, fid, passcode, url: sharePageUrl } = parsedShare;
 
     if (type === "unknown" || !fid) {
       return sourceUrl;
@@ -811,6 +827,8 @@ export default defineEventHandler(async (event) => {
 
   try {
     const result = await transferPromise;
+    // 记录 IP 今日 geturl 次数（异步，不阻塞响应）
+    incrementTodayGeturlCount(clientIp, netdiskType);
     return { url: result };
   } finally {
     // 🔒 无论成功或失败，办完手续后必须从内存中清除锁，允许下一个周期（20分钟后）的请求重新触发转存

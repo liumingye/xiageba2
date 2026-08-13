@@ -1,0 +1,173 @@
+<script setup lang="ts">
+import { ref, watch } from "vue";
+import { X, Loader2, Folder, Check, FolderOpen } from "@lucide/vue";
+import { get } from "~/utils/request";
+
+interface DirItem {
+  id: string;
+  name: string;
+}
+
+const props = defineProps<{
+  show: boolean;
+  type: "quark" | "baidu" | "uc" | "xunlei";
+}>();
+
+const emit = defineEmits<{
+  (e: "close"): void;
+  (e: "select", id: string): void;
+}>();
+
+const dirs = ref<DirItem[]>([]);
+const loading = ref(false);
+const selectedId = ref<string | null>(null);
+const errorMsg = ref("");
+
+const TYPE_LABELS: Record<string, string> = {
+  quark: "夸克网盘",
+  baidu: "百度网盘",
+  uc: "UC 网盘",
+  xunlei: "迅雷云盘",
+};
+
+const loadDirs = async () => {
+  loading.value = true;
+  errorMsg.value = "";
+  selectedId.value = null;
+  try {
+    const data = await get(`/api/admin/list-dir?type=${props.type}`);
+    dirs.value = data.list || [];
+    if (dirs.value.length === 0) {
+      errorMsg.value = "根目录下没有文件夹";
+    }
+  } catch (e: any) {
+    errorMsg.value = e?.response?.data?.message || "获取目录列表失败";
+  } finally {
+    loading.value = false;
+  }
+};
+
+watch(
+  () => props.show,
+  (show) => {
+    if (show) {
+      loadDirs();
+    }
+  },
+);
+
+const handleSelect = (dir: DirItem) => {
+  selectedId.value = dir.id;
+};
+
+const handleConfirm = () => {
+  if (selectedId.value) {
+    emit("select", selectedId.value);
+  }
+};
+
+const handleClose = () => {
+  emit("close");
+};
+</script>
+
+<template>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div
+        v-if="show"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <div
+          class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          @click="handleClose"
+        ></div>
+
+        <div
+          class="modal-content relative bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-800 max-h-[80vh] flex flex-col"
+        >
+          <button
+            class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors z-10"
+            @click="handleClose"
+          >
+            <X class="w-5 h-5 text-gray-400" />
+          </button>
+
+          <h3 class="text-lg font-medium text-white mb-1">
+            选择临时资源目录
+          </h3>
+          <p class="text-sm text-gray-500 mb-4">
+            {{ TYPE_LABELS[type] }} · 根目录下的文件夹
+          </p>
+
+          <!-- 加载中 -->
+          <div
+            v-if="loading"
+            class="flex-1 flex items-center justify-center py-12 text-gray-500"
+          >
+            <Loader2 class="w-6 h-6 animate-spin mr-2" />
+            加载中...
+          </div>
+
+          <!-- 错误 -->
+          <div
+            v-else-if="errorMsg"
+            class="flex-1 flex flex-col items-center justify-center py-12 text-gray-500"
+          >
+            <FolderOpen class="w-10 h-10 mb-2 text-gray-600" />
+            <p class="text-sm">{{ errorMsg }}</p>
+          </div>
+
+          <!-- 目录列表 -->
+          <div v-else class="flex-1 overflow-y-auto min-h-0 space-y-1">
+            <button
+              v-for="dir in dirs"
+              :key="dir.id"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left"
+              :class="
+                selectedId === dir.id
+                  ? 'bg-primary-500/20 text-white ring-1 ring-primary-500/30'
+                  : 'hover:bg-gray-800 text-gray-300'
+              "
+              @click="handleSelect(dir)"
+            >
+              <Folder
+                class="w-4 h-4 shrink-0"
+                :class="selectedId === dir.id ? 'text-primary-400' : 'text-gray-500'"
+              />
+              <span class="flex-1 text-sm truncate">{{ dir.name }}</span>
+              <span
+                class="text-xs text-gray-600 font-mono truncate max-w-[120px]"
+                :title="dir.id"
+              >
+                {{ dir.id }}
+              </span>
+              <Check
+                v-if="selectedId === dir.id"
+                class="w-4 h-4 text-primary-400 shrink-0"
+              />
+            </button>
+          </div>
+
+          <!-- 底部操作 -->
+          <div class="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-gray-800">
+            <button
+              class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              @click="handleClose"
+            >
+              取消
+            </button>
+            <button
+              class="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="!selectedId"
+              @click="handleConfirm"
+            >
+              <Check class="w-4 h-4" />
+              确认
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>

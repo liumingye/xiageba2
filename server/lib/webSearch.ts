@@ -407,8 +407,8 @@ export async function webSearchConcurrent(
           }),
         );
 
-        // 写入高速 Redis 缓存（保存30分钟）
-        await setRedisCache(cacheKey, items, 30 * 60);
+        // 写入高速 Redis 缓存（保存120分钟）
+        await setRedisCache(cacheKey, items, 120 * 60);
         return items;
       };
 

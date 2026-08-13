@@ -400,34 +400,10 @@ const importSources = async () => {
     <AdminHeader />
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
-      <div class="flex items-center justify-between mb-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
+      <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-medium text-white">资源管理</h2>
         <div class="flex items-center gap-3">
-          <div class="flex items-center gap-2">
-            <select
-              v-model="filterCid"
-              class="input-search py-2 px-3 text-sm w-40"
-              @change="handleFilterChange"
-            >
-              <option value="">全部分类</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
-            <div class="relative">
-              <input
-                v-model="keyword"
-                type="text"
-                placeholder="搜索资源名称或链接"
-                class="input-search py-2 pl-9 pr-3 text-sm w-56"
-                @keyup.enter="handleSearch"
-              />
-              <Search
-                class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
-              />
-            </div>
-          </div>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
             @click="openImportModal"
@@ -445,9 +421,34 @@ const importSources = async () => {
         </div>
       </div>
 
+      <div class="flex items-center gap-3 mb-3 justify-end">
+        <select
+          v-model="filterCid"
+          class="input-search py-2 px-3 text-sm flex-1 max-w-24"
+          @change="handleFilterChange"
+        >
+          <option value="">全部分类</option>
+          <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+            {{ cat.name }}
+          </option>
+        </select>
+        <div class="relative flex-1">
+          <input
+            v-model="keyword"
+            type="text"
+            placeholder="搜索资源名称或链接"
+            class="input-search py-2 pl-9 pr-3 text-sm"
+            @keyup.enter="handleSearch"
+          />
+          <Search
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+          />
+        </div>
+      </div>
+
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-800">
+          <thead class="bg-zinc-900">
             <tr>
               <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
                 ID
@@ -494,7 +495,7 @@ const importSources = async () => {
               v-else
               v-for="item in sources"
               :key="item.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800"
             >
               <td class="px-4 py-3 text-zinc-400 text-xs">
                 <span :title="item.id">{{ item.id }}</span>

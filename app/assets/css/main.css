@@ -4,6 +4,7 @@
 
 /**/
 html {
+  --white: #fff;
   --bg-color-700: #e2e8f0;
   --bg-color-800: #fff;
   --bg-color-900: #f1f1f1;

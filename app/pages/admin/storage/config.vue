@@ -163,7 +163,7 @@ const deleteConfig = async (id: string) => {
     <AdminHeader />
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">存储配置</h2>
         <button
@@ -177,7 +177,7 @@ const deleteConfig = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-800">
+          <thead class="bg-zinc-900">
             <tr>
               <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-32">
                 名称
@@ -206,7 +206,7 @@ const deleteConfig = async (id: string) => {
             <tr
               v-for="item in configs"
               :key="item.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">

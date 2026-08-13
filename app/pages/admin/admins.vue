@@ -126,7 +126,7 @@ const deleteAdmin = async (id: string) => {
 
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">管理员列表</h2>
         <div class="flex items-center gap-2">
@@ -142,7 +142,7 @@ const deleteAdmin = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-800">
+          <thead class="bg-zinc-900">
             <tr>
               <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
                 用户名
@@ -163,7 +163,7 @@ const deleteAdmin = async (id: string) => {
             <tr
               v-for="admin in admins"
               :key="admin.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800"
             >
               <td class="px-4 py-4">
                 <div class="flex items-center gap-3">

@@ -273,7 +273,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
     <AdminHeader />
     <AdminNav />
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium text-white">接口配置</h2>
         <button
@@ -306,7 +306,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
 
       <div class="card overflow-x-auto">
         <table class="table-auto w-full text-sm text-left">
-          <thead class="bg-zinc-800 text-zinc-400">
+          <thead class="bg-zinc-900 text-zinc-400">
             <tr>
               <th class="px-4 py-3 w-32">类型</th>
               <th class="px-4 py-3">线路名称</th>
@@ -321,17 +321,17 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             <tr
               v-for="item in apis"
               :key="item.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800/50"
+              class="border-t border-zinc-800 hover:bg-zinc-800"
             >
               <td class="px-4 py-3">
                 <span
                   class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs"
                   :class="
                     item.type === 'api'
-                      ? 'bg-blue-500/20 text-blue-400'
+                      ? 'bg-blue-600 text-[var(--white)]'
                       : item.type === 'pansou'
-                        ? 'bg-violet-500/20 text-violet-400'
-                        : 'bg-green-500/20 text-green-400'
+                        ? 'bg-violet-600 text-[var(--white)]'
+                        : 'bg-green-600 text-[var(--white)]'
                   "
                 >
                   <component
@@ -355,8 +355,8 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   class="px-2 py-1 rounded text-xs"
                   :class="
                     item.status === 1
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-red-500/20 text-red-400'
+                      ? 'bg-green-600 text-[var(--white)]'
+                      : 'bg-red-600 text-[var(--white)]'
                   "
                 >
                   {{ statusLabel(item.status) }}
@@ -365,14 +365,14 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                   <button
-                    class="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
+                    class="p-1.5 text-blue-400 hover:bg-blue-500 hover:text-[var(--white)] rounded transition-colors"
                     title="编辑"
                     @click="openEdit(item)"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                    class="p-1.5 text-red-400 hover:bg-red-500 hover:text-[var(--white)] rounded transition-colors"
                     title="删除"
                     @click="deleteApi(item.id)"
                   >

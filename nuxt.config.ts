@@ -136,7 +136,9 @@ export default defineNuxtConfig({
           rel: "apple-touch-icon",
           href: "/pwa/apple-touch-icon.png",
         },
-        ...(isDev ? [] : [{ rel: "manifest", href: "/manifest.webmanifest" }]),
+        ...(isDev
+          ? []
+          : [{ rel: "manifest" as const, href: "/manifest.webmanifest" }]),
       ],
       script: [
         {
@@ -163,10 +165,21 @@ export default defineNuxtConfig({
       ssr: true,
       isr: 60 * 60 * 24 * 30,
     },
+    "/source/**": {
+      ssr: true,
+      isr: 60 * 60 * 24 * 30,
+    },
     "/search": {
       ssr: true,
     },
     "/img/**": {
+      static: true,
+      headers: {
+        "Cache-Control":
+          "public, max-age=864000, stale-while-revalidate=864000",
+      },
+    },
+    "/pwa/**": {
       static: true,
       headers: {
         "Cache-Control":
