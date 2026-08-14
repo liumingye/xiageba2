@@ -34,7 +34,6 @@ const copyFetchedUrl = async () => {
   }
 };
 
-const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
 
@@ -47,6 +46,7 @@ interface Source {
   menu: string;
   createdAt: string;
   type: string;
+  status: number;
 }
 
 interface SimilarItem {
@@ -76,6 +76,7 @@ const {
       menu: "",
       createdAt: "",
       type: "",
+      status: 1,
     },
     similar: [],
   }),
@@ -250,9 +251,9 @@ onMounted(() => {
             </div>
 
             <section v-if="source.menu">
-              <div class="font-bold text-zinc-300 mb-4 text-lg">文件内容:</div>
+              <div class="font-bold text-zinc-300 mb-3 text-lg">文件内容:</div>
               <pre
-                class="bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-56 overflow-auto"
+                class="text-zinc-300 bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-56 overflow-auto"
                 >{{ source.menu }}</pre
               >
             </section>
@@ -263,8 +264,8 @@ onMounted(() => {
                   source.description || source.menu,
               }"
             >
-              <h4 class="text-zinc-300 mb-4">获取下载链接:</h4>
-              <div class="space-y-3">
+              <div v-if="source.status === 1" class="space-y-3">
+                <h4 class="text-zinc-300">获取下载链接:</h4>
                 <div v-if="!fetchedUrl" class="space-y-3">
                   <p class="text-xs text-zinc-500">
                     点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存，失效后可重新获取。
@@ -348,6 +349,9 @@ onMounted(() => {
                     </p>
                   </div>
                 </div>
+              </div>
+              <div v-else>
+                <p class="text-center text-zinc-500">该资源已被删除或不存在</p>
               </div>
             </footer>
           </article>

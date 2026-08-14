@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
       menu: true,
       url: true,
       isSelf: true,
+      status: true,
     },
     where: { id },
   });
