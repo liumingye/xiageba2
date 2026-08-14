@@ -285,7 +285,6 @@ const isMobile = useMediaQuery("(max-width: 767px)");
           :key="item.id"
           :item="item"
           :check-status="getCheckStatus(item.id)"
-          @click-title="router.push(`/source/${item.id}`)"
           @open-tree="openTreeModal({ item, type: 'id' })"
           @open-modal="openModal({ item, type: 'id' })"
         />

@@ -34,7 +34,6 @@ export const useMusicStore = defineStore("music", () => {
     "searchType",
     "music",
   );
-  const currentMusic = ref<Music | MusicSearch | null>(null);
 
   const addSearchHistory = (keyword: string) => {
     if (!keyword.trim()) return;
@@ -52,16 +51,10 @@ export const useMusicStore = defineStore("music", () => {
     searchHistory.value = [];
   };
 
-  const setCurrentMusic = (music: Music | MusicSearch) => {
-    currentMusic.value = music;
-  };
-
   return {
     searchHistory: skipHydrate(searchHistory),
     searchType: skipHydrate(searchType),
-    currentMusic,
     addSearchHistory,
     clearSearchHistory,
-    setCurrentMusic,
   };
 });

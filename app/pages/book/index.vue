@@ -17,7 +17,7 @@ import {
 import { useClipboard, useDebounceFn } from "@vueuse/core";
 
 defineOptions({
-  name: "BookPage",
+  name: "BookIndexPage",
 });
 
 const route = useRoute();
@@ -121,7 +121,6 @@ const clearFilters = () => {
 
 // 搜索
 const searchInput = ref("");
-const MAX_KEYWORD_LENGTH = 30;
 
 watch(
   searchKeyword,
@@ -303,14 +302,14 @@ const novelCoverError = reactive<Record<string, boolean>>({});
 
 // 试读弹窗
 const showSampleReadModal = ref(false);
-const sampleReadTitle = ref("");
+const sampleReadBook = ref<NovelBook | null>(null);
 const sampleReadChapters = ref<any[]>([]);
 const sampleReadCurrentIndex = ref(0);
 const sampleReadLoading = ref(false);
 const sampleReadError = ref("");
 
 const openSampleRead = async (book: NovelBook) => {
-  sampleReadTitle.value = book.bookName;
+  sampleReadBook.value = book;
   sampleReadChapters.value = [];
   sampleReadCurrentIndex.value = 0;
   sampleReadError.value = "";
@@ -338,7 +337,7 @@ const openSampleRead = async (book: NovelBook) => {
 
 const closeSampleRead = () => {
   showSampleReadModal.value = false;
-  sampleReadTitle.value = "";
+  sampleReadBook.value = null;
   sampleReadChapters.value = [];
   sampleReadCurrentIndex.value = 0;
   sampleReadError.value = "";
@@ -418,18 +417,20 @@ const { success } = useToast();
 const { copy } = useClipboard();
 
 const getTag = (tags: string) => {
-  return tags
-    .split(",")
-    .map((v) => {
-      const tagList = v.split("_");
-      if (tagList.length >= 2) {
-        return tagList[1];
-      }
-      // 返回最后一个标签
-      return tagList[0];
-    })
-    .filter((v) => v != "*")
-    .slice(0, 3);
+  return [
+    ...new Set(
+      tags
+        .split(",")
+        .map((v) => {
+          const tagList = v.split("_");
+          if (tagList.length >= 2) {
+            return tagList[1];
+          }
+          return tagList[0];
+        })
+        .filter((v) => v != "*"),
+    ),
+  ].slice(0, 3);
 };
 
 useHead({
@@ -437,9 +438,9 @@ useHead({
     if (isSearchMode.value && books.value.length > 0) {
       return `"${searchKeyword.value}" - 搜小说 - 下歌吧`;
     }
-    if (isSearchMode.value) return `${searchKeyword.value} - 搜小说 - 下歌吧`;
+    if (isSearchMode.value) return `"${searchKeyword.value}" - 搜小说 - 下歌吧`;
     return books.value.length > 0
-      ? `第${currentPage.value}页 - 搜小说 - 下歌吧`
+      ? `搜小说 - 第${currentPage.value}页 - 下歌吧`
       : "搜小说 - 下歌吧";
   },
   meta: [
@@ -464,10 +465,9 @@ useHead({
         <div class="flex items-center relative flex-1">
           <input
             v-model="searchInput"
-            :maxlength="MAX_KEYWORD_LENGTH"
             type="text"
             placeholder="搜你想看的小说"
-            class="input-search pl-3 pr-10"
+            class="input-search pl-3 pr-10 bg-zinc-900"
             @keydown.enter="handleSearch"
           />
           <button
@@ -634,10 +634,11 @@ useHead({
           <!-- 小说列表网格 -->
           <template v-if="books.length > 0">
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              <div
+              <NuxtLink
+                :to="`/book/${encodeURIComponent(book.bookId)}`"
                 v-for="book in books"
                 :key="book.bookId"
-                class="card p-3 hover:border-primary-500/50 transition-colors flex flex-col"
+                class="card p-3 hover:border-primary-500/50 transition-colors flex flex-col cursor-pointer group"
               >
                 <!-- 封面 -->
                 <div
@@ -660,11 +661,9 @@ useHead({
                   </div>
                   <!-- 完结/连载标签 -->
                   <div
-                    class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-[var(--white)]"
                     :class="
-                      book.bookStatus === 1
-                        ? 'bg-green-600 text-white'
-                        : 'bg-blue-600 text-white'
+                      book.bookStatus === 1 ? 'bg-green-600' : 'bg-blue-600'
                     "
                   >
                     {{ book.bookStatus === 1 ? "已完结" : "连载中" }}
@@ -684,7 +683,8 @@ useHead({
                   class="text-xs text-zinc-500 truncate mb-1"
                   :title="book.author"
                 >
-                  {{ book.author }}
+                  {{ book.author
+                  }}<template v-if="book.cpName"> · {{ book.cpName }}</template>
                 </p>
 
                 <!-- 标签 -->
@@ -705,20 +705,20 @@ useHead({
                 <div class="flex gap-2 mt-auto pt-2">
                   <button
                     class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
-                    @click="openSampleRead(book)"
+                    @click.prevent="openSampleRead(book)"
                   >
                     <Eye class="w-3 h-3" />
                     试读
                   </button>
                   <button
                     class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors"
-                    @click="openGetCode(book)"
+                    @click.prevent="openGetCode(book)"
                   >
                     <Key class="w-3 h-3" />
                     口令
                   </button>
                 </div>
-              </div>
+              </NuxtLink>
             </div>
           </template>
 
@@ -807,7 +807,7 @@ useHead({
               class="flex items-center justify-between p-4 border-b border-zinc-800"
             >
               <h3 class="text-white font-medium truncate flex-1 mr-2">
-                {{ sampleReadTitle }} - 试读
+                {{ sampleReadBook?.bookName }} - 试读
               </h3>
               <button
                 class="text-zinc-400 hover:text-white transition-colors flex-shrink-0"
@@ -879,6 +879,21 @@ useHead({
                 >
                   {{ sampleReadChapters[sampleReadCurrentIndex]?.content }}
                 </div>
+                <button
+                  v-if="sampleReadCurrentIndex < sampleReadChapters.length - 1"
+                  class="flex w-full justify-center items-center gap-1 px-3 py-8 rounded-md text-sm transition-colors bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                  @click="sampleReadNextChapter"
+                >
+                  下一章
+                  <ChevronRight class="w-4 h-4" />
+                </button>
+                <button
+                  v-if="sampleReadBook"
+                  class="flex w-full justify-center items-center gap-1 px-2 py-1.5 !mb-48 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors"
+                  @click="openGetCode(sampleReadBook)"
+                >
+                  获取口令
+                </button>
               </div>
               <div v-else class="text-center py-12">
                 <p class="text-zinc-500 text-sm">暂无试读内容</p>

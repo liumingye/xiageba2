@@ -39,31 +39,45 @@ export default defineEventHandler(async (event) => {
   });
   const url = `${BAIDU_BASE}/api/unisearch?${params.toString()}`;
 
-  const res = await fetch(url, {
+  const fetchOptions = {
     method: "POST",
     headers: {
       Cookie: cookie,
+      "accept-encoding": "gzip, deflate",
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     },
-  });
+  };
 
-  if (!res.ok) {
-    throw createError({
-      statusCode: 500,
-      message: `小说搜索请求失败: ${res.status}`,
-    });
+  let data: any = null;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await fetch(url, fetchOptions);
+
+    if (!res.ok) {
+      throw createError({
+        statusCode: 500,
+        message: `小说搜索请求失败: ${res.status}`,
+      });
+    }
+
+    data = await res.json();
+    if (data.error_no !== 0) {
+      throw createError({
+        statusCode: 500,
+        message: data.error_msg || "小说搜索请求失败",
+      });
+    }
+
+    if (Array.isArray(data.data) && data.data.length > 0) {
+      break;
+    }
+
+    if (attempt === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
 
-  const data = await res.json();
-  if (data.error_no !== 0) {
-    throw createError({
-      statusCode: 500,
-      message: data.error_msg || "小说搜索请求失败",
-    });
-  }
-
-  // data.data 是数组，每个元素有 list 字段包含小说列表
   const books = (data.data || []).flatMap((group: any) =>
     (group.list || []).map((b: any) => ({
       bookId: String(b.book_id),

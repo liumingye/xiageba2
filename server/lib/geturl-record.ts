@@ -2,7 +2,7 @@ import { type H3Event, getRequestIP } from "h3";
 import { getRedis } from "#server/lib/redis";
 
 /** 单个 IP 每天允许的 geturl 转存次数上限 */
-export const GETURL_DAILY_LIMIT = 10;
+export const GETURL_DAILY_LIMIT = 20;
 
 /** Redis key 前缀 */
 const RECORD_KEY_PREFIX = "geturl:count:";

@@ -27,7 +27,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  clickTitle: [item: SourceItem];
   openTree: [item: SourceItem];
   openModal: [item: SourceItem];
 }>();
@@ -44,9 +43,9 @@ const emit = defineEmits<{
     />
     <div class="flex flex-col">
       <div class="flex-1 min-w-0 flex gap-2 mb-2 flex-col">
-        <div
+        <NuxtLink
+          :to="`/source/${item.id}`"
           class="text-white hover:text-primary-400 cursor-pointer flex items-center gap-2"
-          @click="emit('clickTitle', item)"
         >
           <span
             class="min-w-0 break-all"
@@ -54,7 +53,7 @@ const emit = defineEmits<{
             v-html="highlightHtml"
           />
           <template v-else>{{ item.title }}</template>
-        </div>
+        </NuxtLink>
         <div class="flex gap-2">
           <div
             class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"

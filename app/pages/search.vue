@@ -492,11 +492,6 @@ const getPageNumbers = (): (number | "...")[] => {
   return pages;
 };
 
-const goToDetail = (music: MusicSearch) => {
-  musicStore.setCurrentMusic(music);
-  router.push(`/music/${music.id}`);
-};
-
 const skeletonList = Array.from({ length: 4 });
 
 const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck();
@@ -684,11 +679,13 @@ const isMobile = useMediaQuery("(max-width: 767px)");
               <article
                 v-for="music in <MusicSearch[]>results"
                 :key="music.id"
-                class="card p-3 cursor-pointer hover:border-primary-500/50 transition-colors"
-                @click="goToDetail(music)"
+                class="card cursor-pointer hover:border-primary-500/50 transition-colors"
                 role="article"
               >
-                <div class="flex items-center gap-3">
+                <NuxtLink
+                  :to="`/music/${music.id}`"
+                  class="flex items-center gap-3 p-3"
+                >
                   <img
                     :src="music.cover || config.app.baseURL + 'img/cover.png'"
                     :alt="music.title"
@@ -724,7 +721,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                     </div>
                   </div>
                   <ArrowRight class="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                </div>
+                </NuxtLink>
               </article>
 
               <template v-if="results.length === 0">
@@ -878,7 +875,6 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                   :check-status="getCheckStatus(item.id)"
                   :highlight-html="highlight(item.title)"
                   :highlight-menu="highlight(item.menu)"
-                  @click-title="router.push(`/source/${item.id}`)"
                   @open-tree="openTreeModal({ item, type: 'id' })"
                   @open-modal="openModal({ item, type: 'id' })"
                 />

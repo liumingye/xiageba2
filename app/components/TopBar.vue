@@ -51,14 +51,14 @@ const handleSearch = (keyword: string) => {
     <div
       class="flex items-center gap-1 max-w-4xl mx-auto px-2 py-2 text-zinc-400 text-sm"
     >
-      <button
+      <NuxtLink
+        to="/"
         class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-        @click="navigateTo('/')"
         aria-label="首页"
         title="首页"
       >
         <Home class="w-5 h-5" />
-      </button>
+      </NuxtLink>
       <button
         class="p-2 hover:bg-zinc-800 rounded-lg transition-colors mr-auto"
         @click="goBack"
@@ -68,16 +68,16 @@ const handleSearch = (keyword: string) => {
         <ArrowLeft class="w-5 h-5" />
       </button>
 
-      <button
+      <NuxtLink
+        to="/book"
         v-if="showMenu"
         class="flex items-center gap-1 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-        @click="navigateTo('/book')"
-        aria-label="百度网盘正版授权小说"
-        title="百度网盘正版授权小说"
+        aria-label="搜小说"
+        title="搜小说"
       >
         <BookOpen class="w-5 h-5" />
-        百度网盘正版授权小说
-      </button>
+        搜小说
+      </NuxtLink>
 
       <SearchBar
         class="max-w-md"
