@@ -3,7 +3,7 @@ import SiteFooter from "~/components/SiteFooter.vue";
 import TopBar from "~/components/TopBar.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import { Loader2, X, QrCode, Clipboard, ExternalLink } from "@lucide/vue";
-import { getTypeName } from "~/utils";
+import { getStorageTypeFriend } from "#shared/utils";
 import type { SourceItem } from "~/components/LocalResourceItem.vue";
 import { useMediaQuery, useClipboard } from "@vueuse/core";
 
@@ -368,7 +368,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                       <span
                         >可使用
                         <span class="text-primary-500"
-                          >{{ getTypeName(getStorageType(modalUrl)) }}网盘</span
+                          >{{ getStorageTypeFriend(modalUrl) }}网盘</span
                         >
                         APP 扫码获取</span
                       >

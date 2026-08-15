@@ -20,7 +20,7 @@ import {
   RotateCcwSquare,
   Sparkles,
 } from "@lucide/vue";
-import { getTypeName } from "~/utils/index";
+import { getStorageTypeFriend } from "#shared/utils";
 import { useClipboard, useMediaQuery } from "@vueuse/core";
 import WebSearchResults from "~/components/WebSearchResults.vue";
 import type { WebSearchResult } from "~/components/WebSearchResults.vue";
@@ -208,6 +208,12 @@ const panOptions = [
   { value: "baidu", label: "百度网盘" },
   { value: "xunlei", label: "迅雷网盘" },
   { value: "uc", label: "UC网盘" },
+  { value: "ali", label: "阿里网盘" },
+  { value: "189", label: "天翼网盘" },
+  { value: "139", label: "移动网盘" },
+  { value: "123", label: "123网盘" },
+  { value: "115", label: "115网盘" },
+  // { value: "pikpak", label: "PikPak网盘" },
 ];
 
 const sortOptions = [
@@ -860,37 +866,43 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                 </div>
               </template>
 
-              <div
-                v-if="currentPage === 1"
-                class="flex items-center gap-2 !my-3"
+              <template
+                v-if="
+                  ['all', 'quark', 'baidu', 'uc', 'xunlei', 'ali'].includes(
+                    panFilter,
+                  )
+                "
               >
-                <Folder class="w-4 h-4 text-primary-400" />
-                <h2 class="text-zinc-500 text-sm">本地资源</h2>
-              </div>
-              <template v-if="results.length > 0">
-                <LocalResourceItem
-                  v-for="item in <SourceItem[]>results"
-                  :key="item.id"
-                  :item="item"
-                  :check-status="getCheckStatus(item.id)"
-                  :highlight-html="highlight(item.title)"
-                  :highlight-menu="highlight(item.menu)"
-                  @open-tree="openTreeModal({ item, type: 'id' })"
-                  @open-modal="openModal({ item, type: 'id' })"
-                />
-              </template>
-              <template v-else>
-                <div class="text-center py-20">
-                  <div
-                    class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
-                    aria-hidden="true"
-                  >
-                    <CircleSlash />
-                  </div>
-                  <p class="text-zinc-500">
-                    {{ "本地搜索暂无结果" }}
-                  </p>
+                <div
+                  v-if="currentPage === 1"
+                  class="flex items-center gap-2 !my-3"
+                >
+                  <Folder class="w-4 h-4 text-primary-400" />
+                  <h2 class="text-zinc-500 text-sm">本地资源</h2>
                 </div>
+                <template v-if="results.length > 0">
+                  <LocalResourceItem
+                    v-for="item in <SourceItem[]>results"
+                    :key="item.id"
+                    :item="item"
+                    :check-status="getCheckStatus(item.id)"
+                    :highlight-html="highlight(item.title)"
+                    :highlight-menu="highlight(item.menu)"
+                    @open-tree="openTreeModal({ item, type: 'id' })"
+                    @open-modal="openModal({ item, type: 'id' })"
+                  />
+                </template>
+                <template v-else>
+                  <div class="text-center py-20">
+                    <div
+                      class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                      aria-hidden="true"
+                    >
+                      <CircleSlash />
+                    </div>
+                    <p class="text-zinc-500">本地搜索暂无结果</p>
+                  </div>
+                </template>
               </template>
 
               <template v-if="currentPage === 1">
@@ -898,6 +910,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                   :keyword="searchKeyword"
                   :disabled="isMusic"
                   :highlight-html="highlight"
+                  :filter="panFilter"
                   @open-tree-modal="
                     (item) => openTreeModal({ item, type: 'url' })
                   "
@@ -1004,7 +1017,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                       <span
                         >可使用
                         <span class="text-primary-500"
-                          >{{ getTypeName(getStorageType(modalUrl)) }}网盘</span
+                          >{{ getStorageTypeFriend(modalUrl) }}网盘</span
                         >
                         APP 扫码获取</span
                       >

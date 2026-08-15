@@ -106,7 +106,9 @@ const formatChapters = (n: number) => (n ? `${n}章` : "-");
 const formatScore = (s: number) => (s ? Number(s).toFixed(1) : "-");
 const statusLabel = (s: number) => (s === 1 ? "已完结" : "连载中");
 const statusClass = (s: number) =>
-  s === 1 ? "bg-green-600 text-white" : "bg-blue-600 text-white";
+  s === 1
+    ? "bg-green-600 text-[var(--white)]"
+    : "bg-blue-600 text-[var(--white)]";
 
 // 分类：把 "女频_古代言情_古色古香" 转为 ["女频","古代言情","古色古香"]
 const categoryChips = computed(() => {
@@ -461,14 +463,14 @@ useHead({
                   class="flex flex-wrap gap-2 mt-auto pt-2 justify-center md:justify-start"
                 >
                   <button
-                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg transition-colors"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
                     @click="openSampleRead"
                   >
                     <Eye class="w-4 h-4" />
                     免费试读
                   </button>
                   <button
-                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-[var(--white)] rounded-lg transition-colors"
                     @click="openGetCode"
                   >
                     <Key class="w-4 h-4" />
@@ -481,10 +483,10 @@ useHead({
 
           <!-- 简介 -->
           <div class="card p-4 md:p-6 mb-6">
-            <h2 class="flex items-center gap-2 text-white font-medium mb-3">
-              <Calendar class="w-4 h-4 text-primary-400" />
+            <h3 class="flex items-center gap-2 text-white font-medium mb-3">
+              <Calendar class="w-5 h-5 text-primary-400" />
               简介
-            </h2>
+            </h3>
             <div
               v-if="descriptionLines.length"
               class="space-y-2 text-sm text-zinc-300 leading-relaxed"

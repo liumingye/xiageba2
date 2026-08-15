@@ -156,7 +156,7 @@ const searchPanSou = async (
 
   const body = {
     kw: keyword,
-    cloud_types: ["quark", "baidu", "uc", "xunlei"],
+    // cloud_types: ["quark", "baidu", "uc", "xunlei"],
     src: "all",
     res: "merged_by_type",
     ext: { is_all: true },
@@ -211,10 +211,15 @@ const searchPanSou = async (
 
 const extractPanUrl = (text: string) => {
   const patterns = [
-    /https:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]{4})?/g,
-    /https:\/\/pan\.baidu\.com\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]{4})?/g,
-    /https:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]{4})?/g,
-    /https:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]{4})?/g,
+    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]{4})?/gi,
+    /https?:\/\/pan\.baidu\.com\/s\/[a-zA-Z0-9_-]+(?:(?:\?|&)pwd=[a-zA-Z0-9]{4})?/gi,
+    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]{4})?/gi,
+    /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9_-]+(?:\?pwd=[a-zA-Z0-9]{4})?/gi,
+    /https?:\/\/www\.(?:alipan|aliyundrive)\.com\/s\/[?&=a-zA-Z0-9_-]+/gi,
+    /https?:\/\/www\.(?:123pan|123684|123865|123912)\.(?:com|cn)\/s\/[?&=a-zA-Z0-9_-]+/gi,
+    /https?:\/\/cloud\.189\.cn\/(?:t\/|web\/share\?code=)[?&=a-zA-Z0-9_-]+/gi,
+    /https?:\/\/(?:cai)?yun\.139\.com\/(?:shareweb\/#\/)?w\/i\/[?&=a-zA-Z0-9_-]+/gi,
+    /https?:\/\/115(?:cdn)?\.com\/s\/[a-zA-Z0-9_-]+(?:\?(?:password|pwd)=[a-zA-Z0-9]{4})?/gi,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);

@@ -3,7 +3,7 @@ import {
   cutForSearch,
   prioritizeSearchTokens,
 } from "#server/utils/jieba";
-import { getStorageType } from "#shared/utils";
+import { getStorageType, PanFilter } from "#shared/utils";
 import { Pool } from "pg";
 import { truncateString } from "#server/utils/source";
 import { TREE_MAX_LINE } from "#server/lib/const";
@@ -17,7 +17,6 @@ const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;
 
 export type TimeFilter = "any" | "day" | "week" | "month" | "year";
-export type PanFilter = "all" | "quark" | "baidu" | "xunlei" | "uc";
 export type SortOrder = "default" | "newest" | "oldest";
 
 const TIME_FILTER_MAP: Record<TimeFilter, number> = {
@@ -28,12 +27,13 @@ const TIME_FILTER_MAP: Record<TimeFilter, number> = {
   year: 365,
 };
 
-export const PAN_HOST_MAP: Record<PanFilter, string[]> = {
+export const PAN_HOST_MAP: Partial<Record<PanFilter, string[]>> = {
   all: [],
   quark: ["pan.quark.cn"],
   baidu: ["pan.baidu.com"],
   xunlei: ["pan.xunlei.com"],
   uc: ["fast.uc.cn", "drive.uc.cn"],
+  ali: ["www.alipan.com"],
 };
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -53,10 +53,21 @@ export default defineCachedEventHandler(
     const skip = (page - 1) * pageSize;
 
     const timeVal = String(query.time || "");
-    const panVal = String(query.pan || "");
+    const panFilter = String(query.pan || "all");
+
+    if (!(panFilter in PAN_HOST_MAP)) {
+      return {
+        data: [],
+        total: 0,
+        page: 1,
+        pageSize,
+        totalPages: 0,
+        tokens: [],
+      };
+    }
+
     const timeFilter =
       timeVal in TIME_FILTER_MAP ? (timeVal as TimeFilter) : "any";
-    const panFilter = panVal in PAN_HOST_MAP ? (panVal as PanFilter) : "all";
     const sortOrder =
       query.sort &&
       ["default", "newest", "oldest"].includes(query.sort as string)
@@ -132,7 +143,7 @@ export default defineCachedEventHandler(
 
     // 网盘类型筛选
     const panHosts = PAN_HOST_MAP[panFilter];
-    if (panHosts.length > 0) {
+    if (panHosts && panHosts.length > 0) {
       conditions.push(
         `split_part(split_part(url, '//'::text, 2), '/'::text, 1) = ANY($${paramIndex++}::text[])`,
       );

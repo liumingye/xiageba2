@@ -8,20 +8,22 @@ import {
   CircleSlash,
   XCircle,
 } from "@lucide/vue";
-import { getTypeName } from "~/utils";
+import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 
 export interface WebSearchResult {
   title: string;
   url: string;
   source: string;
   image?: string;
-  type: string;
+  type: PanFilter;
 }
 
 const props = defineProps<{
   keyword: string;
   disabled?: boolean;
   highlightHtml?: (text: string) => string;
+  /** 筛选网盘类型，如 quark / baidu / xunlei / uc，默认 all 不过滤 */
+  filter?: string;
 }>();
 
 const emit = defineEmits<{
@@ -32,6 +34,13 @@ const emit = defineEmits<{
 const results = ref<WebSearchResult[]>([]);
 const searching = ref(false);
 const error = ref("");
+
+// 按网盘类型前端过滤结果
+const filteredResults = computed<WebSearchResult[]>(() => {
+  const f = props.filter;
+  if (!f || f === "all") return results.value;
+  return results.value.filter((item) => item.type === f);
+});
 
 // 实例化 panCheck Hook
 const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
@@ -186,10 +195,10 @@ defineExpose({ results, searching, error });
     <Globe class="w-4 h-4 text-primary-400" />
     <h2 class="text-zinc-500 text-sm">全网搜</h2>
   </div>
-  <template v-if="results.length !== 0 || searching">
-    <template v-if="results.length > 0">
+  <template v-if="filteredResults.length !== 0 || searching">
+    <template v-if="filteredResults.length > 0">
       <article
-        v-for="(item, idx) in results"
+        v-for="(item, idx) in filteredResults"
         :key="idx"
         class="card p-3 relative"
       >
@@ -208,13 +217,13 @@ defineExpose({ results, searching, error });
           </div>
           <div class="flex gap-2">
             <div
-              class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center flex-shrink-0"
+              class="dark:bg-zinc-800 bg-zinc-700 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <div
                 v-if="item.type !== 'other'"
-                :class="`icon-${item.type} w-3 h-3 mr-1`"
+                :class="`icon-${item.type} w-4 h-4 mr-1`"
               ></div>
-              {{ getTypeName(item.type) }}网盘
+              {{ getStorageTypeFriendFromFilter(item.type) }}网盘
             </div>
             <ClientOnly>
               <div
@@ -222,7 +231,7 @@ defineExpose({ results, searching, error });
                 class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
                 <CheckCircle
-                  class="w-4 h-4 text-green-400 flex-shrink-0 mr-1"
+                  class="w-4 h-4 text-[var(--white)] flex-shrink-0 mr-1"
                 />链接有效
               </div>
               <div
@@ -230,12 +239,12 @@ defineExpose({ results, searching, error });
                 class="bg-error-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
                 <XCircle
-                  class="w-4 h-4 text-red-300 flex-shrink-0 mr-1"
+                  class="w-4 h-4 text-[var(--white)] flex-shrink-0 mr-1"
                 />可能失效
               </div>
               <div
                 v-if="getCheckStatus(item.url) === 'checking'"
-                class="bg-zinc-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+                class="dark:bg-zinc-800 bg-zinc-700 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
                 <Loader2
                   class="w-4 h-4 text-white animate-spin flex-shrink-0 mr-1"
@@ -276,7 +285,10 @@ defineExpose({ results, searching, error });
       <p class="text-zinc-400 text-sm">正在全网搜索中...</p>
     </div>
 
-    <div v-else-if="error && results.length === 0" class="card p-5 text-center">
+    <div
+      v-else-if="error && filteredResults.length === 0"
+      class="card p-5 text-center"
+    >
       <p class="text-red-400 text-sm">{{ error }}</p>
     </div>
   </template>
@@ -288,9 +300,7 @@ defineExpose({ results, searching, error });
       >
         <CircleSlash />
       </div>
-      <p class="text-zinc-500">
-        {{ "全网搜索暂无结果" }}
-      </p>
+      <p class="text-zinc-500">全网搜索暂无结果</p>
     </div>
   </template>
 </template>

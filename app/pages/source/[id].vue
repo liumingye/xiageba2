@@ -14,7 +14,7 @@ import {
 import TopBar from "~/components/TopBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
-import { getTypeName } from "~/utils/index";
+import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 import { useMusicStore } from "~/stores/music";
 import { marked } from "marked";
 
@@ -45,14 +45,14 @@ interface Source {
   description: string;
   menu: string;
   createdAt: string;
-  type: string;
+  type: PanFilter;
   status: number;
 }
 
 interface SimilarItem {
   id: string;
   title: string;
-  type: string;
+  type: PanFilter;
 }
 
 interface SourceResponse {
@@ -107,7 +107,7 @@ const renderedDescription = computed(() =>
 
 const pageTitle = computed(() => {
   if (source.value.title) {
-    return `${source.value.title} - ${getTypeName(source.value.type)}网盘资源分享 - 全盘搜`;
+    return `${source.value.title} - ${getStorageTypeFriendFromFilter(source.value.type)}网盘资源分享 - 全盘搜`;
   }
   return "资源详情 - 全盘搜";
 });
@@ -233,7 +233,7 @@ onMounted(() => {
                 <div class="flex items-center gap-3 text-sm text-zinc-500">
                   <span class="flex items-center gap-1">
                     <Link class="w-4 h-4" />
-                    {{ getTypeName(source.type) }}网盘
+                    {{ getStorageTypeFriendFromFilter(source.type) }}网盘
                   </span>
                   <span class="flex items-center gap-1">
                     <Clock class="w-4 h-4" />
@@ -288,7 +288,9 @@ onMounted(() => {
                     <span
                       >可使用
                       <span class="text-primary-500"
-                        >{{ getTypeName(source.type) }}网盘</span
+                        >{{
+                          getStorageTypeFriendFromFilter(source.type)
+                        }}网盘</span
                       >
                       APP 扫码获取</span
                     >
@@ -367,7 +369,7 @@ onMounted(() => {
                   <span
                     class="inline-flex items-center justify-center px-2 py-0.5 text-xs rounded bg-primary-500/20 text-primary-400 flex-shrink-0"
                   >
-                    {{ getTypeName(item.type) }}
+                    {{ getStorageTypeFriendFromFilter(item.type) }}
                   </span>
                   <span class="text-zinc-300 text-sm truncate">{{
                     item.title

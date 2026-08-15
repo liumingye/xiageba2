@@ -309,13 +309,13 @@ html[data-theme="light"] .prose-resource code {
   background-size: cover;
   flex-shrink: 0;
 }
-.icon-yidong {
-  background: url("/img/pan/yidong.svg") no-repeat center center;
+.icon-139 {
+  background: url("/img/pan/139.svg") no-repeat center center;
   background-size: cover;
   flex-shrink: 0;
 }
-.icon-tianyi {
-  background: url("/img/pan/tianyi.svg") no-repeat center center;
+.icon-189 {
+  background: url("/img/pan/189.svg") no-repeat center center;
   background-size: cover;
   flex-shrink: 0;
 }

@@ -1,6 +1,6 @@
 import { ref, reactive, onBeforeUnmount } from "vue";
 
-export type CheckStatus = "checking" | "valid" | "invalid";
+export type CheckStatus = "checking" | "valid" | "invalid" | "failed";
 
 interface UsePanCheckOptions {
   enabled?: boolean;
@@ -10,7 +10,12 @@ interface UsePanCheckOptions {
 }
 
 export function usePanCheck(options: UsePanCheckOptions = {}) {
-  const { enabled = true, mode = "ids", batchSize = 10, pollInterval = 3000 } = options;
+  const {
+    enabled = true,
+    mode = "ids",
+    batchSize = 10,
+    pollInterval = 3000,
+  } = options;
 
   const checking = ref(false);
   // 用 Map 统一管理每一个 item (URL/ID) 的状态：checking | valid | invalid
@@ -19,7 +24,13 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   const validItems = ref<Set<string>>(new Set());
 
   // 跟踪活跃批次，用于在组件销毁或 stop 时取消 Fetch/Timer
-  const activePollers = new Map<number, { timer: ReturnType<typeof setTimeout> | null; controller: AbortController | null }>();
+  const activePollers = new Map<
+    number,
+    {
+      timer: ReturnType<typeof setTimeout> | null;
+      controller: AbortController | null;
+    }
+  >();
   let nextBatchId = 0;
 
   /**
@@ -55,10 +66,15 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
 
       if (data.success && data.submission_id) {
         // 开始链式轮询
-        pollBatch(batchId, data.submission_id, data.server_index ?? null, items);
+        pollBatch(
+          batchId,
+          data.submission_id,
+          data.server_index ?? null,
+          items,
+        );
       } else {
         // 创建任务失败，直接标记该批次全不合法
-        markItemsStatus(items, "invalid");
+        markItemsStatus(items, "failed");
       }
     } catch {
       markItemsStatus(items, "invalid");
@@ -68,7 +84,12 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   /**
    * 链式 setTimeout 轮询，避免并发重发与无效 Cancel
    */
-  const pollBatch = (batchId: number, submissionId: number, serverIndex: number | null, items: string[]) => {
+  const pollBatch = (
+    batchId: number,
+    submissionId: number,
+    serverIndex: number | null,
+    items: string[],
+  ) => {
     const controller = new AbortController();
     activePollers.set(batchId, { timer: null, controller });
 
@@ -90,7 +111,9 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
         }
 
         // 2. 判断轮询是否结束
-        const isDone = !data.success || (Array.isArray(data.pendingIds) && data.pendingIds.length === 0);
+        const isDone =
+          !data.success ||
+          (Array.isArray(data.pendingIds) && data.pendingIds.length === 0);
 
         if (isDone) {
           // 将剩余未标为 valid 的项标为 invalid
@@ -138,9 +161,9 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   /**
    * O(1) 复杂度直接读取查询状态
    */
-  const getCheckStatus = (item: string): CheckStatus | null => {
-    if (!enabled || !import.meta.client) return null;
-    return itemStatusMap.get(item) || null;
+  const getCheckStatus = (item: string): CheckStatus | undefined => {
+    if (!enabled || !import.meta.client) return undefined;
+    return itemStatusMap.get(item) || undefined;
   };
 
   /**

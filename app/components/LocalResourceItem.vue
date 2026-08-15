@@ -7,12 +7,13 @@ import {
   Download,
   Calendar,
 } from "@lucide/vue";
-import { getTypeName } from "~/utils";
+import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
+import { type CheckStatus } from "@/composables/usePanCheck";
 
 export interface SourceItem {
   id: string;
   title: string;
-  type: string;
+  type: PanFilter;
   menu: string;
   isSelf?: boolean;
   // description: string;
@@ -21,7 +22,7 @@ export interface SourceItem {
 
 defineProps<{
   item: SourceItem;
-  checkStatus?: "valid" | "invalid" | "checking" | null;
+  checkStatus?: CheckStatus;
   highlightHtml?: string;
   highlightMenu?: string;
 }>();
@@ -56,13 +57,13 @@ const emit = defineEmits<{
         </NuxtLink>
         <div class="flex gap-2">
           <div
-            class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            class="dark:bg-zinc-800 bg-zinc-700 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
           >
             <div
               v-if="item.type !== 'other'"
-              :class="`icon-${item.type} w-3 h-3 mr-1`"
+              :class="`icon-${item.type} w-4 h-4 mr-1`"
             ></div>
-            {{ getTypeName(item.type) }}网盘
+            {{ getStorageTypeFriendFromFilter(item.type) }}网盘
           </div>
           <div
             v-if="item.isSelf"
@@ -76,7 +77,7 @@ const emit = defineEmits<{
               class="dark:bg-primary-800 bg-primary-600 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <CheckCircle
-                class="w-4 h-4 text-green-400 flex-shrink-0 mr-1"
+                class="w-4 h-4 text-[var(--white)] flex-shrink-0 mr-1"
               />链接有效
             </div>
             <div
@@ -84,12 +85,12 @@ const emit = defineEmits<{
               class="bg-error-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <XCircle
-                class="w-4 h-4 text-red-300 flex-shrink-0 mr-1"
+                class="w-4 h-4 text-[var(--white)] flex-shrink-0 mr-1"
               />可能失效
             </div>
             <div
               v-if="checkStatus === 'checking'"
-              class="bg-zinc-800 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+              class="dark:bg-zinc-800 bg-zinc-700 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <Loader2
                 class="w-4 h-4 text-white animate-spin flex-shrink-0 mr-1"
