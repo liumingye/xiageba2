@@ -12,6 +12,9 @@ const keepalive = {
 
 <template>
   <div class="min-h-screen">
+    <NuxtAnnouncer />
+    <NuxtRouteAnnouncer />
+    <NuxtLoadingIndicator color="#3b82f6" :height="2" />
     <NuxtPage :keepalive="keepalive" />
     <Toast :toasts="toasts" @remove="remove" />
   </div>

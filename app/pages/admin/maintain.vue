@@ -360,16 +360,15 @@ const rebuildSearch = async (all: boolean, type: "music" | "source") => {
   }
 };
 
-const clearISRCache = async (route?: string) => {
+const clearISRCache = async () => {
   if (isClearing.value) return;
-  const label = !route ? "全部 ISR 缓存" : route === "/" ? "主页" : route;
-  if (!confirm(`确定要清理 ${label} 吗？`)) return;
+  if (!confirm(`确定要清理 全部缓存吗？`)) return;
 
   isClearing.value = true;
   clearMsg.value = "";
   try {
-    const data = await post("/api/admin/cache/clear", { route });
-    clearMsg.value = `已清理 ${label}，共 ${data.total} 项`;
+    const data = await post("/api/admin/cache/clear");
+    clearMsg.value = `已清理全部缓存，共 ${data.total} 项`;
   } catch (err: any) {
     clearMsg.value = err?.response?.data?.message || "请求失败";
   } finally {
@@ -461,17 +460,17 @@ const clearISRCache = async (route?: string) => {
         </div>
       </section>
 
-      <!-- ISR 缓存 -->
+      <!--  缓存 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">ISR 缓存</h2>
+          <h2 class="text-lg font-medium text-white">Nitro 缓存</h2>
         </div>
         <div class="card p-6 space-y-4">
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <div class="text-white">清理全部 ISR 缓存</div>
+              <div class="text-white">清理全部缓存</div>
               <div class="text-sm text-zinc-400 mt-1">
-                让所有启用 ISR 的路由重新生成静态页面
+                清空全部Nitro缓存，包括路由ISR缓存、页面缓存
               </div>
             </div>
             <button

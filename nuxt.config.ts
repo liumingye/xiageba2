@@ -29,7 +29,6 @@ export default defineNuxtConfig({
     // 需要被预缓存（Pre-cache）的静态资源列表（除了构建生成的资源外）
     includeAssets: [
       "favicon.ico",
-      "offline.html", // 离线状态下显示的后备 HTML 页面
       "pwa/icon-192.png",
       "pwa/icon-512.png",
       "pwa/icon-maskable-512.png",
@@ -90,11 +89,24 @@ export default defineNuxtConfig({
           urlPattern: ({ request }) => request.destination === "image",
           handler: "StaleWhileRevalidate", // 速度优先策略：直接从缓存读取旧数据秒开页面，同时在后台静默发起网络请求更新缓存
           options: {
-            cacheName: "images", // 缓存空间名称
+            cacheName: "images-cache",
             cacheableResponse: { statuses: [0, 200] },
             expiration: {
               maxEntries: 100, // 最多缓存 100 张图片
               maxAgeSeconds: 60 * 60 * 24, // 缓存有效时间：1 天
+            },
+          },
+        },
+        {
+          // 2. 针对 ISR 数据 payload 进行 NetworkFirst 缓存，避免离线白屏且不滥用带宽
+          urlPattern: ({ url }) => url.pathname.endsWith("_payload.json"),
+          handler: "NetworkFirst",
+          options: {
+            cacheName: "payload-cache",
+            networkTimeoutSeconds: 3,
+            expiration: {
+              maxEntries: 30,
+              maxAgeSeconds: 60 * 60 * 12, // 12 小时
             },
           },
         },
@@ -104,6 +116,13 @@ export default defineNuxtConfig({
     // 开发环境配置
     devOptions: {
       enabled: false, // 在开发模式（npm run dev）下禁用 PWA 功能，避免频繁的 Service Worker 缓存导致调试困难
+    },
+  },
+  experimental: {
+    defaults: {
+      nuxtLink: {
+        prefetch: false,
+      },
     },
   },
   css: ["~/assets/css/main.css"],
@@ -158,7 +177,8 @@ export default defineNuxtConfig({
       ssr: true,
       isr: 300,
       headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=300",
+        "Cache-Control":
+          "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
       },
     },
     "/music/**": {
@@ -171,29 +191,30 @@ export default defineNuxtConfig({
     },
     "/search": {
       ssr: true,
+      isr: 60 * 60 * 1,
     },
     "/img/**": {
       static: true,
       headers: {
-        "Cache-Control":
-          "public, max-age=864000, stale-while-revalidate=864000",
+        "Cache-Control": "public, max-age=31536000, immutable",
       },
     },
     "/pwa/**": {
       static: true,
       headers: {
-        "Cache-Control":
-          "public, max-age=864000, stale-while-revalidate=864000",
+        "Cache-Control": "public, max-age=31536000, immutable",
       },
     },
     "/sw.js": {
       headers: {
-        "Cache-Control": "public, max-age=0, must-revalidate",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     },
     "/manifest.webmanifest": {
       headers: {
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=600",
       },
     },
   },
@@ -289,6 +310,8 @@ export default defineNuxtConfig({
   vite: {
     build: {
       // target: ["es2015"], // 指定目标浏览器版本,
+      cssCodeSplit: true, // 开启 CSS 代码拆分
+      chunkSizeWarningLimit: 1000, // 调整 chunk 大小警告阈值
     },
     plugins: [
       legacy({

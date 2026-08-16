@@ -260,7 +260,15 @@ watch(
                 </span>
               </div>
               <p class="text-xs text-zinc-500 mt-1">
-                {{ formatDate(item.createdAt) }}
+                <NuxtTime
+                  :datetime="item.createdAt"
+                  year="numeric"
+                  month="short"
+                  day="numeric"
+                  hour="numeric"
+                  minute="numeric"
+                  second="numeric"
+                />
               </p>
             </div>
           </div>

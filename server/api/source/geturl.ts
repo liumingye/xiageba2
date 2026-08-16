@@ -331,27 +331,27 @@ const ALLOWED_HOSTS = new Set([
  */
 export function parseShareUrl(url: string): ParsedShare {
   const extractPwd = (u: string) => {
-    const m = u.match(/[?&]pwd=([a-zA-Z0-9]{4})/); // 严格限制提取码字符集，防正则穿透
+    const m = u.match(/(?:pwd=|password=|:|：|码)([a-zA-Z0-9]{4})/); // 严格限制提取码字符集，防正则穿透
     return m && m[1] ? m[1] : "";
   };
 
   // 夸克: https://pan.quark.cn/s/xxxx?pwd=yyyy
-  let match = url.match(/pan\.quark\.cn\/s\/([^/?#&]+)/);
+  let match = url.match(/pan\.quark\.cn\/s\/([a-zA-Z0-9-_]+)/);
   if (match && match[1])
     return { type: "quark", fid: match[1], passcode: extractPwd(url), url };
 
   // UC: https://drive.uc.cn/s/xxxx?pwd=yyyy
-  match = url.match(/(?:drive|fast)\.uc\.cn\/s\/([^/?#&]+)/);
+  match = url.match(/(?:drive|fast)\.uc\.cn\/s\/([a-zA-Z0-9-_]+)/);
   if (match && match[1])
     return { type: "uc", fid: match[1], passcode: extractPwd(url), url };
 
   // 百度: https://pan.baidu.com/s/xxxx?pwd=yyyy
-  match = url.match(/pan\.baidu\.com\/s\/([^/?#&]+)/);
+  match = url.match(/pan\.baidu\.com\/s\/([a-zA-Z0-9-_]+)/);
   if (match && match[1])
     return { type: "baidu", fid: match[1], passcode: extractPwd(url), url };
 
   // 百度: 	https://pan.baidu.com/share/init?surl=xxxx?pwd=yyyy
-  match = url.match(/pan\.baidu\.com\/share\/init\?surl=([^/?#&]+)/);
+  match = url.match(/pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9-_]+)/);
   if (match && match[1])
     return {
       type: "baidu",
@@ -361,7 +361,7 @@ export function parseShareUrl(url: string): ParsedShare {
     };
 
   // 迅雷: https://pan.xunlei.com/s/xxxx?pwd=yyyy
-  match = url.match(/pan\.xunlei\.com\/s\/([^/?#&]+)/);
+  match = url.match(/pan\.xunlei\.com\/s\/([a-zA-Z0-9-_]+)/);
   if (match && match[1])
     return { type: "xunlei", fid: match[1], passcode: extractPwd(url), url };
 

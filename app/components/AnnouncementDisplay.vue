@@ -139,12 +139,6 @@ watch(normalList, () => {
   scrollIndex.value = 0;
   startScroll();
 });
-
-const formatTime = (dateStr?: string) => {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return `${d.getMonth() + 1}月${d.getDate()}日`;
-};
 </script>
 
 <template>
@@ -189,8 +183,11 @@ const formatTime = (dateStr?: string) => {
             :class="iconColorMap[normalList[scrollIndex]?.icon || 'INFO']"
           />
           <span class="truncate">{{ normalList[scrollIndex]?.title }}</span>
-          <span class="text-zinc-600 text-sm ml-1 flex-shrink-0">
-            {{ formatTime(normalList[scrollIndex]?.createdAt) }}
+          <span
+            v-if="normalList[scrollIndex]"
+            class="text-zinc-600 text-sm ml-1 flex-shrink-0"
+          >
+            <NuxtTime :datetime="normalList[scrollIndex]!.createdAt" relative />
           </span>
         </NuxtLink>
       </Transition>
@@ -258,7 +255,7 @@ const formatTime = (dateStr?: string) => {
                   {{ currentDialog.title }}
                 </h3>
                 <p class="text-xs text-zinc-500 mt-1">
-                  {{ formatTime(currentDialog.createdAt) }}
+                  <NuxtTime :datetime="currentDialog.createdAt" relative />
                 </p>
               </div>
             </div>

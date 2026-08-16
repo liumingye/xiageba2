@@ -10,6 +10,7 @@ const toasts = ref<ToastItem[]>([]);
 let toastId = 0;
 
 export const useToast = () => {
+  const { polite, assertive } = useAnnouncer();
   const add = (
     message: string,
     type: "success" | "error" | "info" = "info",
@@ -17,6 +18,11 @@ export const useToast = () => {
   ) => {
     const id = ++toastId;
     toasts.value.push({ id, message, type });
+    if (type === "error") {
+      assertive(message);
+    } else {
+      polite(message);
+    }
     setTimeout(() => {
       remove(id);
     }, duration);

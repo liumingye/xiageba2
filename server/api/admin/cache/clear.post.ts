@@ -1,8 +1,9 @@
 /**
- * 清理 ISR 路由缓存（POST /api/admin/cache/clear）
+ * 清理Nitro缓存（POST /api/admin/cache/clear）
+ * https://nitro.net.cn/docs/cache
  */
 export default defineEventHandler(async (event) => {
-  const storage = useStorage("cache:nuxt:payload:");
+  const storage = useStorage("cache:");
 
   let total = 0;
 

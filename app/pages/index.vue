@@ -34,7 +34,7 @@ const checkSectionOverflow = () => {
 useResizeObserver(sectionRef, checkSectionOverflow);
 
 const { data: hotMusic } = await useFetch<Music[]>("/api/music/recent", {
-  method: "POST",
+  method: "GET",
   key: "home-music",
   server: true,
   lazy: true,
@@ -768,7 +768,7 @@ const getPic = (url: string) => {
             <article
               v-for="item in doubanList"
               :key="item.vod_id"
-              class="card p-2 md:p-4 cursor-pointer hover:border-primary-500/50 transition-colors"
+              class="card p-2 cursor-pointer hover:border-primary-500/50 transition-colors"
               @click="goToResourceSearch(item)"
             >
               <div

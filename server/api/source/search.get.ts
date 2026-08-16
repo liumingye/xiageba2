@@ -4,7 +4,6 @@ import {
   prioritizeSearchTokens,
 } from "#server/utils/jieba";
 import { getStorageType, PanFilter } from "#shared/utils";
-import { Pool } from "pg";
 import { truncateString } from "#server/utils/source";
 import { TREE_MAX_LINE } from "#server/lib/const";
 import {
@@ -12,6 +11,9 @@ import {
   normalizeResourceFileTypes,
 } from "#shared/resource-file-types";
 import { automaton_websearch_filter_keywords } from "#server/lib/simpleAC";
+import { getRedisCache, setRedisCache } from "#server/lib/redis";
+import { Prisma } from "@@/prisma/generated";
+import { prisma } from "#server/lib/prisma";
 
 const MAX_PAGE = 100;
 const MAX_KEYWORD_LENGTH = 30;
@@ -33,10 +35,8 @@ export const PAN_HOST_MAP: Partial<Record<PanFilter, string[]>> = {
   baidu: ["pan.baidu.com"],
   xunlei: ["pan.xunlei.com"],
   uc: ["fast.uc.cn", "drive.uc.cn"],
-  ali: ["www.alipan.com"],
+  ali: ["www.alipan.com", "www.aliyundrive.com"],
 };
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export default defineCachedEventHandler(
   async (event) => {
@@ -53,7 +53,7 @@ export default defineCachedEventHandler(
     const skip = (page - 1) * pageSize;
 
     const timeVal = String(query.time || "");
-    const panFilter = String(query.pan || "all");
+    const panFilter = (query.pan || "all") as PanFilter;
 
     if (!(panFilter in PAN_HOST_MAP)) {
       return {
@@ -126,149 +126,133 @@ export default defineCachedEventHandler(
     const extensionTokens = getResourceFileExtensions(fileTypes);
     const tokens = [...keywordTokens, ...extensionTokens];
 
-    // 3. 初始化基础参数（通用部分）
-    const baseParams: any[] = [];
-    let paramIndex = 1;
-
-    const conditions: string[] = [];
+    // 3. 构建动态 WHERE 条件（Prisma.sql 片段，参数自动安全转义）
+    const whereFragments: Prisma.Sql[] = [
+      Prisma.sql`"isTemp" = false`,
+      Prisma.sql`"status" = 1`,
+    ];
 
     // 时间筛选
     const days = TIME_FILTER_MAP[timeFilter];
     if (days > 0) {
-      conditions.push(
-        `"createdAt" >= NOW() - ($${paramIndex++} * INTERVAL '1 day')`,
+      whereFragments.push(
+        Prisma.sql`"createdAt" >= NOW() - (${days} * INTERVAL '1 day')`,
       );
-      baseParams.push(days);
     }
 
-    // 网盘类型筛选
+    // 网盘类型筛选（多个 host 用 OR 展开，避免数组参数被模板展开成 IN 列表）
     const panHosts = PAN_HOST_MAP[panFilter];
     if (panHosts && panHosts.length > 0) {
-      conditions.push(
-        `split_part(split_part(url, '//'::text, 2), '/'::text, 1) = ANY($${paramIndex++}::text[])`,
+      const hostMatches = panHosts.map(
+        (host) =>
+          Prisma.sql`split_part(split_part(url, '//'::text, 2), '/'::text, 1) = ${host}`,
       );
-      baseParams.push(panHosts);
+      whereFragments.push(Prisma.sql`(${Prisma.join(hostMatches, " OR ")})`);
     }
 
     // 关键词与扩展名分别构造 tsquery，避免 websearch 括号改变 OR 优先级。
-    const queryParamIndex = paramIndex++;
-    baseParams.push(keywordWebQuery);
-    let searchQueryExpression = `websearch_to_tsquery('simple', $${queryParamIndex})`;
-    if (extensionTokens.length > 0) {
-      const extensionParamIndex = paramIndex++;
-      const extensionTsQuery = extensionTokens
-        .map((extension) => extension.slice(1))
-        .join(" | ");
-      baseParams.push(extensionTsQuery);
-      searchQueryExpression = `(${searchQueryExpression} && to_tsquery('simple', $${extensionParamIndex}))`;
-    }
-    conditions.push(`"searchVector" @@ search_query.value`);
+    const keywordTsQuery = Prisma.sql`websearch_to_tsquery('simple', ${keywordWebQuery})`;
+    const searchQueryExpression: Prisma.Sql =
+      extensionTokens.length > 0
+        ? Prisma.sql`(${keywordTsQuery} && to_tsquery('simple', ${extensionTokens
+            .map((extension) => extension.slice(1))
+            .join(" | ")}))`
+        : keywordTsQuery;
+    whereFragments.push(Prisma.sql`"searchVector" @@ search_query.value`);
 
-    // 组装统一的 WHERE 语句
-    // const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
-    const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
-
-    // 4. 复制克隆一份 Count 参数，避免被后面的分页参数污染
-    const countParams = [...baseParams, MAX_PAGE * pageSize];
-    const countLimitIndex = baseParams.length + 1;
-
-    // 5. 构建 Data 参数。排序专用参数不能放进 countParams，否则 pg 会收到多余参数。
-    const dataParams = [...baseParams];
-
-    // 动态排序
-    let orderClause = "";
+    // 4. 动态排序（所有动态值均参数化）
+    let orderClause: Prisma.Sql;
     if (sortOrder === "newest") {
-      orderClause = `"createdAt" DESC`;
+      orderClause = Prisma.sql`"createdAt" DESC`;
     } else if (sortOrder === "oldest") {
-      orderClause = `"createdAt" ASC`;
+      orderClause = Prisma.sql`"createdAt" ASC`;
     } else {
-      const normalizedTermIndex = paramIndex++;
-      dataParams.push(term.toLocaleLowerCase());
-
-      const titleTokenScore = tokens
-        .map((token) => {
-          const tokenIndex = paramIndex++;
-          dataParams.push(token.toLocaleLowerCase());
-          const tokenWeight = Array.from(token).length;
-          return `CASE WHEN strpos(lower(title), $${tokenIndex}) > 0 THEN ${tokenWeight} ELSE 0 END`;
-        })
-        .join(" + ");
-
-      orderClause = `
-      CASE
-        WHEN lower(btrim(title)) = $${normalizedTermIndex} THEN 3
-        WHEN strpos(lower(title), $${normalizedTermIndex}) = 1 THEN 2
-        WHEN strpos(lower(title), $${normalizedTermIndex}) > 0 THEN 1
-        ELSE 0
-      END DESC,
-      (${titleTokenScore}) DESC,
-      ts_rank(
-        "searchVector",
-        search_query.value,
-        1
-      ) DESC,
-      "isSelf" DESC,
-      "createdAt" DESC,
-      id ASC
-    `;
+      const normalizedTerm = term.toLocaleLowerCase();
+      const titleTokenScores = tokens.map(
+        (token) =>
+          Prisma.sql`CASE WHEN strpos(lower(title), ${token.toLocaleLowerCase()}) > 0 THEN ${Array.from(token).length} ELSE 0 END`,
+      );
+      orderClause = Prisma.sql`
+        CASE
+          WHEN lower(btrim(title)) = ${normalizedTerm} THEN 3
+          WHEN strpos(lower(title), ${normalizedTerm}) = 1 THEN 2
+          WHEN strpos(lower(title), ${normalizedTerm}) > 0 THEN 1
+          ELSE 0
+        END DESC,
+        (${Prisma.join(titleTokenScores, " + ")}) DESC,
+        ts_rank("searchVector", search_query.value, 1) DESC,
+        "isSelf" DESC,
+        "createdAt" DESC,
+        id ASC
+      `;
     }
 
-    dataParams.push(pageSize, skip);
-    const limitIndex = paramIndex++;
-    const offsetIndex = paramIndex++;
-
-    const dataSql = `
-    WITH search_query AS (
-      SELECT ${searchQueryExpression} AS value
-    )
-    SELECT id, title, url, menu, "isSelf", "createdAt"
-    FROM "Source" CROSS JOIN search_query
-    ${whereClause}
-    ORDER BY ${orderClause}
-    LIMIT $${limitIndex} OFFSET $${offsetIndex};
-  `;
-
-    const countSql = `
-    WITH search_query AS (
-      SELECT ${searchQueryExpression} AS value
-    ), limited_matches AS (
-      SELECT 1
+    // 5. 组装 SQL（Prisma.sql 嵌套片段，占位符由 Prisma 自动编号）
+    const dataSql = Prisma.sql`
+      WITH search_query AS (
+        SELECT ${searchQueryExpression} AS value
+      )
+      SELECT id, title, url, menu, "isSelf", "createdAt"
       FROM "Source" CROSS JOIN search_query
-      ${whereClause}
-      LIMIT $${countLimitIndex}
-    )
-    SELECT COUNT(*)::int AS count
-    FROM limited_matches
-  `;
+      WHERE ${Prisma.join(whereFragments, " AND ")}
+      ORDER BY ${orderClause}
+      LIMIT ${pageSize} OFFSET ${skip}
+    `;
 
-    let client;
-    try {
-      client = await pool.connect();
-      const [dataResult, countResult] = await Promise.all([
-        client.query(dataSql, dataParams),
-        client.query(countSql, countParams),
+    const countSql = Prisma.sql`
+      WITH search_query AS (
+        SELECT ${searchQueryExpression} AS value
+      ), limited_matches AS (
+        SELECT 1
+        FROM "Source" CROSS JOIN search_query
+        WHERE ${Prisma.join(whereFragments, " AND ")}
+        LIMIT ${MAX_PAGE * pageSize}
+      )
+      SELECT COUNT(*)::int AS count
+      FROM limited_matches
+    `;
+
+    // 📦 总数缓存到 Redis：相同关键词+筛选条件在 TTL 内直接复用 COUNT 结果
+    const totalCacheKey = [
+      "sourceSearchTotal",
+      term,
+      timeFilter,
+      panFilter,
+      exact ? "exact" : "fuzzy",
+      fileTypes.length > 0 ? fileTypes.join(",") : "all",
+    ].join(":");
+    const cachedTotal = await getRedisCache<number>(totalCacheKey);
+
+    let sources: any[];
+    let totalCount: number;
+    if (cachedTotal !== null) {
+      sources = await prisma.$queryRaw<any[]>(dataSql);
+      totalCount = cachedTotal;
+    } else {
+      const [rows, countRows] = await Promise.all([
+        prisma.$queryRaw<any[]>(dataSql),
+        prisma.$queryRaw<[{ count: number }]>(countSql),
       ]);
-
-      const sources = dataResult.rows;
-      const totalCount = countResult.rows[0]?.count || 0;
-
-      sources.forEach((item) => {
-        item.type = item.type || getStorageType(item.url);
-        item.menu = truncateString(item.menu || "", TREE_MAX_LINE);
-        delete item.url;
-      });
-
-      return {
-        data: sources,
-        total: totalCount,
-        page,
-        pageSize,
-        totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
-        tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
-      };
-    } finally {
-      if (client) client.release();
+      sources = rows;
+      totalCount = countRows[0]?.count || 0;
+      // 缓存计数结果
+      await setRedisCache(totalCacheKey, totalCount, 10 * 60);
     }
+
+    sources.forEach((item) => {
+      item.type = item.type || getStorageType(item.url);
+      item.menu = truncateString(item.menu || "", TREE_MAX_LINE);
+      delete item.url;
+    });
+
+    return {
+      data: sources,
+      total: totalCount,
+      page,
+      pageSize,
+      totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
+      tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
+    };
   },
   {
     name: "api-source-search-v1",

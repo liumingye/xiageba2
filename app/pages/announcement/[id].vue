@@ -125,19 +125,27 @@ const formatDate = (dateStr: string) => {
         <div class="flex items-center gap-4 mb-4">
           <div
             class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            :class="getIconConfig(announcement!.icon).class"
+            :class="getIconConfig(announcement.icon).class"
           >
             <component
-              :is="getIconConfig(announcement!.icon).component"
+              :is="getIconConfig(announcement.icon).component"
               class="w-5 h-5"
             />
           </div>
           <div class="flex-1 min-w-0">
             <h1 class="text-xl font-bold text-white break-words">
-              {{ announcement!.title }}
+              {{ announcement.title }}
             </h1>
             <p class="text-xs text-zinc-500 mt-1">
-              {{ formatDate(announcement!.createdAt) }}
+              <NuxtTime
+                :datetime="announcement.createdAt"
+                year="numeric"
+                month="short"
+                day="numeric"
+                hour="numeric"
+                minute="numeric"
+                second="numeric"
+              />
             </p>
           </div>
         </div>

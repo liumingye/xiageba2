@@ -78,7 +78,6 @@ const {
       type: "",
       status: 1,
     },
-    similar: [],
   }),
 });
 
@@ -237,7 +236,15 @@ onMounted(() => {
                   </span>
                   <span class="flex items-center gap-1">
                     <Clock class="w-4 h-4" />
-                    {{ new Date(source.createdAt).toLocaleString() }}
+                    <NuxtTime
+                      :datetime="source.createdAt"
+                      year="numeric"
+                      month="short"
+                      day="numeric"
+                      hour="numeric"
+                      minute="numeric"
+                      second="numeric"
+                    />
                   </span>
                 </div>
               </div>

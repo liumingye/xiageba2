@@ -18,13 +18,16 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
+  (e: "update:selectedDownload", value: DownloadOption | null): void;
+  (e: "update:show", value: boolean): void;
+  (e: "update:music", value: Music | null): void;
 }>();
 
 const showFeedbackModal = ref(false);
 const isMobile = useMediaQuery("(max-width: 767px)");
 const qrCodeUrl = ref("");
 
-const { selectedDownload, music, show } = useVModels(props);
+const { selectedDownload, music, show } = useVModels(props, emit, { passive: true });
 
 const extractPwd = (url: string): string => {
   try {

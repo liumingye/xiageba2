@@ -118,7 +118,15 @@ const emit = defineEmits<{
     >
       <span class="text-xs text-zinc-500 flex items-center gap-1">
         <Calendar class="w-3 h-3" />
-        {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
+        <NuxtTime
+          :datetime="item.createdAt"
+          year="numeric"
+          month="short"
+          day="numeric"
+          hour="numeric"
+          minute="numeric"
+          second="numeric"
+        />
       </span>
       <div class="flex items-center gap-2">
         <button
