@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
         const isUrl = /^https?:\/\//i.test(keyword);
         const baseParams: any[] = [];
         let paramIndex = 1;
-        const conditions: string[] = [`"isTemp" = false`];
+        const conditions: string[] = [];
 
         if (cid) {
           conditions.push(`cid = $${paramIndex++}`);
@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
 
         const dataSql = isUrl
           ? `
-            SELECT id, cid, title, url, description, menu, "isSelf", "isTemp", status, "createdAt", "updatedAt"
+            SELECT id, cid, title, url, description, menu, "isSelf", status, "createdAt", "updatedAt"
             FROM "Source"
             ${whereClause}
             ORDER BY "createdAt" DESC
@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
             WITH search_query AS (
               SELECT ${searchQueryExpression} AS value
             )
-            SELECT id, cid, title, url, description, menu, "isSelf", "isTemp", status, "createdAt", "updatedAt"
+            SELECT id, cid, title, url, description, menu, "isSelf", status, "createdAt", "updatedAt"
             FROM "Source" CROSS JOIN search_query
             ${whereClause}
             ORDER BY ts_rank("searchVector", search_query.value, 1) DESC, "createdAt" DESC
@@ -128,7 +128,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // 2. 无关键词时，保留 Prisma 原生普通列表查询
-    const where: any = { isTemp: false };
+    const where: any = {};
     if (cid) where.cid = cid;
 
     const [sources, total, categories] = await Promise.all([

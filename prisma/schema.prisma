@@ -71,12 +71,10 @@ model Source {
   cid           Int?        @db.SmallInt
   title         String
   url           String
-  fid           String?
   description   String      @default("")
   menu          String      @default("")
   status        Int         @default(1) @db.SmallInt
   invalidNum    Int         @default(0) @db.SmallInt
-  isTemp        Boolean     @default(false)
   isSelf        Boolean     @default(false)
   createdAt     DateTime    @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime?   @updatedAt @db.Timestamptz(3)
@@ -86,6 +84,15 @@ model Source {
   @@index([cid])
   @@index([cid, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
+}
+
+model SourceTemp {
+  id        Int       @id @default(autoincrement())
+  url       String
+  fid       String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([createdAt])
 }
 
 model Config {

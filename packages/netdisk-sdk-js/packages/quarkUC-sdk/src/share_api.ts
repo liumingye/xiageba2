@@ -72,6 +72,8 @@ export class QuarkUCShareApi {
   share(
     fid_list: string[],
     title: string,
+    expired_type?: number,
+    passcode?: string,
   ): Promise<{
     task_id: string;
     task_sync: boolean;
@@ -252,14 +254,20 @@ QuarkUCShareApi.prototype.saveTask = function (taskID, _await) {
   return this.client.fsApi.task(taskID, _await);
 };
 
-QuarkUCShareApi.prototype.share = async function (fid_list, title) {
+QuarkUCShareApi.prototype.share = async function (
+  fid_list,
+  title,
+  expired_type = 2,
+  passcode,
+) {
   const {
     body: { data },
   } = await this.client.agentApi.post(`/share`).send({
     fid_list,
-    expired_type: 2,
+    expired_type,
     title,
     url_type: 1,
+    passcode,
   });
   return data;
 };

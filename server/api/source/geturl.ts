@@ -572,7 +572,8 @@ async function transferBaidu(
 
   const fids = list.map((item) => item.to);
 
-  const pwd = shareParam.pwd || "6666";
+  // const pwd = shareParam.pwd || "6666";
+  const pwd = "6666";
 
   let shareResult: ICreateShareResult | null = null;
 
@@ -581,7 +582,7 @@ async function transferBaidu(
       client.fsShareApi.createShare({
         fsidList: list.map((item) => item.to_fs_id),
         pwd,
-        period: 0,
+        period: 1,
       }),
     );
   } catch (err: any) {
@@ -668,7 +669,7 @@ async function transferXunlei(
   const shareResult = await client.shareApi.createShare({
     fileIds,
     title: detail.title,
-    expirationDays: 7,
+    expirationDays: 1,
   });
 
   if (!shareResult.share_url) {
@@ -704,7 +705,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const clientIp = getClientIp(event);
-  let sourceTitle = "临时资源";
   let sourceUrl = "";
 
   if (inputUrl) {
@@ -736,7 +736,6 @@ export default defineEventHandler(async (event) => {
     if (source.isSelf) {
       return { url: source.url };
     }
-    sourceTitle = source.title;
     sourceUrl = source.url;
   }
 
@@ -805,14 +804,12 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // 异步落库：将创建转存记录改为后台执行，不让数据库 I/O 拖慢响应速度
-    prisma.source
+    // 异步落库：临时转存记录写入 SourceTemp，不让数据库 I/O 拖慢响应速度
+    prisma.sourceTemp
       .create({
         data: {
-          title: sourceTitle,
           url: shareUrl,
           fid: _fid,
-          isTemp: true,
         },
       })
       .catch((err) => console.error("落库失败", err));

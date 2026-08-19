@@ -29,8 +29,8 @@ export default defineCachedEventHandler(
     // cid=0 表示不按分类筛选，返回所有资源
     const where =
       cid === 0
-        ? { isTemp: false, status: 1 }
-        : { cid, isTemp: false, status: 1 };
+        ? { status: 1 }
+        : { cid, status: 1 };
 
     const getTotalCount = async () => {
       if (cid === 0) {

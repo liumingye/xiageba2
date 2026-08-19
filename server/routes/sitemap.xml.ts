@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
 
   const [sources, musics] = await Promise.all([
     prisma.source.findMany({
-      where: { isTemp: false, status: 1 },
+      where: { status: 1 },
       select: { id: true, createdAt: true, updatedAt: true },
       orderBy: { createdAt: "desc" },
       take: 1000,

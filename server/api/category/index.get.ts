@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const data = await Promise.all(
     categories.map(async (cat) => {
       const latest = await prisma.source.findMany({
-        where: { cid: cat.id, isTemp: false, status: 1 },
+        where: { cid: cat.id, status: 1 },
         orderBy: { createdAt: "desc" },
         take: 10,
         select: { id: true, title: true, url: true, createdAt: true },
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
 
   // 在最前面插入"最新资源"（不按分类筛选，全局最新 10 条）
   const latestAll = await prisma.source.findMany({
-    where: { isTemp: false, status: 1 },
+    where: { status: 1 },
     orderBy: { createdAt: "desc" },
     take: 10,
     select: { id: true, title: true, url: true, createdAt: true },

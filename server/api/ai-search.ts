@@ -7,11 +7,11 @@ import {
   prioritizeSearchTokens,
   buildSearchWebQuery,
 } from "#server/utils/jieba";
-import { PAN_HOST_MAP, PanFilter } from "#server/api/source/search.get";
+import { PAN_HOST_MAP } from "#server/api/source/search.get";
 import { Readable } from "stream";
 import { aiRequestQueue } from "#server/utils/queue"; // 引入刚才写的排队机
 import { getAiSearchConfig } from "#server/api/admin/config/ai-search";
-import { getStorageTypeFriend } from "#shared/utils";
+import { getStorageTypeFriend, PanFilter } from "#shared/utils";
 
 const siteHost = process.env.SITE_HOST || "";
 
@@ -41,7 +41,7 @@ async function searchSourcesForAi(keyword: string, panType: PanFilter = "all") {
   // 网盘渠道过滤
   const panFilter = panType in PAN_HOST_MAP ? panType : "all";
   const panHosts = PAN_HOST_MAP[panFilter];
-  if (panHosts.length > 0) {
+  if (panHosts && panHosts.length > 0) {
     const likeConditions = panHosts.map((host) => {
       baseParams.push(`https://${host}/%`);
       return `url LIKE $${paramIndex++}`;
@@ -56,7 +56,7 @@ async function searchSourcesForAi(keyword: string, panType: PanFilter = "all") {
   conditions.push(`"searchVector" @@ search_query.value`);
 
   // 拼接完整的 WHERE
-  const whereClause = `WHERE "isTemp" = false AND "status" = 1 AND ${conditions.join(" AND ")}`;
+  const whereClause = `WHERE "status" = 1 AND ${conditions.join(" AND ")}`;
 
   // 3. 构造打分机制（直接复用你成熟的排序逻辑）
   const dataParams = [...baseParams];

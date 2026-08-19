@@ -40,7 +40,7 @@ export default defineTask({
         forceDeletedCount: number;
         errors: string[];
       };
-      deletedIds?: string[];
+      deletedIds?: number[];
     };
   }> {
     console.log("开始清理临时资源...");
@@ -62,9 +62,8 @@ export default defineTask({
       const cutoffForce = new Date(now - ONE_DAY); // ⚡ 超过1天的临界线
 
       // 捞出所有超过对应过期时间的临时资源
-      const sources = await prisma.source.findMany({
+      const sources = await prisma.sourceTemp.findMany({
         where: {
-          isTemp: true,
           createdAt: { lt: cutoffNormal },
         },
         select: { id: true, url: true, fid: true, createdAt: true },
@@ -87,11 +86,11 @@ export default defineTask({
       }
 
       // 核心存放桶
-      const forceDeleteDbIds: string[] = []; // ⚡ 存放超过1天、准备直接强删的DB ID
-      const quarkTasks: Array<{ id: string; fids: string[] }> = [];
-      const ucTasks: Array<{ id: string; fids: string[] }> = [];
-      const baiduTasks: Array<{ id: string; fids: string[] }> = [];
-      const xunleiTasks: Array<{ id: string; fids: string[] }> = [];
+      const forceDeleteDbIds: number[] = []; // ⚡ 存放超过1天、准备直接强删的DB ID
+      const quarkTasks: Array<{ id: number; fids: string[] }> = [];
+      const ucTasks: Array<{ id: number; fids: string[] }> = [];
+      const baiduTasks: Array<{ id: number; fids: string[] }> = [];
+      const xunleiTasks: Array<{ id: number; fids: string[] }> = [];
 
       // 2. 归类整理（加入时间判定）
       for (const source of sources) {
@@ -115,7 +114,7 @@ export default defineTask({
         else if (type === "xunlei") xunleiTasks.push(taskItem);
       }
 
-      const successfullyDeletedDbIds: string[] = [];
+      const successfullyDeletedDbIds: number[] = [];
 
       // --- 夸克网盘 ---
       if (quarkTasks.length > 0) {
@@ -173,7 +172,7 @@ export default defineTask({
 
           for (let i = 0; i < baiduTasks.length; i += PAN_BATCH_LIMIT) {
             const chunk = baiduTasks.slice(i, i + PAN_BATCH_LIMIT);
-            const validChunkDbIds: string[] = [];
+            const validChunkDbIds: number[] = [];
             const allPanPaths: string[] = [];
 
             for (const item of chunk) {
@@ -230,7 +229,7 @@ export default defineTask({
       ];
 
       if (finalDeleteDbIds.length > 0) {
-        await prisma.source.deleteMany({
+        await prisma.sourceTemp.deleteMany({
           where: { id: { in: finalDeleteDbIds } },
         });
         results.successCount = successfullyDeletedDbIds.length;

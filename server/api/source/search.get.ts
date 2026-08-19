@@ -128,7 +128,6 @@ export default defineCachedEventHandler(
 
     // 3. 构建动态 WHERE 条件（Prisma.sql 片段，参数自动安全转义）
     const whereFragments: Prisma.Sql[] = [
-      Prisma.sql`"isTemp" = false`,
       Prisma.sql`"status" = 1`,
     ];
 

@@ -53,7 +53,6 @@ export default defineEventHandler(async (event) => {
         SELECT id, title, url
         FROM "Source"
         WHERE id != ${id}
-          AND "isTemp" = false
           AND status = 1
           AND "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
         ORDER BY ts_rank("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery})) DESC
