@@ -123,6 +123,7 @@ export class QuarkUCShareApi {
       updated_at: number;
       _extra: {};
     };
+    passcode?: string;
     path_info: string;
     partial_violation: boolean;
     size: number;

@@ -444,8 +444,15 @@ async function transferQuarkUC(
     throw createError({ statusCode: 500, message: "获取分享密码失败" });
   }
 
+  let shareUrl = password_data.share_url;
+
+  //   如果有提取码，则拼接到分享链接中
+  if (password_data.passcode) {
+    shareUrl += `?pwd=${password_data.passcode}`;
+  }
+
   return {
-    shareUrl: password_data.share_url,
+    shareUrl,
     fids: saveAsTopFids,
   };
 }
