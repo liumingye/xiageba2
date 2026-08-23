@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useEventListener, useMediaQuery } from "@vueuse/core";
-import { Download, Play, Pause, Disc3 } from "@lucide/vue";
+import { Download, Play, Pause, Disc3, Key } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 import { useMusicStore } from "~/stores/music";
-import type { NuxtError } from "nuxt/app";
+import { extractPwd } from "~/utils";
 
 const config = useRuntimeConfig();
 const route = useRoute();
@@ -209,7 +209,7 @@ onMounted(() => {
   musicStore.searchType = "music";
 });
 
-const isMobile = useMediaQuery("(max-width: 767px)");
+const isMobile = useMediaQuery("(max-width: 639px)");
 const isMounted = ref(false);
 
 onMounted(() => {
@@ -327,7 +327,9 @@ onMounted(() => {
                   </button>
                 </p>
 
-                <div class="flex flex-wrap gap-3 justify-center">
+                <div
+                  class="flex flex-wrap gap-3 justify-center sm:justify-start"
+                >
                   <a
                     v-for="(download, index) in music.downloads"
                     :key="index"
@@ -340,6 +342,11 @@ onMounted(() => {
                   >
                     <Download class="w-5 h-5" />
                     {{ download.quality }}
+                    <template
+                      v-if="isMobile && isMounted && extractPwd(download.url)"
+                    >
+                      (提取码: {{ extractPwd(download.url) }})
+                    </template>
                   </a>
                   <button
                     v-if="music.playUrl"
@@ -355,7 +362,7 @@ onMounted(() => {
                 <button
                   @click="showFeedbackModal = true"
                   aria-label="反馈问题"
-                  class="text-zinc-600 mt-2 md:hidden block"
+                  class="text-zinc-600 mt-2 sm:hidden block"
                 >
                   反馈问题
                 </button>

@@ -6,9 +6,10 @@ import {
   useMediaQuery,
   useVModels,
 } from "@vueuse/core";
-import { X, Download, QrCode, MessageSquare, Copy, Check } from "@lucide/vue";
+import { X, Download, QrCode, Copy, Check } from "@lucide/vue";
 import type { Music, DownloadOption } from "~/stores/music";
 import FeedbackModal from "~/components/FeedbackModal.vue";
+import { extractPwd } from "~/utils";
 
 const props = defineProps<{
   show: boolean;
@@ -27,21 +28,9 @@ const showFeedbackModal = ref(false);
 const isMobile = useMediaQuery("(max-width: 767px)");
 const qrCodeUrl = ref("");
 
-const { selectedDownload, music, show } = useVModels(props, emit, { passive: true });
-
-const extractPwd = (url: string): string => {
-  try {
-    const u = new URL(url);
-    const pwd = u.searchParams.get("pwd");
-    if (pwd) return pwd;
-
-    const match = url.match(/[?&]pwd=([^&]+)/);
-    if (match) return match[1] || "";
-  } catch {
-    // 忽略URL解析错误
-  }
-  return "";
-};
+const { selectedDownload, music, show } = useVModels(props, emit, {
+  passive: true,
+});
 
 const selectedPwd = computed(() => {
   if (!selectedDownload.value?.url) return "";
