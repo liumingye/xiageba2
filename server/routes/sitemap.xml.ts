@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     prisma.music.findMany({
       select: { id: true, createdAt: true, updatedAt: true },
       orderBy: { createdAt: "desc" },
-      take: 500,
+      take: 1000,
     }),
   ]);
 

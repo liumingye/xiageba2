@@ -20,6 +20,7 @@ import { useClipboard } from "@vueuse/core";
 import TopBar from "~/components/TopBar.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
+import type { ApiErrorResponse } from "~/utils/type";
 
 defineOptions({
   name: "BookDetailPage",
@@ -53,32 +54,35 @@ const {
   pending: loading,
   error: fetchApiError,
   refresh: retryFetch,
-} = await useFetch<NovelDetail>(() => `/api/novel/${bookId.value}`, {
-  key: () => `novel-detail-${bookId.value}`,
-  lazy: true,
-  server: true,
-  default: () => ({
-    bookId: bookId.value,
-    bookName: "",
-    author: "",
-    coverImage: "",
-    bookScore: 0,
-    bookStatus: 0,
-    category: "",
-    chapterCount: 0,
-    wordCount: 0,
-    description: "",
-    tag: "",
-  }),
-});
+} = await useFetch<NovelDetail, ApiErrorResponse>(
+  () => `/api/novel/${bookId.value}`,
+  {
+    key: () => `novel-detail-${bookId.value}`,
+    lazy: true,
+    server: true,
+    default: () => ({
+      bookId: bookId.value,
+      bookName: "",
+      author: "",
+      coverImage: "",
+      bookScore: 0,
+      bookStatus: 0,
+      category: "",
+      chapterCount: 0,
+      wordCount: 0,
+      description: "",
+      tag: "",
+    }),
+  },
+);
 
 // API 错误用 error 页面展示（404/500 等）
 watch(
   fetchApiError,
-  (err: any) => {
+  (err) => {
     if (err) {
       throw createError({
-        statusCode: err.statusCode || err.status || 404,
+        statusCode: err?.data?.statusCode || err.status || 404,
         message: err?.data?.message || "小说不存在",
       });
     }

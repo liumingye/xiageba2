@@ -55,6 +55,14 @@ export default defineCachedEventHandler(
     }
 
     const body = await res.json();
+
+    if (!body.data) {
+      throw createError({
+        statusCode: 404,
+        message: "小说不存在",
+      });
+    }
+
     if (body.errno !== 0) {
       throw createError({
         statusCode: 500,

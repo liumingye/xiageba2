@@ -4,6 +4,7 @@ import TopBar from "~/components/TopBar.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import { Loader2, X } from "@lucide/vue";
 import type { SourceItem } from "~/components/LocalResourceItem.vue";
+import type { ApiErrorResponse } from "~/utils/type";
 
 const config = useRuntimeConfig();
 const route = useRoute();
@@ -39,7 +40,7 @@ const {
   data,
   pending,
   error: fetchApiError,
-} = await useFetch<CategoryListData>(
+} = await useFetch<CategoryListData, ApiErrorResponse>(
   () => `/api/category/${categoryId.value}`,
   {
     key: `category-${categoryId.value}-page-${route.query.page || 1}`,
@@ -65,7 +66,7 @@ watch(
   (err) => {
     if (err) {
       throw createError({
-        statusCode: err.status || 404,
+        statusCode: err?.data?.statusCode || err.status || 404,
         message: err?.data?.message || "分类不存在",
       });
     }

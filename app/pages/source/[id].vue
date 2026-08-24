@@ -7,6 +7,7 @@ import Qrcode from "~/components/Qrcode.vue";
 import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 import { useMusicStore } from "~/stores/music";
 import { marked } from "marked";
+import type { ApiErrorResponse } from "~/utils/type";
 
 marked.setOptions({ gfm: true, breaks: true, async: false });
 
@@ -42,30 +43,34 @@ const {
   data: responseData,
   pending: loading,
   error: fetchApiError,
-} = await useFetch<SourceResponse>(() => `/api/source/${sourceId}?similar=1`, {
-  key: () => `source-${sourceId}`,
-  lazy: true,
-  server: true,
-  default: () => ({
-    data: {
-      id: sourceId,
-      title: "",
-      description: "",
-      menu: "",
-      createdAt: "",
-      type: "",
-      status: 1,
-    },
-  }),
-});
+} = await useFetch<SourceResponse, ApiErrorResponse>(
+  () => `/api/source/${sourceId}?similar=1`,
+  {
+    key: () => `source-${sourceId}`,
+    lazy: true,
+    server: true,
+    default: (): SourceResponse => ({
+      data: {
+        id: sourceId,
+        title: "",
+        description: "",
+        menu: "",
+        createdAt: "",
+        type: "other",
+        status: 1,
+      },
+      similar: [],
+    }),
+  },
+);
 
 // ID 不存在时显示 404
 watch(
   fetchApiError,
-  (err: any) => {
+  (err) => {
     if (err) {
       throw createError({
-        statusCode: err.status || 404,
+        statusCode: err?.data?.statusCode || err.status || 404,
         message: err?.data?.message || "资源不存在",
       });
     }

@@ -8,6 +8,7 @@ import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 import { useMusicStore } from "~/stores/music";
 import { extractPwd } from "~/utils";
+import type { ApiErrorResponse } from "~/utils/type";
 
 const config = useRuntimeConfig();
 const route = useRoute();
@@ -19,7 +20,7 @@ const {
   data: music,
   pending: loading,
   error: fetchApiError,
-} = await useFetch<Music>(() => `/api/music/${musicId}`, {
+} = await useFetch<Music, ApiErrorResponse>(() => `/api/music/${musicId}`, {
   key: () => `music-${musicId}`,
   lazy: true,
   server: true,
@@ -40,10 +41,10 @@ const {
 // ID 不存在时显示 404
 watch(
   fetchApiError,
-  (err: any) => {
+  (err) => {
     if (err) {
       throw createError({
-        statusCode: err.status || 404,
+        statusCode: err?.data?.statusCode || err.status || 404,
         message: err?.data?.message || "音乐不存在",
       });
     }
