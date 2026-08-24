@@ -368,7 +368,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                       <span
                         >可使用
                         <span class="text-primary-500"
-                          >{{ getStorageTypeFriend(modalUrl) }}网盘</span
+                          >{{ getStorageTypeFriend(modalUrl) }}</span
                         >
                         APP 扫码获取</span
                       >

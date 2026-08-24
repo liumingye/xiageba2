@@ -324,3 +324,8 @@ html[data-theme="light"] .prose-resource code {
   background-size: cover;
   flex-shrink: 0;
 }
+.icon-magnet {
+  background: url("/img/pan/magnet.svg") no-repeat center center;
+  background-size: cover;
+  flex-shrink: 0;
+}

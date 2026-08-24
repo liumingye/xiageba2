@@ -9,6 +9,7 @@ import {
 } from "@lucide/vue";
 import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 import { type CheckStatus } from "@/composables/usePanCheck";
+import { isWithinDays } from "@/utils";
 
 export interface SourceItem {
   id: string;
@@ -16,7 +17,6 @@ export interface SourceItem {
   type: PanFilter;
   menu: string;
   isSelf?: boolean;
-  // description: string;
   createdAt: string;
 }
 
@@ -63,7 +63,7 @@ const emit = defineEmits<{
               v-if="item.type !== 'other'"
               :class="`icon-${item.type} w-4 h-4 mr-1`"
             ></div>
-            {{ getStorageTypeFriendFromFilter(item.type) }}网盘
+            {{ getStorageTypeFriendFromFilter(item.type) }}
           </div>
           <div
             v-if="item.isSelf"
@@ -126,6 +126,7 @@ const emit = defineEmits<{
           hour="numeric"
           minute="numeric"
           second="numeric"
+          :relative="isWithinDays(item.createdAt)"
         />
       </span>
       <div class="flex items-center gap-2">

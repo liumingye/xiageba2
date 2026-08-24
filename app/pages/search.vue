@@ -213,7 +213,6 @@ const panOptions = [
   { value: "139", label: "移动网盘" },
   { value: "123", label: "123网盘" },
   { value: "115", label: "115网盘" },
-  // { value: "pikpak", label: "PikPak网盘" },
 ];
 
 const sortOptions = [
@@ -1017,7 +1016,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
                       <span
                         >可使用
                         <span class="text-primary-500"
-                          >{{ getStorageTypeFriend(modalUrl) }}网盘</span
+                          >{{ getStorageTypeFriend(modalUrl) }}</span
                         >
                         APP 扫码获取</span
                       >

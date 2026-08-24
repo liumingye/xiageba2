@@ -223,7 +223,7 @@ defineExpose({ results, searching, error });
                 v-if="item.type !== 'other'"
                 :class="`icon-${item.type} w-4 h-4 mr-1`"
               ></div>
-              {{ getStorageTypeFriendFromFilter(item.type) }}网盘
+              {{ getStorageTypeFriendFromFilter(item.type) }}
             </div>
             <ClientOnly>
               <div

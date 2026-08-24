@@ -10,19 +10,22 @@ export type PanFilter =
   | "123"
   | "115"
   | "pikpak"
+  | "magnet"
   | "other";
+
 export type PanFilterFriend =
-  | "夸克"
-  | "百度"
-  | "迅雷"
-  | "UC"
-  | "阿里"
-  | "天翼"
-  | "移动"
-  | "123"
-  | "115"
+  | "夸克网盘"
+  | "百度网盘"
+  | "迅雷网盘"
+  | "UC网盘"
+  | "阿里云盘"
+  | "天翼云盘"
+  | "移动云盘"
+  | "123云盘"
+  | "115网盘"
   | "PikPak"
-  | "其他";
+  | "磁力链接"
+  | "其他链接";
 
 // 将映射关系抽离到静态对象中，查询时间复杂度为 O(1) 且更易维护
 const STORAGE_HOST_MAP: Record<string, PanFilter> = {
@@ -63,6 +66,10 @@ export const getStorageType = (url: string): PanFilter => {
       return STORAGE_HOST_MAP[host] ?? "other";
     }
 
+    if (urlObj.protocol.toLowerCase() === "magnet:") return "magnet";
+
+    if (host.endsWith("share.123pan.cn")) return "123";
+
     return "other";
   } catch {
     // 捕获 new URL() 在传入非法字符串时的解析错误
@@ -71,25 +78,26 @@ export const getStorageType = (url: string): PanFilter => {
 };
 
 const map: Partial<Record<PanFilter, PanFilterFriend>> = {
-  quark: "夸克",
-  baidu: "百度",
-  xunlei: "迅雷",
-  uc: "UC",
-  ali: "阿里",
-  189: "天翼",
-  139: "移动",
-  123: "123",
-  115: "115",
+  quark: "夸克网盘",
+  baidu: "百度网盘",
+  xunlei: "迅雷网盘",
+  uc: "UC网盘",
+  ali: "阿里网盘",
+  189: "天翼云盘",
+  139: "移动云盘",
+  123: "123云盘",
+  115: "115网盘",
   pikpak: "PikPak",
-  other: "其他",
+  magnet: "磁力链接",
+  other: "其他链接",
 };
 
 export const getStorageTypeFriend = (url: string): PanFilterFriend => {
-  return map[getStorageType(url)] || "其他";
+  return map[getStorageType(url)] || "其他链接";
 };
 
 export const getStorageTypeFriendFromFilter = (
   pan: PanFilter,
 ): PanFilterFriend => {
-  return map[pan] || "其他";
+  return map[pan] || "其他链接";
 };

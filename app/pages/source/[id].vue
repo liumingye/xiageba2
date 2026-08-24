@@ -232,7 +232,7 @@ onMounted(() => {
                 <div class="flex items-center gap-3 text-sm text-zinc-500">
                   <span class="flex items-center gap-1">
                     <Link class="w-4 h-4" />
-                    {{ getStorageTypeFriendFromFilter(source.type) }}网盘
+                    {{ getStorageTypeFriendFromFilter(source.type) }}
                   </span>
                   <span class="flex items-center gap-1">
                     <Clock class="w-4 h-4" />
@@ -297,7 +297,7 @@ onMounted(() => {
                       <span class="text-primary-500"
                         >{{
                           getStorageTypeFriendFromFilter(source.type)
-                        }}网盘</span
+                        }}</span
                       >
                       APP 扫码获取</span
                     >
