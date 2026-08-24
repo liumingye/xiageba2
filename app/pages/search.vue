@@ -3,12 +3,9 @@ import { getStorageType } from "#shared/utils";
 import {
   CircleSlash,
   RotateCcw,
-  Clipboard,
   Music as MusicIcon,
   FolderOpen,
-  ExternalLink,
   ArrowRight,
-  QrCode,
   X,
   Folder,
   AlertTriangle,
@@ -20,8 +17,6 @@ import {
   RotateCcwSquare,
   Sparkles,
 } from "@lucide/vue";
-import { getStorageTypeFriend } from "#shared/utils";
-import { useClipboard, useMediaQuery } from "@vueuse/core";
 import WebSearchResults from "~/components/WebSearchResults.vue";
 import type { WebSearchResult } from "~/components/WebSearchResults.vue";
 import LocalResourceItem from "~/components/LocalResourceItem.vue";
@@ -50,7 +45,6 @@ const router = useRouter();
 const showModal = ref(false);
 const modalTitle = ref("");
 const modalUrl = ref("");
-const modalQrCode = ref("");
 const modalFetching = ref(false);
 const modalError = ref("");
 
@@ -110,20 +104,9 @@ const closeTreeModal = () => {
 const setModalLoading = (title: string) => {
   modalTitle.value = title;
   modalUrl.value = "";
-  modalQrCode.value = "";
   modalError.value = "";
   modalFetching.value = true;
   showModal.value = true;
-};
-
-const setModalResult = async (url: string) => {
-  modalUrl.value = url;
-  const qrcode = await import("qrcode");
-  modalQrCode.value = await qrcode.toDataURL(url, {
-    width: 200,
-    margin: 2,
-    color: { dark: "#000", light: "#fff" },
-  });
 };
 
 const openModal = async ({
@@ -150,7 +133,7 @@ const openModal = async ({
     });
     const data = await res.json();
     if (res.ok && data?.url) {
-      await setModalResult(data.url);
+      modalUrl.value = data.url;
     } else {
       console.error(data);
       modalError.value = data.message || data.error || "获取下载链接失败";
@@ -163,10 +146,8 @@ const openModal = async ({
 };
 
 const closeModal = () => {
-  showModal.value = false;
   modalTitle.value = "";
   modalUrl.value = "";
-  modalQrCode.value = "";
 };
 const musicStore = useMusicStore();
 
@@ -515,19 +496,6 @@ watch(
   { immediate: true },
 );
 
-const { success, error: showError } = useToast();
-const { copy } = useClipboard();
-
-const copyUrl = async (url: string) => {
-  try {
-    await copy(url);
-    success("复制成功");
-  } catch {
-    showError("复制失败");
-  }
-};
-
-const isMobile = useMediaQuery("(max-width: 767px)");
 </script>
 
 <style scoped>
@@ -977,113 +945,14 @@ const isMobile = useMediaQuery("(max-width: 767px)");
 
       <SiteFooter v-if="!isAi" />
 
-      <Teleport to="body">
-        <Transition name="modal">
-          <div
-            v-if="showModal"
-            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-            @click.self="closeModal"
-          >
-            <div
-              class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-zinc-700 shadow-2xl overflow-hidden"
-            >
-              <div
-                class="flex items-center justify-between p-4 border-b border-zinc-800"
-              >
-                <h3 class="text-white font-medium">获取下载链接</h3>
-                <button
-                  class="text-zinc-400 hover:text-white transition-colors"
-                  @click="closeModal"
-                >
-                  <X class="w-5 h-5" />
-                </button>
-              </div>
-              <div class="p-4 h-full overflow-auto">
-                <div v-if="modalFetching" class="text-center py-8">
-                  <div
-                    class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
-                  />
-                  <p class="text-zinc-400 text-sm">
-                    {{ funnyText }}<br />请耐心等待，这可能需要几秒钟
-                  </p>
-                </div>
-                <div v-else-if="modalError" class="text-center py-8">
-                  <p class="text-red-400 text-sm">{{ modalError }}</p>
-                </div>
-                <div v-else-if="modalUrl" class="space-y-4">
-                  <div class="flex flex-col items-center gap-4">
-                    <template v-if="!isMobile">
-                      <span
-                        >可使用
-                        <span class="text-primary-500"
-                          >{{ getStorageTypeFriend(modalUrl) }}</span
-                        >
-                        APP 扫码获取</span
-                      >
-                      <div v-if="modalQrCode" class="flex-shrink-0">
-                        <img
-                          :src="modalQrCode"
-                          alt="下载链接二维码"
-                          class="w-60 h-auto rounded-lg"
-                        />
-                      </div>
-                      <div
-                        v-else
-                        class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0"
-                      >
-                        <QrCode class="w-10 h-10 text-zinc-600" />
-                      </div>
-                    </template>
-                    <p
-                      class="w-full text-white font-medium text-center text-lg line-clamp-5"
-                      :class="{ truncate: !isMobile }"
-                    >
-                      {{ modalTitle }}
-                    </p>
-                    <p class="text-center break-all">
-                      资源地址：<a
-                        :href="modalUrl"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-primary-500"
-                        >{{ modalUrl }}</a
-                      >
-                    </p>
-                    <div class="w-full flex items-center justify-center gap-2">
-                      <button
-                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600 hover:text-white"
-                        @click="copyUrl(modalUrl)"
-                      >
-                        <Clipboard class="w-4 h-4" />
-                        复制链接
-                      </button>
-                      <a
-                        :href="modalUrl"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all h-9 px-4 py-2 flex-1 bg-primary-600 hover:bg-primary-700 text-white"
-                      >
-                        <ExternalLink class="w-4 h-4" />
-                        打开链接
-                      </a>
-                    </div>
-                    <p class="text-xs text-zinc-400">
-                      网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
-                      文件内容请自行辨别，如发现违规请通过<a
-                        href="/page/version"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-primary-500"
-                        >版权说明</a
-                      >联系我们删除。本站仅供学习交流，无任何收费行为。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Transition>
-      </Teleport>
+      <DownloadLinkPanel
+        v-model:open="showModal"
+        :title="modalTitle"
+        :url="modalUrl"
+        :loading="modalFetching"
+        :error="modalError"
+        @close="closeModal"
+      />
 
       <Teleport to="body">
         <Transition name="modal">

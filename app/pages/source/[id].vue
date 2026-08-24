@@ -1,16 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useClipboard, useMediaQuery } from "@vueuse/core";
-import {
-  Download,
-  ExternalLink,
-  FolderOpen,
-  Clock,
-  Link,
-  QrCode,
-  Loader2,
-  Clipboard,
-} from "@lucide/vue";
+import { Download, FolderOpen, Clock, Link, Loader2 } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
@@ -20,19 +10,7 @@ import { marked } from "marked";
 
 marked.setOptions({ gfm: true, breaks: true, async: false });
 
-const { copy } = useClipboard();
-
 const toast = useToast();
-
-const copyFetchedUrl = async () => {
-  if (!fetchedUrl.value) return;
-  try {
-    await copy(fetchedUrl.value);
-    toast.success("链接已复制");
-  } catch {
-    toast.error("复制链接失败");
-  }
-};
 
 const route = useRoute();
 const router = useRouter();
@@ -153,14 +131,19 @@ useHead({
 const fetchingUrl = ref(false);
 const fetchedUrl = ref("");
 const fetchError = ref("");
-const qrCodeUrl = ref("");
+// 搞笑加载文案（详情页自己调 funnyLoading）
+const {
+  currentText: funnyText,
+  start: funnyStart,
+  stop: funnyStop,
+} = useFunnyLoading();
 
 const fetchDirectUrl = async () => {
   if (fetchingUrl.value) return;
   fetchingUrl.value = true;
   fetchError.value = "";
   fetchedUrl.value = "";
-  qrCodeUrl.value = "";
+  funnyStart();
 
   try {
     const res = await fetch("/api/source/geturl", {
@@ -169,15 +152,8 @@ const fetchDirectUrl = async () => {
       body: JSON.stringify({ id: sourceId }),
     });
     const data = await res.json();
-    if (res.ok && data) {
+    if (res.ok && data?.url) {
       fetchedUrl.value = data.url;
-      // 生成二维码
-      const qrcode = await import("qrcode");
-      qrCodeUrl.value = await qrcode.toDataURL(fetchedUrl.value, {
-        width: 200,
-        margin: 2,
-        color: { dark: "#000", light: "#fff" },
-      });
     } else {
       fetchError.value = data.message || data.error || "获取下载链接失败";
     }
@@ -185,6 +161,7 @@ const fetchDirectUrl = async () => {
     fetchError.value = "获取下载链接失败";
   } finally {
     fetchingUrl.value = false;
+    funnyStop();
   }
 };
 
@@ -273,7 +250,9 @@ onMounted(() => {
             >
               <div v-if="source.status === 1" class="space-y-3">
                 <h4 class="text-zinc-300">获取下载链接:</h4>
-                <div v-if="!fetchedUrl" class="space-y-3">
+
+                <!-- 未获取前：提示 + 获取按钮 -->
+                <div v-if="!fetchedUrl && !fetchingUrl" class="space-y-3">
                   <p class="text-xs text-zinc-500">
                     点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存，失效后可重新获取。
                   </p>
@@ -282,82 +261,24 @@ onMounted(() => {
                     :disabled="fetchingUrl"
                     @click="fetchDirectUrl"
                   >
-                    <Loader2 v-if="fetchingUrl" class="w-5 h-5 animate-spin" />
-                    <Download v-else class="w-5 h-5" />
+                    <Download v-if="!fetchingUrl" class="w-5 h-5" />
                     {{ fetchingUrl ? "获取中..." : "获取下载链接" }}
                   </button>
                   <p v-if="fetchError" class="text-xs text-red-400">
                     {{ fetchError }}
                   </p>
                 </div>
-                <div v-else class="space-y-3">
-                  <div class="flex flex-col items-center gap-4">
-                    <span
-                      >可使用
-                      <span class="text-primary-500"
-                        >{{
-                          getStorageTypeFriendFromFilter(source.type)
-                        }}</span
-                      >
-                      APP 扫码获取</span
-                    >
-                    <div v-if="qrCodeUrl" class="flex-shrink-0">
-                      <img
-                        :src="qrCodeUrl"
-                        alt="下载链接二维码"
-                        class="w-60 h-auto rounded-lg mx-auto"
-                      />
-                    </div>
-                    <div
-                      v-else
-                      class="w-32 h-32 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0"
-                    >
-                      <QrCode class="w-12 h-12 text-zinc-600" />
-                    </div>
-                    <p
-                      class="w-full text-white font-medium truncate text-center text-lg"
-                    >
-                      {{ source.title }}
-                    </p>
-                    <p class="text-center break-all">
-                      资源地址：<a
-                        :href="fetchedUrl"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-primary-500"
-                        >{{ fetchedUrl }}</a
-                      >
-                    </p>
-                    <div class="w-full flex items-center justify-center gap-2">
-                      <button
-                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600 hover:text-white"
-                        @click="copyFetchedUrl"
-                      >
-                        <Clipboard class="w-4 h-4" />
-                        复制链接
-                      </button>
-                      <a
-                        :href="fetchedUrl"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all h-9 px-4 py-2 flex-1 bg-primary-600 hover:bg-primary-700 text-white"
-                      >
-                        <ExternalLink class="w-4 h-4" />
-                        打开链接
-                      </a>
-                    </div>
-                    <p class="text-xs text-zinc-400">
-                      网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
-                      文件内容请自行辨别，如发现违规请通过<a
-                        href="/page/version"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-primary-500"
-                        >版权说明</a
-                      >联系我们删除。本站仅供学习交流，无任何收费行为。
-                    </p>
-                  </div>
-                </div>
+
+                <!-- 获取中 / 已获取 / 报错 → 内嵌公共面板（不弹窗） -->
+                <DownloadLinkPanel
+                  v-else
+                  :as-modal="false"
+                  :title="source.title"
+                  :url="fetchedUrl"
+                  :loading="fetchingUrl"
+                  :error="fetchError"
+                  :hide-qr-on-mobile="false"
+                />
               </div>
               <div v-else>
                 <p class="text-center text-zinc-500">该资源已被删除或不存在</p>
