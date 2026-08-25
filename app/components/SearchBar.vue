@@ -41,7 +41,7 @@ const updateSearchQuery = (e: Event) => {
 };
 
 const handleSearch = (keywords?: string) => {
-  const q = (keywords ? keywords.trim() : searchQuery.value.trim());
+  const q = keywords ? keywords.trim() : searchQuery.value.trim();
   if (!q) return;
   if (q.length > MAX_KEYWORD_LENGTH) return;
   const type = (route.query.type as string) || musicStore.searchType || "music";
@@ -50,7 +50,7 @@ const handleSearch = (keywords?: string) => {
   if (route.path === "/search") {
     router.push({
       path: "/search",
-      query: { ...route.query, q },
+      query: { ...route.query, q, page: 1 },
     });
   } else {
     router.push({
@@ -58,6 +58,7 @@ const handleSearch = (keywords?: string) => {
       query: { type, q },
     });
   }
+  searchInput.value?.blur();
   isInputFocused.value = false;
 };
 
