@@ -1,161 +1,141 @@
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import { getConfigValues } from "./configCache";
 import {
-  updateXunleiRefreshToken,
-  updateBaiduRefreshToken,
+  updateXunleiRefreshTokenByAccountId,
+  updateBaiduRefreshTokenByAccountId,
 } from "#server/utils/source";
 import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
+import type { PanAccount } from "#server/lib/accountCache";
 
 // 客户端过期时间，单位：小时
 const CLIENT_EXPIRE_HOURS = 0.5;
 const CLIENT_EXPIRE_MS = CLIENT_EXPIRE_HOURS * 60 * 60 * 1000;
 
-let baiduClient: BaiduClient | null = null;
-let baiduClientCreatedAt: number | null = null;
-let xunleiClient: XunleiClient | null = null;
-let xunleiClientCreatedAt: number | null = null;
-let quarkClient: QuarkUCClient | null = null;
-let quarkClientCreatedAt: number | null = null;
-let ucClient: QuarkUCClient | null = null;
-let ucClientCreatedAt: number | null = null;
+type PanClient = QuarkUCClient | BaiduClient | XunleiClient;
 
-function isClientExpired(createdAt: number | null): boolean {
-  if (!createdAt) return true;
+interface CachedClient {
+  client: PanClient;
+  createdAt: number;
+}
+
+// 按 accountId 存储的客户端实例 Map
+const clientMap = new Map<number, CachedClient>();
+
+function isClientExpired(createdAt: number): boolean {
   return Date.now() - createdAt > CLIENT_EXPIRE_MS;
 }
 
+/**
+ * 清空所有缓存的客户端实例
+ */
 export function cleanClients() {
-  baiduClient = null;
-  baiduClientCreatedAt = null;
-  xunleiClient = null;
-  xunleiClientCreatedAt = null;
-  quarkClient = null;
-  quarkClientCreatedAt = null;
-  ucClient = null;
-  ucClientCreatedAt = null;
+  clientMap.clear();
 }
 
-// 每1分钟保持一次连接
+/**
+ * 清除指定 accountId 的客户端缓存
+ */
+export function cleanClient(accountId: number) {
+  clientMap.delete(accountId);
+}
+
+// 每1分钟保持一次夸克/UC连接
 setInterval(() => {
-  ucClient?.keepAlive();
-  quarkClient?.keepAlive();
+  for (const cached of clientMap.values()) {
+    if (cached.client instanceof QuarkUCClient) {
+      cached.client.keepAlive();
+    }
+  }
 }, 1000 * 60);
 
-export async function getQuarkClient(force?: boolean) {
-  if (!force && quarkClient && !isClientExpired(quarkClientCreatedAt)) {
-    return quarkClient;
-  }
-  const type = "quark";
-  const config = await getConfigValues([`${type}_cookie`, `${type}_temp_dir`]);
-  const cookie = config[`${type}_cookie`];
-
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: `未配置夸克网盘 Cookie，请先在账号管理中配置`,
-    });
+/**
+ * 根据账号记录获取（或创建）对应的网盘客户端实例
+ * 客户端按 accountId 缓存，过期后自动重建
+ */
+export async function getClientByAccount(
+  account: PanAccount,
+): Promise<PanClient> {
+  const cached = clientMap.get(account.id);
+  if (cached && !isClientExpired(cached.createdAt)) {
+    return cached.client;
   }
 
-  quarkClient = new QuarkUCClient({ type, cookie });
-  quarkClientCreatedAt = Date.now();
-  return quarkClient;
-}
+  let client: PanClient;
 
-export async function getUCClient(force?: boolean) {
-  if (!force && ucClient && !isClientExpired(ucClientCreatedAt)) {
-    return ucClient;
-  }
-  const type = "uc";
-  const config = await getConfigValues([`${type}_cookie`, `${type}_temp_dir`]);
-  const cookie = config[`${type}_cookie`];
+  switch (account.type) {
+    case "quark":
+    case "uc": {
+      if (!account.cookie) {
+        throw createError({
+          statusCode: 500,
+          message: `账号 ${account.id} 未配置 Cookie，请先在账号管理中配置`,
+        });
+      }
+      client = new QuarkUCClient({
+        type: account.type,
+        cookie: account.cookie,
+      });
+      break;
+    }
 
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: `未配置UC网盘 Cookie，请先在账号管理中配置`,
-    });
-  }
+    case "baidu": {
+      if (!account.cookie) {
+        throw createError({
+          statusCode: 500,
+          message: `账号 ${account.id} 未配置 Cookie，请先在账号管理中配置`,
+        });
+      }
+      try {
+        const baiduClient = new BaiduClient({
+          source: account.cookie,
+          clientId: BAIDU_CLIENT_ID,
+          clientSecret: BAIDU_CLIENT_SECRET,
+          accessToken: account.accessToken || undefined,
+          refreshToken: account.refreshToken || undefined,
+          expiresAt: account.expiresAt
+            ? account.expiresAt.getTime()
+            : undefined,
+          onRefreshToken: (tokenInfo) =>
+            updateBaiduRefreshTokenByAccountId(account.id, tokenInfo),
+        });
+        await baiduClient.init();
+        client = baiduClient;
+      } catch {
+        throw createError({
+          statusCode: 500,
+          message: `账号 ${account.id} 初始化百度网盘客户端失败`,
+        });
+      }
+      break;
+    }
 
-  ucClient = new QuarkUCClient({ type, cookie });
-  ucClientCreatedAt = Date.now();
-  return ucClient;
-}
+    case "xunlei": {
+      if (!account.refreshToken) {
+        throw createError({
+          statusCode: 500,
+          message: `账号 ${account.id} 未配置 Refresh Token，请先在账号管理中配置`,
+        });
+      }
+      client = new XunleiClient({
+        refreshToken: account.refreshToken,
+        accessToken: account.accessToken || undefined,
+        expiresAt: account.expiresAt
+          ? account.expiresAt.getTime()
+          : undefined,
+        onRefreshToken: (tokenInfo) =>
+          updateXunleiRefreshTokenByAccountId(account.id, tokenInfo),
+      });
+      break;
+    }
 
-export async function getBaiduClient(force?: boolean) {
-  if (!force && baiduClient && !isClientExpired(baiduClientCreatedAt)) {
-    return baiduClient;
-  }
-  const config = await getConfigValues([
-    "baidu_cookie",
-    "baidu_access_token",
-    "baidu_refresh_token",
-    "baidu_expires_at",
-  ]);
-  const cookie = config.baidu_cookie;
-
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置百度网盘 Cookie，请先在账号管理中配置",
-    });
-  }
-
-  try {
-    baiduClient = new BaiduClient({
-      source: cookie,
-      clientId: BAIDU_CLIENT_ID,
-      clientSecret: BAIDU_CLIENT_SECRET,
-      accessToken: config.baidu_access_token || undefined,
-      refreshToken: config.baidu_refresh_token || undefined,
-      expiresAt: config.baidu_expires_at
-        ? parseInt(config.baidu_expires_at)
-        : undefined,
-      onRefreshToken: updateBaiduRefreshToken,
-    });
-    await baiduClient.init();
-    baiduClientCreatedAt = Date.now();
-    return baiduClient;
-  } catch (err) {
-    throw createError({ statusCode: 500, message: "初始化百度网盘客户端失败" });
-  }
-}
-
-export async function getXunleiClient(force?: boolean) {
-  if (!force && xunleiClient && !isClientExpired(xunleiClientCreatedAt)) {
-    return xunleiClient;
-  }
-  const config = await getConfigValues([
-    "xunlei_refresh_token",
-    "xunlei_access_token",
-    "xunlei_expires_at",
-    "xunlei_temp_dir",
-  ]);
-  const refreshToken = config.xunlei_refresh_token;
-
-  if (!refreshToken) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置迅雷网盘 Cookie（refresh_token），请先在账号管理中配置",
-    });
+    default:
+      throw createError({
+        statusCode: 500,
+        message: `不支持的网盘类型: ${account.type}`,
+      });
   }
 
-  const accessToken = config.xunlei_access_token || undefined;
-  const expiresAt = config.xunlei_expires_at
-    ? parseInt(config.xunlei_expires_at)
-    : undefined;
-
-  try {
-    xunleiClient = new XunleiClient({
-      refreshToken,
-      accessToken,
-      expiresAt,
-      onRefreshToken: updateXunleiRefreshToken,
-    });
-    xunleiClientCreatedAt = Date.now();
-    return xunleiClient;
-  } catch (err) {
-    throw createError({ statusCode: 500, message: "初始化迅雷网盘客户端失败" });
-  }
+  clientMap.set(account.id, { client, createdAt: Date.now() });
+  return client;
 }

@@ -1,70 +1,255 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { get, post } from "~/utils/request";
-import { Save, UserCog, Check, Loader2, Link2, KeyRound, FolderOpen } from "@lucide/vue";
+import { get, post, put, del } from "~/utils/request";
+import {
+  Plus,
+  Save,
+  Pencil,
+  Trash2,
+  Check,
+  Loader2,
+  Link2,
+  KeyRound,
+  FolderOpen,
+  Power,
+  X,
+  UserCog,
+} from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { useToast } from "~/composables/useToast";
 
-interface AccountConfig {
-  quark_cookie: string;
-  quark_temp_dir: string;
-  baidu_cookie: string;
-  baidu_access_token: string;
-  baidu_refresh_token: string;
-  baidu_temp_dir: string;
-  uc_cookie: string;
-  uc_temp_dir: string;
-  xunlei_refresh_token: string;
-  xunlei_temp_dir: string;
+interface AccountListItem {
+  id: number;
+  type: string;
+  tempDir: string;
+  status: number;
+  hasCookie: boolean;
+  hasRefreshToken: boolean;
+  hasAccessToken: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+interface AccountFormData {
+  id?: number;
+  type: "quark" | "baidu" | "uc" | "xunlei";
+  cookie: string;
+  refreshToken: string;
+  accessToken: string;
+  expiresAt: string;
+  tempDir: string;
+  status: number;
 }
 
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
 const toast = useToast();
 
-const config = ref<AccountConfig>({
-  quark_cookie: "",
-  quark_temp_dir: "",
-  baidu_cookie: "",
-  baidu_access_token: "",
-  baidu_refresh_token: "",
-  baidu_temp_dir: "",
-  uc_cookie: "",
-  uc_temp_dir: "",
-  xunlei_refresh_token: "",
-  xunlei_temp_dir: "",
-});
+const TYPE_LABELS: Record<string, string> = {
+  quark: "夸克网盘",
+  baidu: "百度网盘",
+  uc: "UC 网盘",
+  xunlei: "迅雷云盘",
+};
 
-const saving = ref(false);
-const saved = ref(false);
+const accounts = ref<AccountListItem[]>([]);
+const loading = ref(false);
+
+// 添加/编辑弹窗
+const formShow = ref(false);
+const formSaving = ref(false);
+const formData = ref<AccountFormData>(getEmptyForm());
+const formIsEdit = computed(() => formData.value.id !== undefined);
 
 // 目录选择弹窗
 const dirPickerShow = ref(false);
-const dirPickerType = ref<"quark" | "baidu" | "uc" | "xunlei">("quark");
-const dirPickerField = ref<"quark_temp_dir" | "baidu_temp_dir" | "uc_temp_dir" | "xunlei_temp_dir">("quark_temp_dir");
 
-const openDirPicker = (type: "quark" | "baidu" | "uc" | "xunlei") => {
-  dirPickerType.value = type;
-  dirPickerField.value = `${type}_temp_dir` as typeof dirPickerField.value;
-  dirPickerShow.value = true;
-};
+// 账号检测状态
+const checking = ref<Record<number, boolean>>({});
 
-const handleDirSelect = (id: string) => {
-  config.value[dirPickerField.value] = id;
-  dirPickerShow.value = false;
-};
-
-// 百度 OAuth2 授权状态
+// 百度 OAuth2
 const baiduOauthUrl = ref("");
 const baiduOauthCodeVerifier = ref("");
 const baiduOauthCode = ref("");
 const gettingOauthUrl = ref(false);
 const gettingOauthToken = ref(false);
 
+function getEmptyForm(): AccountFormData {
+  return {
+    type: "quark",
+    cookie: "",
+    refreshToken: "",
+    accessToken: "",
+    expiresAt: "",
+    tempDir: "",
+    status: 1,
+  };
+}
+
+const loadAccounts = async () => {
+  loading.value = true;
+  try {
+    const data = await get("/api/admin/accounts");
+    accounts.value = data.data || [];
+  } catch {
+    // 401 已由拦截器处理
+  } finally {
+    loading.value = false;
+  }
+};
+
+const openAddForm = () => {
+  formData.value = getEmptyForm();
+  baiduOauthUrl.value = "";
+  baiduOauthCodeVerifier.value = "";
+  baiduOauthCode.value = "";
+  formShow.value = true;
+};
+
+const openEditForm = async (account: AccountListItem) => {
+  try {
+    const data = await get(`/api/admin/accounts/${account.id}`);
+    const a = data.data;
+    formData.value = {
+      id: a.id,
+      type: a.type,
+      cookie: a.cookie || "",
+      refreshToken: a.refreshToken || "",
+      accessToken: a.accessToken || "",
+      expiresAt: a.expiresAt || "",
+      tempDir: a.tempDir || "",
+      status: a.status,
+    };
+    baiduOauthUrl.value = "";
+    baiduOauthCodeVerifier.value = "";
+    baiduOauthCode.value = "";
+    formShow.value = true;
+  } catch {
+    toast.error("获取账号信息失败");
+  }
+};
+
+const closeForm = () => {
+  formShow.value = false;
+};
+
+const saveForm = async () => {
+  const f = formData.value;
+
+  // 校验
+  if ((f.type === "quark" || f.type === "uc") && !f.cookie) {
+    toast.error("请填写 Cookie");
+    return;
+  }
+  if (f.type === "baidu" && !f.cookie) {
+    toast.error("请填写 Cookie");
+    return;
+  }
+  if (f.type === "xunlei" && !f.refreshToken) {
+    toast.error("请填写 Refresh Token");
+    return;
+  }
+
+  formSaving.value = true;
+  try {
+    const payload: Record<string, any> = {
+      type: f.type,
+      cookie: f.cookie,
+      refreshToken: f.refreshToken,
+      accessToken: f.accessToken,
+      expiresAt: f.expiresAt || null,
+      tempDir: f.tempDir,
+      status: f.status,
+    };
+
+    if (f.id) {
+      await put(`/api/admin/accounts/${f.id}`, payload);
+      toast.success("账号已更新");
+    } else {
+      await post("/api/admin/accounts", payload);
+      toast.success("账号已添加");
+    }
+    formShow.value = false;
+    await loadAccounts();
+  } catch {
+    // 401 已由拦截器处理
+  } finally {
+    formSaving.value = false;
+  }
+};
+
+const deleteAccount = async (account: AccountListItem) => {
+  if (!confirm(`确定删除 ${TYPE_LABELS[account.type]} 账号 #${account.id}？`))
+    return;
+  try {
+    await del(`/api/admin/accounts/${account.id}`);
+    toast.success("账号已删除");
+    await loadAccounts();
+  } catch {
+    // 401 已由拦截器处理
+  }
+};
+
+const toggleStatus = async (account: AccountListItem) => {
+  const newStatus = account.status === 1 ? 0 : 1;
+  try {
+    await put(`/api/admin/accounts/${account.id}`, { status: newStatus });
+    account.status = newStatus;
+    toast.success(newStatus === 1 ? "账号已启用" : "账号已停用");
+  } catch {
+    // 401 已由拦截器处理
+  }
+};
+
+const checkAccount = async (account: AccountListItem) => {
+  checking.value[account.id] = true;
+  try {
+    const data = await get(`/api/admin/check-account?accountId=${account.id}`);
+    const label = TYPE_LABELS[account.type] || account.type;
+    if (data.success) {
+      toast.success(`${label}账号 #${account.id} 有效`);
+    } else {
+      toast.error(
+        `${label}账号 #${account.id} 无效：${data.message || "未知错误"}`,
+      );
+    }
+  } catch {
+    toast.error("检测失败，请重试");
+  } finally {
+    checking.value[account.id] = false;
+  }
+};
+
+const openDirPicker = () => {
+  // 添加模式：校验临时凭证是否填写
+  if (!formData.value.id) {
+    const t = formData.value.type;
+    if (t === "quark" || t === "uc" || t === "baidu") {
+      if (!formData.value.cookie) {
+        toast.error("请先填写 Cookie");
+        return;
+      }
+    } else if (t === "xunlei") {
+      if (!formData.value.refreshToken) {
+        toast.error("请先填写 Refresh Token");
+        return;
+      }
+    }
+  }
+  dirPickerShow.value = true;
+};
+
+const handleDirSelect = (id: string) => {
+  formData.value.tempDir = id;
+  dirPickerShow.value = false;
+};
+
+// 百度 OAuth2
 const getBaiduOauthUrl = async () => {
   gettingOauthUrl.value = true;
   try {
@@ -92,8 +277,8 @@ const getBaiduOauthToken = async () => {
       codeVerifier: baiduOauthCodeVerifier.value,
     });
     if (data.accessToken) {
-      config.value.baidu_access_token = data.accessToken;
-      config.value.baidu_refresh_token = data.refreshToken || "";
+      formData.value.accessToken = data.accessToken;
+      formData.value.refreshToken = data.refreshToken || "";
       toast.success("获取 Token 成功");
       baiduOauthUrl.value = "";
       baiduOauthCodeVerifier.value = "";
@@ -108,42 +293,6 @@ const getBaiduOauthToken = async () => {
   }
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  quark: "夸克网盘",
-  baidu: "百度网盘",
-  uc: "UC 网盘",
-  xunlei: "迅雷云盘",
-};
-
-const checking = ref<Record<string, boolean>>({
-  quark: false,
-  baidu: false,
-  uc: false,
-  xunlei: false,
-});
-
-const checkAccount = async (type: string) => {
-  checking.value[type] = true;
-  try {
-    const data = await get(`/api/admin/check-account?type=${type}`);
-    const label = TYPE_LABELS[type];
-    if (data.success) {
-      toast.success(`${label}账号有效`);
-    } else {
-      toast.error(`${label}账号无效：${data.message || "未知错误"}`);
-    }
-  } catch (error) {
-    toast.error("检测失败，请重试");
-  } finally {
-    checking.value[type] = false;
-  }
-};
-
-const loadConfig = async () => {
-  const data = await get("/api/admin/config/accounts");
-  config.value = data.data;
-};
-
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -153,25 +302,20 @@ onMounted(async () => {
     router.push("/admin/login");
     return;
   }
-  await loadConfig();
+  await loadAccounts();
 });
 
-const saveConfig = async () => {
-  saving.value = true;
-  saved.value = false;
-
-  try {
-    await post("/api/admin/config/accounts", config.value);
-    saved.value = true;
-    setTimeout(() => {
-      saved.value = false;
-    }, 2000);
-  } catch {
-    // 401 已由拦截器处理
-  } finally {
-    saving.value = false;
+// 按类型分组
+const groupedAccounts = computed(() => {
+  const groups: Record<string, AccountListItem[]> = {};
+  for (const a of accounts.value) {
+    if (!groups[a.type]) groups[a.type] = [];
+    groups[a.type].push(a);
   }
-};
+  return groups;
+});
+
+const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
 </script>
 
 <template>
@@ -184,321 +328,155 @@ const saveConfig = async () => {
         <h2 class="text-lg font-medium text-white">账号管理</h2>
         <button
           class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-          :class="{ 'bg-green-600 hover:bg-green-600': saved }"
-          :disabled="saving"
-          @click="saveConfig"
+          @click="openAddForm"
         >
-          <Check v-if="saved" class="w-4 h-4" />
-          <Save v-else class="w-4 h-4" />
-          {{ saved ? "已保存" : "保存" }}
+          <Plus class="w-4 h-4" />
+          添加账号
         </button>
       </div>
 
-      <div class="space-y-6">
-        <div class="card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
-              >
-                <UserCog class="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 class="text-white font-medium">夸克网盘</h3>
-                <p class="text-zinc-500 text-sm">
-                  配置夸克网盘 Cookie 和临时目录
-                </p>
-              </div>
-            </div>
-            <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="checking.quark"
-              @click="checkAccount('quark')"
-            >
-              <Loader2 v-if="checking.quark" class="w-4 h-4 animate-spin" />
-              {{ checking.quark ? "检测中..." : "检测账号" }}
-            </button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
-              <textarea
-                v-model="config.quark_cookie"
-                rows="3"
-                placeholder="粘贴夸克网盘 Cookie"
-                class="input-search resize-none font-mono text-xs"
-              ></textarea>
-            </div>
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2"
-                >临时资源目录</label
-              >
-              <div class="flex gap-2">
-                <input
-                  v-model="config.quark_temp_dir"
-                  type="text"
-                  placeholder="输入目录 Id"
-                  class="input-search flex-1"
-                />
-                <button
-                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
-                  title="从网盘选择目录"
-                  @click="openDirPicker('quark')"
-                >
-                  <FolderOpen class="w-4 h-4" />
-                  选择
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- 加载中 -->
+      <div
+        v-if="loading"
+        class="flex items-center justify-center py-20 text-zinc-500"
+      >
+        <Loader2 class="w-6 h-6 animate-spin mr-2" />
+        加载中...
+      </div>
 
-        <div class="card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
-              >
-                <UserCog class="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 class="text-white font-medium">百度网盘</h3>
-                <p class="text-zinc-500 text-sm">
-                  配置百度网盘 Cookie 和临时目录
-                </p>
-              </div>
-            </div>
-            <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="checking.baidu"
-              @click="checkAccount('baidu')"
-            >
-              <Loader2 v-if="checking.baidu" class="w-4 h-4 animate-spin" />
-              {{ checking.baidu ? "检测中..." : "检测账号" }}
-            </button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
-              <textarea
-                v-model="config.baidu_cookie"
-                rows="3"
-                placeholder="粘贴百度网盘 Cookie"
-                class="input-search resize-none font-mono text-xs"
-              ></textarea>
-            </div>
+      <!-- 空状态 -->
+      <div
+        v-else-if="accounts.length === 0"
+        class="flex flex-col items-center justify-center py-20 text-zinc-500"
+      >
+        <UserCog class="w-12 h-12 mb-3 text-zinc-700" />
+        <p class="text-sm">暂无网盘账号，点击「添加账号」开始配置</p>
+      </div>
 
-            <!-- OAuth2 授权 -->
+      <!-- 账号列表（按类型分组） -->
+      <div v-else class="space-y-6">
+        <div
+          v-for="type in TYPE_ORDER"
+          :key="type"
+          v-show="groupedAccounts[type]"
+        >
+          <h3 class="text-sm text-zinc-400 mb-3 px-1">
+            {{ TYPE_LABELS[type] }}
+            <span class="text-zinc-600"
+              >({{ groupedAccounts[type]?.length || 0 }})</span
+            >
+          </h3>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div
-              class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
+              v-for="account in groupedAccounts[type]"
+              :key="account.id"
+              class="card p-4"
+              :class="{ 'opacity-50': account.status === 0 }"
             >
-              <div class="flex items-center gap-2 text-sm text-zinc-400">
-                <KeyRound class="w-4 h-4" />
-                <span>OAuth2 授权获取 Token</span>
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-mono"
+                    :class="
+                      account.status === 1
+                        ? 'bg-green-900/50 text-green-400'
+                        : 'bg-zinc-800 text-zinc-500'
+                    "
+                  >
+                    #{{ account.id }}
+                  </span>
+                  <span
+                    class="text-xs px-2 py-0.5 rounded-full"
+                    :class="
+                      account.status === 1
+                        ? 'bg-green-900/30 text-green-400'
+                        : 'bg-zinc-800 text-zinc-500'
+                    "
+                  >
+                    {{ account.status === 1 ? "启用" : "停用" }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button
+                    class="p-1.5 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                    :disabled="checking[account.id]"
+                    title="检测账号"
+                    @click="checkAccount(account)"
+                  >
+                    <Loader2
+                      v-if="checking[account.id]"
+                      class="w-4 h-4 animate-spin"
+                    />
+                    <Check v-else class="w-4 h-4" />
+                  </button>
+                  <button
+                    class="p-1.5 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                    title="编辑"
+                    @click="openEditForm(account)"
+                  >
+                    <Pencil class="w-4 h-4" />
+                  </button>
+                  <button
+                    class="p-1.5 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                    :title="account.status === 1 ? '停用' : '启用'"
+                    @click="toggleStatus(account)"
+                  >
+                    <Power class="w-4 h-4" />
+                  </button>
+                  <button
+                    class="p-1.5 hover:bg-red-900/50 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
+                    title="删除"
+                    @click="deleteAccount(account)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  :disabled="gettingOauthUrl"
-                  @click="getBaiduOauthUrl"
-                >
-                  <Loader2
-                    v-if="gettingOauthUrl"
-                    class="w-4 h-4 animate-spin"
-                  />
-                  <Link2 v-else class="w-4 h-4" />
-                  {{ gettingOauthUrl ? "获取中..." : "获取授权链接" }}
-                </button>
-                <a
-                  v-if="baiduOauthUrl"
-                  :href="baiduOauthUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-blue-400 hover:text-blue-300 text-sm underline break-all"
-                >
-                  重新打开授权页
-                </a>
-              </div>
-              <div v-if="baiduOauthUrl" class="flex items-center gap-2">
-                <input
-                  v-model="baiduOauthCode"
-                  type="text"
-                  placeholder="粘贴授权码 (code)"
-                  class="input-search flex-1"
-                />
-                <button
-                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-                  :disabled="gettingOauthToken || !baiduOauthCode.trim()"
-                  @click="getBaiduOauthToken"
-                >
-                  <Loader2
-                    v-if="gettingOauthToken"
-                    class="w-4 h-4 animate-spin"
-                  />
-                  {{ gettingOauthToken ? "获取中..." : "获取 Token" }}
-                </button>
-              </div>
-            </div>
 
-            <!-- <div>
-              <label class="block text-zinc-400 text-sm mb-2"
-                >Access Token</label
-              >
-              <input
-                v-model="config.baidu_access_token"
-                type="text"
-                placeholder="输入百度网盘 Access Token"
-                class="input-search"
-              />
-            </div> -->
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2"
-                >Refresh Token</label
-              >
-              <input
-                v-model="config.baidu_refresh_token"
-                type="text"
-                placeholder="输入百度网盘 Refresh Token"
-                class="input-search"
-              />
-            </div>
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2"
-                >临时资源目录</label
-              >
-              <div class="flex gap-2">
-                <input
-                  v-model="config.baidu_temp_dir"
-                  type="text"
-                  placeholder="输入目录路径"
-                  class="input-search flex-1"
-                />
-                <button
-                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
-                  title="从网盘选择目录"
-                  @click="openDirPicker('baidu')"
+              <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2 text-zinc-500">
+                  <span class="w-16 shrink-0">Cookie</span>
+                  <span
+                    :class="
+                      account.hasCookie ? 'text-green-400' : 'text-red-400'
+                    "
+                  >
+                    {{ account.hasCookie ? "已配置" : "未配置" }}
+                  </span>
+                </div>
+                <div
+                  v-if="type === 'baidu' || type === 'xunlei'"
+                  class="flex items-center gap-2 text-zinc-500"
                 >
-                  <FolderOpen class="w-4 h-4" />
-                  选择
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
-              >
-                <UserCog class="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 class="text-white font-medium">UC 网盘</h3>
-                <p class="text-zinc-500 text-sm">
-                  配置 UC 网盘 Cookie 和临时目录
-                </p>
-              </div>
-            </div>
-            <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="checking.uc"
-              @click="checkAccount('uc')"
-            >
-              <Loader2 v-if="checking.uc" class="w-4 h-4 animate-spin" />
-              {{ checking.uc ? "检测中..." : "检测账号" }}
-            </button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
-              <textarea
-                v-model="config.uc_cookie"
-                rows="3"
-                placeholder="粘贴 UC 网盘 Cookie"
-                class="input-search resize-none font-mono text-xs"
-              ></textarea>
-            </div>
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2"
-                >临时资源目录</label
-              >
-              <div class="flex gap-2">
-                <input
-                  v-model="config.uc_temp_dir"
-                  type="text"
-                  placeholder="输入目录 Id"
-                  class="input-search flex-1"
-                />
-                <button
-                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
-                  title="从网盘选择目录"
-                  @click="openDirPicker('uc')"
+                  <span class="w-16 shrink-0">Token</span>
+                  <span
+                    :class="
+                      account.hasRefreshToken
+                        ? 'text-green-400'
+                        : 'text-red-400'
+                    "
+                  >
+                    {{ account.hasRefreshToken ? "已配置" : "未配置" }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-zinc-500">
+                  <span class="w-16 shrink-0">临时目录</span>
+                  <span
+                    class="truncate text-zinc-400 font-mono"
+                    :title="account.tempDir"
+                  >
+                    {{ account.tempDir || "未配置" }}
+                  </span>
+                </div>
+                <div
+                  v-if="account.expiresAt"
+                  class="flex items-center gap-2 text-zinc-500"
                 >
-                  <FolderOpen class="w-4 h-4" />
-                  选择
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-zinc-800 dark:bg-blue-900/50 rounded-lg flex items-center justify-center"
-              >
-                <UserCog class="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h3 class="text-white font-medium">迅雷云盘</h3>
-                <p class="text-zinc-500 text-sm">
-                  配置迅雷云盘 Refresh Token 和临时目录
-                </p>
-              </div>
-            </div>
-            <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="checking.xunlei"
-              @click="checkAccount('xunlei')"
-            >
-              <Loader2 v-if="checking.xunlei" class="w-4 h-4 animate-spin" />
-              {{ checking.xunlei ? "检测中..." : "检测账号" }}
-            </button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2"
-                >Refresh Token</label
-              >
-              <textarea
-                v-model="config.xunlei_refresh_token"
-                rows="3"
-                placeholder="粘贴迅雷云盘 Refresh Token"
-                class="input-search resize-none font-mono text-xs"
-              ></textarea>
-            </div>
-            <div>
-              <label class="block text-zinc-400 text-sm mb-2"
-                >临时资源目录</label
-              >
-              <div class="flex gap-2">
-                <input
-                  v-model="config.xunlei_temp_dir"
-                  type="text"
-                  placeholder="输入目录 Id"
-                  class="input-search flex-1"
-                />
-                <button
-                  class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
-                  title="从网盘选择目录"
-                  @click="openDirPicker('xunlei')"
-                >
-                  <FolderOpen class="w-4 h-4" />
-                  选择
-                </button>
+                  <span class="w-16 shrink-0">过期时间</span>
+                  <span class="text-zinc-400">
+                    {{ new Date(account.expiresAt).toLocaleString() }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -506,11 +484,207 @@ const saveConfig = async () => {
       </div>
     </main>
 
+    <!-- 添加/编辑弹窗 -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="formShow"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          <div
+            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            @click="closeForm"
+          ></div>
+
+          <div
+            class="modal-content relative bg-zinc-900 rounded-2xl p-6 max-w-lg w-full border border-zinc-800 max-h-[85vh] overflow-y-auto"
+          >
+            <button
+              class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors z-10"
+              @click="closeForm"
+            >
+              <X class="w-5 h-5 text-zinc-400" />
+            </button>
+
+            <h3 class="text-lg font-medium text-white mb-4">
+              {{ formIsEdit ? "编辑账号" : "添加账号" }}
+            </h3>
+
+            <div class="space-y-4">
+              <!-- 网盘类型 -->
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2">网盘类型</label>
+                <select
+                  v-model="formData.type"
+                  class="input-search w-full"
+                  :disabled="formIsEdit"
+                >
+                  <option value="quark">夸克网盘</option>
+                  <option value="baidu">百度网盘</option>
+                  <option value="uc">UC 网盘</option>
+                  <option value="xunlei">迅雷云盘</option>
+                </select>
+              </div>
+
+              <!-- Cookie -->
+              <div v-if="formData.type !== 'xunlei'">
+                <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
+                <textarea
+                  v-model="formData.cookie"
+                  rows="3"
+                  placeholder="粘贴 Cookie"
+                  class="input-search resize-none w-full font-mono text-xs"
+                ></textarea>
+              </div>
+
+              <!-- 百度 OAuth2 -->
+              <div
+                v-if="formData.type === 'baidu'"
+                class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
+              >
+                <div class="flex items-center gap-2 text-sm text-zinc-400">
+                  <KeyRound class="w-4 h-4" />
+                  <span>OAuth2 授权获取 Token</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    :disabled="gettingOauthUrl"
+                    @click="getBaiduOauthUrl"
+                  >
+                    <Loader2
+                      v-if="gettingOauthUrl"
+                      class="w-4 h-4 animate-spin"
+                    />
+                    <Link2 v-else class="w-4 h-4" />
+                    {{ gettingOauthUrl ? "获取中..." : "获取授权链接" }}
+                  </button>
+                </div>
+                <div v-if="baiduOauthUrl" class="flex items-center gap-2">
+                  <input
+                    v-model="baiduOauthCode"
+                    type="text"
+                    placeholder="粘贴授权码 (code)"
+                    class="input-search flex-1"
+                  />
+                  <button
+                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                    :disabled="gettingOauthToken || !baiduOauthCode.trim()"
+                    @click="getBaiduOauthToken"
+                  >
+                    <Loader2
+                      v-if="gettingOauthToken"
+                      class="w-4 h-4 animate-spin"
+                    />
+                    {{ gettingOauthToken ? "获取中..." : "获取 Token" }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Refresh Token -->
+              <div
+                v-if="formData.type === 'baidu' || formData.type === 'xunlei'"
+              >
+                <label class="block text-zinc-400 text-sm mb-2"
+                  >Refresh Token</label
+                >
+                <textarea
+                  v-model="formData.refreshToken"
+                  rows="2"
+                  placeholder="粘贴 Refresh Token"
+                  class="input-search resize-none w-full font-mono text-xs"
+                ></textarea>
+              </div>
+
+              <!-- 临时目录 -->
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2"
+                  >临时资源目录</label
+                >
+                <div class="flex gap-2">
+                  <input
+                    v-model="formData.tempDir"
+                    type="text"
+                    placeholder="输入目录 ID 或路径"
+                    class="input-search flex-1"
+                  />
+                  <button
+                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
+                    title="从网盘选择目录"
+                    @click="openDirPicker"
+                  >
+                    <FolderOpen class="w-4 h-4" />
+                    选择
+                  </button>
+                </div>
+              </div>
+
+              <!-- 状态 -->
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2">状态</label>
+                <select v-model="formData.status" class="input-search w-full">
+                  <option :value="1">启用</option>
+                  <option :value="0">停用</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 底部操作 -->
+            <div
+              class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-zinc-800"
+            >
+              <button
+                class="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                @click="closeForm"
+              >
+                取消
+              </button>
+              <button
+                class="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="formSaving"
+                @click="saveForm"
+              >
+                <Loader2 v-if="formSaving" class="w-4 h-4 animate-spin" />
+                <Save v-else class="w-4 h-4" />
+                {{ formSaving ? "保存中..." : "保存" }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <DirPickerModal
       :show="dirPickerShow"
-      :type="dirPickerType"
+      :type="formData.type"
+      :account-id="formData.id"
+      :cookie="formData.cookie"
+      :refresh-token="formData.refreshToken"
+      :access-token="formData.accessToken"
       @close="dirPickerShow = false"
       @select="handleDirSelect"
     />
   </div>
 </template>
+
+<style scoped>
+.modal-leave-active {
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-content {
+  will-change: opacity, transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-8px);
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: scale(0.985) translateY(0);
+}
+</style>

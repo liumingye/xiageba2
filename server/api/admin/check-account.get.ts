@@ -1,47 +1,33 @@
-import {
-  getQuarkClient,
-  getUCClient,
-  getBaiduClient,
-  getXunleiClient,
-} from "#server/lib/pan-instance";
-
-const TYPE_NAMES: Record<string, string> = {
-  quark: "夸克网盘",
-  baidu: "百度网盘",
-  uc: "UC 网盘",
-  xunlei: "迅雷云盘",
-};
+import { getAccountById } from "#server/lib/accountCache";
+import { getClientByAccount } from "#server/lib/pan-instance";
+import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
+import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 
 export default defineEventHandler(async (event) => {
-  const { type } = getQuery(event) as { type?: string };
+  const { accountId } = getQuery(event) as { accountId?: string };
+  const id = parseInt(accountId || "", 10);
 
-  if (!type || !TYPE_NAMES[type]) {
-    throw createError({ statusCode: 400, message: "不支持的网盘类型" });
+  if (!id || isNaN(id)) {
+    throw createError({ statusCode: 400, message: "缺少 accountId 参数" });
+  }
+
+  const account = await getAccountById(id);
+  if (!account) {
+    throw createError({ statusCode: 404, message: "账号不存在" });
   }
 
   try {
-    switch (type) {
-      case "quark": {
-        const client = await getQuarkClient();
-        await client.fsApi.sort({ pdir_fid: "0" });
-        break;
-      }
-      case "baidu": {
-        const client = await getBaiduClient();
-        await client.fsApi.list({ dir: "/" });
-        break;
-      }
-      case "uc": {
-        const client = await getUCClient();
-        await client.fsApi.sort({ pdir_fid: "0" });
-        break;
-      }
-      case "xunlei": {
-        const client = await getXunleiClient();
-        await client.fsApi.listFiles({ parentId: "" });
-        break;
-      }
+    const client = await getClientByAccount(account);
+
+    if (client instanceof QuarkUCClient) {
+      await client.fsApi.sort({ pdir_fid: "0" });
+    } else if (client instanceof BaiduClient) {
+      await client.fsApi.list({ dir: "/" });
+    } else {
+      // XunleiClient
+      await client.fsApi.listFiles({ parentId: "" });
     }
+
     return { success: true };
   } catch (error: any) {
     return {

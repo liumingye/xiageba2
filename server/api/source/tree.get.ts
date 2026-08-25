@@ -12,12 +12,8 @@ import {
   IFile as IBaiduFile,
 } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import {
-  getQuarkClient,
-  getUCClient,
-  getBaiduClient,
-  getXunleiClient,
-} from "#server/lib/pan-instance";
+import { getClientByAccount } from "#server/lib/pan-instance";
+import { getRandomAccountByType } from "#server/lib/accountCache";
 import { TREE_MAX_LINE } from "#server/lib/const";
 
 const MAX_DEPTH = 5;
@@ -164,8 +160,11 @@ async function buildQuarkUCTree(
   pwdId: string,
   passcode: string,
 ): Promise<string> {
-  const client =
-    type === "quark" ? await getQuarkClient() : await getUCClient();
+  const account = await getRandomAccountByType(type);
+  if (!account) {
+    throw createError({ statusCode: 500, message: "没有可用的网盘账号" });
+  }
+  const client = (await getClientByAccount(account)) as QuarkUCClient;
 
   let stoken: string;
   try {
@@ -251,7 +250,11 @@ async function buildBaiduTree(shareUrl: string): Promise<string> {
     throw createError({ statusCode: 404, message: "无效的百度分享链接" });
   }
 
-  const client = await getBaiduClient();
+  const account = await getRandomAccountByType("baidu");
+  if (!account) {
+    throw createError({ statusCode: 500, message: "没有可用的网盘账号" });
+  }
+  const client = (await getClientByAccount(account)) as BaiduClient;
 
   let rootInfo: any;
   try {
@@ -338,7 +341,11 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
     throw createError({ statusCode: 404, message: "无效的迅雷分享链接" });
   }
 
-  const client = await getXunleiClient();
+  const account = await getRandomAccountByType("xunlei");
+  if (!account) {
+    throw createError({ statusCode: 500, message: "没有可用的网盘账号" });
+  }
+  const client = (await getClientByAccount(account)) as XunleiClient;
 
   let detail: any;
   try {

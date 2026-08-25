@@ -11,6 +11,10 @@ interface DirItem {
 const props = defineProps<{
   show: boolean;
   type: "quark" | "baidu" | "uc" | "xunlei";
+  accountId?: number;
+  cookie?: string;
+  refreshToken?: string;
+  accessToken?: string;
 }>();
 
 const emit = defineEmits<{
@@ -35,7 +39,18 @@ const loadDirs = async () => {
   errorMsg.value = "";
   selectedId.value = null;
   try {
-    const data = await get(`/api/admin/list-dir?type=${props.type}`);
+    let url: string;
+    if (props.accountId) {
+      url = `/api/admin/list-dir?accountId=${props.accountId}`;
+    } else {
+      // 临时凭证模式（添加账号时预览目录）
+      const params = new URLSearchParams({ type: props.type });
+      if (props.cookie) params.set("cookie", props.cookie);
+      if (props.refreshToken) params.set("refreshToken", props.refreshToken);
+      if (props.accessToken) params.set("accessToken", props.accessToken);
+      url = `/api/admin/list-dir?${params.toString()}`;
+    }
+    const data = await get(url);
     dirs.value = data.list || [];
     if (dirs.value.length === 0) {
       errorMsg.value = "根目录下没有文件夹";
@@ -84,26 +99,24 @@ const handleClose = () => {
         ></div>
 
         <div
-          class="modal-content relative bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-800 max-h-[80vh] flex flex-col"
+          class="modal-content relative bg-zinc-900 rounded-2xl p-6 max-w-md w-full border border-zinc-800 max-h-[80vh] flex flex-col"
         >
           <button
-            class="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors z-10"
+            class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors z-10"
             @click="handleClose"
           >
-            <X class="w-5 h-5 text-gray-400" />
+            <X class="w-5 h-5 text-zinc-400" />
           </button>
 
-          <h3 class="text-lg font-medium text-white mb-1">
-            选择临时资源目录
-          </h3>
-          <p class="text-sm text-gray-500 mb-4">
+          <h3 class="text-lg font-medium text-white mb-1">选择临时资源目录</h3>
+          <p class="text-sm text-zinc-500 mb-4">
             {{ TYPE_LABELS[type] }} · 根目录下的文件夹
           </p>
 
           <!-- 加载中 -->
           <div
             v-if="loading"
-            class="flex-1 flex items-center justify-center py-12 text-gray-500"
+            class="flex-1 flex items-center justify-center py-12 text-zinc-500"
           >
             <Loader2 class="w-6 h-6 animate-spin mr-2" />
             加载中...
@@ -112,9 +125,9 @@ const handleClose = () => {
           <!-- 错误 -->
           <div
             v-else-if="errorMsg"
-            class="flex-1 flex flex-col items-center justify-center py-12 text-gray-500"
+            class="flex-1 flex flex-col items-center justify-center py-12 text-zinc-500"
           >
-            <FolderOpen class="w-10 h-10 mb-2 text-gray-600" />
+            <FolderOpen class="w-10 h-10 mb-2 text-zinc-600" />
             <p class="text-sm">{{ errorMsg }}</p>
           </div>
 
@@ -127,17 +140,19 @@ const handleClose = () => {
               :class="
                 selectedId === dir.id
                   ? 'bg-primary-500/20 text-white ring-1 ring-primary-500/30'
-                  : 'hover:bg-gray-800 text-gray-300'
+                  : 'hover:bg-zinc-800 text-zinc-300'
               "
               @click="handleSelect(dir)"
             >
               <Folder
                 class="w-4 h-4 shrink-0"
-                :class="selectedId === dir.id ? 'text-primary-400' : 'text-gray-500'"
+                :class="
+                  selectedId === dir.id ? 'text-primary-400' : 'text-zinc-500'
+                "
               />
               <span class="flex-1 text-sm truncate">{{ dir.name }}</span>
               <span
-                class="text-xs text-gray-600 font-mono truncate max-w-[120px]"
+                class="text-xs text-zinc-600 font-mono truncate max-w-[120px]"
                 :title="dir.id"
               >
                 {{ dir.id }}
@@ -150,9 +165,11 @@ const handleClose = () => {
           </div>
 
           <!-- 底部操作 -->
-          <div class="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-gray-800">
+          <div
+            class="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-zinc-800"
+          >
             <button
-              class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              class="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
               @click="handleClose"
             >
               取消
@@ -171,3 +188,25 @@ const handleClose = () => {
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.modal-leave-active {
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-content {
+  will-change: opacity, transform;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-8px);
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: scale(0.985) translateY(0);
+}
+</style>

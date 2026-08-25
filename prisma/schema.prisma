@@ -90,9 +90,28 @@ model SourceTemp {
   id        Int       @id @default(autoincrement())
   url       String
   fid       String?
+  accountId Int?
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
 
   @@index([createdAt])
+  @@index([accountId])
+}
+
+/// 网盘账号表（多账号）
+model PanAccount {
+  id          Int       @id @default(autoincrement())
+  type        String    @db.VarChar(20) // quark | baidu | uc | xunlei
+  cookie      String    @default("") @db.Text
+  refreshToken String   @default("") @db.Text
+  accessToken String    @default("") @db.Text
+  expiresAt   DateTime? @db.Timestamptz(3)
+  tempDir     String    @default("") @db.VarChar(255)
+  status      Int       @default(1) @db.SmallInt // 1=启用 0=停用
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime? @updatedAt @db.Timestamptz(3)
+
+  @@index([type])
+  @@index([status])
 }
 
 model Config {

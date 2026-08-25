@@ -1,21 +1,19 @@
 import { prisma } from "#server/lib/prisma";
-import { getConfigValues, getConfigValue } from "#server/lib/configCache";
+import { getConfigValue } from "#server/lib/configCache";
 import { decryptUrl } from "#server/lib/crypto";
 import {
   parseShareParam,
   BaiduFSOpenApi,
+  BaiduClient,
   ITransferShareResult,
   ICreateShareResult,
 } from "@netdisk-sdk/baidu-sdk";
-import { QuarkUCFSApi } from "@netdisk-sdk/quarkUC-sdk";
-import { XunleiFSApi } from "@netdisk-sdk/xunlei-sdk";
+import { QuarkUCFSApi, QuarkUCClient } from "@netdisk-sdk/quarkUC-sdk";
+import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
-import {
-  getQuarkClient,
-  getUCClient,
-  getBaiduClient,
-  getXunleiClient,
-} from "#server/lib/pan-instance";
+import { getClientByAccount } from "#server/lib/pan-instance";
+import { getRandomAccountByType } from "#server/lib/accountCache";
+import type { PanAccount } from "#server/lib/accountCache";
 import { THIRTY_MINUTES } from "#server/lib/const";
 import {
   GETURL_DAILY_LIMIT,
@@ -370,17 +368,15 @@ export function parseShareUrl(url: string): ParsedShare {
 
 /**
  * 夸克/UC网盘转存：获取分享token → 获取文件列表 → 转存到临时目录 → 创建新分享
- * ponytail: quark 与 uc 同 SDK 同流程，仅 type 与 config key 不同，合并实现
+ * ponytail: quark 与 uc 同 SDK 同流程，合并实现
  */
 async function transferQuarkUC(
-  type: "quark" | "uc",
+  account: PanAccount,
   pwdId: string,
   passcode: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
-  const config = await getConfigValues([`${type}_temp_dir`]);
-  const tempDirId = config[`${type}_temp_dir`] || "";
-  const client =
-    type === "quark" ? await getQuarkClient() : await getUCClient();
+  const tempDirId = account.tempDir || "";
+  const client = (await getClientByAccount(account)) as QuarkUCClient;
   const shareApi = client.shareApi;
 
   // 步骤1: 获取stoken
@@ -461,12 +457,12 @@ async function transferQuarkUC(
  * 百度网盘转存：解析分享 → 获取文件列表 → 转存到临时目录 → 创建新分享
  */
 async function transferBaidu(
+  account: PanAccount,
   _shareUrl: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
-  const config = await getConfigValues(["baidu_temp_dir"]);
-  const tempDir = config.baidu_temp_dir || "/";
+  let tempDir = account.tempDir || "/";
 
-  const client = await getBaiduClient();
+  const client = (await getClientByAccount(account)) as BaiduClient;
 
   const shareParam = parseShareParam(_shareUrl);
   if (!shareParam) {
@@ -613,13 +609,13 @@ async function transferBaidu(
  * 迅雷网盘转存：获取分享详情 → 转存到临时目录 → 等待任务 → 创建新分享
  */
 async function transferXunlei(
+  account: PanAccount,
   shareId: string,
   passCode: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
-  const config = await getConfigValues(["xunlei_temp_dir"]);
-  const tempDirId = config.xunlei_temp_dir || "";
+  const tempDirId = account.tempDir || "";
 
-  const client = await getXunleiClient();
+  const client = (await getClientByAccount(account)) as XunleiClient;
 
   let detail: any;
   try {
@@ -768,20 +764,26 @@ export default defineEventHandler(async (event) => {
       return sourceUrl;
     }
 
+    // 随机选取一个该类型的启用账号，没有账号则直接返回原始链接
+    const account = await getRandomAccountByType(type);
+    if (!account) {
+      return sourceUrl;
+    }
+
     let shareUrl: string;
     let _fid: string;
 
     try {
       if (type === "quark" || type === "uc") {
-        const data = await transferQuarkUC(type, fid, passcode);
+        const data = await transferQuarkUC(account, fid, passcode);
         shareUrl = data.shareUrl;
         _fid = JSON.stringify(data.fids);
       } else if (type === "baidu") {
-        const data = await transferBaidu(sharePageUrl);
+        const data = await transferBaidu(account, sharePageUrl);
         shareUrl = data.shareUrl;
         _fid = JSON.stringify(data.fids);
       } else if (type === "xunlei") {
-        const data = await transferXunlei(fid, passcode);
+        const data = await transferXunlei(account, fid, passcode);
         shareUrl = data.shareUrl;
         _fid = JSON.stringify(data.fids);
       } else {
@@ -810,6 +812,7 @@ export default defineEventHandler(async (event) => {
         data: {
           url: shareUrl,
           fid: _fid,
+          accountId: account.id,
         },
       })
       .catch((err) => console.error("落库失败", err));

@@ -1,5 +1,4 @@
 import { createAuthClient } from "@netdisk-sdk/baidu-sdk";
-import { setConfigValues } from "#server/lib/configCache";
 import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
 
 export default defineEventHandler(async (event) => {
@@ -24,28 +23,6 @@ export default defineEventHandler(async (event) => {
         codeVerifier,
       },
     );
-
-  const configs = [];
-  if (oauth2Token.accessToken) {
-    configs.push({
-      key: "baidu_access_token",
-      value: oauth2Token.accessToken,
-    });
-  }
-  if (oauth2Token.refreshToken) {
-    configs.push({
-      key: "baidu_refresh_token",
-      value: oauth2Token.refreshToken,
-    });
-  }
-  if (oauth2Token.expiresAt) {
-    configs.push({
-      key: "baidu_expires_at",
-      value: String(oauth2Token.expiresAt),
-    });
-  }
-
-  setConfigValues(configs);
 
   return {
     accessToken: oauth2Token.accessToken,

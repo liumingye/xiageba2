@@ -1,4 +1,5 @@
-import { setConfigValues } from "#server/lib/configCache";
+import { prisma } from "#server/lib/prisma";
+import { clearAccountCache } from "#server/lib/accountCache";
 
 interface TokenInfo {
   refreshToken: string;
@@ -6,24 +7,38 @@ interface TokenInfo {
   expiresAt: number;
 }
 
-export const updateBaiduRefreshToken = async (tokenInfo: TokenInfo) => {
+/** 按账号 ID 更新百度网盘 Token，并刷新账号缓存 */
+export const updateBaiduRefreshTokenByAccountId = async (
+  accountId: number,
+  tokenInfo: TokenInfo,
+) => {
   const { refreshToken, accessToken, expiresAt } = tokenInfo;
-  const configs = [
-    { key: "baidu_refresh_token", value: refreshToken },
-    { key: "baidu_access_token", value: accessToken },
-    { key: "baidu_expires_at", value: String(expiresAt) },
-  ];
-  await setConfigValues(configs);
+  await prisma.panAccount.update({
+    where: { id: accountId },
+    data: {
+      refreshToken,
+      accessToken,
+      expiresAt: new Date(expiresAt),
+    },
+  });
+  clearAccountCache();
 };
 
-export const updateXunleiRefreshToken = async (tokenInfo: TokenInfo) => {
+/** 按账号 ID 更新迅雷网盘 Token，并刷新账号缓存 */
+export const updateXunleiRefreshTokenByAccountId = async (
+  accountId: number,
+  tokenInfo: TokenInfo,
+) => {
   const { refreshToken, accessToken, expiresAt } = tokenInfo;
-  const configs = [
-    { key: "xunlei_refresh_token", value: refreshToken },
-    { key: "xunlei_access_token", value: accessToken },
-    { key: "xunlei_expires_at", value: String(expiresAt) },
-  ];
-  await setConfigValues(configs);
+  await prisma.panAccount.update({
+    where: { id: accountId },
+    data: {
+      refreshToken,
+      accessToken,
+      expiresAt: new Date(expiresAt),
+    },
+  });
+  clearAccountCache();
 };
 
 // IP字符串转数字

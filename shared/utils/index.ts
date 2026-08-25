@@ -82,7 +82,7 @@ const map: Partial<Record<PanFilter, PanFilterFriend>> = {
   baidu: "百度网盘",
   xunlei: "迅雷网盘",
   uc: "UC网盘",
-  ali: "阿里网盘",
+  ali: "阿里云盘",
   189: "天翼云盘",
   139: "移动云盘",
   123: "123云盘",

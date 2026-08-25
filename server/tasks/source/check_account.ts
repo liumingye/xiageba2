@@ -1,11 +1,16 @@
-import {
-  getQuarkClient,
-  getUCClient,
-  getBaiduClient,
-  getXunleiClient,
-} from "#server/lib/pan-instance";
+import { getAllEnabledAccounts } from "#server/lib/accountCache";
+import { getClientByAccount } from "#server/lib/pan-instance";
+import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
+import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import "dotenv/config";
 import axios from "axios";
+
+const TYPE_LABELS: Record<string, string> = {
+  quark: "夸克网盘",
+  baidu: "百度网盘",
+  uc: "UC网盘",
+  xunlei: "迅雷网盘",
+};
 
 export default defineTask({
   meta: {
@@ -40,50 +45,46 @@ export default defineTask({
       }
     };
 
-    // 定义单个网盘的检查逻辑
-    const checkTasks = [
-      async () => {
-        try {
-          const client = await getQuarkClient();
+    const accounts = await getAllEnabledAccounts();
+
+    if (accounts.length === 0) {
+      return {
+        result: {
+          success: true,
+          message: "没有启用的网盘账号",
+        },
+      };
+    }
+
+    const checkTasks = accounts.map(async (account) => {
+      try {
+        const client = await getClientByAccount(account);
+        const label = TYPE_LABELS[account.type] || account.type;
+
+        if (client instanceof QuarkUCClient) {
           await client.fsApi.sort({ pdir_fid: "0" });
-        } catch (error: any) {
-          await sendNotice("夸克网盘账号失效", error.message);
-        }
-      },
-      async () => {
-        try {
-          const client = await getBaiduClient();
+        } else if (client instanceof BaiduClient) {
           await client.fsApi.list({ dir: "/" });
           await client.fsOpenApi.listall({ path: "/", start: 0 });
-        } catch (error: any) {
-          await sendNotice("百度网盘账号失效", error.message);
-        }
-      },
-      async () => {
-        try {
-          const client = await getUCClient();
-          await client.fsApi.sort({ pdir_fid: "0" });
-        } catch (error: any) {
-          await sendNotice("UC网盘账号失效", error.message);
-        }
-      },
-      async () => {
-        try {
-          const client = await getXunleiClient();
+        } else {
+          // XunleiClient
           await client.fsApi.listFiles({ parentId: "" });
-        } catch (error: any) {
-          await sendNotice("迅雷网盘账号失效", error.message);
         }
-      },
-    ];
+      } catch (error: any) {
+        const label = TYPE_LABELS[account.type] || account.type;
+        await sendNotice(
+          `${label}账号失效 (ID: ${account.id})`,
+          error.message,
+        );
+      }
+    });
 
-    // 并行执行所有任务
-    await Promise.all(checkTasks.map((task) => task()));
+    await Promise.all(checkTasks);
 
     return {
       result: {
         success: true,
-        message: "检查账号状态完成",
+        message: `检查账号状态完成，共检查 ${accounts.length} 个账号`,
       },
     };
   },
