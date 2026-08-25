@@ -1,5 +1,6 @@
 import { prisma } from "#server/lib/prisma";
 import { clearAccountCache } from "#server/lib/accountCache";
+import { getAccountNameByCredentials } from "#server/lib/pan-info";
 
 const VALID_TYPES = ["quark", "baidu", "uc", "xunlei"];
 
@@ -15,6 +16,7 @@ export default defineEventHandler(async (event) => {
     const data = accounts.map((a) => ({
       id: a.id,
       type: a.type,
+      name: a.name,
       tempDir: a.tempDir,
       status: a.status,
       hasCookie: !!a.cookie,
@@ -69,9 +71,24 @@ export default defineEventHandler(async (event) => {
       if (!isNaN(d.getTime())) expiresAt = d;
     }
 
+    // 通过临时凭证获取账号昵称（失败不阻断创建流程，仅记录日志）
+    let name = "";
+    try {
+      name = await getAccountNameByCredentials({
+        type,
+        cookie,
+        refreshToken,
+        accessToken,
+        expiresAt: expiresAt || undefined,
+      });
+    } catch (e: any) {
+      console.warn(`[accounts] 创建时获取昵称失败: ${e?.message || e}`);
+    }
+
     const account = await prisma.panAccount.create({
       data: {
         type,
+        name,
         cookie,
         refreshToken,
         accessToken,

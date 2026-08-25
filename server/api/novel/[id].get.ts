@@ -1,16 +1,4 @@
-import { getConfigValues } from "#server/lib/configCache";
-
-async function getBaiduCookie(): Promise<string> {
-  const config = await getConfigValues(["baidu_cookie"]);
-  const cookie = config.baidu_cookie;
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置百度网盘 Cookie，请先在账号管理中配置",
-    });
-  }
-  return cookie;
-}
+import { getRandomBaiduCookie } from "#server/utils/novel";
 
 const BAIDU_BASE = "https://pan.baidu.com";
 
@@ -28,7 +16,7 @@ export default defineCachedEventHandler(
       throw createError({ statusCode: 400, message: "缺少 book_id" });
     }
 
-    const cookie = await getBaiduCookie();
+    const cookie = await getRandomBaiduCookie();
 
     const params = new URLSearchParams({
       clienttype: "0",

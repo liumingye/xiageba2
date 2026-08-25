@@ -1,16 +1,4 @@
-import { getConfigValues } from "#server/lib/configCache";
-
-async function getBaiduCookie(): Promise<string> {
-  const config = await getConfigValues(["baidu_cookie"]);
-  const cookie = config.baidu_cookie;
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置百度网盘 Cookie，请先在账号管理中配置",
-    });
-  }
-  return cookie;
-}
+import { getRandomBaiduCookie } from "#server/utils/novel";
 
 function buildQuery(params: Record<string, any>): string {
   const sp = new URLSearchParams();
@@ -36,7 +24,7 @@ export default defineCachedEventHandler(
     const bookStatus = query.book_status;
     const category = (query.category as string) || "all";
 
-    const cookie = await getBaiduCookie();
+    const cookie = await getRandomBaiduCookie();
 
     const params: Record<string, any> = {
       clienttype: 0,

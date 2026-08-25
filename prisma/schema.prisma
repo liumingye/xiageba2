@@ -101,6 +101,7 @@ model SourceTemp {
 model PanAccount {
   id          Int       @id @default(autoincrement())
   type        String    @db.VarChar(20) // quark | baidu | uc | xunlei
+  name        String    @default("") @db.VarChar(100) // 网盘账号昵称
   cookie      String    @default("") @db.Text
   refreshToken String   @default("") @db.Text
   accessToken String    @default("") @db.Text

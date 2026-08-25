@@ -67,7 +67,6 @@ export default defineTask({
           await client.fsApi.list({ dir: "/" });
           await client.fsOpenApi.listall({ path: "/", start: 0 });
         } else {
-          // XunleiClient
           await client.fsApi.listFiles({ parentId: "" });
         }
       } catch (error: any) {

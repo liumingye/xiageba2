@@ -1,6 +1,7 @@
 import { prisma } from "#server/lib/prisma";
 import { clearAccountCache } from "#server/lib/accountCache";
 import { cleanClient } from "#server/lib/pan-instance";
+import { getAccountNameByCredentials } from "#server/lib/pan-info";
 
 const VALID_TYPES = ["quark", "baidu", "uc", "xunlei"];
 
@@ -52,10 +53,64 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // 如果凭证（cookie 或 refreshToken）发生变化，重新获取昵称
+    const hasCredentialUpdate =
+      body?.cookie !== undefined || body?.refreshToken !== undefined;
+
+    if (hasCredentialUpdate) {
+      const existing = await prisma.panAccount.findUnique({
+        where: { id },
+        select: {
+          type: true,
+          cookie: true,
+          refreshToken: true,
+          accessToken: true,
+          expiresAt: true,
+        },
+      });
+
+      if (existing) {
+        const mergedType = (data.type || existing.type) as string;
+        const mergedCookie =
+          data.cookie !== undefined ? data.cookie : existing.cookie;
+        const mergedRefreshToken =
+          data.refreshToken !== undefined
+            ? data.refreshToken
+            : existing.refreshToken;
+        const mergedAccessToken =
+          data.accessToken !== undefined
+            ? data.accessToken
+            : existing.accessToken;
+        const mergedExpiresAt =
+          data.expiresAt !== undefined ? data.expiresAt : existing.expiresAt;
+
+        try {
+          const name = await getAccountNameByCredentials({
+            type: mergedType,
+            cookie: mergedCookie,
+            refreshToken: mergedRefreshToken,
+            accessToken: mergedAccessToken,
+            expiresAt: mergedExpiresAt || undefined,
+          });
+          data.name = name;
+        } catch (e: any) {
+          console.warn(`[accounts] 更新时获取昵称失败: ${e?.message || e}`);
+        }
+      }
+    }
+
     try {
       await prisma.panAccount.update({ where: { id }, data });
-    } catch {
-      throw createError({ statusCode: 404, message: "账号不存在" });
+    } catch (e: any) {
+      // Prisma P2025 = 记录不存在；其他错误（如字段缺失）需暴露真实信息
+      if (e?.code === "P2025") {
+        throw createError({ statusCode: 404, message: "账号不存在" });
+      }
+      console.error("[accounts] 更新失败:", e);
+      throw createError({
+        statusCode: 500,
+        message: e?.message || "更新失败",
+      });
     }
 
     clearAccountCache();

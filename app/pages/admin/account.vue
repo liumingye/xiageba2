@@ -25,6 +25,7 @@ import { useToast } from "~/composables/useToast";
 interface AccountListItem {
   id: number;
   type: string;
+  name: string;
   tempDir: string;
   status: number;
   hasCookie: boolean;
@@ -309,8 +310,7 @@ onMounted(async () => {
 const groupedAccounts = computed(() => {
   const groups: Record<string, AccountListItem[]> = {};
   for (const a of accounts.value) {
-    if (!groups[a.type]) groups[a.type] = [];
-    groups[a.type].push(a);
+    (groups[a.type] ??= []).push(a);
   }
   return groups;
 });
@@ -374,9 +374,9 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               :class="{ 'opacity-50': account.status === 0 }"
             >
               <div class="flex items-start justify-between mb-3">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 min-w-0">
                   <span
-                    class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-mono"
+                    class="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-xs font-mono"
                     :class="
                       account.status === 1
                         ? 'bg-green-900/50 text-green-400'
@@ -386,7 +386,14 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     #{{ account.id }}
                   </span>
                   <span
-                    class="text-xs px-2 py-0.5 rounded-full"
+                    v-if="account.name"
+                    class="text-sm text-white truncate"
+                    :title="account.name"
+                  >
+                    {{ account.name }}
+                  </span>
+                  <span
+                    class="text-xs px-2 py-0.5 shrink-0 rounded-full"
                     :class="
                       account.status === 1
                         ? 'bg-green-900/30 text-green-400'

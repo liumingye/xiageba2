@@ -1,16 +1,4 @@
-import { getConfigValues } from "#server/lib/configCache";
-
-async function getBaiduCookie(): Promise<string> {
-  const config = await getConfigValues(["baidu_cookie"]);
-  const cookie = config.baidu_cookie;
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置百度网盘 Cookie，请先在账号管理中配置",
-    });
-  }
-  return cookie;
-}
+import { getRandomBaiduCookie } from "#server/utils/novel";
 
 /**
  * 小说试读
@@ -23,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少 book_id" });
   }
 
-  const cookie = await getBaiduCookie();
+  const cookie = await getRandomBaiduCookie();
 
   const url =
     "https://pan.baidu.com/novel/distribute/sampleread?clienttype=0&app_id=250528&web=1";

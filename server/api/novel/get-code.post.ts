@@ -1,21 +1,9 @@
-import { getConfigValues } from "#server/lib/configCache";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
+import { getRandomBaiduCookie } from "#server/utils/novel";
 
 const CACHE_KEY_PREFIX = "novel:pcode:";
-const CACHE_TTL_DAYS = 360;
+const CACHE_TTL_DAYS = 365;
 const CACHE_TTL_SECONDS = CACHE_TTL_DAYS * 24 * 60 * 60; // 2592000
-
-async function getBaiduCookie(): Promise<string> {
-  const config = await getConfigValues(["baidu_cookie"]);
-  const cookie = config.baidu_cookie;
-  if (!cookie) {
-    throw createError({
-      statusCode: 500,
-      message: "未配置百度网盘 Cookie，请先在账号管理中配置",
-    });
-  }
-  return cookie;
-}
 
 /**
  * 获取小说口令
@@ -39,7 +27,7 @@ export default defineEventHandler(async (event) => {
     return cached;
   }
 
-  const cookie = await getBaiduCookie();
+  const cookie = await getRandomBaiduCookie();
 
   const pdata = {
     content_id: String(bookId),

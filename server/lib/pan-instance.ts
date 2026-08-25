@@ -12,7 +12,7 @@ import type { PanAccount } from "#server/lib/accountCache";
 const CLIENT_EXPIRE_HOURS = 0.5;
 const CLIENT_EXPIRE_MS = CLIENT_EXPIRE_HOURS * 60 * 60 * 1000;
 
-type PanClient = QuarkUCClient | BaiduClient | XunleiClient;
+export type PanClient = QuarkUCClient | BaiduClient | XunleiClient;
 
 interface CachedClient {
   client: PanClient;
@@ -120,9 +120,7 @@ export async function getClientByAccount(
       client = new XunleiClient({
         refreshToken: account.refreshToken,
         accessToken: account.accessToken || undefined,
-        expiresAt: account.expiresAt
-          ? account.expiresAt.getTime()
-          : undefined,
+        expiresAt: account.expiresAt ? account.expiresAt.getTime() : undefined,
         onRefreshToken: (tokenInfo) =>
           updateXunleiRefreshTokenByAccountId(account.id, tokenInfo),
       });
@@ -138,4 +136,79 @@ export async function getClientByAccount(
 
   clientMap.set(account.id, { client, createdAt: Date.now() });
   return client;
+}
+
+/**
+ * 创建一次性临时客户端（不缓存、不写入 token，用于添加账号时预览/获取昵称）
+ */
+export async function createTempClient(params: {
+  type: string;
+  cookie?: string;
+  refreshToken?: string;
+  accessToken?: string;
+  expiresAt?: Date;
+}): Promise<PanClient> {
+  const { type, cookie, refreshToken, accessToken, expiresAt } = params;
+
+  switch (type) {
+    case "quark":
+    case "uc": {
+      if (!cookie) {
+        throw createError({
+          statusCode: 400,
+          message: "请先填写 Cookie",
+        });
+      }
+      return new QuarkUCClient({
+        type,
+        cookie,
+      });
+    }
+
+    case "baidu": {
+      if (!cookie) {
+        throw createError({
+          statusCode: 400,
+          message: "请先填写 Cookie",
+        });
+      }
+      try {
+        const baiduClient = new BaiduClient({
+          source: cookie,
+          clientId: BAIDU_CLIENT_ID,
+          clientSecret: BAIDU_CLIENT_SECRET,
+          accessToken: accessToken || undefined,
+          refreshToken: refreshToken || undefined,
+          expiresAt: expiresAt ? expiresAt.getTime() : undefined,
+        });
+        await baiduClient.init();
+        return baiduClient;
+      } catch {
+        throw createError({
+          statusCode: 500,
+          message: "初始化百度网盘客户端失败",
+        });
+      }
+    }
+
+    case "xunlei": {
+      if (!refreshToken) {
+        throw createError({
+          statusCode: 400,
+          message: "请先填写 Refresh Token",
+        });
+      }
+      return new XunleiClient({
+        refreshToken,
+        accessToken: accessToken || undefined,
+        expiresAt: expiresAt ? expiresAt.getTime() : undefined,
+      });
+    }
+
+    default:
+      throw createError({
+        statusCode: 400,
+        message: `不支持的网盘类型: ${type}`,
+      });
+  }
 }
