@@ -25,6 +25,7 @@ export class BaiduFSOpenApi {
     }
 
     const { body } = await superagent
+      .agent()
       .get("https://openapi.baidu.com/oauth/2.0/token")
       .query({
         grant_type: "refresh_token",
@@ -86,8 +87,13 @@ export class BaiduFSOpenApi {
   ): Promise<IOpenApiFileManagerResult> {
     throw "";
   }
+
+  list(param: IOpenApiListParam): Promise<IOpenApiListResult> {
+    throw "";
+  }
+
   /** 查询文件列表 */
-  listall(param: IOpenApiListParam): Promise<IOpenApiListResult> {
+  listall(param: IOpenApiListAllParam): Promise<IOpenApiListAllResult> {
     throw "";
   }
   /** 查询文件信息，包括下载地址 */
@@ -375,6 +381,52 @@ BaiduFSOpenApi.prototype.updatePart = async function (
 };
 
 export type IOpenApiListParam = {
+  dir: string;
+  order?: "time" | "name" | "size";
+  /** @default 0 */
+  desc?: NBoolean;
+  start: number;
+  /** @default 1000 */
+  limit?: number;
+  web?: 0 | 1;
+  folder?: 0 | 1;
+};
+export type IOpenApiListResult = {
+  errno: number;
+  guid_info: string;
+  list: {
+    tkbind_id: number;
+    owner_type: number;
+    category: number;
+    is_scene: number;
+    fs_id: number;
+    black_tag: number;
+    server_filename: string;
+    extent_int2: number;
+    server_atime: number;
+    server_ctime: number;
+    extent_int8: number;
+    wpfile: number;
+    unlist: number;
+    local_mtime: number;
+    size: number;
+    oper_id: number;
+    owner_id: number;
+    share: number;
+    from_type: number;
+    path: string;
+    local_ctime: number;
+    pl: number;
+    real_category: string;
+    isdir: number;
+    extent_tinyint7: number;
+    server_mtime: number;
+  }[];
+  request_id: number;
+  guid: number;
+};
+
+export type IOpenApiListAllParam = {
   path: string;
   /**
    * 是否递归
@@ -391,11 +443,16 @@ export type IOpenApiListParam = {
   ctime?: number;
   mtime?: number;
 };
-export type IOpenApiListResult = {
+export type IOpenApiListAllResult = {
   has_more: NBoolean;
   cursor: number;
   list: IFile[];
 };
+
+BaiduFSOpenApi.prototype.list = async function (param) {
+  return await this.xpanfile("list", param, {});
+};
+
 BaiduFSOpenApi.prototype.listall = async function (param) {
   return await this.xpanmultimedia("listall", {
     web: 1,

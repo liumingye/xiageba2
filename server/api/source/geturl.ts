@@ -312,8 +312,14 @@ interface ParsedShare {
   url: string;
 }
 
+interface TransferShareUrlResult {
+  url: string;
+  transferred: boolean;
+  error?: string;
+}
+
 // 🔒 内存进程锁（单实例高效防并发击穿）
-const inflightRequests = new Map<string, Promise<string>>();
+const inflightRequests = new Map<string, Promise<TransferShareUrlResult>>();
 
 // 提取白名单为全局 Set，O(1) 复杂度高性能判断
 const ALLOWED_HOSTS = new Set([
@@ -683,6 +689,89 @@ async function transferXunlei(
   };
 }
 
+/**
+ * 核心转存逻辑（可复用，供 wechat 等其他模块调用）
+ * 输入原始分享链接，返回转存后的新分享链接（失败时返回原始链接）
+ */
+export async function transferShareUrl(
+  sourceUrl: string,
+  sourceId?: string,
+): Promise<TransferShareUrlResult> {
+  // 白名单清洗
+  try {
+    const hostname = new URL(sourceUrl).hostname.toLowerCase();
+    if (!ALLOWED_HOSTS.has(hostname)) {
+      return { url: sourceUrl, transferred: false };
+    }
+  } catch {
+    return { url: sourceUrl, transferred: false, error: "链接格式无效" };
+  }
+
+  const parsedShare = parseShareUrl(sourceUrl);
+  const { type, fid, passcode, url: sharePageUrl } = parsedShare;
+
+  if (type === "unknown" || !fid) {
+    return { url: sourceUrl, transferred: false };
+  }
+
+  // 随机选取一个该类型的启用账号
+  const account = await getRandomAccountByType(type);
+  if (!account) {
+    return { url: sourceUrl, transferred: false, error: "无可用转存账号" };
+  }
+
+  let shareUrl: string;
+  let _fid: string;
+
+  try {
+    if (type === "quark" || type === "uc") {
+      const data = await transferQuarkUC(account, fid, passcode);
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
+    } else if (type === "baidu") {
+      const data = await transferBaidu(account, sharePageUrl);
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
+    } else if (type === "xunlei") {
+      const data = await transferXunlei(account, fid, passcode);
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
+    } else {
+      return { url: sourceUrl, transferred: false, error: "未实现的网盘类型" };
+    }
+  } catch (e: any) {
+    // 失效计数
+    if (e.statusCode === 404 && sourceId) {
+      prisma.source
+        .update({
+          where: { id: sourceId },
+          data: { invalidNum: { increment: 1 } },
+        })
+        .catch(() => {});
+    }
+    return {
+      url: sourceUrl,
+      transferred: false,
+      error: e.message || "转存失败",
+    };
+  }
+
+  // 异步落库
+  prisma.sourceTemp
+    .create({
+      data: { url: shareUrl, fid: _fid, accountId: account.id },
+    })
+    .catch((err) => console.error("落库失败", err));
+
+  // 写入 Redis 缓存
+  const cacheKey = sourceId
+    ? `source:id:${sourceId}`
+    : `source:url:${Buffer.from(sourceUrl).toString("base64").substring(0, 40)}`;
+  await setRedisCache(cacheKey, shareUrl, Math.max(THIRTY_MINUTES - 300, 60));
+
+  return { url: shareUrl, transferred: true };
+}
+
 export default defineEventHandler(async (event) => {
   if (event.method !== "POST") {
     throw createError({ statusCode: 403, message: "请求方法错误" });
@@ -692,7 +781,7 @@ export default defineEventHandler(async (event) => {
   let inputUrl = body.url as string | undefined;
   let id = body.id as string | undefined;
 
-  if (!inputUrl && !id) {
+  if (!inputUrl || !id) {
     throw createError({ statusCode: 400, message: "缺少参数 url 或 id" });
   }
 
@@ -737,17 +826,7 @@ export default defineEventHandler(async (event) => {
 
   if (!sourceUrl) throw createError({ statusCode: 400, message: "链接为空" });
 
-  // ⚡ 高性能白名单清洗：非网盘链接直接断开，绝不往下走
-  try {
-    const hostname = new URL(sourceUrl).hostname.toLowerCase();
-    if (!ALLOWED_HOSTS.has(hostname)) {
-      return { url: sourceUrl };
-    }
-  } catch {
-    throw createError({ statusCode: 400, message: "白名单清洗失败" });
-  }
-
-  // 🛡️ IP 今日 geturl 记录限流：超过上限不再转存，直接返回原始链接（按网盘类型分别计数）
+  // 🛡️ IP 今日 geturl 记录限流：超过上限不再转存，直接返回原始链接
   const parsedShare = parseShareUrl(sourceUrl);
   const netdiskType = parsedShare.type;
 
@@ -757,77 +836,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 构建核心转存处理链条
-  const transferPromise = (async () => {
-    const { type, fid, passcode, url: sharePageUrl } = parsedShare;
-
-    if (type === "unknown" || !fid) {
-      return sourceUrl;
-    }
-
-    // 随机选取一个该类型的启用账号，没有账号则直接返回原始链接
-    const account = await getRandomAccountByType(type);
-    if (!account) {
-      return sourceUrl;
-    }
-
-    let shareUrl: string;
-    let _fid: string;
-
-    try {
-      if (type === "quark" || type === "uc") {
-        const data = await transferQuarkUC(account, fid, passcode);
-        shareUrl = data.shareUrl;
-        _fid = JSON.stringify(data.fids);
-      } else if (type === "baidu") {
-        const data = await transferBaidu(account, sharePageUrl);
-        shareUrl = data.shareUrl;
-        _fid = JSON.stringify(data.fids);
-      } else if (type === "xunlei") {
-        const data = await transferXunlei(account, fid, passcode);
-        shareUrl = data.shareUrl;
-        _fid = JSON.stringify(data.fids);
-      } else {
-        throw createError({ statusCode: 501, message: "未实现的网盘" });
-      }
-    } catch (e: any) {
-      // 降级与差错处理：失效计数
-      if (e.statusCode === 404 && id) {
-        // 使用非阻塞的异步处理，不卡死当前的请求响应时间
-        prisma.source
-          .update({
-            where: { id },
-            data: { invalidNum: { increment: 1 } },
-          })
-          .catch(() => {});
-      }
-      throw createError({
-        statusCode: e.statusCode || 500,
-        message: `获取网盘链接失败: ${e.message || "未知错误"}`,
-      });
-    }
-
-    // 异步落库：临时转存记录写入 SourceTemp，不让数据库 I/O 拖慢响应速度
-    prisma.sourceTemp
-      .create({
-        data: {
-          url: shareUrl,
-          fid: _fid,
-          accountId: account.id,
-        },
-      })
-      .catch((err) => console.error("落库失败", err));
-
-    // 成功后写入缓存
-    if (shareUrl) {
-      await setRedisCache(
-        cacheKey,
-        shareUrl,
-        Math.max(THIRTY_MINUTES - 300, 60),
-      );
-    }
-
-    return shareUrl;
-  })();
+  const transferPromise = transferShareUrl(sourceUrl, id);
 
   // 将 Promise 送入全局互斥拦截器
   inflightRequests.set(cacheKey, transferPromise);
@@ -836,9 +845,8 @@ export default defineEventHandler(async (event) => {
     const result = await transferPromise;
     // 记录 IP 今日 geturl 次数（异步，不阻塞响应）
     incrementTodayGeturlCount(clientIp, netdiskType);
-    return { url: result };
+    return { url: result.url };
   } finally {
-    // 🔒 无论成功或失败，办完手续后必须从内存中清除锁，允许下一个周期（20分钟后）的请求重新触发转存
     inflightRequests.delete(cacheKey);
   }
 });

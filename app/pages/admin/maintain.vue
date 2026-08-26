@@ -16,10 +16,19 @@ import {
   ShieldAlert,
   Sparkles,
   Filter,
+  Copy,
+  Upload,
+  MessageSquare,
+  ExternalLink,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import { useToast } from "~/composables/useToast";
+import { useClipboard } from "@vueuse/core";
 import { get, post } from "~/utils/request";
+
+const toast = useToast();
+const { copy: copyToClipboard } = useClipboard();
 
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
@@ -114,6 +123,118 @@ const webSearchFilterConfig = ref<WebSearchFilterConfig>({
 const savingWebSearchFilter = ref(false);
 const savedWebSearchFilter = ref(false);
 
+// ============ 微信公众号配置 ============
+interface WechatConfig {
+  enabled: boolean;
+  appId: string;
+  appSecret: string;
+  token: string;
+  encodingAESKey: string;
+  autoReplyEnabled: boolean;
+  welcomeMessage: string;
+  searchLimit: number;
+  verifyFileName: string;
+  verifyFileContent: string;
+}
+
+const wechatConfig = ref<WechatConfig>({
+  enabled: false,
+  appId: "",
+  appSecret: "",
+  token: "",
+  encodingAESKey: "",
+  autoReplyEnabled: true,
+  welcomeMessage: "谢谢关注！发送关键词即可搜索资源。",
+  searchLimit: 5,
+  verifyFileName: "",
+  verifyFileContent: "",
+});
+const savingWechat = ref(false);
+const savedWechat = ref(false);
+
+// 验证文件上传
+const wechatVerifyFile = ref<File | null>(null);
+const wechatVerifyUploading = ref(false);
+const wechatVerifyFileInput = ref<HTMLInputElement | null>(null);
+const wechatOrigin = ref("");
+
+const loadWechatConfig = async () => {
+  const data = await get("/api/admin/config/wechat");
+  if (data.data) {
+    wechatConfig.value = { ...wechatConfig.value, ...data.data };
+  }
+};
+
+const saveWechatConfig = async () => {
+  savingWechat.value = true;
+  savedWechat.value = false;
+  try {
+    const res = await post("/api/admin/config/wechat", wechatConfig.value);
+    // 更新前端缓存的验证文件名等（接口返回脱敏后的值）
+    if (res?.data) {
+      wechatConfig.value = { ...wechatConfig.value, ...res.data };
+    }
+    savedWechat.value = true;
+    setTimeout(() => {
+      savedWechat.value = false;
+    }, 2000);
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || "保存失败");
+  } finally {
+    savingWechat.value = false;
+  }
+};
+
+const onPickWechatVerifyFile = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0] || null;
+  if (file && /\.txt$/i.test(file.name)) {
+    wechatVerifyFile.value = file;
+  } else {
+    toast.error("请选择 .txt 文件");
+    wechatVerifyFile.value = null;
+    if (wechatVerifyFileInput.value) wechatVerifyFileInput.value.value = "";
+  }
+};
+
+const uploadWechatVerifyFile = async () => {
+  if (!wechatVerifyFile.value) {
+    toast.warning("请先选择 TXT 验证文件");
+    return;
+  }
+  wechatVerifyUploading.value = true;
+  try {
+    const fd = new FormData();
+    fd.append("file", wechatVerifyFile.value);
+    const res = await post("/api/admin/config/wechat-verify-file", fd);
+    if (res?.success) {
+      wechatConfig.value.verifyFileName = res.file_name || "";
+      toast.success("验证文件上传成功");
+      wechatVerifyFile.value = null;
+      if (wechatVerifyFileInput.value) wechatVerifyFileInput.value.value = "";
+    }
+  } catch (e: any) {
+    toast.error(e?.response?.data?.message || "上传失败");
+  } finally {
+    wechatVerifyUploading.value = false;
+  }
+};
+
+const copyText = async (text: string, label?: string) => {
+  try {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      toast.success(label ? `${label}已复制` : "已复制到剪贴板");
+    } else {
+      throw new Error("copy failed");
+    }
+  } catch {
+    toast.error("复制失败，请手动选择复制");
+  }
+};
+
+// ============ 生命周期 ============
+
 onMounted(async () => {
   if (!initialized.value) {
     checkLogin();
@@ -130,6 +251,11 @@ onMounted(async () => {
   await loadAdFilterConfig();
   await loadAiSearchConfig();
   await loadWebSearchFilterConfig();
+  await loadWechatConfig();
+  // 构造回调地址域名（仅用于显示复制）
+  if (typeof window !== "undefined") {
+    wechatOrigin.value = window.location.origin;
+  }
   loading.value = false;
 });
 
@@ -976,6 +1102,321 @@ const clearISRCache = async () => {
             >
               未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 微信公众号配置 -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium text-white">微信公众号配置</h2>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            :class="{ 'bg-green-600 hover:bg-green-600': savedWechat }"
+            :disabled="savingWechat || loading"
+            @click="saveWechatConfig"
+          >
+            <Check v-if="savedWechat" class="w-4 h-4" />
+            <Save v-else class="w-4 h-4" />
+            {{ savedWechat ? "已保存" : "保存" }}
+          </button>
+        </div>
+        <div class="card p-6 space-y-8">
+          <!-- 基础配置 -->
+          <div>
+            <div class="flex items-center gap-3 mb-6">
+              <div
+                class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center"
+              >
+                <MessageSquare class="w-5 h-5 text-[var(--white)]" />
+              </div>
+              <div>
+                <h3 class="text-white font-medium">基础配置</h3>
+                <p class="text-zinc-500 text-sm">
+                  在微信公众平台「开发管理 → 基本配置」中获取 AppID / AppSecret
+                </p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2">AppID</label>
+                <input
+                  v-model="wechatConfig.appId"
+                  type="text"
+                  placeholder="如：wx1234567890abcdef"
+                  class="input-search"
+                />
+              </div>
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2">AppSecret</label>
+                <input
+                  v-model="wechatConfig.appSecret"
+                  type="password"
+                  placeholder="填写后保存以更新；已配置则显示星号"
+                  class="input-search"
+                />
+              </div>
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2">Token</label>
+                <input
+                  v-model="wechatConfig.token"
+                  type="text"
+                  placeholder="自定义任意字符串，服务器校验用"
+                  class="input-search"
+                />
+              </div>
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2"
+                  >EncodingAESKey（可选）</label
+                >
+                <input
+                  v-model="wechatConfig.encodingAESKey"
+                  type="password"
+                  placeholder="消息加解密密钥；安全模式下必填"
+                  class="input-search"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 功能配置 -->
+          <div>
+            <h4
+              class="text-sm font-medium text-zinc-300 pb-2 mb-4 border-b border-zinc-800"
+            >
+              功能配置
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div
+                class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg"
+              >
+                <div>
+                  <div class="text-white text-sm">启用机器人</div>
+                  <div class="text-xs text-zinc-500 mt-0.5">
+                    关闭后微信服务器回调将不再回复消息
+                  </div>
+                </div>
+                <input
+                  id="wechatEnabled"
+                  v-model="wechatConfig.enabled"
+                  type="checkbox"
+                  class="w-12 h-7 appearance-none rounded-full bg-zinc-700 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
+                />
+              </div>
+              <div
+                class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg"
+              >
+                <div>
+                  <div class="text-white text-sm">自动回复</div>
+                  <div class="text-xs text-zinc-500 mt-0.5">
+                    开启后用户发送关键词将触发站内搜索回复
+                  </div>
+                </div>
+                <input
+                  id="wechatAutoReplyEnabled"
+                  v-model="wechatConfig.autoReplyEnabled"
+                  type="checkbox"
+                  class="w-12 h-7 appearance-none rounded-full bg-zinc-700 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
+                />
+              </div>
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2"
+                  >搜索结果限制</label
+                >
+                <input
+                  v-model.number="wechatConfig.searchLimit"
+                  type="number"
+                  min="1"
+                  max="100"
+                  class="input-search"
+                />
+                <p class="text-zinc-500 text-xs mt-1.5">
+                  每次搜索最多返回的条数（1-100）
+                </p>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-zinc-400 text-sm mb-2"
+                  >欢迎消息</label
+                >
+                <textarea
+                  v-model="wechatConfig.welcomeMessage"
+                  rows="3"
+                  placeholder="新用户关注公众号时自动发送的消息"
+                  class="input-search resize-none"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- 服务器配置 -->
+          <div>
+            <h4
+              class="text-sm font-medium text-zinc-300 pb-2 mb-4 border-b border-zinc-800"
+            >
+              服务器配置（微信公众平台填写）
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2">URL（复制使用）</label>
+                <div class="flex gap-2">
+                  <input
+                    :value="wechatOrigin ? `${wechatOrigin}/api/wechat` : '/api/wechat'"
+                    readonly
+                    class="input-search flex-1 bg-zinc-800/50"
+                  />
+                  <button
+                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors"
+                    title="复制 URL"
+                    @click="copyText(wechatOrigin ? `${wechatOrigin}/api/wechat` : '/api/wechat', 'URL')"
+                  >
+                    <Copy class="w-4 h-4" />
+                  </button>
+                </div>
+                <p class="text-zinc-500 text-xs mt-1.5">
+                  服务器必须支持 HTTPS（微信要求）。若域名不同请手动拼接
+                </p>
+              </div>
+              <div>
+                <label class="block text-zinc-400 text-sm mb-2">Token（同上）</label>
+                <div class="flex gap-2">
+                  <input
+                    :value="wechatConfig.token"
+                    readonly
+                    class="input-search flex-1 bg-zinc-800/50 font-mono"
+                  />
+                  <button
+                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors"
+                    title="复制 Token"
+                    @click="copyText(wechatConfig.token, 'Token')"
+                  >
+                    <Copy class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 验证文件上传 -->
+          <div>
+            <h4
+              class="text-sm font-medium text-zinc-300 pb-2 mb-4 border-b border-zinc-800"
+            >
+              微信公众号验证文件
+            </h4>
+            <div
+              class="p-4 bg-blue-950/30 border border-blue-900/50 rounded-lg mb-4"
+            >
+              <p class="text-sm text-blue-200 leading-relaxed">
+                微信公众平台在填写服务器 URL 时会要求上传一个 <code
+                  class="px-1.5 py-0.5 rounded bg-blue-900/40 font-mono text-xs"
+                  >MP_verify_*.txt</code
+                >
+                到网站根目录验证所有权。请按以下步骤操作：
+              </p>
+              <ol
+                class="mt-2 text-sm text-zinc-300 list-decimal list-inside space-y-1"
+              >
+                <li>在微信公众平台下载 MP_verify_*.txt 验证文件</li>
+                <li>点击下方「选择文件」上传 TXT 内容到数据库</li>
+                <li>
+                  上传成功后可通过
+                  <code
+                    class="px-1.5 py-0.5 rounded bg-zinc-800 font-mono text-xs"
+                    >域名/MP_verify_xxx.txt</code
+                  >
+                  直接访问
+                </li>
+                <li>返回微信公众平台点击「验证」即可</li>
+              </ol>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <label
+                class="flex items-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors cursor-pointer"
+              >
+                <Upload class="w-4 h-4" />
+                <span>选择 TXT 文件</span>
+                <input
+                  ref="wechatVerifyFileInput"
+                  type="file"
+                  accept=".txt"
+                  class="hidden"
+                  @change="onPickWechatVerifyFile"
+                />
+              </label>
+              <div class="text-sm text-zinc-400 min-w-0">
+                <template v-if="wechatVerifyFile">
+                  已选择：{{ wechatVerifyFile.name }}
+                </template>
+                <template v-else
+                  >未选择（仅支持 <code class="font-mono">.txt</code> 格式）</template
+                >
+              </div>
+              <button
+                class="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                :disabled="!wechatVerifyFile || wechatVerifyUploading"
+                @click="uploadWechatVerifyFile"
+              >
+                <Upload
+                  v-if="wechatVerifyUploading"
+                  class="w-4 h-4 animate-spin"
+                />
+                <Save v-else class="w-4 h-4" />
+                {{ wechatVerifyUploading ? "上传中..." : "上传验证文件" }}
+              </button>
+            </div>
+
+            <div
+              v-if="wechatConfig.verifyFileName"
+              class="mt-4 p-3 bg-green-950/30 border border-green-900/50 rounded-lg"
+            >
+              <div class="flex items-start gap-2">
+                <Check class="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                <div class="text-sm text-green-200 space-y-1 flex-1">
+                  <div>验证文件已上传，可通过以下地址访问：</div>
+                  <div class="flex items-center gap-2">
+                    <code
+                      class="px-2 py-1 rounded bg-zinc-900/60 font-mono text-xs truncate"
+                    >
+                      {{ wechatOrigin }}/{{ wechatConfig.verifyFileName }}
+                    </code>
+                    <button
+                      class="shrink-0 p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      title="复制访问地址"
+                      @click="copyText(`${wechatOrigin}/${wechatConfig.verifyFileName}`, '访问地址')"
+                    >
+                      <Copy class="w-3.5 h-3.5" />
+                    </button>
+                    <a
+                      :href="`/${wechatConfig.verifyFileName}`"
+                      target="_blank"
+                      rel="noreferrer"
+                      class="shrink-0 p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      title="新标签打开"
+                    >
+                      <ExternalLink class="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 注意事项 -->
+          <div
+            class="p-4 bg-amber-950/30 border border-amber-900/50 rounded-lg"
+          >
+            <h5 class="text-sm font-medium text-amber-200 mb-2">注意事项</h5>
+            <ul
+              class="text-sm text-zinc-300 list-disc list-inside space-y-1"
+            >
+              <li>服务器必须支持 HTTPS（微信要求）且域名已备案</li>
+              <li>首次配置时，微信会发送 GET 请求校验签名，请先填写 Token 并保存</li>
+              <li>搜索结果同时来自「资源」与「音乐」，支持中文分词检索</li>
+              <li>
+                消息加解密：若填写了 EncodingAESKey，可在微信公众平台选择「安全模式」
+              </li>
+            </ul>
           </div>
         </div>
       </section>

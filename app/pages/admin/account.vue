@@ -441,7 +441,10 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               </div>
 
               <div class="space-y-1.5 text-xs">
-                <div class="flex items-center gap-2 text-zinc-500">
+                <div
+                  v-if="type !== 'xunlei'"
+                  class="flex items-center gap-2 text-zinc-500"
+                >
                   <span class="w-16 shrink-0">Cookie</span>
                   <span
                     :class="

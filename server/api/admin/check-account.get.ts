@@ -20,12 +20,12 @@ export default defineEventHandler(async (event) => {
     const client = await getClientByAccount(account);
 
     if (client instanceof QuarkUCClient) {
-      await client.fsApi.sort({ pdir_fid: "0" });
+      await client.fsApi.sort({ pdir_fid: "0", _size: 1 });
     } else if (client instanceof BaiduClient) {
-      await client.fsApi.list({ dir: "/" });
+      await client.fsApi.list({ dir: "/", num: 1 });
+      await client.fsOpenApi.listall({ path: "/", start: 0, limit: 1 });
     } else {
-      // XunleiClient
-      await client.fsApi.listFiles({ parentId: "" });
+      await client.fsApi.listFiles({ parentId: "", limit: 1 });
     }
 
     return { success: true };

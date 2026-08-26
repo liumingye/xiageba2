@@ -123,6 +123,7 @@ export class BaiduClient {
   private async _getUidFromSyncApi(): Promise<string | null> {
     try {
       const response = await superagent
+        .agent()
         .get("https://tieba.baidu.com/mo/q/sync")
         .set("Cookie", `BDUSS=${this.bduss}`);
       const result = response.body;

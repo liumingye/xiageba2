@@ -83,7 +83,7 @@ export const submitCheckRequest = async (
 
     return { data: res.data, idx };
   } catch (err) {
-    console.error("PanCheck submit error:", err);
+    console.error("PanCheck submit error server: ", server.url);
     return null;
   }
 };
@@ -108,7 +108,7 @@ export const getCheckResult = async (
     );
     return res.data;
   } catch (err) {
-    console.error("PanCheck get result error:", err);
+    console.error("PanCheck get result server: ", serverUrl);
     return null;
   }
 };

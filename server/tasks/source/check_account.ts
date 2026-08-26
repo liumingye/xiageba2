@@ -62,19 +62,16 @@ export default defineTask({
         const label = TYPE_LABELS[account.type] || account.type;
 
         if (client instanceof QuarkUCClient) {
-          await client.fsApi.sort({ pdir_fid: "0" });
+          await client.fsApi.sort({ pdir_fid: "0", _size: 1 });
         } else if (client instanceof BaiduClient) {
-          await client.fsApi.list({ dir: "/" });
-          await client.fsOpenApi.listall({ path: "/", start: 0 });
+          await client.fsApi.list({ dir: "/", num: 1 });
+          await client.fsOpenApi.listall({ path: "/", start: 0, limit: 1 });
         } else {
-          await client.fsApi.listFiles({ parentId: "" });
+          await client.fsApi.listFiles({ parentId: "", limit: 1 });
         }
       } catch (error: any) {
         const label = TYPE_LABELS[account.type] || account.type;
-        await sendNotice(
-          `${label}账号失效 (ID: ${account.id})`,
-          error.message,
-        );
+        await sendNotice(`${label}账号失效 (ID: ${account.id})`, error.message);
       }
     });
 

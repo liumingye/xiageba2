@@ -94,7 +94,7 @@ const searchApi = async (
     method,
     url,
     headers: buildBaseHeaders(headers),
-    timeout: 15000,
+    timeout: 30000,
   };
 
   if (method === "get") {
@@ -234,7 +234,7 @@ const fetchHtml = async (url: string, headers?: Record<string, string>) => {
     method: "get",
     headers: buildBaseHeaders(headers),
     responseType: "text",
-    timeout: 15000,
+    timeout: 30000,
   });
   return res.data;
 };
@@ -282,7 +282,7 @@ const searchHtml = async (
           const detailHtml = await Promise.race([
             fetchHtml(absoluteUrl, headers || {}),
             new Promise<string>((_, reject) =>
-              setTimeout(() => reject(new Error("Timeout")), 4000),
+              setTimeout(() => reject(new Error("Timeout")), 5000),
             ),
           ]);
           panUrl = extractPanUrl(detailHtml);
@@ -353,7 +353,7 @@ export async function webSearchConcurrent(
   if (!configs.length) return 0;
 
   let totalCount = 0;
-  const timeoutMs = 25000;
+  const timeoutMs = 30000;
 
   const withTimeout = <T>(promise: Promise<T>): Promise<T | null> => {
     return Promise.race([
@@ -427,7 +427,8 @@ export async function webSearchConcurrent(
           onResult(finalItems);
         }
       } catch (err) {
-        console.error(`搜索引擎线路 [${config.name}] 发生故障:`, err);
+        console.error(`搜索引擎线路 [${config.name}] 发生故障`);
+        // console.error(`搜索引擎线路 [${config.name}] 发生故障:`, err);
       } finally {
         // 执行完毕后，无论成功或失败都解除锁定
         searchInflightLocks.delete(lockKey);
