@@ -1,10 +1,7 @@
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import {
-  updateXunleiRefreshTokenByAccountId,
-  updateBaiduRefreshTokenByAccountId,
-} from "#server/utils/source";
+import { updateRefreshTokenByAccountId } from "#server/utils/source";
 import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
 import type { PanAccount } from "#server/lib/accountCache";
 
@@ -97,7 +94,7 @@ export async function getClientByAccount(
             ? account.expiresAt.getTime()
             : undefined,
           onRefreshToken: (tokenInfo) =>
-            updateBaiduRefreshTokenByAccountId(account.id, tokenInfo),
+            updateRefreshTokenByAccountId(account.id, tokenInfo),
         });
         await baiduClient.init();
         client = baiduClient;
@@ -122,7 +119,7 @@ export async function getClientByAccount(
         accessToken: account.accessToken || undefined,
         expiresAt: account.expiresAt ? account.expiresAt.getTime() : undefined,
         onRefreshToken: (tokenInfo) =>
-          updateXunleiRefreshTokenByAccountId(account.id, tokenInfo),
+          updateRefreshTokenByAccountId(account.id, tokenInfo),
       });
       break;
     }

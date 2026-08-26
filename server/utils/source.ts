@@ -7,25 +7,11 @@ interface TokenInfo {
   expiresAt: number;
 }
 
-/** 按账号 ID 更新百度网盘 Token，并刷新账号缓存 */
-export const updateBaiduRefreshTokenByAccountId = async (
-  accountId: number,
-  tokenInfo: TokenInfo,
-) => {
-  const { refreshToken, accessToken, expiresAt } = tokenInfo;
-  await prisma.panAccount.update({
-    where: { id: accountId },
-    data: {
-      refreshToken,
-      accessToken,
-      expiresAt: new Date(expiresAt),
-    },
-  });
-  clearAccountCache();
-};
-
-/** 按账号 ID 更新迅雷网盘 Token，并刷新账号缓存 */
-export const updateXunleiRefreshTokenByAccountId = async (
+/**
+ * 按账号 ID 更新网盘 Token，并刷新账号缓存。
+ * 百度/迅雷等各网盘共用的更新逻辑，避免重复实现。
+ */
+export const updateRefreshTokenByAccountId = async (
   accountId: number,
   tokenInfo: TokenInfo,
 ) => {

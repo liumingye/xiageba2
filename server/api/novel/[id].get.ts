@@ -1,6 +1,10 @@
-import { getRandomBaiduCookie } from "#server/utils/novel";
-
-const BAIDU_BASE = "https://pan.baidu.com";
+import {
+  getRandomBaiduCookie,
+  buildQuery,
+  cleanCoverImage,
+  fetchBaiduNovel,
+  parseBaiduNovelResponse,
+} from "#server/utils/novel";
 
 /**
  * 小说详情
@@ -18,43 +22,23 @@ export default defineCachedEventHandler(
 
     const cookie = await getRandomBaiduCookie();
 
-    const params = new URLSearchParams({
+    const params = buildQuery({
       clienttype: "0",
       app_id: "250528",
       web: "1",
       book_id: String(bookId),
     });
-    const url = `${BAIDU_BASE}/novel/distribute/detail?${params.toString()}`;
+    const res = await fetchBaiduNovel(
+      `/novel/distribute/detail?${params}`,
+      cookie,
+    );
 
-    const res = await fetch(url, {
-      headers: {
-        Cookie: cookie,
-        "accept-encoding": "gzip, deflate",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-    });
-
-    if (!res.ok) {
-      throw createError({
-        statusCode: 500,
-        message: `小说详情请求失败: ${res.status}`,
-      });
-    }
-
-    const body = await res.json();
+    const body = await parseBaiduNovelResponse(res, "小说详情请求");
 
     if (!body.data) {
       throw createError({
         statusCode: 404,
         message: "小说不存在",
-      });
-    }
-
-    if (body.errno !== 0) {
-      throw createError({
-        statusCode: 500,
-        message: body.show_msg || "小说详情请求失败",
       });
     }
 
@@ -64,7 +48,7 @@ export default defineCachedEventHandler(
       bookId: String(d.book_id),
       bookName: d.book_name,
       author: d.author,
-      coverImage: String(d.cover_image || "").replace(/^`|`$/g, ""),
+      coverImage: cleanCoverImage(d.cover_image),
       bookScore: d.book_score ? Number(d.book_score) : 0,
       bookStatus: d.book_status,
       category: d.category,

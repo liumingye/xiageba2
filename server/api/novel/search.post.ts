@@ -1,6 +1,9 @@
-import { getRandomBaiduCookie } from "#server/utils/novel";
-
-const BAIDU_BASE = "https://pan.baidu.com";
+import {
+  getRandomBaiduCookie,
+  buildQuery,
+  mapBookItem,
+  fetchBaiduNovel,
+} from "#server/utils/novel";
 
 /**
  * 小说搜索
@@ -20,27 +23,17 @@ export default defineEventHandler(async (event) => {
 
   const cookie = await getRandomBaiduCookie();
 
-  const params = new URLSearchParams({
+  const params = buildQuery({
     scene: "public_novel",
     query,
     clienttype: "1",
   });
-  const url = `${BAIDU_BASE}/api/unisearch?${params.toString()}`;
-
-  const fetchOptions = {
-    method: "POST",
-    headers: {
-      Cookie: cookie,
-      "accept-encoding": "gzip, deflate",
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    },
-  };
+  const url = `/api/unisearch?${params}`;
 
   let data: any = null;
 
   for (let attempt = 0; attempt < 5; attempt++) {
-    const res = await fetch(url, fetchOptions);
+    const res = await fetchBaiduNovel(url, cookie, { method: "POST" });
 
     if (!res.ok) {
       throw createError({
@@ -67,16 +60,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const books = (data.data || []).flatMap((group: any) =>
-    (group.list || []).map((b: any) => ({
-      bookId: String(b.book_id),
-      bookName: b.book_name,
-      author: b.author,
-      coverImage: String(b.cover_image || "").replace(/^`|`$/g, ""),
-      category: b.category,
-      bookStatus: b.book_status,
-      cpName: b.cp_name,
-      tag: b.tag,
-    })),
+    (group.list || []).map((b: any) => mapBookItem(b)),
   );
 
   return {

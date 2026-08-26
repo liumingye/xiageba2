@@ -1,5 +1,10 @@
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
-import { getRandomBaiduCookie } from "#server/utils/novel";
+import {
+  getRandomBaiduCookie,
+  buildQuery,
+  fetchBaiduNovel,
+  parseBaiduNovelResponse,
+} from "#server/utils/novel";
 
 const CACHE_KEY_PREFIX = "novel:pcode:";
 const CACHE_TTL_DAYS = 365;
@@ -37,7 +42,7 @@ export default defineEventHandler(async (event) => {
     content_type: "novel",
   };
 
-  const params = new URLSearchParams({
+  const params = buildQuery({
     clienttype: "0",
     app_id: "250528",
     web: "1",
@@ -48,31 +53,13 @@ export default defineEventHandler(async (event) => {
     pdata: JSON.stringify(pdata),
   });
 
-  const url = `https://pan.baidu.com/api/mg/pcode/set?${params.toString()}`;
+  const res = await fetchBaiduNovel(
+    `/api/mg/pcode/set?${params}`,
+    cookie,
+    { method: "POST" },
+  );
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Cookie: cookie,
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    },
-  });
-
-  if (!res.ok) {
-    throw createError({
-      statusCode: 500,
-      message: `获取口令请求失败: ${res.status}`,
-    });
-  }
-
-  const data = await res.json();
-  if (data.errno !== 0) {
-    throw createError({
-      statusCode: 500,
-      message: data.show_msg || "获取口令失败",
-    });
-  }
+  const data = await parseBaiduNovelResponse(res, "获取口令请求");
 
   const result = {
     pcode: data.data?.pcode,

@@ -1,4 +1,9 @@
-import { getRandomBaiduCookie } from "#server/utils/novel";
+import {
+  getRandomBaiduCookie,
+  buildQuery,
+  fetchBaiduNovel,
+  parseBaiduNovelResponse,
+} from "#server/utils/novel";
 
 /**
  * 小说试读
@@ -14,37 +19,22 @@ export default defineEventHandler(async (event) => {
   const cookie = await getRandomBaiduCookie();
 
   const url =
-    "https://pan.baidu.com/novel/distribute/sampleread?clienttype=0&app_id=250528&web=1";
+    `/novel/distribute/sampleread?${buildQuery({
+      clienttype: 0,
+      app_id: 250528,
+      web: 1,
+    })}`;
 
   const form = new URLSearchParams();
   form.set("book_id", String(bookId));
   form.set("clienttype", "1");
 
-  const res = await fetch(url, {
+  const res = await fetchBaiduNovel(url, cookie, {
     method: "POST",
-    headers: {
-      Cookie: cookie,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    },
     body: form.toString(),
   });
 
-  if (!res.ok) {
-    throw createError({
-      statusCode: 500,
-      message: `试读请求失败: ${res.status}`,
-    });
-  }
-
-  const data = await res.json();
-  if (data.errno !== 0) {
-    throw createError({
-      statusCode: 500,
-      message: data.show_msg || "试读请求失败",
-    });
-  }
+  const data = await parseBaiduNovelResponse(res, "试读请求");
 
   return {
     bookId: String(data.data?.book_id),

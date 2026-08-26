@@ -1,16 +1,10 @@
-import { getRandomBaiduCookie } from "#server/utils/novel";
-
-function buildQuery(params: Record<string, any>): string {
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== "") {
-      sp.set(k, String(v));
-    }
-  }
-  return sp.toString();
-}
-
-const BAIDU_BASE = "https://pan.baidu.com";
+import {
+  getRandomBaiduCookie,
+  buildQuery,
+  mapBookItem,
+  fetchBaiduNovel,
+  parseBaiduNovelResponse,
+} from "#server/utils/novel";
 
 /**
  * 小说列表
@@ -40,47 +34,18 @@ export default defineCachedEventHandler(
       params.category = category;
     }
 
-    const url = `${BAIDU_BASE}/novel/distribute/list?${buildQuery(params)}`;
+    const res = await fetchBaiduNovel(
+      `/novel/distribute/list?${buildQuery(params)}`,
+      cookie,
+    );
 
-    const res = await fetch(url, {
-      headers: {
-        Cookie: cookie,
-        "accept-encoding": "gzip, deflate",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-    });
-
-    if (!res.ok) {
-      throw createError({
-        statusCode: 500,
-        message: `小说列表请求失败: ${res.status}`,
-      });
-    }
-
-    const body = await res.json();
-    if (body.errno !== 0) {
-      throw createError({
-        statusCode: 500,
-        message: body.show_msg || "小说列表请求失败",
-      });
-    }
+    const body = await parseBaiduNovelResponse(res, "小说列表请求");
 
     const books = body.data?.books || [];
     const hasMore = body.data?.has_more === 1;
 
     return {
-      books: books.map((b: any) => ({
-        bookId: String(b.book_id),
-        bookName: b.book_name,
-        author: b.author,
-        // 清理可能存在的反引号包裹（如 `http://...`）
-        coverImage: String(b.cover_image || "").replace(/^`|`$/g, ""),
-        category: b.category,
-        bookStatus: b.book_status,
-        cpName: b.cp_name,
-        tag: b.tag,
-      })),
+      books: books.map((b: any) => mapBookItem(b)),
       hasMore,
     };
   },

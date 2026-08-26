@@ -60,7 +60,7 @@ async function listFilesQuarkUC(
 ): Promise<PanFile[]> {
   const result: PanFile[] = [];
   let page = 1;
-  const pageSize = 100;
+  const pageSize = 500;
 
   while (true) {
     const data = await fsApi.sort({
@@ -114,7 +114,7 @@ async function listFilesXunlei(
   while (true) {
     const data = await fsApi.listFiles({
       parentId,
-      limit: 100,
+      limit: 500,
       pageToken,
     });
     if (!data?.list || data.list.length === 0) break;
@@ -145,7 +145,7 @@ async function listFilesBaidu(
 ): Promise<PanFile[]> {
   const result: PanFile[] = [];
   let start = 0;
-  const limit = 100;
+  const limit = 500;
   let page = 1;
 
   while (true) {
@@ -781,7 +781,7 @@ export default defineEventHandler(async (event) => {
   let inputUrl = body.url as string | undefined;
   let id = body.id as string | undefined;
 
-  if (!inputUrl || !id) {
+  if (!inputUrl && !id) {
     throw createError({ statusCode: 400, message: "缺少参数 url 或 id" });
   }
 
