@@ -21,6 +21,7 @@ import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { useToast } from "~/composables/useToast";
+import { getPanTypeLabel } from "~/utils/pan";
 
 interface AccountListItem {
   id: number;
@@ -50,13 +51,6 @@ interface AccountFormData {
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
 const toast = useToast();
-
-const TYPE_LABELS: Record<string, string> = {
-  quark: "夸克网盘",
-  baidu: "百度网盘",
-  uc: "UC 网盘",
-  xunlei: "迅雷云盘",
-};
 
 const accounts = ref<AccountListItem[]>([]);
 const loading = ref(false);
@@ -185,7 +179,7 @@ const saveForm = async () => {
 };
 
 const deleteAccount = async (account: AccountListItem) => {
-  if (!confirm(`确定删除 ${TYPE_LABELS[account.type]} 账号 #${account.id}？`))
+  if (!confirm(`确定删除 ${getPanTypeLabel(account.type)} 账号 #${account.id}？`))
     return;
   try {
     await del(`/api/admin/accounts/${account.id}`);
@@ -211,7 +205,7 @@ const checkAccount = async (account: AccountListItem) => {
   checking.value[account.id] = true;
   try {
     const data = await get(`/api/admin/check-account?accountId=${account.id}`);
-    const label = TYPE_LABELS[account.type] || account.type;
+    const label = getPanTypeLabel(account.type);
     if (data.success) {
       toast.success(`${label}账号 #${account.id} 有效`);
     } else {
@@ -361,7 +355,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
           v-show="groupedAccounts[type]"
         >
           <h3 class="text-sm text-zinc-400 mb-3 px-1">
-            {{ TYPE_LABELS[type] }}
+            {{ getPanTypeLabel(type) }}
             <span class="text-zinc-600"
               >({{ groupedAccounts[type]?.length || 0 }})</span
             >

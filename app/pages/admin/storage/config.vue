@@ -54,13 +54,6 @@ const form = ref({
   secretKey: "",
 });
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-};
-
 const loadConfigs = async () => {
   const data = await get("/api/admin/storage/config");
   configs.value = data.data;

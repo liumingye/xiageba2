@@ -1,27 +1,13 @@
 <script setup lang="ts">
-import {
-  ArrowLeft,
-  Info,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
-  Megaphone,
-} from "@lucide/vue";
+import { ArrowLeft, Megaphone } from "@lucide/vue";
 import { marked } from "marked";
+import { getIconConfig, type Announcement } from "~/utils/announcement";
 
 marked.setOptions({ gfm: true, breaks: true, async: false });
 
 defineOptions({
   name: "AnnouncementDetailPage",
 });
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  icon: "INFO" | "WARN" | "ERROR" | "SUCCESS";
-  createdAt: string;
-}
 
 const route = useRoute();
 const announcementId = route.params.id as string;
@@ -58,33 +44,7 @@ useHead(() => ({
   ],
 }));
 
-const iconConfig: Record<
-  Announcement["icon"],
-  { class: string; component: typeof Info }
-> = {
-  INFO: { class: "bg-blue-500/20 text-blue-400", component: Info },
-  WARN: {
-    class: "bg-yellow-500/20 text-yellow-400",
-    component: AlertTriangle,
-  },
-  ERROR: {
-    class: "bg-red-500/20 text-red-400",
-    component: AlertCircle,
-  },
-  SUCCESS: {
-    class: "bg-green-500/20 text-green-400",
-    component: CheckCircle,
-  },
-};
-
-const getIconConfig = (icon: Announcement["icon"]) => {
-  return (
-    iconConfig[icon] || {
-      class: "bg-zinc-500/20 text-zinc-400",
-      component: Megaphone,
-    }
-  );
-};
+// getIconConfig 已统一抽取到 ~/utils/announcement
 </script>
 
 <template>

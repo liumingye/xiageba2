@@ -6,18 +6,8 @@ import { Plus, Trash2, Edit3, Archive, Megaphone } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  displayType: "NORMAL" | "BANNER" | "DIALOG";
-  icon: "INFO" | "WARN" | "ERROR" | "SUCCESS";
-  status: "ACTIVE" | "ARCHIVED";
-  sort: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import { formatDate } from "~/utils/file";
+import type { Announcement } from "~/utils/announcement";
 
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
@@ -109,13 +99,7 @@ const statusClass = (status: string) => {
     : "bg-zinc-600 text-[var(--white)]";
 };
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
+// formatDate 已统一抽取到 ~/utils/file
 
 const loadAnnouncements = async () => {
   const data = await get(

@@ -67,7 +67,7 @@ watch(
     if (err) {
       throw createError({
         statusCode: err?.data?.statusCode || err.status || 404,
-        message: err?.data?.message || "分类不存在",
+        message: err?.data?.message || err?.data?.error || "分类不存在",
       });
     }
   },
@@ -136,7 +136,9 @@ watch(
   () => {
     if (import.meta.client) {
       stopPanCheck();
-      const ids = (data.value.data as SourceItem[]).map((item) => item.id);
+      const ids = (data.value.data as SourceItem[])
+        .filter((item) => item.type !== "magnet")
+        .map((item) => item.id);
       submitPanCheck(ids);
     }
   },

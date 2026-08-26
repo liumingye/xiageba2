@@ -45,7 +45,7 @@ watch(
     if (err) {
       throw createError({
         statusCode: err?.data?.statusCode || err.status || 404,
-        message: err?.data?.message || "音乐不存在",
+        message: err?.data?.message || err?.data?.error || "音乐不存在",
       });
     }
   },
@@ -296,8 +296,11 @@ onMounted(() => {
                   <div
                     class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center"
                   >
-                    <Play v-if="!isPlaying" class="w-8 h-8 text-white ml-1" />
-                    <Pause v-else class="w-8 h-8 text-white" />
+                    <Play
+                      v-if="!isPlaying"
+                      class="w-8 h-8 text-[--white] ml-1"
+                    />
+                    <Pause v-else class="w-8 h-8 text-[--white]" />
                   </div>
                 </div>
               </div>
@@ -334,7 +337,7 @@ onMounted(() => {
                   <a
                     v-for="(download, index) in music.downloads"
                     :key="index"
-                    class="cursor-pointer flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+                    class="cursor-pointer flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
                     :aria-label="`${download.quality}下载`"
                     :target="isMobile && isMounted ? '_blank' : undefined"
                     :href="isMobile && isMounted ? download.url : undefined"
@@ -351,7 +354,7 @@ onMounted(() => {
                   </a>
                   <button
                     v-if="music.playUrl"
-                    class="flex items-center gap-2 px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                    class="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
                     @click="togglePlay"
                     aria-label="播放或暂停"
                   >

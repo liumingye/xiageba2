@@ -49,7 +49,7 @@ const handleSearch = (keyword: string) => {
 <template>
   <nav class="mb-6 bg-zinc-900 border-b border-zinc-800">
     <div
-      class="flex items-center gap-1 max-w-4xl mx-auto px-2 py-2 text-zinc-400 text-sm"
+      class="flex items-center gap-1 max-w-4xl mx-auto px-2 py-2 text-zinc-400 text-sm h-[56px]"
     >
       <NuxtLink
         to="/"

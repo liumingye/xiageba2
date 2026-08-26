@@ -36,7 +36,7 @@ const handleLogin = async () => {
     router.push(SAFE_REDIRECT);
   } catch (e: any) {
     if (e.response) {
-      error.value = e.response.data.message || "登录失败";
+      error.value = e.response.data.message || e.response.data.error || "登录失败";
     } else {
       error.value = "网络错误";
     }

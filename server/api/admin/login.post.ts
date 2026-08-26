@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     };
   } catch (error: any) {
     throw createError({
-      statusCode: error?.statusCode || 500,
+      statusCode: error.statusCode || 500,
       message: error.message || "服务器内部错误",
     });
   }

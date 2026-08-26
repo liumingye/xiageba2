@@ -8,15 +8,7 @@ import {
   ChevronRight,
   X,
 } from "@lucide/vue";
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  displayType: "NORMAL" | "BANNER" | "DIALOG";
-  icon: "INFO" | "WARN" | "ERROR" | "SUCCESS";
-  createdAt: string;
-}
+import type { Announcement } from "~/utils/announcement";
 
 const { data } = await useFetch<{ data: Announcement[] }>("/api/announcement", {
   query: { pageSize: 10 },
@@ -166,8 +158,8 @@ watch(normalList, () => {
     class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-[--bg-color-800] rounded-lg"
   >
     <div class="items-center gap-1.5 flex-shrink-0 md:flex hidden">
-      <Megaphone class="w-4 h-4 text-primary-400" />
-      <span class="text-sm text-primary-400 font-medium">公告</span>
+      <Megaphone class="w-4 h-4 text-[--primary]" />
+      <span class="text-sm text-[--primary] font-medium">公告</span>
     </div>
 
     <div class="flex-1 min-w-0 relative h-5 overflow-hidden">

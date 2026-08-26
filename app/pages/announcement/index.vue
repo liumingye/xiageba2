@@ -3,32 +3,17 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Info,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
   Megaphone,
   Archive,
 } from "@lucide/vue";
 import { marked } from "marked";
+import { getIconConfig, type Announcement } from "~/utils/announcement";
 
 marked.setOptions({ gfm: true, breaks: true, async: false });
 
 defineOptions({
   name: "AnnouncementListPage",
 });
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  displayType: "NORMAL" | "BANNER" | "DIALOG";
-  icon: "INFO" | "WARN" | "ERROR" | "SUCCESS";
-  status: "ACTIVE" | "ARCHIVED";
-  sort: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 useHead({
   title: "公告列表 - 下歌吧",
@@ -71,33 +56,7 @@ const announcements = computed(() => announcementData.value?.data || []);
 const total = computed(() => announcementData.value?.total || 0);
 const totalPages = computed(() => announcementData.value?.totalPages || 0);
 
-const iconConfig: Record<
-  Announcement["icon"],
-  { class: string; component: typeof Info }
-> = {
-  INFO: { class: "bg-blue-500/20 text-blue-400", component: Info },
-  WARN: {
-    class: "bg-yellow-500/20 text-yellow-400",
-    component: AlertTriangle,
-  },
-  ERROR: {
-    class: "bg-red-500/20 text-red-400",
-    component: AlertCircle,
-  },
-  SUCCESS: {
-    class: "bg-green-500/20 text-green-400",
-    component: CheckCircle,
-  },
-};
-
-const getIconConfig = (icon: Announcement["icon"]) => {
-  return (
-    iconConfig[icon] || {
-      class: "bg-zinc-500/20 text-zinc-400",
-      component: Megaphone,
-    }
-  );
-};
+// getIconConfig 已统一抽取到 ~/utils/announcement
 
 const renderMarkdown = (text: string): string => {
   if (!text) return "";

@@ -230,7 +230,7 @@ const openFeedbackModal = () => {
                   class="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm"
                   :class="
                     selectedDownload?.quality === download.quality
-                      ? 'bg-primary-500 text-white'
+                      ? 'bg-[--primary] text-white'
                       : 'bg-zinc-700 hover:bg-zinc-600 text-white'
                   "
                   @click="selectDownload(download)"
@@ -243,7 +243,7 @@ const openFeedbackModal = () => {
                 <p>使用手机扫码下载</p>
                 <p
                   v-if="selectedDownload"
-                  class="text-primary-500 text-sm mt-1"
+                  class="text-[--primary] text-sm mt-1"
                 >
                   当前音质：{{ selectedDownload.quality }}
                 </p>

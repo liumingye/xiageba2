@@ -83,7 +83,7 @@ watch(
     if (err) {
       throw createError({
         statusCode: err?.data?.statusCode || err.status || 404,
-        message: err?.data?.message || "小说不存在",
+        message: err?.data?.message || err?.data?.error || "小说不存在",
       });
     }
   },

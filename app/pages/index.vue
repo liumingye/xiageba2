@@ -442,11 +442,11 @@ const getPic = (url: string) => {
         <div class="flex items-center border-b border-zinc-800 mb-4">
           <button
             v-if="hasHotwords"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors border-b-2"
             :class="
               activeHistoryTab === 'hot'
-                ? 'text-primary-500 border-b-2 border-primary-400'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'text-[--primary] border-[--primary]'
+                : 'text-zinc-500 hover:text-zinc-300 border-transparent'
             "
             @click="activeHistoryTab = 'hot'"
           >
@@ -455,11 +455,11 @@ const getPic = (url: string) => {
           </button>
           <button
             v-if="isClientMounted && hasHistory"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors border-b-2"
             :class="
               activeHistoryTab === 'history'
-                ? 'text-primary-500 border-b-2 border-primary-400'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'text-[--primary] border-[--primary]'
+                : 'text-zinc-500 hover:text-zinc-300 border-transparent'
             "
             @click="activeHistoryTab = 'history'"
           >
@@ -541,11 +541,11 @@ const getPic = (url: string) => {
         <div class="flex items-center border-b border-zinc-800 mb-4">
           <button
             v-if="hasCategory"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors border-b-2"
             :class="
               activeContentTab === 'category'
-                ? 'text-primary-500 border-b-2 border-primary-400'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'text-[--primary] border-[--primary]'
+                : 'text-zinc-500 hover:text-zinc-300 border-transparent'
             "
             @click="activeContentTab = 'category'"
           >
@@ -554,11 +554,11 @@ const getPic = (url: string) => {
           </button>
           <button
             v-if="doubanClasses.length > 0"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors"
+            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-colors border-b-2"
             :class="
               activeContentTab === 'douban'
-                ? 'text-primary-500 border-b-2 border-primary-400'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'text-[--primary] border-[--primary]'
+                : 'text-zinc-500 hover:text-zinc-300 border-transparent'
             "
             @click="activeContentTab = 'douban'"
           >
@@ -576,9 +576,9 @@ const getPic = (url: string) => {
             v-if="hotMusic && hotMusic.length > 0"
             class="card p-2 md:p-4 flex flex-col"
           >
-            <div class="flex items-center gap-3 mb-3">
+            <div class="flex items-center gap-2 mb-3">
               <div
-                class="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center flex-shrink-0"
+                class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
               >
                 <MusicIcon class="w-6 h-6 text-primary-400" />
               </div>
@@ -612,17 +612,17 @@ const getPic = (url: string) => {
           >
             <NuxtLink
               :to="`/categorie/${cat.id}`"
-              class="flex items-center gap-3 mb-3 group"
+              class="flex items-center gap-2 mb-3 group"
             >
               <div
-                class="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary-500/30 transition-colors"
+                class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
               >
                 <img v-if="cat.image" :src="cat.image" class="w-6 h-6" />
                 <FolderKanban v-else class="w-6 h-6 text-primary-400" />
               </div>
               <div class="flex-1 min-w-0">
                 <h3
-                  class="font-medium text-white truncate group-hover:text-primary-400 transition-colors"
+                  class="font-medium text-white truncate group-hover:text-[--primary] transition-colors"
                 >
                   {{ cat.name }}
                 </h3>
@@ -688,8 +688,8 @@ const getPic = (url: string) => {
                     class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
                     :class="
                       activeCategoryId === cls.type_id
-                        ? 'bg-zinc-700 text-white shadow-sm'
-                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                        ? 'bg-[--bg-color-800] text-white shadow-sm'
+                        : 'text-zinc-400 hover:bg-[--bg-color-700] hover:text-white'
                     "
                     @click="onCategoryChange(cls.type_id)"
                   >
@@ -726,8 +726,8 @@ const getPic = (url: string) => {
                     class="inline-flex items-center justify-center text-sm font-medium transition-all disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0"
                     :class="
                       activeFilters[filter.key] === opt.value
-                        ? 'bg-zinc-700 text-white shadow-sm'
-                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                        ? 'bg-[--bg-color-800] text-white shadow-sm'
+                        : 'text-zinc-400 hover:bg-[--bg-color-700] hover:text-white'
                     "
                     @click="
                       activeFilters[filter.key] = opt.value;
@@ -768,7 +768,7 @@ const getPic = (url: string) => {
             <article
               v-for="item in doubanList"
               :key="item.vod_id"
-              class="card p-2 cursor-pointer hover:border-primary-500/50 transition-colors"
+              class="card p-2 cursor-pointer hover:border-primary-500 transition-colors"
               @click="goToResourceSearch(item)"
             >
               <div
@@ -852,7 +852,7 @@ const getPic = (url: string) => {
 }
 
 .link {
-  @apply text-sm hover:text-primary-400 truncate transition-colors text-[--color-text-300];
+  @apply text-sm hover:text-[--primary] truncate transition-colors text-[--color-text-300];
 }
 
 .button-radius {

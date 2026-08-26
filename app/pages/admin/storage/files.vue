@@ -23,6 +23,7 @@ import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { useToast } from "~/composables/useToast";
 import { get, post, del, patch } from "~/utils/request";
+import { formatSize, formatDate, isImage, isAudio, isVideo } from "~/utils/file";
 
 defineOptions({ name: "StorageFilesPage" });
 
@@ -61,51 +62,7 @@ const uploadPath = ref<string>("");
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize) || 1);
 
-const formatSize = (bytes: number) => {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
-};
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-};
-
-const isImage = (file: StorageFile) => {
-  if (file.mimeType?.startsWith("image/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return [
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "webp",
-    "svg",
-    "bmp",
-    "ico",
-    "avif",
-  ].includes(ext);
-};
-
-const isAudio = (file: StorageFile) => {
-  if (file.mimeType?.startsWith("audio/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["mp3", "flac", "wav", "aac", "ogg", "m4a", "ape", "alac"].includes(
-    ext,
-  );
-};
-
-const isVideo = (file: StorageFile) => {
-  if (file.mimeType?.startsWith("video/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v"].includes(
-    ext,
-  );
-};
+// formatSize / formatDate / isImage / isAudio / isVideo 已统一抽取到 ~/utils/file
 
 const loadConfigs = async () => {
   const data = await get("/api/admin/storage/config");

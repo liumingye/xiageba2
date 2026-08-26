@@ -15,6 +15,7 @@ import {
   File,
 } from "@lucide/vue";
 import { get, post, del } from "~/utils/request";
+import { formatSize, isImage, isAudio, isVideo } from "~/utils/file";
 
 interface S3ConfigItem {
   id: string;
@@ -60,30 +61,7 @@ const deletingKey = ref<string | null>(null);
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize) || 1);
 
-const formatSize = (bytes: number) => {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
-};
-
-const isImage = (file: FileItem) => {
-  if (file.mimeType?.startsWith("image/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "avif"].includes(ext);
-};
-
-const isAudio = (file: FileItem) => {
-  if (file.mimeType?.startsWith("audio/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["mp3", "flac", "wav", "aac", "ogg", "m4a", "ape", "alac"].includes(ext);
-};
-
-const isVideo = (file: FileItem) => {
-  if (file.mimeType?.startsWith("video/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return ["mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v"].includes(ext);
-};
+// formatSize / isImage / isAudio / isVideo 已统一抽取到 ~/utils/file
 
 watch(
   () => props.show,

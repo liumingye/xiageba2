@@ -229,6 +229,12 @@ export default defineNuxtConfig({
     retryAfterHeader: false,
     routes: [
       {
+        path: "/api/admin/login",
+        max: 5,
+        duration: 60,
+        ban: 60,
+      },
+      {
         path: "/api/music/search",
         max: 30,
         duration: 60,
@@ -247,13 +253,8 @@ export default defineNuxtConfig({
         ban: 60,
       },
       {
-        path: "/api/admin/login",
-        max: 5,
-        duration: 60,
-        ban: 60,
-      },
-      {
-        path: "/music/*",
+        path: "/api/music/**",
+        pattern: true,
         max: 120,
         duration: 300,
         ban: 90,

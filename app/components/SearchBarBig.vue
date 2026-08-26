@@ -174,7 +174,7 @@ defineExpose({
           </template>
         </div>
         <button
-          class="bg-primary-500 hover:bg-primary-600 text-white rounded-full w-8 h-8 transition-all duration-200 flex items-center justify-center"
+          class="bg-primary-600 hover:bg-primary-500 text-white rounded-full w-8 h-8 transition-all duration-200 flex items-center justify-center"
           @click="handleSearch()"
           type="button"
         >
@@ -207,11 +207,17 @@ defineExpose({
   pointer-events: auto;
   position: relative;
   z-index: 10;
+
+  &:hover {
+    background-color: rgba(133, 133, 133, 0.16);
+  }
 }
+
 .icon-btn.primary {
-  background-color: rgb(246, 248, 255);
-  color: #3b82f6;
+  background-color: var(--primary);
+  color: #ffffff;
 }
+
 .placeholder-skeleton {
   background-color: rgba(255, 255, 255, 0.1);
 }

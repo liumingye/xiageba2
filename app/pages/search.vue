@@ -318,7 +318,7 @@ const errorInfo = computed<ErrorInfo | null>(() => {
   const code = err?.statusCode || err?.status || err?.response?.status || 0;
 
   if (code === 429) {
-    const retryAfter = (err?.data?.retryAfter as number | undefined) || 15;
+    const retryAfter = (err?.data?.retryAfter as number | undefined) || 180;
     return {
       type: "rate-limit",
       title: "搜索请求过于频繁",
@@ -487,14 +487,15 @@ watch(
     if (import.meta.client) {
       stopPanCheck();
       if (!isMusic.value && results.value.length > 0) {
-        const ids = (results.value as SourceItem[]).map((item) => item.id);
+        const ids = (results.value as SourceItem[])
+          .filter((item) => item.type !== "magnet")
+          .map((item) => item.id);
         submitPanCheck(ids);
       }
     }
   },
   { immediate: true },
 );
-
 </script>
 
 <style scoped>

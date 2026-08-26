@@ -9,6 +9,8 @@ html {
   --bg-color-800: #fff;
   --bg-color-900: #f1f1f1;
   --color-text-300: rgb(10 10 10 / var(--tw-bg-opacity, 1));
+  --border: #e2e8f0;
+  --primary: #16a34a;
 }
 
 html[data-theme="dark"] {
@@ -16,6 +18,8 @@ html[data-theme="dark"] {
   --bg-color-800: rgb(39 39 42 / var(--tw-bg-opacity, 1));
   --bg-color-900: rgb(10 10 10 / var(--tw-bg-opacity, 1));
   --color-text-300: rgb(212 212 216 / var(--tw-text-opacity, 1));
+  --border: #27272a;
+  --primary: #16a34a;
 }
 
 * {
@@ -208,7 +212,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   }
 
   .card {
-    @apply bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden;
+    @apply bg-zinc-900 border border-[--border] rounded-xl overflow-hidden;
   }
 }
 

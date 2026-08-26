@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { X, Loader2, Folder, Check, FolderOpen } from "@lucide/vue";
 import { get } from "~/utils/request";
+import { getPanTypeLabel } from "~/utils/pan";
 
 interface DirItem {
   id: string;
@@ -26,13 +27,6 @@ const dirs = ref<DirItem[]>([]);
 const loading = ref(false);
 const selectedId = ref<string | null>(null);
 const errorMsg = ref("");
-
-const TYPE_LABELS: Record<string, string> = {
-  quark: "夸克网盘",
-  baidu: "百度网盘",
-  uc: "UC 网盘",
-  xunlei: "迅雷云盘",
-};
 
 const loadDirs = async () => {
   loading.value = true;
@@ -110,7 +104,7 @@ const handleClose = () => {
 
           <h3 class="text-lg font-medium text-white mb-1">选择临时资源目录</h3>
           <p class="text-sm text-zinc-500 mb-4">
-            {{ TYPE_LABELS[type] }} · 根目录下的文件夹
+            {{ getPanTypeLabel(type) }} · 根目录下的文件夹
           </p>
 
           <!-- 加载中 -->

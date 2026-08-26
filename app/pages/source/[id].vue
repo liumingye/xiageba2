@@ -71,7 +71,7 @@ watch(
     if (err) {
       throw createError({
         statusCode: err?.data?.statusCode || err.status || 404,
-        message: err?.data?.message || "资源不存在",
+        message: err?.data?.message || err?.data?.error || "资源不存在",
       });
     }
   },

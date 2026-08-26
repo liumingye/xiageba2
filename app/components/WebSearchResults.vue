@@ -117,6 +117,7 @@ const startWebSearch = () => {
 
       if (msg.type === "result" && msg.data) {
         results.value.push(msg.data);
+        if (msg.data.type === "magnet") return;
         // 数据进入缓冲区
         queuePanCheck(msg.data.url);
       } else if (msg.type === "done") {
