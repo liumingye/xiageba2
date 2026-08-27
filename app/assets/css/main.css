@@ -168,6 +168,7 @@ html[data-theme="light"] .placeholder-skeleton {
   background-color: rgb(148 163 184 / 0.25);
 }
 
+html[data-theme="light"] ::-webkit-scrollbar-corner,
 html[data-theme="light"] ::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
@@ -185,6 +186,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   height: 8px;
 }
 
+::-webkit-scrollbar-corner,
 ::-webkit-scrollbar-track {
   background: #1a1a1a;
 }

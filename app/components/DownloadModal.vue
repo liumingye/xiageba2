@@ -230,7 +230,7 @@ const openFeedbackModal = () => {
                   class="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm"
                   :class="
                     selectedDownload?.quality === download.quality
-                      ? 'bg-[--primary] text-white'
+                      ? 'bg-[--primary] text-[--white]'
                       : 'bg-zinc-700 hover:bg-zinc-600 text-white'
                   "
                   @click="selectDownload(download)"

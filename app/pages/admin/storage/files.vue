@@ -11,7 +11,6 @@ import {
   Loader2,
   Copy,
   HardDrive,
-  ImageIcon,
   FileAudio,
   FileVideo,
   File,
@@ -22,6 +21,7 @@ import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { useToast } from "~/composables/useToast";
+import { useClipboard } from "@vueuse/core";
 import { get, post, del, patch } from "~/utils/request";
 import { formatSize, formatDate, isImage, isAudio, isVideo } from "~/utils/file";
 
@@ -172,9 +172,11 @@ const handleDelete = async (file: StorageFile) => {
   }
 };
 
+const { copy: copyText } = useClipboard();
+
 const copyUrl = async (file: StorageFile) => {
   try {
-    await navigator.clipboard.writeText(file.url);
+    await copyText(file.url);
     toast.success("链接已复制");
   } catch {
     toast.error("复制失败");

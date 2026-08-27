@@ -103,12 +103,12 @@ const emit = defineEmits<{
         <div class="text-sm mb-2 text-zinc-300 font-bold">文件内容:</div>
         <pre
           v-if="highlightMenu"
-          class="bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-36 overflow-auto text-zinc-300"
+          class="bg-zinc-800 p-2 rounded-sm text-xs border border-zinc-600 max-h-36 overflow-auto text-zinc-300"
           v-html="highlightMenu"
         ></pre>
         <pre
           v-else
-          class="bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-36 overflow-auto text-zinc-300"
+          class="bg-zinc-800 p-2 rounded-sm text-xs border border-zinc-600 max-h-36 overflow-auto text-zinc-300"
           >{{ item.menu }}</pre
         >
       </template>

@@ -112,3 +112,29 @@ export const truncateString = (str: string, maxLine = 150, ellipsis = "") => {
 
   return str;
 };
+
+/**
+ * 移除字符串中的严格URL
+ * @param str 输入字符串
+ * @returns 移除URL后的字符串
+ */
+export function removeUrlsStrict(str: string) {
+  if (!str) return "";
+  const strictUrlRegex =
+    /(https?:\/\/|www\.|pan\.|drive\.)[a-zA-Z0-9#/\?&=.:_-]+/gi;
+  return str.replace(strictUrlRegex, "");
+}
+
+/**
+ * 限制字符串长度，超过显示省略号
+ * @param str 输入字符串
+ * @param maxLength 最大长度
+ * @returns 限制后的字符串
+ */
+export function limitUnicodeString(str: string, maxLength = 200) {
+  if (!str) return "";
+  const charArray = Array.from(str); // 将字符串按真实 Unicode 字符转为数组
+  return charArray.length > maxLength
+    ? charArray.slice(0, maxLength).join("") + "..."
+    : str;
+}

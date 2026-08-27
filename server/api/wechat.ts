@@ -336,7 +336,7 @@ function formatSearchResultText(
     if (sub) lines.push(`   ${sub}`);
   });
   lines.push("");
-  lines.push('💡 回复"获取 1"获取资源链接');
+  lines.push('💡 回复"数字序号"获取资源链接');
   if (totalPages > 1) {
     lines.push('📄 回复"下一页"查看更多');
   }

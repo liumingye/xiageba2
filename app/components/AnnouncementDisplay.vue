@@ -8,6 +8,7 @@ import {
   ChevronRight,
   X,
 } from "@lucide/vue";
+import { useIntervalFn, useLocalStorage } from "@vueuse/core";
 import type { Announcement } from "~/utils/announcement";
 
 const { data } = await useFetch<{ data: Announcement[] }>("/api/announcement", {
@@ -60,7 +61,9 @@ const dialogIconBgMap: Record<string, string> = {
 
 const currentDialog = ref<Announcement | null>(null);
 const showDialog = ref(false);
-let dismissedIds: string[] = [];
+
+// 已永久关闭的公告 ID，自动持久化到 localStorage（组件卸载时无需手动清理）
+const dismissedIds = useLocalStorage<string[]>("dismissed-announcements", []);
 
 const closeDialog = () => {
   showDialog.value = false;
@@ -70,35 +73,29 @@ const closeDialog = () => {
 const dismissDialogForever = () => {
   if (currentDialog.value) {
     const id = currentDialog.value.id;
-    if (!dismissedIds.includes(id)) {
-      dismissedIds = [...dismissedIds, id];
-      try {
-        localStorage.setItem(
-          "dismissed-announcements",
-          JSON.stringify(dismissedIds),
-        );
-      } catch {}
+    if (!dismissedIds.value.includes(id)) {
+      dismissedIds.value = [...dismissedIds.value, id];
     }
   }
   closeDialog();
 };
 
 const scrollIndex = ref(0);
-let scrollTimer: ReturnType<typeof setInterval> | null = null;
+
+// useIntervalFn 每 3s 轮换一条公告，组件卸载时自动清理计时器
+const { resume: resumeScroll, pause: pauseScroll } = useIntervalFn(() => {
+  scrollIndex.value = (scrollIndex.value + 1) % normalList.value.length;
+}, 3000);
 
 const startScroll = () => {
-  stopScroll();
+  pauseScroll();
   if (normalList.value.length <= 1) return;
-  scrollTimer = setInterval(() => {
-    scrollIndex.value = (scrollIndex.value + 1) % normalList.value.length;
-  }, 3000);
+  scrollIndex.value = 0;
+  resumeScroll();
 };
 
 const stopScroll = () => {
-  if (scrollTimer) {
-    clearInterval(scrollTimer);
-    scrollTimer = null;
-  }
+  pauseScroll();
 };
 
 const goToScrollItem = (index: number) => {
@@ -109,22 +106,13 @@ const goToScrollItem = (index: number) => {
 onMounted(() => {
   startScroll();
 
-  try {
-    const stored = localStorage.getItem("dismissed-announcements");
-    if (stored) {
-      dismissedIds = JSON.parse(stored) || [];
-    }
-  } catch {}
-
-  const visible = dialogList.value.find((a) => !dismissedIds.includes(a.id));
+  const visible = dialogList.value.find(
+    (a) => !dismissedIds.value.includes(a.id),
+  );
   if (visible) {
     currentDialog.value = visible;
     showDialog.value = true;
   }
-});
-
-onUnmounted(() => {
-  stopScroll();
 });
 
 watch(normalList, () => {

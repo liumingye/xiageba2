@@ -119,7 +119,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
           // 将剩余未标为 valid 的项标为 invalid
           items.forEach((id) => {
             if (itemStatusMap.get(id) === "checking") {
-              itemStatusMap.set(id, "invalid");
+              itemStatusMap.set(id, !data.success ? "failed" : "invalid");
             }
           });
           cleanBatch(batchId);

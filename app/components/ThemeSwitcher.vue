@@ -56,12 +56,12 @@ const handleFocusOut = (event: FocusEvent) => {
     @keydown.esc.prevent="close"
   >
     <summary
-      class="list-none flex h-9 w-9 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-300 shadow-sm cursor-pointer hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
+      class="list-none flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 shadow-sm cursor-pointer hover:bg-zinc-800"
       :aria-label="`当前主题：${selectedOption.label}`"
       title="切换主题"
     >
       <ClientOnly>
-        <component :is="selectedOption.icon" class="h-4 w-4" />
+        <component :is="selectedOption.icon" class="h-5 w-5" />
       </ClientOnly>
     </summary>
 

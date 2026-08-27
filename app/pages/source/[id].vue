@@ -89,7 +89,7 @@ const renderedDescription = computed(() =>
 
 const pageTitle = computed(() => {
   if (source.value.title) {
-    return `${source.value.title} - ${getStorageTypeFriendFromFilter(source.value.type)}网盘资源分享 - 全盘搜`;
+    return `${source.value.title} - ${getStorageTypeFriendFromFilter(source.value.type)}资源分享 - 全盘搜`;
   }
   return "资源详情 - 全盘搜";
 });
@@ -105,7 +105,7 @@ const pageKeywords = computed(() => {
   if (source.value) {
     return `${source.value.title}, 网盘资源, 夸克网盘, 百度网盘, 迅雷网盘, UC网盘`;
   }
-  return "全盘搜, 网盘资源, 夸克网盘, 百度网盘";
+  return "全盘搜, 网盘资源, 夸克网盘, 百度网盘, 迅雷网盘, UC网盘";
 });
 
 const canonicalUrl = `/source/${sourceId}`;
@@ -242,7 +242,7 @@ onMounted(() => {
             <section v-if="source.menu">
               <div class="font-bold text-zinc-300 mb-3 text-lg">文件内容:</div>
               <pre
-                class="text-zinc-300 bg-zinc-700 p-2 rounded-sm text-xs border border-zinc-600 max-h-56 overflow-auto"
+                class="text-zinc-300 bg-zinc-800 p-2 rounded-sm text-xs border border-zinc-600 max-h-56 overflow-auto"
                 >{{ source.menu }}</pre
               >
             </section>

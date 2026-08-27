@@ -16,7 +16,7 @@ const props = withDefaults(defineProps<Props>(), {
   searchQuery: "",
   placeholder: "",
   showThemeSwitcher: false,
-  showMenu: false,
+  showMenu: true,
 });
 
 const emit = defineEmits<{
@@ -44,6 +44,30 @@ const goBack = () => {
 const handleSearch = (keyword: string) => {
   emit("search", keyword);
 };
+
+const menu = computed(() => [
+  {
+    to: "/",
+    name: "资源添加",
+    show: props.showMenu,
+  },
+  {
+    to: "/",
+    name: "test",
+    show: props.showMenu,
+  },
+  {
+    to: "/",
+    name: "侵权屏蔽",
+    show: props.showMenu,
+  },
+  {
+    to: "/book",
+    name: "搜小说",
+    show: props.showMenu,
+    icon: BookOpen,
+  },
+]);
 </script>
 
 <template>
@@ -60,7 +84,7 @@ const handleSearch = (keyword: string) => {
         <Home class="w-5 h-5" />
       </NuxtLink>
       <button
-        class="p-2 hover:bg-zinc-800 rounded-lg transition-colors mr-auto"
+        class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
         @click="goBack"
         aria-label="返回"
         title="返回"
@@ -68,19 +92,23 @@ const handleSearch = (keyword: string) => {
         <ArrowLeft class="w-5 h-5" />
       </button>
 
-      <NuxtLink
-        to="/book"
-        v-if="showMenu"
-        class="flex items-center gap-1 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-        aria-label="搜小说"
-        title="搜小说"
-      >
-        <BookOpen class="w-5 h-5" />
-        搜小说
-      </NuxtLink>
+      <template v-for="item in menu" :key="item.to">
+        <NuxtLink
+          :to="item.to"
+          v-if="item.show"
+          class="flex items-center gap-1 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+          :aria-label="item.name"
+          :title="item.name"
+        >
+          <component :is="item.icon" class="w-5 h-5" />
+          {{ item.name }}
+        </NuxtLink>
+      </template>
+
+      <div class="flex-1"></div>
 
       <SearchBar
-        class="max-w-md"
+        class="ml-auto max-w-md"
         v-if="showSearch"
         v-model="localQuery"
         :placeholder="placeholder"

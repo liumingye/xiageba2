@@ -1,4 +1,5 @@
-import { ref, computed, watch, onUnmounted, type Ref } from "vue";
+import { ref, computed, watch, type Ref } from "vue";
+import { useIntervalFn } from "@vueuse/core";
 
 const funnyTexts = [
   "正在殴打服务器酱...",
@@ -67,20 +68,19 @@ const funnyTexts = [
 
 export function useFunnyLoading() {
   const funnyTextIndex = ref(Math.floor(Math.random() * funnyTexts.length));
-  let timer: ReturnType<typeof setInterval> | null = null;
+
+  // useIntervalFn 每 5s 轮换一句文案，组件卸载时自动清理计时器
+  const { resume, pause } = useIntervalFn(() => {
+    funnyTextIndex.value = (funnyTextIndex.value + 1) % funnyTexts.length;
+  }, 5000, { immediate: false });
 
   const start = () => {
     funnyTextIndex.value = Math.floor(Math.random() * funnyTexts.length);
-    timer = setInterval(() => {
-      funnyTextIndex.value = (funnyTextIndex.value + 1) % funnyTexts.length;
-    }, 5000);
+    resume();
   };
 
   const stop = () => {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
+    pause();
   };
 
   const currentText = computed(() => funnyTexts[funnyTextIndex.value]);
@@ -91,7 +91,6 @@ export function useFunnyLoading() {
       if (isFetching) start();
       else stop();
     });
-    onUnmounted(stop);
   };
 
   return { currentText, start, stop, bindFetching };

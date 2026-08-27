@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount } from "vue";
+import { watchDebounced } from "@vueuse/core";
 
 interface SuggestionItem {
   word: string;
@@ -69,22 +70,21 @@ const fetchSuggestions = async (keyword: string) => {
   document.body.appendChild(scriptElement);
 };
 
-let debounceTimer: ReturnType<typeof setTimeout>;
-watch(
+// 查询词变化防抖 200ms 后请求联想词，watchDebounced 自动管理计时与清理
+const { stop: stopDebouncedFetch } = watchDebounced(
   () => props.query,
   (newVal) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      fetchSuggestions(newVal);
-    }, 200);
+    fetchSuggestions(newVal);
   },
+  { debounce: 200 },
 );
 
+// 联想面板不可见时取消尚未触发的防抖请求
 watch(
   () => isVisible,
   (val) => {
     if (!val) {
-      clearTimeout(debounceTimer);
+      stopDebouncedFetch();
     }
   },
 );
@@ -94,7 +94,6 @@ const handleSelect = (word: string) => {
 };
 
 onBeforeUnmount(() => {
-  clearTimeout(debounceTimer);
   removeScript();
 });
 </script>

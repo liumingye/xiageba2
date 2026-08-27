@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useIntervalFn } from "@vueuse/core";
 import { useAuth } from "~/composables/useAuth";
 import {
   RefreshCw,
@@ -437,10 +438,13 @@ const saveWebSearchFilterConfig = async () => {
   }
 };
 
-let timer: NodeJS.Timeout | null = null;
+// 当前正在轮询的重建类型，null 表示未在轮询
+const pollingType = ref<"music" | "source" | null>(null);
 
-// 新增：轮询进度的函数
-const checkStatus = async (type: "music" | "source") => {
+// 轮询进度的函数（组件卸载时由 useIntervalFn 自动清理，避免内存/请求泄漏）
+const checkStatus = async () => {
+  const type = pollingType.value;
+  if (!type) return;
   try {
     const data = await get(`/api/admin/${type}/rebuild-status`);
 
@@ -449,12 +453,15 @@ const checkStatus = async (type: "music" | "source") => {
     } else if (data.status === "done") {
       rebuildMsg.value = "🎉 全文索引重建圆满完成！";
       isRebuilding.value = false;
-      if (timer) clearInterval(timer);
+      pollingType.value = null;
+      poll.pause();
     }
   } catch {
     // 静默降级，网络波动不中断轮询
   }
 };
+
+const poll = useIntervalFn(checkStatus, 2000, { immediate: false });
 
 const rebuildSearch = async (all: boolean, type: "music" | "source") => {
   if (isRebuilding.value) return;
@@ -475,7 +482,8 @@ const rebuildSearch = async (all: boolean, type: "music" | "source") => {
 
     if (data.success) {
       // 启动每 2 秒一次的轻量级 Redis 状态轮询
-      timer = setInterval(() => checkStatus(type), 2000);
+      pollingType.value = type;
+      poll.resume();
     } else {
       rebuildMsg.value = data.message || "启动失败";
       isRebuilding.value = false;

@@ -2,7 +2,12 @@ import { prisma } from "#server/lib/prisma";
 import * as cheerio from "cheerio";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { encryptUrl } from "#server/lib/crypto";
-import { getRandomIp, getRandomUA } from "#server/utils/source";
+import {
+  getRandomIp,
+  getRandomUA,
+  removeUrlsStrict,
+  limitUnicodeString,
+} from "#server/utils/source";
 import { getStorageType } from "#shared/utils";
 import axios, { AxiosRequestConfig } from "axios";
 
@@ -408,6 +413,7 @@ export async function webSearchConcurrent(
         // 高并发优化：加密 URL 操作在入缓存前合并批量完成，减少高频运算
         await Promise.all(
           items.map(async (item) => {
+            item.title = limitUnicodeString(removeUrlsStrict(item.title));
             item.url = await encryptUrl(item.url);
           }),
         );

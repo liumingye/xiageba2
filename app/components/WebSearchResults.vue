@@ -8,6 +8,7 @@ import {
   CircleSlash,
   XCircle,
 } from "@lucide/vue";
+import { useDebounceFn } from "@vueuse/core";
 import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 
 export interface WebSearchResult {
@@ -49,34 +50,15 @@ const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
 });
 
 let eventSource: EventSource | null = null;
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 待提交校验的 URL 缓冲区
 const pendingBuffer = new Set<string>();
 const submittedUrls = new Set<string>();
 
 /**
- * 管道化处理：将接收到的新数据放入缓存区并触发防抖
- */
-const queuePanCheck = (url?: string) => {
-  if (url && !submittedUrls.has(url)) {
-    pendingBuffer.add(url);
-    submittedUrls.add(url);
-  }
-
-  if (debounceTimer) clearTimeout(debounceTimer);
-
-  debounceTimer = setTimeout(flushPanCheck, 2000); // 防抖时间可自由调整
-};
-
-/**
  * 冲刷缓冲区，发起校验
  */
 const flushPanCheck = () => {
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
-  }
   if (pendingBuffer.size === 0) return;
 
   const urlsToSubmit = Array.from(pendingBuffer);
@@ -84,6 +66,21 @@ const flushPanCheck = () => {
 
   // 增量追加提交
   submitPanCheck(urlsToSubmit);
+};
+
+/**
+ * 管道化处理：将接收到的新数据放入缓存区并触发防抖。
+ * 使用 useDebounceFn，每次调用自动重置计时，组件卸载时自动清理。
+ */
+const debouncedFlush = useDebounceFn(flushPanCheck, 2000);
+
+const queuePanCheck = (url?: string) => {
+  if (url && !submittedUrls.has(url)) {
+    pendingBuffer.add(url);
+    submittedUrls.add(url);
+  }
+
+  debouncedFlush();
 };
 
 const startWebSearch = () => {
@@ -151,11 +148,6 @@ const closeEventSource = () => {
 const stopWebSearch = () => {
   closeEventSource();
   stopPanCheck();
-
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
-  }
   pendingBuffer.clear();
   searching.value = false;
 };
