@@ -141,7 +141,14 @@ const menu = computed(() => [
     </div>
 
     <!-- 移动端展开的子菜单 -->
-    <transition name="dropdown">
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 scale-95 -translate-y-2"
+      enter-to-class="opacity-100 scale-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 scale-100 translate-y-0"
+      leave-to-class="opacity-0 scale-95 -translate-y-2"
+    >
       <div
         v-if="menuOpen"
         class="absolute left-0 right-0 md:hidden border-y border-color-300 bg-color-100 rounded-b-xl"
@@ -164,18 +171,3 @@ const menu = computed(() => [
     </transition>
   </nav>
 </template>
-
-<style scoped>
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition:
-    opacity 0.15s ease-out,
-    transform 0.15s ease-out;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: scale(0.95) translateY(-4px);
-}
-</style>

@@ -285,14 +285,14 @@ const typeColor: Record<string, string> = {
       <div
         class="flex sm:items-center sm:justify-between flex-col sm:flex-row mb-6 gap-3"
       >
-        <h2 class="text-lg font-medium text-white">用户反馈</h2>
+        <h2 class="text-lg font-medium">用户反馈</h2>
         <div class="flex items-center gap-2">
           <button
             class="px-3 py-1.5 rounded-lg text-sm transition-colors"
             :class="
               statusFilter === ''
                 ? 'bg-primary-500 text-white'
-                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                : 'bg-color-400 hover:bg-color-500 text-color-300'
             "
             @click="handleStatusFilter('')"
           >
@@ -303,7 +303,7 @@ const typeColor: Record<string, string> = {
             :class="
               statusFilter === 'PENDING'
                 ? 'bg-yellow-600 text-white'
-                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                : 'bg-color-400 hover:bg-color-500 text-color-300'
             "
             @click="handleStatusFilter('PENDING')"
           >
@@ -314,7 +314,7 @@ const typeColor: Record<string, string> = {
             :class="
               statusFilter === 'DONE'
                 ? 'bg-green-600 text-white'
-                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                : 'bg-color-400 hover:bg-color-500 text-color-300'
             "
             @click="handleStatusFilter('DONE')"
           >
@@ -333,40 +333,40 @@ const typeColor: Record<string, string> = {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-900">
+          <thead class="bg-color-100">
             <tr>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium min-w-[220px]"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[220px]"
               >
                 歌曲
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium min-w-[180px]"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[180px]"
               >
                 类型
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium min-w-[200px]"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[200px]"
               >
                 描述
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium min-w-[80px]"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[90px]"
               >
                 状态
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium min-w-[120px]"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium min-w-[120px]"
               >
                 网盘检测
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium min-w-[150px]"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[100px]"
               >
                 时间
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium min-w-[190px]"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium min-w-[190px]"
               >
                 操作
               </th>
@@ -378,32 +378,32 @@ const typeColor: Record<string, string> = {
                 <Loader2
                   class="w-6 h-6 text-primary-500 animate-spin mx-auto"
                 />
-                <p class="text-zinc-500 text-sm mt-2">加载中...</p>
+                <p class="text-color-500 text-sm mt-2">加载中...</p>
               </td>
             </tr>
             <tr v-else-if="feedbacks.length === 0">
               <td colspan="7" class="px-4 py-12 text-center">
-                <p class="text-zinc-500">暂无反馈</p>
+                <p class="text-color-500">暂无反馈</p>
               </td>
             </tr>
             <tr
               v-else
               v-for="fb in feedbacks"
               :key="fb.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800"
+              class="border-t border-color-300 hover:bg-color-300"
             >
               <td class="px-4 py-4">
                 <div class="flex items-center gap-2">
-                  <span class="text-white truncate max-w-[200px]">{{
+                  <span class="truncate max-w-[200px]">{{
                     fb.musicTitle
                   }}</span>
-                  <span class="text-zinc-500 text-sm truncate max-w-[120px]"
+                  <span class="text-color-500 text-sm truncate max-w-[120px]"
                     >{{ fb.musicArtist }}
                   </span>
                   <a
                     :href="`/music/${fb.musicId}`"
                     target="_blank"
-                    class="text-zinc-500 hover:text-primary-400 flex-shrink-0"
+                    class="text-color-500 hover:text-primary-400 flex-shrink-0"
                     title="查看歌曲"
                   >
                     <ExternalLink class="w-3.5 h-3.5" />
@@ -413,7 +413,7 @@ const typeColor: Record<string, string> = {
               <td class="px-4 py-4">
                 <span
                   class="inline-flex px-2 py-1 text-xs rounded-md"
-                  :class="typeColor[fb.type] || 'text-zinc-400 bg-zinc-700'"
+                  :class="typeColor[fb.type] || 'text-color-400 bg-color-400'"
                 >
                   {{ typeLabel[fb.type] || fb.type }}
                 </span>
@@ -421,7 +421,7 @@ const typeColor: Record<string, string> = {
               <td class="px-4 py-4">
                 <span
                   v-if="fb.description"
-                  class="text-zinc-400 text-sm max-w-[200px] block truncate"
+                  class="text-color-400 text-sm max-w-[200px] block truncate"
                   :title="fb.description"
                   >{{ fb.description }}</span
                 >
@@ -449,7 +449,7 @@ const typeColor: Record<string, string> = {
                     v-if="
                       !checkResults[fb.musicId] && checkingId !== fb.musicId
                     "
-                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
+                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors"
                     @click="checkLinks(fb.musicId)"
                   >
                     <Search class="w-3.5 h-3.5" />
@@ -457,7 +457,7 @@ const typeColor: Record<string, string> = {
                   </button>
                   <button
                     v-else-if="checkingId === fb.musicId"
-                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-700 text-zinc-400 rounded-lg cursor-not-allowed"
+                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-color-400 text-color-400 rounded-lg cursor-not-allowed"
                     disabled
                   >
                     <Loader2 class="w-3.5 h-3.5 animate-spin" />
@@ -497,7 +497,7 @@ const typeColor: Record<string, string> = {
                       {{ checkResults[fb.musicId].pending_links.length }}
                     </span>
                     <button
-                      class="p-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      class="p-1 text-color-500 hover:text-color-300 transition-colors"
                       title="重新检测"
                       @click="checkLinks(fb.musicId)"
                     >
@@ -506,7 +506,7 @@ const typeColor: Record<string, string> = {
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-4 text-zinc-500 text-sm">
+              <td class="px-4 py-4 text-color-500 text-sm">
                 {{
                   new Date(fb.createdAt).toLocaleString("zh-CN", {
                     year: "numeric",
@@ -522,7 +522,7 @@ const typeColor: Record<string, string> = {
                   <a
                     :href="`/admin/music/edit/${fb.musicId}`"
                     target="_blank"
-                    class="p-2 text-zinc-400 hover:text-primary-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
                     title="编辑音乐"
                   >
                     <Edit3 class="w-4 h-4" />
@@ -544,7 +544,7 @@ const typeColor: Record<string, string> = {
                     }}
                   </span>
                   <button
-                    class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
                     title="删除"
                     @click="deleteFeedback(fb.id)"
                   >

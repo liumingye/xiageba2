@@ -17,7 +17,7 @@ interface ThemeOption {
 }
 
 const options: Array<ThemeOption> = [
-  { value: "system", label: "跟随系统", icon: Monitor },
+  { value: "auto", label: "跟随系统", icon: Monitor },
   { value: "light", label: "亮色", icon: Sun },
   { value: "dark", label: "暗色", icon: Moon },
 ];

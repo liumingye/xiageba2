@@ -128,7 +128,7 @@ const deleteAdmin = async (id: string) => {
 
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium text-white">管理员列表</h2>
+        <h2 class="text-lg font-medium">管理员列表</h2>
         <div class="flex items-center gap-2">
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
@@ -142,18 +142,18 @@ const deleteAdmin = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-900">
+          <thead class="bg-color-100">
             <tr>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 用户名
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-48"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-48"
               >
                 创建时间
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium w-24"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-24"
               >
                 操作
               </th>
@@ -163,32 +163,32 @@ const deleteAdmin = async (id: string) => {
             <tr
               v-for="admin in admins"
               :key="admin.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800"
+              class="border-t border-color-300 hover:bg-color-300"
             >
               <td class="px-4 py-4">
                 <div class="flex items-center gap-3">
                   <div
-                    class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center"
+                    class="w-10 h-10 bg-color-300 rounded-full flex items-center justify-center"
                   >
-                    <User class="w-5 h-5 text-zinc-500" />
+                    <User class="w-5 h-5 text-color-500" />
                   </div>
-                  <span class="text-white">{{ admin.username }}</span>
+                  <span>{{ admin.username }}</span>
                 </div>
               </td>
-              <td class="px-4 py-4 text-zinc-400">
+              <td class="px-4 py-4 text-color-400">
                 {{ new Date(admin.createdAt).toLocaleString("zh-CN") }}
               </td>
               <td class="px-4 py-4">
                 <div class="flex items-center justify-center gap-2">
                   <button
-                    class="p-2 text-zinc-400 hover:text-primary-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
                     title="编辑"
                     @click="openEditModal(admin)"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
                     title="删除"
                     @click="deleteAdmin(admin.id)"
                   >
@@ -201,7 +201,7 @@ const deleteAdmin = async (id: string) => {
         </table>
 
         <div v-if="admins.length === 0" class="py-12 text-center">
-          <p class="text-zinc-500">暂无管理员</p>
+          <p class="text-color-500">暂无管理员</p>
         </div>
       </div>
     </main>
@@ -218,9 +218,9 @@ const deleteAdmin = async (id: string) => {
           ></div>
 
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium text-white mb-6">添加管理员</h3>
+            <h3 class="text-xl font-medium mb-6">添加管理员</h3>
 
             <div
               v-if="error"
@@ -231,7 +231,7 @@ const deleteAdmin = async (id: string) => {
 
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">用户名 *</label>
+                <label class="block text-color-400 text-sm mb-2">用户名 *</label>
                 <input
                   v-model="newUsername"
                   type="text"
@@ -241,7 +241,7 @@ const deleteAdmin = async (id: string) => {
               </div>
 
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">密码 *</label>
+                <label class="block text-color-400 text-sm mb-2">密码 *</label>
                 <input
                   v-model="newPassword"
                   type="password"
@@ -252,7 +252,7 @@ const deleteAdmin = async (id: string) => {
 
               <div class="flex gap-4">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeAddModal"
                 >
                   取消
@@ -280,9 +280,9 @@ const deleteAdmin = async (id: string) => {
           ></div>
 
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium text-white mb-6">编辑管理员</h3>
+            <h3 class="text-xl font-medium mb-6">编辑管理员</h3>
 
             <div
               v-if="error"
@@ -293,7 +293,7 @@ const deleteAdmin = async (id: string) => {
 
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">用户名</label>
+                <label class="block text-color-400 text-sm mb-2">用户名</label>
                 <input
                   v-model="editUsername"
                   type="text"
@@ -303,7 +303,7 @@ const deleteAdmin = async (id: string) => {
               </div>
 
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >密码（留空则不修改）</label
                 >
                 <input
@@ -316,7 +316,7 @@ const deleteAdmin = async (id: string) => {
 
               <div class="flex gap-4">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeEditModal"
                 >
                   取消

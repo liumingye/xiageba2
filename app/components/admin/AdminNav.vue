@@ -706,7 +706,7 @@ watch(isDesktop, async () => {
 
           <button
             type="button"
-            class="shrink-0 p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
+            class="shrink-0 p-2 text-color-400 hover:text-color-300 hover:bg-color-300 rounded-lg transition-colors"
             @click="mobileMenuOpen = !mobileMenuOpen"
             aria-label="Toggle Menu"
             :aria-expanded="mobileMenuOpen"
@@ -746,7 +746,7 @@ watch(isDesktop, async () => {
                 class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
                 :class="
                   activeDropdown === item.label || isGroupActive(item)
-                    ? 'text-primary-400 bg-primary-500/10'
+                    ? 'text-white bg-primary-500'
                     : 'text-color-400 hover:text-color-300 hover:bg-color-300'
                 "
                 @click="toggleDropdown(item.label)"
@@ -779,7 +779,7 @@ watch(isDesktop, async () => {
               >
                 <div
                   v-if="activeDropdown === item.label"
-                  class="absolute left-0 top-full mt-1.5 w-44 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl py-1.5 z-50 overflow-hidden"
+                  class="absolute left-0 top-full mt-1.5 w-44 bg-color-100 border border-color-300 rounded-xl shadow-2xl py-1.5 z-50 overflow-hidden"
                 >
                   <button
                     v-for="child in item.children"
@@ -788,8 +788,8 @@ watch(isDesktop, async () => {
                     class="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-left transition-colors"
                     :class="
                       isPathActive(child.path)
-                        ? 'bg-primary-500/10 text-primary-500 font-medium'
-                        : 'text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100'
+                        ? 'bg-primary-500 text-white'
+                        : 'hover:bg-color-300'
                     "
                     @click="handleNavigate(child.path)"
                   >
@@ -813,7 +813,7 @@ watch(isDesktop, async () => {
               class="shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
               :class="
                 isPathActive(item.path)
-                  ? 'text-primary-400 bg-primary-500/10'
+                  ? 'text-white bg-primary-500'
                   : 'text-color-400 hover:text-color-300 hover:bg-color-300'
               "
               @click="handleNavigate(item.path)"
@@ -836,8 +836,8 @@ watch(isDesktop, async () => {
               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
               :class="
                 activeInOverflow
-                  ? 'text-primary-400 bg-primary-500/10'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                  ? 'text-white bg-primary-500'
+                  : 'text-color-400 hover:text-color-300 hover:bg-color-300'
               "
               @click="toggleMoreMenu()"
               :aria-expanded="activeDropdown === '__more__'"
@@ -1017,15 +1017,15 @@ watch(isDesktop, async () => {
 
     <Transition
       enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0 -translate-y-2"
-      enter-to-class="opacity-100 translate-y-0"
+      enter-from-class="opacity-0 scale-95 -translate-y-2"
+      enter-to-class="opacity-100 scale-100 translate-y-0"
       leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100 translate-y-0"
-      leave-to-class="opacity-0 -translate-y-2"
+      leave-from-class="opacity-100 scale-100 translate-y-0"
+      leave-to-class="opacity-0 scale-95 -translate-y-2"
     >
       <div
         v-if="mobileMenuOpen"
-        class="absolute left-0 right-0 md:hidden border-t border-zinc-800 bg-zinc-900 px-4 pt-2 pb-4 space-y-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto"
+        class="absolute left-0 right-0 md:hidden border-y border-color-300 bg-color-100 px-4 pt-2 pb-4 space-y-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto rounded-b-2xl"
       >
         <template v-for="item in navItems" :key="`mobile-${item.label}`">
           <!-- ==========================================
@@ -1038,8 +1038,8 @@ watch(isDesktop, async () => {
               class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
               :class="
                 isGroupActive(item)
-                  ? 'text-primary-400 bg-primary-500/10'
-                  : 'text-zinc-300 hover:bg-zinc-800'
+                  ? 'text-white bg-primary-500'
+                  : 'hover:bg-color-300'
               "
               @click="toggleDrawerGroup(item.label)"
             >
@@ -1061,7 +1061,7 @@ watch(isDesktop, async () => {
 
             <div
               v-show="expandedDrawerGroups[item.label] || isGroupActive(item)"
-              class="pl-4 space-y-1 border-l-2 border-zinc-800 ml-3 my-1"
+              class="pl-4 space-y-1 border-l-2 border-color-300 ml-3 my-1"
             >
               <button
                 v-for="child in item.children"
@@ -1070,8 +1070,8 @@ watch(isDesktop, async () => {
                 class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors"
                 :class="
                   isPathActive(child.path)
-                    ? 'text-primary-400 font-medium bg-primary-500/10'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                    ? 'text-white bg-primary-500'
+                    : 'hover:bg-color-300'
                 "
                 @click="handleNavigate(child.path)"
               >
@@ -1094,8 +1094,8 @@ watch(isDesktop, async () => {
             class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
             :class="
               isPathActive(item.path)
-                ? 'text-primary-400 bg-primary-500/10'
-                : 'text-zinc-300 hover:bg-zinc-800'
+                ? 'text-white bg-primary-500'
+                : 'hover:bg-color-300'
             "
             @click="handleNavigate(item.path)"
           >

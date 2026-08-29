@@ -402,10 +402,10 @@ const importSources = async () => {
 
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-medium text-white">资源管理</h2>
+        <h2 class="text-lg font-medium">资源管理</h2>
         <div class="flex items-center gap-3">
           <button
-            class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+            class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
             @click="openImportModal"
           >
             <FileUp class="w-4 h-4" />
@@ -441,37 +441,37 @@ const importSources = async () => {
             @keyup.enter="handleSearch"
           />
           <Search
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-color-500"
           />
         </div>
       </div>
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-900">
+          <thead class="bg-color-100">
             <tr>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 ID
               </th>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 资源名称
               </th>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 分类
               </th>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 地址
               </th>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 入库时间
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium"
               >
                 状态
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium"
               >
                 操作
               </th>
@@ -483,29 +483,29 @@ const importSources = async () => {
                 <Loader2
                   class="w-6 h-6 text-primary-500 animate-spin mx-auto"
                 />
-                <p class="text-zinc-500 text-sm mt-2">加载中...</p>
+                <p class="text-color-500 text-sm mt-2">加载中...</p>
               </td>
             </tr>
             <tr v-else-if="sources.length === 0">
               <td colspan="7" class="px-4 py-12 text-center">
-                <p class="text-zinc-500">暂无资源</p>
+                <p class="text-color-500">暂无资源</p>
               </td>
             </tr>
             <tr
               v-else
               v-for="item in sources"
               :key="item.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800"
+              class="border-t border-color-300 hover:bg-color-300"
             >
-              <td class="px-4 py-3 text-zinc-400 text-xs">
+              <td class="px-4 py-3 text-color-400 text-xs">
                 <span :title="item.id">{{ item.id }}</span>
               </td>
               <td class="px-4 py-3 max-w-60 break-words">
-                <span class="text-white" :title="item.title">{{
+                <span :title="item.title">{{
                   item.title
                 }}</span>
               </td>
-              <td class="px-4 py-3 text-zinc-300">
+              <td class="px-4 py-3 text-color-300">
                 {{ categories.find((cat) => cat.id === item.cid)?.name || "-" }}
               </td>
               <td class="px-4 py-3 max-w-60 break-words">
@@ -518,13 +518,13 @@ const importSources = async () => {
                   {{ item.url }}
                 </a>
               </td>
-              <td class="px-4 py-3 text-zinc-400 text-sm">
+              <td class="px-4 py-3 text-color-400 text-sm">
                 {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
               </td>
               <td class="px-4 py-3">
                 <button
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  :class="item.status === 1 ? 'bg-primary-600' : 'bg-zinc-700'"
+                  :class="item.status === 1 ? 'bg-primary-600' : 'bg-color-400'"
                   @click="toggleStatus(item)"
                   :title="item.status === 1 ? '点击禁用' : '点击启用'"
                 >
@@ -539,14 +539,14 @@ const importSources = async () => {
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-2">
                   <button
-                    class="p-2 text-zinc-400 hover:text-primary-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
                     title="编辑"
                     @click="openEditModal(item)"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
                     title="删除"
                     @click="deleteSource(item.id)"
                   >
@@ -559,7 +559,6 @@ const importSources = async () => {
         </table>
 
         <AdminPagination
-          v-if="totalPages > 1"
           :current-page="currentPage"
           :total-pages="totalPages"
           :total="total"
@@ -577,7 +576,7 @@ const importSources = async () => {
         >
           <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-lg w-full border border-zinc-800 max-h-[90vh] overflow-y-auto"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-lg w-full border border-color-300 max-h-[90vh] overflow-y-auto"
           >
             <h3 class="text-xl font-medium text-white mb-6">添加资源</h3>
             <div
@@ -588,7 +587,7 @@ const importSources = async () => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">资源分类</label>
+                <label class="block text-color-400 text-sm mb-2">资源分类</label>
                 <select v-model="newCid" class="input-search">
                   <option value="">无分类</option>
                   <option
@@ -601,7 +600,7 @@ const importSources = async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >资源名称 *</label
                 >
                 <input
@@ -612,7 +611,7 @@ const importSources = async () => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >资源地址 *</label
                 >
                 <input
@@ -623,7 +622,7 @@ const importSources = async () => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">资源介绍</label>
+                <label class="block text-color-400 text-sm mb-2">资源介绍</label>
                 <textarea
                   v-model="newDescription"
                   rows="3"
@@ -636,15 +635,15 @@ const importSources = async () => {
                   id="newIsSelf"
                   v-model="newIsSelf"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
                 />
-                <label for="newIsSelf" class="text-zinc-300 text-sm"
+                <label for="newIsSelf" class="text-color-300 text-sm"
                   >是自己的资源，搜索结果靠前</label
                 >
               </div>
               <div class="flex gap-4 pt-2">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeAddModal"
                 >
                   取消
@@ -669,9 +668,9 @@ const importSources = async () => {
         >
           <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-lg w-full border border-zinc-800 max-h-[90vh] overflow-y-auto"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-lg w-full border border-color-300 max-h-[90vh] overflow-y-auto"
           >
-            <h3 class="text-xl font-medium text-white mb-6">编辑资源</h3>
+            <h3 class="text-xl font-medium mb-6">编辑资源</h3>
             <div
               v-if="error"
               class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
@@ -680,7 +679,7 @@ const importSources = async () => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >资源分类 *</label
                 >
                 <select v-model="editCid" class="input-search">
@@ -695,7 +694,7 @@ const importSources = async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >资源名称 *</label
                 >
                 <input
@@ -706,7 +705,7 @@ const importSources = async () => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >资源地址 *</label
                 >
                 <input
@@ -717,7 +716,7 @@ const importSources = async () => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">资源介绍</label>
+                <label class="block text-color-400 text-sm mb-2">资源介绍</label>
                 <textarea
                   v-model="editDescription"
                   rows="3"
@@ -727,7 +726,7 @@ const importSources = async () => {
               </div>
               <div>
                 <div class="flex items-center justify-between mb-2">
-                  <label class="block text-zinc-400 text-sm">目录</label>
+                  <label class="block text-color-400 text-sm">目录</label>
                   <button
                     type="button"
                     class="flex items-center gap-1 px-2 py-1 text-xs bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 rounded transition-colors disabled:opacity-50"
@@ -750,15 +749,15 @@ const importSources = async () => {
                   id="editIsSelf"
                   v-model="editIsSelf"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
                 />
-                <label for="editIsSelf" class="text-zinc-300 text-sm"
+                <label for="editIsSelf" class="text-color-300 text-sm"
                   >是自己的资源，搜索结果靠前</label
                 >
               </div>
               <div class="flex gap-4 pt-2">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeEditModal"
                 >
                   取消
@@ -782,9 +781,9 @@ const importSources = async () => {
         >
           <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-lg w-full border border-zinc-800 max-h-[90vh] overflow-y-auto"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-lg w-full border border-color-300 max-h-[90vh] overflow-y-auto"
           >
-            <h3 class="text-xl font-medium text-white mb-6">导入资源</h3>
+            <h3 class="text-xl font-medium mb-6">导入资源</h3>
             <div
               v-if="error"
               class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
@@ -793,7 +792,7 @@ const importSources = async () => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">资源分类</label>
+                <label class="block text-color-400 text-sm mb-2">资源分类</label>
                 <select v-model="importCid" class="input-search">
                   <option value="">无分类</option>
                   <option
@@ -806,16 +805,16 @@ const importSources = async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >Excel 文件 *</label
                 >
                 <input
                   type="file"
                   accept=".xlsx"
-                  class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-zinc-700 file:text-white hover:file:bg-zinc-600"
+                  class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-color-400 hover:file:bg-color-500"
                   @change="handleFileChange"
                 />
-                <p class="mt-2 text-zinc-500 text-xs">
+                <p class="mt-2 text-color-500 text-xs">
                   第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
                 </p>
               </div>
@@ -824,9 +823,9 @@ const importSources = async () => {
                   id="hasHeader"
                   v-model="importHasHeader"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
                 />
-                <label for="hasHeader" class="text-zinc-300 text-sm"
+                <label for="hasHeader" class="text-color-300 text-sm"
                   >第一行为表头，跳过不导入</label
                 >
               </div>
@@ -835,9 +834,9 @@ const importSources = async () => {
                   id="importIsSelf"
                   v-model="importIsSelf"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
                 />
-                <label for="importIsSelf" class="text-zinc-300 text-sm"
+                <label for="importIsSelf" class="text-color-300 text-sm"
                   >是自己的资源，搜索结果靠前</label
                 >
               </div>
@@ -854,7 +853,7 @@ const importSources = async () => {
               </div>
               <div class="flex gap-4 pt-2">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeImportModal"
                 >
                   取消

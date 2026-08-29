@@ -101,7 +101,7 @@ const renderedDescription = computed(() =>
 
 const pageTitle = computed(() => {
   if (source.value.title) {
-    return `${source.value.title} - ${getStorageTypeFriendShortFromFilter(source.value.type)}资源分享 - 全盘搜`;
+    return `${source.value.title} - ${getStorageTypeFriendFromFilter(source.value.type)}资源分享 - 全盘搜`;
   }
   return "资源详情 - 全盘搜";
 });

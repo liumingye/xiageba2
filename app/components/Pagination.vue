@@ -54,13 +54,13 @@ const goToPage = (page: number) => {
     </button>
     <template v-for="(p, idx) in pageNumbers" :key="idx">
       <button
-        class="w-9 h-9 rounded text-sm transition-colors shadow-sm disabled:pointer-events-none disabled:w-3"
+        class="h-9 rounded text-sm transition-colors shadow-sm disabled:pointer-events-none disabled:w-3"
         :class="
           p === '...'
             ? ''
             : p === currentPage
-              ? 'bg-primary-500 text-white'
-              : 'bg-color-100 hover:bg-primary-500 hover:text-white'
+              ? 'bg-primary-500 text-white px-2 min-w-9'
+              : 'bg-color-100 hover:bg-primary-500 hover:text-white px-2 min-w-9'
         "
         @click="goToPage(p as number)"
         :disabled="p === '...'"

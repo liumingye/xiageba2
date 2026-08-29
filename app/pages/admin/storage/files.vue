@@ -23,7 +23,13 @@ import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { useToast } from "~/composables/useToast";
 import { useClipboard } from "@vueuse/core";
 import { get, post, del, patch } from "~/utils/request";
-import { formatSize, formatDate, isImage, isAudio, isVideo } from "~/utils/file";
+import {
+  formatSize,
+  formatDate,
+  isImage,
+  isAudio,
+  isVideo,
+} from "~/utils/file";
 
 defineOptions({ name: "StorageFilesPage" });
 
@@ -251,10 +257,10 @@ onMounted(async () => {
 
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium text-white">文件管理</h2>
+        <h2 class="text-lg font-medium">文件管理</h2>
         <div class="flex items-center gap-3">
           <button
-            class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+            class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
             @click="handleSearch"
           >
             <Search class="w-4 h-4" />
@@ -289,7 +295,7 @@ onMounted(async () => {
             @keyup.enter="handleSearch"
           />
           <Search
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-color-500"
           />
         </div>
       </div>
@@ -299,15 +305,15 @@ onMounted(async () => {
         class="card p-4 mb-4 flex flex-wrap items-end gap-4"
       >
         <div class="flex-1 min-w-[200px]">
-          <label class="block text-zinc-400 text-sm mb-2">选择文件 *</label>
+          <label class="block text-color-400 text-sm mb-2">选择文件 *</label>
           <input
             type="file"
-            class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-zinc-700 file:text-white hover:file:bg-zinc-600"
+            class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-color-400 hover:file:bg-color-500"
             @change="handleFileChange"
           />
         </div>
         <div class="flex-1 min-w-[200px]">
-          <label class="block text-zinc-400 text-sm mb-2"
+          <label class="block text-color-400 text-sm mb-2"
             >上传路径（可选）</label
           >
           <input
@@ -328,7 +334,7 @@ onMounted(async () => {
             {{ isUploading ? "上传中..." : "开始上传" }}
           </button>
           <button
-            class="p-2 text-zinc-400 hover:text-white transition-colors"
+            class="p-2 text-color-400 transition-all opacity-80 hover:bg-color-300 rounded-md"
             title="关闭"
             @click="toggleUpload"
           >
@@ -341,19 +347,19 @@ onMounted(async () => {
         <!-- 加载中 -->
         <div v-if="isLoading" class="py-16 text-center">
           <Loader2 class="w-6 h-6 text-primary-500 animate-spin mx-auto" />
-          <p class="text-zinc-500 text-sm mt-2">加载中...</p>
+          <p class="text-color-500 text-sm mt-2">加载中...</p>
         </div>
 
         <!-- 未选择配置 -->
         <div v-else-if="!selectedConfigId" class="py-16 text-center">
           <HardDrive class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-          <p class="text-zinc-500">请选择存储配置</p>
+          <p class="text-color-500">请选择存储配置</p>
         </div>
 
         <!-- 空状态 -->
         <div v-else-if="files.length === 0" class="py-16 text-center">
           <FileText class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-          <p class="text-zinc-500">暂无文件</p>
+          <p class="text-color-500">暂无文件</p>
         </div>
 
         <!-- Grid 文件列表 -->
@@ -364,11 +370,11 @@ onMounted(async () => {
           <div
             v-for="file in files"
             :key="file.key"
-            class="group bg-zinc-800/50 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-600 transition-colors"
+            class="group bg-color-200 border border-color-300 rounded-xl overflow-hidden hover:border-color-500 transition-colors"
           >
             <!-- 预览区域 -->
             <div
-              class="aspect-square flex items-center justify-center bg-zinc-900/50 relative overflow-hidden"
+              class="aspect-square flex items-center justify-center relative overflow-hidden"
             >
               <img
                 v-if="isImage(file)"
@@ -380,27 +386,27 @@ onMounted(async () => {
               />
               <FileAudio
                 v-else-if="isAudio(file)"
-                class="w-10 h-10 text-zinc-600"
+                class="w-10 h-10 text-color-300"
               />
               <FileVideo
                 v-else-if="isVideo(file)"
-                class="w-10 h-10 text-zinc-600"
+                class="w-10 h-10 text-color-300"
               />
-              <File v-else class="w-10 h-10 text-zinc-600" />
+              <File v-else class="w-10 h-10 text-color-300" />
 
               <!-- 悬浮操作 -->
               <div
                 class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
               >
                 <button
-                  class="p-2 text-zinc-300 hover:text-primary-500 transition-colors bg-zinc-800/80 rounded-lg"
+                  class="p-2 text-white hover:text-primary-500 transition-colors bg-zinc-800/80 rounded-lg"
                   title="复制链接"
                   @click="copyUrl(file)"
                 >
                   <Copy class="w-4 h-4" />
                 </button>
                 <button
-                  class="p-2 text-zinc-300 hover:text-primary-500 transition-colors bg-zinc-800/80 rounded-lg"
+                  class="p-2 text-white hover:text-primary-500 transition-colors bg-zinc-800/80 rounded-lg"
                   title="重命名"
                   :disabled="deletingKey === file.key"
                   @click="startRename(file)"
@@ -408,7 +414,7 @@ onMounted(async () => {
                   <Pencil class="w-4 h-4" />
                 </button>
                 <button
-                  class="p-2 text-zinc-300 hover:text-red-500 transition-colors bg-zinc-800/80 rounded-lg disabled:opacity-50 disabled:cursor-wait"
+                  class="p-2 text-white hover:text-red-500 transition-colors bg-zinc-800/80 rounded-lg disabled:opacity-50 disabled:cursor-wait"
                   title="删除"
                   :disabled="deletingKey === file.key"
                   @click="handleDelete(file)"
@@ -432,7 +438,7 @@ onMounted(async () => {
                 <input
                   v-model="renameValue"
                   type="text"
-                  class="w-full bg-zinc-900 border border-primary-500 rounded text-xs text-white px-1.5 py-1 focus:outline-none"
+                  class="w-full bg-color-100 border border-primary-500 rounded text-xs px-1.5 py-1 focus:outline-none"
                   @keyup.enter="confirmRename"
                   @keyup.esc="cancelRename"
                 />
@@ -446,7 +452,7 @@ onMounted(async () => {
                   <Check v-else class="w-3.5 h-3.5" />
                 </button>
                 <button
-                  class="p-1 text-zinc-500 hover:text-zinc-400 shrink-0"
+                  class="p-1 text-color-500 hover:text-color-400 shrink-0"
                   title="取消"
                   @click="cancelRename"
                 >
@@ -455,11 +461,11 @@ onMounted(async () => {
               </div>
               <!-- 正常文件名 -->
               <template v-else>
-                <p class="text-xs text-white truncate" :title="file.name">
+                <p class="text-xs truncate" :title="file.name">
                   {{ file.name }}
                 </p>
                 <div class="flex items-center justify-between mt-1">
-                  <span class="text-[10px] text-zinc-500">{{
+                  <span class="text-[10px] text-color-500">{{
                     formatSize(file.size)
                   }}</span>
                   <span class="text-[10px] text-zinc-600">{{
@@ -472,7 +478,6 @@ onMounted(async () => {
         </div>
 
         <AdminPagination
-          v-if="totalPages > 1"
           :current-page="currentPage"
           :total-pages="totalPages"
           :total="total"

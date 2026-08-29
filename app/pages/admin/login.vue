@@ -62,7 +62,7 @@ const handleKeydown = (e: KeyboardEvent) => {
           <Music class="w-10 h-10 text-white" />
         </div>
         <h1 class="text-2xl font-bold">全盘搜管理后台</h1>
-        <p class="text-zinc-500 mt-2">管理员登录</p>
+        <p class="text-color-500 mt-2">管理员登录</p>
       </div>
 
       <div class="card p-6">

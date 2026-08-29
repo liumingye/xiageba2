@@ -55,7 +55,7 @@ const displayTypeClass = (type: string) => {
     case "DIALOG":
       return "bg-orange-600 text-[var(--white)]";
     default:
-      return "bg-zinc-600 text-[var(--white)]";
+      return "bg-color-500 text-[var(--white)]";
   }
 };
 
@@ -85,7 +85,7 @@ const iconClass = (icon: string) => {
     case "SUCCESS":
       return "bg-green-600 text-[var(--white)]";
     default:
-      return "bg-zinc-600 text-[var(--white)]";
+      return "bg-color-500 text-[var(--white)]";
   }
 };
 
@@ -96,7 +96,7 @@ const statusLabel = (status: string) => {
 const statusClass = (status: string) => {
   return status === "ACTIVE"
     ? "bg-green-600 text-[var(--white)]"
-    : "bg-zinc-600 text-[var(--white)]";
+    : "bg-color-500 text-[var(--white)]";
 };
 
 // formatDate 已统一抽取到 ~/utils/file
@@ -240,7 +240,7 @@ const deleteAnnouncement = async (id: string) => {
 
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium text-white">公告管理</h2>
+        <h2 class="text-lg font-medium">公告管理</h2>
         <button
           class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
           @click="openAddModal"
@@ -252,33 +252,33 @@ const deleteAnnouncement = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-900">
+          <thead class="bg-color-100">
             <tr>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 标题
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-28"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-28"
               >
                 显示方式
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-20"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-20"
               >
                 图标
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium w-20"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-20"
               >
                 状态
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-40"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-40"
               >
                 创建时间
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium w-32"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-32"
               >
                 操作
               </th>
@@ -288,17 +288,17 @@ const deleteAnnouncement = async (id: string) => {
             <tr
               v-for="item in announcements"
               :key="item.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800"
+              class="border-t border-color-300 hover:bg-color-300"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <div
-                    class="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center shrink-0"
+                    class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center shrink-0"
                   >
-                    <Megaphone class="w-5 h-5 text-zinc-500" />
+                    <Megaphone class="w-5 h-5 text-color-500" />
                   </div>
                   <span
-                    class="text-white truncate"
+                    class="truncate"
                     :title="item.title"
                     >{{ item.title }}</span
                   >
@@ -328,13 +328,13 @@ const deleteAnnouncement = async (id: string) => {
                   {{ statusLabel(item.status) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-zinc-300 text-sm">
+              <td class="px-4 py-3 text-color-300 text-sm">
                 {{ formatDate(item.createdAt) }}
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-2">
                   <button
-                    class="p-2 text-zinc-400 hover:text-primary-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
                     title="编辑"
                     @click="openEditModal(item)"
                   >
@@ -342,14 +342,14 @@ const deleteAnnouncement = async (id: string) => {
                   </button>
                   <button
                     v-if="item.status === 'ACTIVE'"
-                    class="p-2 text-zinc-400 hover:text-yellow-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-yellow-500 transition-colors"
                     title="归档"
                     @click="archiveAnnouncement(item)"
                   >
                     <Archive class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
                     title="删除"
                     @click="deleteAnnouncement(item.id)"
                   >
@@ -362,7 +362,6 @@ const deleteAnnouncement = async (id: string) => {
         </table>
 
         <AdminPagination
-          v-if="totalPages > 1"
           :current-page="currentPage"
           :total-pages="totalPages"
           :total="total"
@@ -371,7 +370,7 @@ const deleteAnnouncement = async (id: string) => {
         />
 
         <div v-if="announcements.length === 0" class="py-12 text-center">
-          <p class="text-zinc-500">暂无公告</p>
+          <p class="text-color-500">暂无公告</p>
         </div>
       </div>
     </main>
@@ -387,9 +386,9 @@ const deleteAnnouncement = async (id: string) => {
             @click="closeAddModal"
           ></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium text-white mb-6">添加公告</h3>
+            <h3 class="text-xl font-medium mb-6">添加公告</h3>
             <div
               v-if="error"
               class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
@@ -398,7 +397,7 @@ const deleteAnnouncement = async (id: string) => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">标题 *</label>
+                <label class="block text-color-400 text-sm mb-2">标题 *</label>
                 <input
                   v-model="newTitle"
                   type="text"
@@ -407,7 +406,7 @@ const deleteAnnouncement = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">内容</label>
+                <label class="block text-color-400 text-sm mb-2">内容</label>
                 <textarea
                   v-model="newContent"
                   placeholder="请输入公告内容"
@@ -416,7 +415,7 @@ const deleteAnnouncement = async (id: string) => {
                 ></textarea>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">显示方式</label>
+                <label class="block text-color-400 text-sm mb-2">显示方式</label>
                 <select v-model="newDisplayType" class="input-search">
                   <option value="NORMAL">正常</option>
                   <option value="BANNER">横幅</option>
@@ -424,7 +423,7 @@ const deleteAnnouncement = async (id: string) => {
                 </select>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">图标</label>
+                <label class="block text-color-400 text-sm mb-2">图标</label>
                 <select v-model="newIcon" class="input-search">
                   <option value="INFO">信息</option>
                   <option value="WARN">警告</option>
@@ -433,7 +432,7 @@ const deleteAnnouncement = async (id: string) => {
                 </select>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">排序</label>
+                <label class="block text-color-400 text-sm mb-2">排序</label>
                 <input
                   v-model.number="newSort"
                   type="number"
@@ -443,7 +442,7 @@ const deleteAnnouncement = async (id: string) => {
               </div>
               <div class="flex gap-4">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeAddModal"
                 >
                   取消
@@ -470,9 +469,9 @@ const deleteAnnouncement = async (id: string) => {
             @click="closeEditModal"
           ></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium text-white mb-6">编辑公告</h3>
+            <h3 class="text-xl font-medium mb-6">编辑公告</h3>
             <div
               v-if="error"
               class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
@@ -481,7 +480,7 @@ const deleteAnnouncement = async (id: string) => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">标题 *</label>
+                <label class="block text-color-400 text-sm mb-2">标题 *</label>
                 <input
                   v-model="editTitle"
                   type="text"
@@ -490,7 +489,7 @@ const deleteAnnouncement = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">内容</label>
+                <label class="block text-color-400 text-sm mb-2">内容</label>
                 <textarea
                   v-model="editContent"
                   placeholder="请输入公告内容"
@@ -499,7 +498,7 @@ const deleteAnnouncement = async (id: string) => {
                 ></textarea>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">显示方式</label>
+                <label class="block text-color-400 text-sm mb-2">显示方式</label>
                 <select v-model="editDisplayType" class="input-search">
                   <option value="NORMAL">正常</option>
                   <option value="BANNER">横幅</option>
@@ -507,7 +506,7 @@ const deleteAnnouncement = async (id: string) => {
                 </select>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">图标</label>
+                <label class="block text-color-400 text-sm mb-2">图标</label>
                 <select v-model="editIcon" class="input-search">
                   <option value="INFO">信息</option>
                   <option value="WARN">警告</option>
@@ -516,7 +515,7 @@ const deleteAnnouncement = async (id: string) => {
                 </select>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">排序</label>
+                <label class="block text-color-400 text-sm mb-2">排序</label>
                 <input
                   v-model.number="editSort"
                   type="number"
@@ -531,15 +530,15 @@ const deleteAnnouncement = async (id: string) => {
                   type="checkbox"
                   true-value="ARCHIVED"
                   false-value="ACTIVE"
-                  class="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
                 />
-                <label for="editStatus" class="text-zinc-300 text-sm"
+                <label for="editStatus" class="text-color-300 text-sm"
                   >归档该公告</label
                 >
               </div>
               <div class="flex gap-4">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeEditModal"
                 >
                   取消

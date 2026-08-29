@@ -57,13 +57,13 @@ const getPageNumbers = (): (number | string)[] => {
     v-if="totalPages > 1"
     class="flex items-center justify-between px-4 py-3"
   >
-    <div class="text-sm text-zinc-400">
+    <div class="text-sm text-color-400">
       共 {{ total }} {{ itemLabel || "条" }}
     </div>
     <div class="flex items-center gap-1">
       <button
-        :disabled="currentPage === 1"
-        class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        v-if="currentPage > 1"
+        class="px-2 h-9 bg-color-100 hover:bg-primary-500 hover:text-white rounded text-sm transition-colors shadow-sm"
         @click="goToPage(currentPage - 1)"
       >
         <ChevronLeft class="w-4 h-4" />
@@ -71,21 +71,24 @@ const getPageNumbers = (): (number | string)[] => {
       <button
         v-for="p in getPageNumbers()"
         :key="p"
-        :class="[
-          'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
-          p === currentPage
-            ? 'bg-primary-500 text-white'
-            : p === '...'
-              ? 'text-zinc-500 cursor-default'
-              : 'text-zinc-400 hover:text-white',
-        ]"
+        class="h-9 rounded text-sm transition-colors shadow-sm disabled:pointer-events-none disabled:w-3"
+        :class="
+          p === '...'
+            ? 'text-gray-400'
+            : p === currentPage
+              ? 'bg-primary-500 text-white px-2 min-w-9'
+              : 'bg-color-100 hover:bg-primary-500 hover:text-white px-2 min-w-9'
+        "
         @click="typeof p === 'number' && goToPage(p)"
+        :disabled="p === '...'"
       >
         {{ p }}
       </button>
+
       <button
-        :disabled="currentPage === totalPages"
-        class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        v-if="currentPage < totalPages"
+        class="px-2 h-9 bg-color-100 hover:bg-primary-500 hover:text-white rounded text-sm transition-colors shadow-sm"
+        :disabled="currentPage >= totalPages"
         @click="goToPage(currentPage + 1)"
       >
         <ChevronRight class="w-4 h-4" />

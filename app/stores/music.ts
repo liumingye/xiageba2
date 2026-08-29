@@ -32,7 +32,7 @@ export const useMusicStore = defineStore("music", () => {
   const searchHistory = useLocalStorage<string[]>("searchHistory", []);
   const searchType = useLocalStorage<"resource" | "music" | "ai">(
     "searchType",
-    "music",
+    "resource",
   );
 
   const addSearchHistory = (keyword: string) => {

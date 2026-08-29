@@ -521,7 +521,7 @@ const clearISRCache = async () => {
       <!-- 搜索索引 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">搜索索引</h2>
+          <h2 class="text-lg font-medium">搜索索引</h2>
         </div>
         <div class="card p-6 space-y-4">
           <div v-if="rebuildMsg" class="text-sm text-primary-400">
@@ -529,14 +529,14 @@ const clearISRCache = async () => {
           </div>
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <div class="text-white">重建音乐搜索向量</div>
-              <div class="text-sm text-zinc-400 mt-1">
+              <div>重建音乐搜索向量</div>
+              <div class="text-sm text-color-400 mt-1">
                 使用 jieba 分词重新生成所有音乐的搜索向量，用于全文搜索
               </div>
             </div>
             <div class="flex items-center gap-2">
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(false, 'music')"
               >
@@ -547,7 +547,7 @@ const clearISRCache = async () => {
                 {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
               </button>
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(true, 'music')"
               >
@@ -561,14 +561,14 @@ const clearISRCache = async () => {
           </div>
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <div class="text-white">重建资源搜索向量</div>
-              <div class="text-sm text-zinc-400 mt-1">
+              <div>重建资源搜索向量</div>
+              <div class="text-sm text-color-400 mt-1">
                 使用 jieba 分词重新生成所有资源的搜索向量，用于全文搜索
               </div>
             </div>
             <div class="flex items-center gap-2">
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(false, 'source')"
               >
@@ -579,7 +579,7 @@ const clearISRCache = async () => {
                 {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
               </button>
               <button
-                class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
+                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(true, 'source')"
               >
@@ -597,13 +597,13 @@ const clearISRCache = async () => {
       <!--  缓存 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">Nitro 缓存</h2>
+          <h2 class="text-lg font-medium">Nitro 缓存</h2>
         </div>
         <div class="card p-6 space-y-4">
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <div class="text-white">清理全部缓存</div>
-              <div class="text-sm text-zinc-400 mt-1">
+              <div>清理全部缓存</div>
+              <div class="text-sm text-color-400 mt-1">
                 清空全部Nitro缓存，包括路由ISR缓存、页面缓存
               </div>
             </div>
@@ -626,7 +626,7 @@ const clearISRCache = async () => {
       <!-- Redis 配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">Redis 配置</h2>
+          <h2 class="text-lg font-medium">Redis 配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedRedis }"
@@ -641,13 +641,13 @@ const clearISRCache = async () => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 shrink-0 bg-red-600 rounded-lg flex items-center justify-center"
             >
               <Database class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
-              <h3 class="text-white font-medium">缓存服务</h3>
-              <p class="text-zinc-500 text-sm">
+              <h3 class="font-medium">缓存服务</h3>
+              <p class="text-color-500 text-sm">
                 配置 Redis 用于缓存全网搜结果，空 host 表示不启用缓存
               </p>
             </div>
@@ -655,7 +655,7 @@ const clearISRCache = async () => {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">Host</label>
+              <label class="block text-color-400 text-sm mb-2">Host</label>
               <input
                 v-model="redisConfig.redis_host"
                 type="text"
@@ -664,7 +664,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">Port</label>
+              <label class="block text-color-400 text-sm mb-2">Port</label>
               <input
                 v-model="redisConfig.redis_port"
                 type="text"
@@ -673,7 +673,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">DB</label>
+              <label class="block text-color-400 text-sm mb-2">DB</label>
               <input
                 v-model="redisConfig.redis_db"
                 type="text"
@@ -682,7 +682,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">Password</label>
+              <label class="block text-color-400 text-sm mb-2">Password</label>
               <input
                 v-model="redisConfig.redis_password"
                 type="password"
@@ -697,7 +697,7 @@ const clearISRCache = async () => {
       <!-- AES 配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">加密配置</h2>
+          <h2 class="text-lg font-medium">加密配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedAes }"
@@ -712,13 +712,13 @@ const clearISRCache = async () => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 shrink-0 bg-yellow-600 rounded-lg flex items-center justify-center"
             >
               <Key class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
-              <h3 class="text-white font-medium">AES-CBC 密钥</h3>
-              <p class="text-zinc-500 text-sm">
+              <h3 class="font-medium">AES-CBC 密钥</h3>
+              <p class="text-color-500 text-sm">
                 Key 需为 16/24/32 字节 base64，IV 需为 16 字节 base64
               </p>
             </div>
@@ -726,7 +726,7 @@ const clearISRCache = async () => {
 
           <div class="space-y-4">
             <div>
-              <label class="block text-zinc-400 text-sm mb-2"
+              <label class="block text-color-400 text-sm mb-2"
                 >Key (base64)</label
               >
               <input
@@ -737,7 +737,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2"
+              <label class="block text-color-400 text-sm mb-2"
                 >IV (base64)</label
               >
               <input
@@ -754,7 +754,7 @@ const clearISRCache = async () => {
       <!-- 全网搜过滤词配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">全网搜过滤词配置</h2>
+          <h2 class="text-lg font-medium">全网搜过滤词配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedWebSearchFilter }"
@@ -769,20 +769,20 @@ const clearISRCache = async () => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 shrink-0 bg-emerald-600 rounded-lg flex items-center justify-center"
             >
               <Filter class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
-              <h3 class="text-white font-medium">搜索结果过滤词</h3>
-              <p class="text-zinc-500 text-sm">
+              <h3 class="font-medium">搜索结果过滤词</h3>
+              <p class="text-color-500 text-sm">
                 配置全网搜中需要过滤掉的资源关键词，关键词用英文逗号隔开
               </p>
             </div>
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">
+              <label class="block text-color-400 text-sm mb-2">
                 过滤关键词（英文逗号隔开）
               </label>
               <textarea
@@ -791,7 +791,7 @@ const clearISRCache = async () => {
                 placeholder="例如：加微信,关注公众号,推广,广告,赌博"
                 class="input-search"
               />
-              <p class="text-zinc-500 text-xs mt-2">
+              <p class="text-color-500 text-xs mt-2">
                 标题中包含任一关键词的资源都会被过滤掉，关键词不区分大小写
               </p>
             </div>
@@ -802,7 +802,7 @@ const clearISRCache = async () => {
       <!-- 广告过滤配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">广告过滤配置</h2>
+          <h2 class="text-lg font-medium">广告过滤配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedAdFilter }"
@@ -817,13 +817,13 @@ const clearISRCache = async () => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 shrink-0 bg-purple-600 rounded-lg flex items-center justify-center"
             >
               <ShieldAlert class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
-              <h3 class="text-white font-medium">转存广告过滤</h3>
-              <p class="text-zinc-500 text-sm">
+              <h3 class="font-medium">转存广告过滤</h3>
+              <p class="text-color-500 text-sm">
                 转存网盘资源后，自动删除包含广告词的文件或目录（最深2层）
               </p>
             </div>
@@ -835,14 +835,12 @@ const clearISRCache = async () => {
                 id="adFilterEnabled"
                 v-model="adFilterConfig.enabled"
                 type="checkbox"
-                class="w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                class="w-5 h-5 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
               />
-              <label for="adFilterEnabled" class="text-white">
-                启用广告过滤
-              </label>
+              <label for="adFilterEnabled"> 启用广告过滤 </label>
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">
+              <label class="block text-color-400 text-sm mb-2">
                 广告关键词（英文逗号隔开）
               </label>
               <textarea
@@ -851,7 +849,7 @@ const clearISRCache = async () => {
                 placeholder="例如：关注公众号,加微信,广告,推广"
                 class="input-search"
               />
-              <p class="text-zinc-500 text-xs mt-2">
+              <p class="text-color-500 text-xs mt-2">
                 文件名或目录名包含任一关键词即被删除，关键词不区分大小写
               </p>
             </div>
@@ -862,7 +860,7 @@ const clearISRCache = async () => {
       <!-- AI 搜索配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">AI 搜索配置</h2>
+          <h2 class="text-lg font-medium">AI 搜索配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedAiSearch }"
@@ -877,13 +875,13 @@ const clearISRCache = async () => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 shrink-0 bg-cyan-600 rounded-lg flex items-center justify-center"
             >
               <Sparkles class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
-              <h3 class="text-white font-medium">AI 智能搜索</h3>
-              <p class="text-zinc-500 text-sm">
+              <h3 class="font-medium">AI 智能搜索</h3>
+              <p class="text-color-500 text-sm">
                 配置 AI 模型接口，支持 OpenAI 兼容协议（DeepSeek、通义千问等）
               </p>
             </div>
@@ -895,43 +893,41 @@ const clearISRCache = async () => {
                 id="aiSearchEnabled"
                 v-model="aiSearchConfig.enabled"
                 type="checkbox"
-                class="w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                class="w-5 h-5 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
               />
-              <label for="aiSearchEnabled" class="text-white">
-                启用 AI 搜索
-              </label>
+              <label for="aiSearchEnabled"> 启用 AI 搜索 </label>
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">Base URL</label>
+              <label class="block text-color-400 text-sm mb-2">Base URL</label>
               <input
                 v-model="aiSearchConfig.baseURL"
                 type="text"
                 placeholder="https://api.deepseek.com/v1"
                 class="input-search font-mono text-xs"
               />
-              <p class="text-zinc-500 text-xs mt-2">
+              <p class="text-color-500 text-xs mt-2">
                 OpenAI 兼容的 API 地址，需包含 /v1 路径
               </p>
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">API Key</label>
+              <label class="block text-color-400 text-sm mb-2">API Key</label>
               <input
                 v-model="aiSearchConfig.apiKey"
                 type="password"
                 placeholder="sk-..."
                 class="input-search font-mono text-xs"
               />
-              <p class="text-zinc-500 text-xs mt-2">模型服务商提供的密钥</p>
+              <p class="text-color-500 text-xs mt-2">模型服务商提供的密钥</p>
             </div>
             <div>
-              <label class="block text-zinc-400 text-sm mb-2">模型名称</label>
+              <label class="block text-color-400 text-sm mb-2">模型名称</label>
               <input
                 v-model="aiSearchConfig.model"
                 type="text"
                 placeholder="qwen-plus"
                 class="input-search font-mono text-xs"
               />
-              <p class="text-zinc-500 text-xs mt-2">
+              <p class="text-color-500 text-xs mt-2">
                 调用的模型标识，如 qwen-plus、deepseek-chat 等
               </p>
             </div>
@@ -942,7 +938,7 @@ const clearISRCache = async () => {
       <!-- 热搜词配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">热搜词配置</h2>
+          <h2 class="text-lg font-medium">热搜词配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedHotwords }"
@@ -957,13 +953,13 @@ const clearISRCache = async () => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 shrink-0 bg-orange-600 rounded-lg flex items-center justify-center"
             >
               <TrendingUp class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
-              <h3 class="text-white font-medium">热门搜索词</h3>
-              <p class="text-zinc-500 text-sm">
+              <h3 class="font-medium">热门搜索词</h3>
+              <p class="text-color-500 text-sm">
                 配置首页热门搜索词，权重越高排名越靠前
               </p>
             </div>
@@ -977,7 +973,9 @@ const clearISRCache = async () => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-zinc-400 text-sm mb-2">搜索词</label>
+                  <label class="block text-color-400 text-sm mb-2"
+                    >搜索词</label
+                  >
                   <input
                     v-model="hotword.word"
                     type="text"
@@ -986,7 +984,7 @@ const clearISRCache = async () => {
                   />
                 </div>
                 <div>
-                  <label class="block text-zinc-400 text-sm mb-2">类型</label>
+                  <label class="block text-color-400 text-sm mb-2">类型</label>
                   <select
                     v-model="hotword.type"
                     class="input-search appearance-none cursor-pointer"
@@ -996,7 +994,7 @@ const clearISRCache = async () => {
                   </select>
                 </div>
                 <div>
-                  <label class="block text-zinc-400 text-sm mb-2">权重</label>
+                  <label class="block text-color-400 text-sm mb-2">权重</label>
                   <input
                     v-model.number="hotword.weight"
                     type="number"
@@ -1016,14 +1014,14 @@ const clearISRCache = async () => {
             </div>
 
             <button
-              class="flex items-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
+              class="flex items-center gap-2 px-3 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors"
               @click="addHotword"
             >
               <Plus class="w-4 h-4" />
               添加搜索词
             </button>
 
-            <div v-if="hotwords.length === 0" class="text-zinc-500 text-sm">
+            <div v-if="hotwords.length === 0" class="text-color-500 text-sm">
               未配置热搜词，首页热门搜索区域将不显示
             </div>
           </div>
@@ -1033,7 +1031,7 @@ const clearISRCache = async () => {
       <!-- PanCheck 配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">网盘检测配置</h2>
+          <h2 class="text-lg font-medium">网盘检测配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedPancheck }"
@@ -1048,13 +1046,13 @@ const clearISRCache = async () => {
         <div class="card p-6">
           <div class="flex items-center gap-3 mb-6">
             <div
-              class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center"
+              class="w-10 h-10 shrink-0 bg-blue-600 rounded-lg flex items-center justify-center"
             >
               <Link class="w-5 h-5 text-[var(--white)]" />
             </div>
             <div>
-              <h3 class="text-white font-medium">PanCheck 接口</h3>
-              <p class="text-zinc-500 text-sm">
+              <h3 class="font-medium">PanCheck 接口</h3>
+              <p class="text-color-500 text-sm">
                 配置网盘链接检测服务接口，格式：接口地址 + 密码
               </p>
             </div>
@@ -1068,7 +1066,7 @@ const clearISRCache = async () => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-zinc-400 text-sm mb-2"
+                  <label class="block text-color-400 text-sm mb-2"
                     >接口地址</label
                   >
                   <input
@@ -1079,7 +1077,7 @@ const clearISRCache = async () => {
                   />
                 </div>
                 <div>
-                  <label class="block text-zinc-400 text-sm mb-2">密码</label>
+                  <label class="block text-color-400 text-sm mb-2">密码</label>
                   <input
                     v-model="server.password"
                     type="text"
@@ -1097,7 +1095,7 @@ const clearISRCache = async () => {
             </div>
 
             <button
-              class="flex items-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
+              class="flex items-center gap-2 px-3 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors"
               @click="addPancheckServer"
             >
               <Plus class="w-4 h-4" />
@@ -1106,7 +1104,7 @@ const clearISRCache = async () => {
 
             <div
               v-if="pancheckServers.length === 0"
-              class="text-zinc-500 text-sm"
+              class="text-color-500 text-sm"
             >
               未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
             </div>
@@ -1117,7 +1115,7 @@ const clearISRCache = async () => {
       <!-- 微信公众号配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-white">微信公众号配置</h2>
+          <h2 class="text-lg font-medium">微信公众号配置</h2>
           <button
             class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
             :class="{ 'bg-green-600 hover:bg-green-600': savedWechat }"
@@ -1134,20 +1132,20 @@ const clearISRCache = async () => {
           <div>
             <div class="flex items-center gap-3 mb-6">
               <div
-                class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center"
+                class="w-10 h-10 shrink-0 bg-green-600 rounded-lg flex items-center justify-center"
               >
                 <MessageSquare class="w-5 h-5 text-[var(--white)]" />
               </div>
               <div>
-                <h3 class="text-white font-medium">基础配置</h3>
-                <p class="text-zinc-500 text-sm">
+                <h3 class="font-medium">基础配置</h3>
+                <p class="text-color-500 text-sm">
                   在微信公众平台「开发管理 → 基本配置」中获取 AppID / AppSecret
                 </p>
               </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">AppID</label>
+                <label class="block text-color-400 text-sm mb-2">AppID</label>
                 <input
                   v-model="wechatConfig.appId"
                   type="text"
@@ -1156,7 +1154,9 @@ const clearISRCache = async () => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">AppSecret</label>
+                <label class="block text-color-400 text-sm mb-2"
+                  >AppSecret</label
+                >
                 <input
                   v-model="wechatConfig.appSecret"
                   type="password"
@@ -1165,7 +1165,7 @@ const clearISRCache = async () => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">Token</label>
+                <label class="block text-color-400 text-sm mb-2">Token</label>
                 <input
                   v-model="wechatConfig.token"
                   type="text"
@@ -1174,7 +1174,7 @@ const clearISRCache = async () => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >EncodingAESKey（可选）</label
                 >
                 <input
@@ -1190,17 +1190,17 @@ const clearISRCache = async () => {
           <!-- 功能配置 -->
           <div>
             <h4
-              class="text-sm font-medium text-zinc-300 pb-2 mb-4 border-b border-zinc-800"
+              class="text-sm font-medium text-color-300 pb-2 mb-4 border-b border-color-300"
             >
               功能配置
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div
-                class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg"
+                class="flex items-center justify-between p-3 bg-color-300 rounded-lg"
               >
                 <div>
-                  <div class="text-white text-sm">启用机器人</div>
-                  <div class="text-xs text-zinc-500 mt-0.5">
+                  <div class="text-sm">启用机器人</div>
+                  <div class="text-xs text-color-500 mt-0.5">
                     关闭后微信服务器回调将不再回复消息
                   </div>
                 </div>
@@ -1208,15 +1208,15 @@ const clearISRCache = async () => {
                   id="wechatEnabled"
                   v-model="wechatConfig.enabled"
                   type="checkbox"
-                  class="w-12 h-7 appearance-none rounded-full bg-zinc-700 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
+                  class="w-12 h-7 appearance-none rounded-full bg-color-400 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
                 />
               </div>
               <div
-                class="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg"
+                class="flex items-center justify-between p-3 bg-color-300 rounded-lg"
               >
                 <div>
-                  <div class="text-white text-sm">自动回复</div>
-                  <div class="text-xs text-zinc-500 mt-0.5">
+                  <div class="text-sm">自动回复</div>
+                  <div class="text-xs text-color-500 mt-0.5">
                     开启后用户发送关键词将触发站内搜索回复
                   </div>
                 </div>
@@ -1224,11 +1224,11 @@ const clearISRCache = async () => {
                   id="wechatAutoReplyEnabled"
                   v-model="wechatConfig.autoReplyEnabled"
                   type="checkbox"
-                  class="w-12 h-7 appearance-none rounded-full bg-zinc-700 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
+                  class="w-12 h-7 appearance-none rounded-full bg-color-400 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >搜索结果限制</label
                 >
                 <input
@@ -1238,12 +1238,12 @@ const clearISRCache = async () => {
                   max="100"
                   class="input-search"
                 />
-                <p class="text-zinc-500 text-xs mt-1.5">
+                <p class="text-color-500 text-xs mt-1.5">
                   每次搜索最多返回的条数（1-100）
                 </p>
               </div>
               <div class="md:col-span-2">
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >欢迎消息</label
                 >
                 <textarea
@@ -1259,41 +1259,56 @@ const clearISRCache = async () => {
           <!-- 服务器配置 -->
           <div>
             <h4
-              class="text-sm font-medium text-zinc-300 pb-2 mb-4 border-b border-zinc-800"
+              class="text-sm font-medium text-color-300 pb-2 mb-4 border-b border-color-300"
             >
               服务器配置（微信公众平台填写）
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">URL（复制使用）</label>
+                <label class="block text-color-400 text-sm mb-2"
+                  >URL（复制使用）</label
+                >
                 <div class="flex gap-2">
                   <input
-                    :value="wechatOrigin ? `${wechatOrigin}/api/wechat` : '/api/wechat'"
+                    :value="
+                      wechatOrigin
+                        ? `${wechatOrigin}/api/wechat`
+                        : '/api/wechat'
+                    "
                     readonly
-                    class="input-search flex-1 bg-zinc-800/50"
+                    class="input-search flex-1 bg-color-300"
                   />
                   <button
-                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors"
+                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-color-400 hover:bg-color-500 text-color-200 rounded-lg transition-colors"
                     title="复制 URL"
-                    @click="copyText(wechatOrigin ? `${wechatOrigin}/api/wechat` : '/api/wechat', 'URL')"
+                    @click="
+                      copyText(
+                        wechatOrigin
+                          ? `${wechatOrigin}/api/wechat`
+                          : '/api/wechat',
+                        'URL',
+                      )
+                    "
                   >
                     <Copy class="w-4 h-4" />
                   </button>
                 </div>
-                <p class="text-zinc-500 text-xs mt-1.5">
+                <p class="text-color-500 text-xs mt-1.5">
                   服务器必须支持 HTTPS（微信要求）。若域名不同请手动拼接
                 </p>
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">Token（同上）</label>
+                <label class="block text-color-400 text-sm mb-2"
+                  >Token（同上）</label
+                >
                 <div class="flex gap-2">
                   <input
                     :value="wechatConfig.token"
                     readonly
-                    class="input-search flex-1 bg-zinc-800/50 font-mono"
+                    class="input-search flex-1 bg-color-300 font-mono"
                   />
                   <button
-                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors"
+                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-color-400 hover:bg-color-500 text-color-200 rounded-lg transition-colors"
                     title="复制 Token"
                     @click="copyText(wechatConfig.token, 'Token')"
                   >
@@ -1307,29 +1322,30 @@ const clearISRCache = async () => {
           <!-- 验证文件上传 -->
           <div>
             <h4
-              class="text-sm font-medium text-zinc-300 pb-2 mb-4 border-b border-zinc-800"
+              class="text-sm font-medium text-color-300 pb-2 mb-4 border-b border-color-300"
             >
               微信公众号验证文件
             </h4>
             <div
-              class="p-4 bg-blue-950/30 border border-blue-900/50 rounded-lg mb-4"
+              class="p-4 bg-color-300 border border-color-300 rounded-lg mb-4"
             >
-              <p class="text-sm text-blue-200 leading-relaxed">
-                微信公众平台在填写服务器 URL 时会要求上传一个 <code
-                  class="px-1.5 py-0.5 rounded bg-blue-900/40 font-mono text-xs"
+              <p class="text-sm leading-relaxed">
+                微信公众平台在填写服务器 URL 时会要求上传一个
+                <code
+                  class="px-1.5 py-0.5 rounded bg-color-400 font-mono text-xs"
                   >MP_verify_*.txt</code
                 >
                 到网站根目录验证所有权。请按以下步骤操作：
               </p>
               <ol
-                class="mt-2 text-sm text-zinc-300 list-decimal list-inside space-y-1"
+                class="mt-2 text-sm text-color-300 list-decimal list-inside space-y-1"
               >
                 <li>在微信公众平台下载 MP_verify_*.txt 验证文件</li>
                 <li>点击下方「选择文件」上传 TXT 内容到数据库</li>
                 <li>
                   上传成功后可通过
                   <code
-                    class="px-1.5 py-0.5 rounded bg-zinc-800 font-mono text-xs"
+                    class="px-1.5 py-0.5 rounded bg-color-400 font-mono text-xs"
                     >域名/MP_verify_xxx.txt</code
                   >
                   直接访问
@@ -1340,7 +1356,7 @@ const clearISRCache = async () => {
 
             <div class="flex flex-wrap items-center gap-3">
               <label
-                class="flex items-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors cursor-pointer"
+                class="flex items-center gap-2 px-3 py-2 bg-color-400 hover:bg-color-500 text-color-200 rounded-lg transition-colors cursor-pointer"
               >
                 <Upload class="w-4 h-4" />
                 <span>选择 TXT 文件</span>
@@ -1352,12 +1368,13 @@ const clearISRCache = async () => {
                   @change="onPickWechatVerifyFile"
                 />
               </label>
-              <div class="text-sm text-zinc-400 min-w-0">
+              <div class="text-sm text-color-400 min-w-0">
                 <template v-if="wechatVerifyFile">
                   已选择：{{ wechatVerifyFile.name }}
                 </template>
                 <template v-else
-                  >未选择（仅支持 <code class="font-mono">.txt</code> 格式）</template
+                  >未选择（仅支持
+                  <code class="font-mono">.txt</code> 格式）</template
                 >
               </div>
               <button
@@ -1376,22 +1393,27 @@ const clearISRCache = async () => {
 
             <div
               v-if="wechatConfig.verifyFileName"
-              class="mt-4 p-3 bg-green-950/30 border border-green-900/50 rounded-lg"
+              class="mt-4 p-3 bg-green-800 border border-green-800 text-white rounded-lg"
             >
               <div class="flex items-start gap-2">
-                <Check class="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                <div class="text-sm text-green-200 space-y-1 flex-1">
+                <Check class="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                <div class="text-sm space-y-1 flex-1">
                   <div>验证文件已上传，可通过以下地址访问：</div>
                   <div class="flex items-center gap-2">
                     <code
-                      class="px-2 py-1 rounded bg-zinc-900/60 font-mono text-xs truncate"
+                      class="px-2 py-1 rounded bg-green-700 font-mono text-xs break-all"
                     >
                       {{ wechatOrigin }}/{{ wechatConfig.verifyFileName }}
                     </code>
                     <button
-                      class="shrink-0 p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      class="shrink-0 p-1.5 rounded hover:bg-green-700 text-white transition-colors"
                       title="复制访问地址"
-                      @click="copyText(`${wechatOrigin}/${wechatConfig.verifyFileName}`, '访问地址')"
+                      @click="
+                        copyText(
+                          `${wechatOrigin}/${wechatConfig.verifyFileName}`,
+                          '访问地址',
+                        )
+                      "
                     >
                       <Copy class="w-3.5 h-3.5" />
                     </button>
@@ -1399,7 +1421,7 @@ const clearISRCache = async () => {
                       :href="`/${wechatConfig.verifyFileName}`"
                       target="_blank"
                       rel="noreferrer"
-                      class="shrink-0 p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      class="shrink-0 p-1.5 rounded hover:bg-green-700 text-white transition-colors"
                       title="新标签打开"
                     >
                       <ExternalLink class="w-3.5 h-3.5" />
@@ -1411,18 +1433,17 @@ const clearISRCache = async () => {
           </div>
 
           <!-- 注意事项 -->
-          <div
-            class="p-4 bg-amber-950/30 border border-amber-900/50 rounded-lg"
-          >
-            <h5 class="text-sm font-medium text-amber-200 mb-2">注意事项</h5>
-            <ul
-              class="text-sm text-zinc-300 list-disc list-inside space-y-1"
-            >
+          <div class="p-4 bg-color-300 border border-color-300 rounded-lg">
+            <h5 class="text-sm font-medium text-color-300 mb-2">注意事项</h5>
+            <ul class="text-sm text-color-300 list-disc list-inside space-y-1">
               <li>服务器必须支持 HTTPS（微信要求）且域名已备案</li>
-              <li>首次配置时，微信会发送 GET 请求校验签名，请先填写 Token 并保存</li>
+              <li>
+                首次配置时，微信会发送 GET 请求校验签名，请先填写 Token 并保存
+              </li>
               <li>搜索结果同时来自「资源」与「音乐」，支持中文分词检索</li>
               <li>
-                消息加解密：若填写了 EncodingAESKey，可在微信公众平台选择「安全模式」
+                消息加解密：若填写了
+                EncodingAESKey，可在微信公众平台选择「安全模式」
               </li>
             </ul>
           </div>

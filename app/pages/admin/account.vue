@@ -179,7 +179,9 @@ const saveForm = async () => {
 };
 
 const deleteAccount = async (account: AccountListItem) => {
-  if (!confirm(`确定删除 ${getPanTypeLabel(account.type)} 账号 #${account.id}？`))
+  if (
+    !confirm(`确定删除 ${getPanTypeLabel(account.type)} 账号 #${account.id}？`)
+  )
     return;
   try {
     await del(`/api/admin/accounts/${account.id}`);
@@ -332,7 +334,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
       <!-- 加载中 -->
       <div
         v-if="loading"
-        class="flex items-center justify-center py-20 text-zinc-500"
+        class="flex items-center justify-center py-20 text-color-500"
       >
         <Loader2 class="w-6 h-6 animate-spin mr-2" />
         加载中...
@@ -341,7 +343,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
       <!-- 空状态 -->
       <div
         v-else-if="accounts.length === 0"
-        class="flex flex-col items-center justify-center py-20 text-zinc-500"
+        class="flex flex-col items-center justify-center py-20 text-color-500"
       >
         <UserCog class="w-12 h-12 mb-3 text-zinc-700" />
         <p class="text-sm">暂无网盘账号，点击「添加账号」开始配置</p>
@@ -354,7 +356,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
           :key="type"
           v-show="groupedAccounts[type]"
         >
-          <h3 class="text-sm text-zinc-400 mb-3 px-1">
+          <h3 class="text-sm text-color-400 mb-3 px-1">
             {{ getPanTypeLabel(type) }}
             <span class="text-zinc-600"
               >({{ groupedAccounts[type]?.length || 0 }})</span
@@ -373,8 +375,8 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     class="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-xs font-mono"
                     :class="
                       account.status === 1
-                        ? 'bg-green-900/50 text-green-400'
-                        : 'bg-zinc-800 text-zinc-500'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-color-300 text-color-500'
                     "
                   >
                     #{{ account.id }}
@@ -390,8 +392,8 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     class="text-xs px-2 py-0.5 shrink-0 rounded-full"
                     :class="
                       account.status === 1
-                        ? 'bg-green-900/30 text-green-400'
-                        : 'bg-zinc-800 text-zinc-500'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-color-300 text-color-500'
                     "
                   >
                     {{ account.status === 1 ? "启用" : "停用" }}
@@ -399,7 +401,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                 </div>
                 <div class="flex items-center gap-1">
                   <button
-                    class="p-1.5 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                    class="p-1.5 hover:bg-color-300 rounded-lg text-color-400 transition-colors"
                     :disabled="checking[account.id]"
                     title="检测账号"
                     @click="checkAccount(account)"
@@ -411,21 +413,21 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     <Check v-else class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-1.5 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                    class="p-1.5 hover:bg-color-300 rounded-lg text-color-400 transition-colors"
                     title="编辑"
                     @click="openEditForm(account)"
                   >
                     <Pencil class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-1.5 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                    class="p-1.5 hover:bg-color-300 rounded-lg text-color-400 transition-colors"
                     :title="account.status === 1 ? '停用' : '启用'"
                     @click="toggleStatus(account)"
                   >
                     <Power class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-1.5 hover:bg-red-900/50 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
+                    class="p-1.5 hover:bg-red-500 rounded-lg text-color-400 hover:text-white transition-colors"
                     title="删除"
                     @click="deleteAccount(account)"
                   >
@@ -437,7 +439,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               <div class="space-y-1.5 text-xs">
                 <div
                   v-if="type !== 'xunlei'"
-                  class="flex items-center gap-2 text-zinc-500"
+                  class="flex items-center gap-2 text-color-500"
                 >
                   <span class="w-16 shrink-0">Cookie</span>
                   <span
@@ -450,7 +452,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                 </div>
                 <div
                   v-if="type === 'baidu' || type === 'xunlei'"
-                  class="flex items-center gap-2 text-zinc-500"
+                  class="flex items-center gap-2 text-color-500"
                 >
                   <span class="w-16 shrink-0">Token</span>
                   <span
@@ -463,10 +465,10 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     {{ account.hasRefreshToken ? "已配置" : "未配置" }}
                   </span>
                 </div>
-                <div class="flex items-center gap-2 text-zinc-500">
+                <div class="flex items-center gap-2 text-color-500">
                   <span class="w-16 shrink-0">临时目录</span>
                   <span
-                    class="truncate text-zinc-400 font-mono"
+                    class="truncate text-color-400 font-mono"
                     :title="account.tempDir"
                   >
                     {{ account.tempDir || "未配置" }}
@@ -474,10 +476,10 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                 </div>
                 <div
                   v-if="account.expiresAt"
-                  class="flex items-center gap-2 text-zinc-500"
+                  class="flex items-center gap-2 text-color-500"
                 >
                   <span class="w-16 shrink-0">过期时间</span>
-                  <span class="text-zinc-400">
+                  <span class="text-color-400">
                     {{ new Date(account.expiresAt).toLocaleString() }}
                   </span>
                 </div>
@@ -501,13 +503,13 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
           ></div>
 
           <div
-            class="modal-content relative bg-zinc-900 rounded-2xl p-6 max-w-lg w-full border border-zinc-800 max-h-[85vh] overflow-y-auto"
+            class="modal-content relative bg-color-100 rounded-2xl p-6 max-w-lg w-full border border-color-300 max-h-[85vh] overflow-y-auto"
           >
             <button
-              class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors z-10"
+              class="absolute top-4 right-4 p-2 hover:bg-color-300 rounded-lg transition-colors z-10"
               @click="closeForm"
             >
-              <X class="w-5 h-5 text-zinc-400" />
+              <X class="w-5 h-5 text-color-400" />
             </button>
 
             <h3 class="text-lg font-medium mb-4">
@@ -517,7 +519,9 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
             <div class="space-y-4">
               <!-- 网盘类型 -->
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">网盘类型</label>
+                <label class="block text-color-400 text-sm mb-2"
+                  >网盘类型</label
+                >
                 <select
                   v-model="formData.type"
                   class="input-search w-full"
@@ -532,7 +536,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
 
               <!-- Cookie -->
               <div v-if="formData.type !== 'xunlei'">
-                <label class="block text-zinc-400 text-sm mb-2">Cookie</label>
+                <label class="block text-color-400 text-sm mb-2">Cookie</label>
                 <textarea
                   v-model="formData.cookie"
                   rows="3"
@@ -546,13 +550,13 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                 v-if="formData.type === 'baidu'"
                 class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
               >
-                <div class="flex items-center gap-2 text-sm text-zinc-400">
+                <div class="flex items-center gap-2 text-sm text-color-400">
                   <KeyRound class="w-4 h-4" />
                   <span>OAuth2 授权获取 Token</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <button
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     :disabled="gettingOauthUrl"
                     @click="getBaiduOauthUrl"
                   >
@@ -589,7 +593,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               <div
                 v-if="formData.type === 'baidu' || formData.type === 'xunlei'"
               >
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >Refresh Token</label
                 >
                 <textarea
@@ -602,7 +606,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
 
               <!-- 临时目录 -->
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >临时资源目录</label
                 >
                 <div class="flex gap-2">
@@ -613,7 +617,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     class="input-search flex-1"
                   />
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 rounded-lg transition-colors whitespace-nowrap"
+                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap"
                     title="从网盘选择目录"
                     @click="openDirPicker"
                   >
@@ -625,7 +629,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
 
               <!-- 状态 -->
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">状态</label>
+                <label class="block text-color-400 text-sm mb-2">状态</label>
                 <select v-model="formData.status" class="input-search w-full">
                   <option :value="1">启用</option>
                   <option :value="0">停用</option>
@@ -635,16 +639,16 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
 
             <!-- 底部操作 -->
             <div
-              class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-zinc-800"
+              class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-color-300"
             >
               <button
-                class="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                class="px-4 py-2 text-sm text-color-400 hover:bg-color-300 rounded-lg transition-colors"
                 @click="closeForm"
               >
                 取消
               </button>
               <button
-                class="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="formSaving"
                 @click="saveForm"
               >

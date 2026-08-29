@@ -4,7 +4,7 @@ import path from "path";
 // 1. 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
 
-const themeInitScript = `(function(){try{var p=localStorage.getItem('xiageba-theme');if(p!=='light'&&p!=='dark'&&p!=='system')p='dark';var dark=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.dataset.theme=dark?'dark':'light';r.dataset.themePreference=p;r.style.colorScheme=dark?'dark':'light'}catch(e){document.documentElement.dataset.theme='dark'}})();`;
+const themeInitScript = `(function(){try{var p=localStorage.getItem('data-theme');if(p!=='light'&&p!=='dark'&&p!=='system')p='dark';var dark=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;r.dataset.theme=dark?'dark':'light';r.dataset.themePreference=p;r.style.colorScheme=dark?'dark':'light'}catch(e){document.documentElement.dataset.theme='dark'}})();`;
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-06-01",
@@ -131,18 +131,19 @@ export default defineNuxtConfig({
     baseURL: "/",
     head: {
       htmlAttrs: { lang: "zh-CN" },
-      title: "全盘搜 - 免费下载高品质MP3与FLAC无损音乐",
+      title: "全盘搜 - 免费网盘资源搜索引擎",
       meta: [
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
           name: "description",
           content:
-            "全盘搜是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。",
+            "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
         },
         {
           name: "keywords",
-          content: "全盘搜, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听",
+          content:
+            "全盘搜, 网盘搜索, 搜索引擎, 公开网盘, 资源搜索, 百度网盘, 夸克网盘, 阿里云盘, 免费资源",
         },
         { name: "robots", content: "index, follow" },
         { name: "theme-color", content: "#0f172a" },
@@ -167,7 +168,7 @@ export default defineNuxtConfig({
         },
       ],
     },
-    pageTransition: { name: "page", mode: "out-in" },
+    // pageTransition: { name: "page", mode: "out-in" },
   },
   features: {
     inlineStyles: false,

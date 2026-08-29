@@ -22,9 +22,9 @@ const icons = {
 };
 
 const colors = {
-  success: "bg-green-500/50 border-green-500/50 text-green-400",
-  error: "bg-red-500/50 border-red-500/50 text-red-400",
-  info: "bg-blue-500/50 border-blue-500/50 text-blue-400",
+  success: "bg-green-500/80 border-green-500",
+  error: "bg-red-500/80 border-red-500",
+  info: "bg-blue-500/80 border-blue-500",
 };
 </script>
 
@@ -35,13 +35,13 @@ const colors = {
         <div
           v-for="toast in props.toasts"
           :key="toast.id"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-sm shadow-lg min-w-[280px] max-w-[400px]"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-sm shadow-lg min-w-[280px] max-w-[400px] text-white"
           :class="colors[toast.type]"
         >
           <component :is="icons[toast.type]" class="w-5 h-5 flex-shrink-0" />
-          <span class="text-sm text-zinc-200 flex-1">{{ toast.message }}</span>
+          <span class="text-sm flex-1">{{ toast.message }}</span>
           <button
-            class="text-white hover:text-white transition-colors flex-shrink-0"
+            class="transition-colors flex-shrink-0"
             @click="emit('remove', toast.id)"
           >
             <X class="w-4 h-4" />

@@ -811,8 +811,12 @@ export default defineEventHandler(async (event) => {
 
   // 🔒 二级防御：并发互斥单飞锁（防止击穿网盘 SDK 和账号限制）
   if (inflightRequests.has(cacheKey)) {
-    const url = await inflightRequests.get(cacheKey);
-    return { url, cache: "inflight" };
+    // transferShareUrl 解析为 TransferShareUrlResult，必须取出其中的 url 字符串，
+    // 否则前端拿到的 data.url 是一个对象，下载弹窗会显示 [object Object]
+    const result = await inflightRequests.get(cacheKey);
+    if (result) {
+      return { url: result.url, cache: "inflight" };
+    }
   }
 
   if (id) {

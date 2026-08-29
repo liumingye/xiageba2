@@ -154,7 +154,7 @@ const deleteCategory = async (id: string) => {
 
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium text-white">分类管理</h2>
+        <h2 class="text-lg font-medium">分类管理</h2>
         <button
           class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
           @click="openAddModal"
@@ -166,28 +166,28 @@ const deleteCategory = async (id: string) => {
 
       <div class="card overflow-x-auto">
         <table class="w-full table-auto">
-          <thead class="bg-zinc-900">
+          <thead class="bg-color-100">
             <tr>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-20"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-20"
               >
                 ID
               </th>
-              <th class="px-4 py-3 text-left text-zinc-400 text-sm font-medium">
+              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
                 名称
               </th>
               <th
-                class="px-4 py-3 text-left text-zinc-400 text-sm font-medium w-20"
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-20"
               >
                 排序
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium w-24"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-24"
               >
                 显示
               </th>
               <th
-                class="px-4 py-3 text-center text-zinc-400 text-sm font-medium w-24"
+                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-24"
               >
                 操作
               </th>
@@ -197,27 +197,27 @@ const deleteCategory = async (id: string) => {
             <tr
               v-for="cat in categories"
               :key="cat.id"
-              class="border-t border-zinc-800 hover:bg-zinc-800"
+              class="border-t border-color-300 hover:bg-color-300"
             >
-              <td class="px-4 py-3 text-zinc-400 text-xs font-mono truncate">
+              <td class="px-4 py-3 text-color-400 text-xs font-mono truncate">
                 <span :title="String(cat.id)">{{ cat.id }}</span>
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <div
-                    class="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center"
+                    class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center"
                   >
                     <img v-if="cat.image" :src="cat.image" class="w-6 h-6" />
-                    <Tag v-else class="w-5 h-5 text-zinc-500" />
+                    <Tag v-else class="w-5 h-5 text-color-500" />
                   </div>
-                  <span class="text-white">{{ cat.name }}</span>
+                  <span>{{ cat.name }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-zinc-300">{{ cat.sort }}</td>
+              <td class="px-4 py-3 text-color-300">{{ cat.sort }}</td>
               <td class="px-4 py-3 text-center">
                 <span
                   class="inline-flex items-center px-2 py-1 rounded-sm text-xs"
-                  :class="cat.isShow ? 'bg-green-600 text-[var(--white)]' : 'bg-zinc-700 text-zinc-400'"
+                  :class="cat.isShow ? 'bg-green-600 text-[var(--white)]' : 'bg-color-400 text-color-400'"
                 >
                   {{ cat.isShow ? "显示" : "隐藏" }}
                 </span>
@@ -225,14 +225,14 @@ const deleteCategory = async (id: string) => {
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-2">
                   <button
-                    class="p-2 text-zinc-400 hover:text-primary-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
                     title="编辑"
                     @click="openEditModal(cat)"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
                     title="删除"
                     @click="deleteCategory(cat.id)"
                   >
@@ -245,7 +245,6 @@ const deleteCategory = async (id: string) => {
         </table>
 
         <AdminPagination
-          v-if="totalPages > 1"
           :current-page="currentPage"
           :total-pages="totalPages"
           :total="total"
@@ -254,7 +253,7 @@ const deleteCategory = async (id: string) => {
         />
 
         <div v-if="categories.length === 0" class="py-12 text-center">
-          <p class="text-zinc-500">暂无分类</p>
+          <p class="text-color-500">暂无分类</p>
         </div>
       </div>
     </main>
@@ -270,9 +269,9 @@ const deleteCategory = async (id: string) => {
             @click="closeAddModal"
           ></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium text-white mb-6">添加分类</h3>
+            <h3 class="text-xl font-medium mb-6">添加分类</h3>
             <div
               v-if="error"
               class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
@@ -281,7 +280,7 @@ const deleteCategory = async (id: string) => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >分类名称 *</label
                 >
                 <input
@@ -292,7 +291,7 @@ const deleteCategory = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">封面图片</label>
+                <label class="block text-color-400 text-sm mb-2">封面图片</label>
                 <input
                   v-model="newImage"
                   type="text"
@@ -301,7 +300,7 @@ const deleteCategory = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">排序</label>
+                <label class="block text-color-400 text-sm mb-2">排序</label>
                 <input
                   v-model.number="newSort"
                   type="number"
@@ -314,13 +313,13 @@ const deleteCategory = async (id: string) => {
                   id="newIsShow"
                   v-model="newIsShow"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
                 />
-                <label for="newIsShow" class="text-zinc-300 text-sm">显示该分类</label>
+                <label for="newIsShow" class="text-color-300 text-sm">显示该分类</label>
               </div>
               <div class="flex gap-4">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeAddModal"
                 >
                   取消
@@ -347,9 +346,9 @@ const deleteCategory = async (id: string) => {
             @click="closeEditModal"
           ></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium text-white mb-6">编辑分类</h3>
+            <h3 class="text-xl font-medium mb-6">编辑分类</h3>
             <div
               v-if="error"
               class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
@@ -358,7 +357,7 @@ const deleteCategory = async (id: string) => {
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-zinc-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2"
                   >分类名称 *</label
                 >
                 <input
@@ -369,7 +368,7 @@ const deleteCategory = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">封面图片</label>
+                <label class="block text-color-400 text-sm mb-2">封面图片</label>
                 <input
                   v-model="editImage"
                   type="text"
@@ -378,7 +377,7 @@ const deleteCategory = async (id: string) => {
                 />
               </div>
               <div>
-                <label class="block text-zinc-400 text-sm mb-2">排序</label>
+                <label class="block text-color-400 text-sm mb-2">排序</label>
                 <input
                   v-model.number="editSort"
                   type="number"
@@ -391,13 +390,13 @@ const deleteCategory = async (id: string) => {
                   id="editIsShow"
                   v-model="editIsShow"
                   type="checkbox"
-                  class="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-primary-500 focus:ring-primary-500"
+                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
                 />
-                <label for="editIsShow" class="text-zinc-300 text-sm">显示该分类</label>
+                <label for="editIsShow" class="text-color-300 text-sm">显示该分类</label>
               </div>
               <div class="flex gap-4">
                 <button
-                  class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
                   @click="closeEditModal"
                 >
                   取消

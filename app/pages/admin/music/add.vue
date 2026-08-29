@@ -103,16 +103,16 @@ const handleSubmit = async () => {
 
 <template>
   <div class="min-h-screen">
-    <header class="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
+    <header class="bg-color-100 border-b border-color-300 px-6 py-4">
       <div class="flex items-center justify-between max-w-4xl mx-auto">
         <div class="flex items-center gap-4">
           <button
-            class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            class="p-2 hover:bg-color-300 rounded-lg transition-colors"
             @click="goBack"
           >
-            <ArrowLeft class="w-5 h-5 text-zinc-400" />
+            <ArrowLeft class="w-5 h-5 text-color-400" />
           </button>
-          <h1 class="text-xl font-bold text-white">添加音乐</h1>
+          <h1 class="text-xl font-bold">添加音乐</h1>
         </div>
       </div>
     </header>
@@ -127,7 +127,7 @@ const handleSubmit = async () => {
 
       <div class="flex items-center justify-end mb-4 gap-2">
         <button
-          class="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+          class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
           @click="openScrapeModal"
         >
           <Search class="w-4 h-4" />
@@ -145,7 +145,7 @@ const handleSubmit = async () => {
 
       <div class="card p-6 space-y-6">
         <div>
-          <label class="block text-zinc-400 text-sm mb-2">歌名 *</label>
+          <label class="block text-color-400 text-sm mb-2">歌名 *</label>
           <input
             v-model="form.title"
             type="text"
@@ -155,7 +155,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-zinc-400 text-sm mb-2">歌手 *</label>
+          <label class="block text-color-400 text-sm mb-2">歌手 *</label>
           <input
             v-model="form.artist"
             type="text"
@@ -165,7 +165,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-zinc-400 text-sm mb-2">专辑</label>
+          <label class="block text-color-400 text-sm mb-2">专辑</label>
           <input
             v-model="form.album"
             type="text"
@@ -175,7 +175,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-zinc-400 text-sm mb-2">封面图片URL</label>
+          <label class="block text-color-400 text-sm mb-2">封面图片URL</label>
           <div class="flex gap-2 items-start">
             <div class="flex-1 space-y-3">
               <div class="flex gap-2">
@@ -187,7 +187,7 @@ const handleSubmit = async () => {
                 />
                 <button
                   type="button"
-                  class="flex items-center gap-1.5 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap shrink-0"
+                  class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
                   @click="showCoverPicker = true"
                 >
                   <FolderOpen class="w-4 h-4" />
@@ -196,7 +196,7 @@ const handleSubmit = async () => {
               </div>
               <div v-if="form.cover" class="flex items-start gap-3">
                 <div
-                  class="w-24 h-24 rounded-lg border border-zinc-700 overflow-hidden flex items-center justify-center bg-zinc-800 shrink-0"
+                  class="w-24 h-24 rounded-lg border border-color-400 overflow-hidden flex items-center justify-center bg-color-300 shrink-0"
                 >
                   <img
                     v-if="!coverImgError"
@@ -210,8 +210,8 @@ const handleSubmit = async () => {
                     class="w-8 h-8 text-zinc-600"
                   />
                 </div>
-                <div class="text-xs text-zinc-500 pt-1 break-all flex-1">
-                  预览：<span class="text-zinc-400">{{ form.cover }}</span>
+                <div class="text-xs text-color-500 pt-1 break-all flex-1">
+                  预览：<span class="text-color-400">{{ form.cover }}</span>
                 </div>
               </div>
             </div>
@@ -219,7 +219,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-zinc-400 text-sm mb-2">歌词</label>
+          <label class="block text-color-400 text-sm mb-2">歌词</label>
           <textarea
             v-model="form.lyrics"
             rows="6"
@@ -229,7 +229,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-zinc-400 text-sm mb-2">播放地址</label>
+          <label class="block text-color-400 text-sm mb-2">播放地址</label>
           <input
             v-model="form.playUrl"
             type="text"
@@ -240,7 +240,7 @@ const handleSubmit = async () => {
 
         <div>
           <div class="flex items-center justify-between mb-4">
-            <label class="text-zinc-400 text-sm">下载链接</label>
+            <label class="text-color-400 text-sm">下载链接</label>
             <button
               class="flex items-center gap-1 text-sm text-primary-500 hover:text-primary-400 transition-colors"
               @click="addDownload"
@@ -278,7 +278,7 @@ const handleSubmit = async () => {
                 />
               </div>
               <button
-                class="p-2 text-zinc-500 hover:text-red-500 transition-colors mt-1"
+                class="p-2 text-color-500 hover:text-red-500 transition-colors mt-1"
                 @click="removeDownload(index)"
               >
                 <X class="w-5 h-5" />

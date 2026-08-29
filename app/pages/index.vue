@@ -859,7 +859,7 @@ const getPic = (url: string) => {
 }
 
 .button-radius {
-  @apply px-4 py-2 rounded-full text-sm transition-colors bg-color-100 border border-color-200;
+  @apply px-3 py-2 rounded-full text-sm transition-colors bg-color-100 border border-color-200;
   &:hover {
     @apply bg-color-300;
   }

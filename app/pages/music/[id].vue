@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useEventListener, useMediaQuery, useMounted } from "@vueuse/core";
-import { Download, Play, Pause, Disc3, Key, MicVocal } from "@lucide/vue";
+import { Download, Play, Pause, Disc3, Key, MicVocal, Search } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
@@ -158,6 +158,16 @@ const showDownloadModal = ref(false);
 const isPlaying = ref(false);
 const audioElement = ref<HTMLAudioElement | null>(null);
 const selectedDownload = ref<DownloadOption | null>(null);
+
+// 没有下载链接时，跳转全网搜网盘资源（关键词：歌名 + 歌手）
+const searchNetdisk = () => {
+  if (!music.value) return;
+  const keyword = [music.value.title, music.value.artist].filter(Boolean).join(" ");
+  router.push({
+    path: "/search",
+    query: { type: "resource", q: keyword },
+  });
+};
 
 useEventListener(audioElement, "ended", () => {
   isPlaying.value = false;
@@ -347,6 +357,15 @@ const isMounted = useMounted();
                       (提取码: {{ extractPwd(download.url) }})
                     </template>
                   </a>
+                  <button
+                    v-if="music.downloads.length === 0"
+                    class="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors text-white"
+                    @click="searchNetdisk"
+                    aria-label="搜网盘"
+                  >
+                    <Search class="w-5 h-5" />
+                    搜网盘
+                  </button>
                   <button
                     v-if="music.playUrl"
                     class="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors text-white"
