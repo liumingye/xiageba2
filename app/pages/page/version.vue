@@ -7,11 +7,11 @@ marked.setOptions({ gfm: true, breaks: true, async: false });
 defineOptions({ name: "VersionPage" });
 
 useHead({
-  title: "版权说明 - 下歌吧",
+  title: "版权说明 - 全盘搜",
   meta: [
     {
       name: "description",
-      content: "下歌吧版权说明，本站不存储音频文件，所有内容版权归原作者所有。",
+      content: "全盘搜版权说明，本站不存储音频文件，所有内容版权归原作者所有。",
     },
     { name: "robots", content: "index, follow" },
   ],
@@ -21,7 +21,7 @@ const content = `## 版权说明
 
 **最后更新日期：2026年1月1日**
 
-下歌吧（以下简称"本站"）尊重知识产权，本版权说明旨在阐明本站与版权相关内容的处理方式。
+全盘搜（以下简称"本站"）尊重知识产权，本版权说明旨在阐明本站与版权相关内容的处理方式。
 
 ### 1. 本站立场
 
@@ -97,16 +97,18 @@ const rendered = marked.parse(content) as string;
 </script>
 
 <template>
-  <div class="min-h-screen py-8 px-4">
-    <div class="max-w-3xl mx-auto">
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+
+    <div class="max-w-4xl mx-auto px-2">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
           <Copyright class="w-6 h-6 text-primary-400" />
           版权说明
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-color-300 hover:text-primary-400 transition-colors"
         >
           返回首页
         </NuxtLink>
@@ -114,11 +116,13 @@ const rendered = marked.parse(content) as string;
 
       <article class="card p-6">
         <div
-          class="text-sm text-zinc-300 break-words leading-relaxed prose-resource"
+          class="text-sm text-color-300 break-words leading-relaxed prose-resource"
         >
           <span v-html="rendered" />
         </div>
       </article>
+
+      <SiteFooter />
     </div>
   </div>
 </template>

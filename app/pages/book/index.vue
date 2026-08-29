@@ -3,10 +3,7 @@ import {
   BookOpen,
   Key,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   X,
-  Clipboard,
   AlertTriangle,
   RotateCcw,
   Filter,
@@ -14,7 +11,7 @@ import {
   HardDrive,
   Search,
 } from "@lucide/vue";
-import { useClipboard, useDebounceFn } from "@vueuse/core";
+import { useDebounceFn } from "@vueuse/core";
 
 defineOptions({
   name: "BookIndexPage",
@@ -279,142 +276,31 @@ const goToPage = (page: number) => {
   });
 };
 
-const getPageNumbers = (): (number | "...")[] => {
-  const pages: (number | "...")[] = [];
-  const total = totalPages.value;
-  const current = currentPage.value;
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i);
-    return pages;
-  }
-  pages.push(1);
-  if (current > 3) pages.push("...");
-  const start = Math.max(2, current - 1);
-  const end = Math.min(total - 1, current + 1);
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
-};
-
 // 封面加载错误状态
 const novelCoverError = reactive<Record<string, boolean>>({});
 
-// 试读弹窗
+// 试读 / 口令弹窗
 const showSampleReadModal = ref(false);
 const sampleReadBook = ref<NovelBook | null>(null);
-const sampleReadChapters = ref<any[]>([]);
-const sampleReadCurrentIndex = ref(0);
-const sampleReadLoading = ref(false);
-const sampleReadError = ref("");
-
-const openSampleRead = async (book: NovelBook) => {
-  sampleReadBook.value = book;
-  sampleReadChapters.value = [];
-  sampleReadCurrentIndex.value = 0;
-  sampleReadError.value = "";
-  sampleReadLoading.value = true;
-  showSampleReadModal.value = true;
-
-  try {
-    const res = await fetch("/api/novel/sample-read", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ book_id: book.bookId }),
-    });
-    const data = await res.json();
-    if (res.ok && data?.chapters) {
-      sampleReadChapters.value = data.chapters;
-    } else {
-      sampleReadError.value = data.message || data.error || "获取试读内容失败";
-    }
-  } catch {
-    sampleReadError.value = "获取试读内容失败";
-  } finally {
-    sampleReadLoading.value = false;
-  }
-};
-
-const closeSampleRead = () => {
-  showSampleReadModal.value = false;
-  sampleReadBook.value = null;
-  sampleReadChapters.value = [];
-  sampleReadCurrentIndex.value = 0;
-  sampleReadError.value = "";
-};
-
-const sampleReadContentRef = ref<HTMLDivElement>();
-
-const sampleReadPrevChapter = () => {
-  if (sampleReadCurrentIndex.value > 0) sampleReadCurrentIndex.value--;
-  nextTick(() => {
-    if (sampleReadContentRef.value) {
-      sampleReadContentRef.value.scrollTo({ top: 0 });
-    }
-  });
-};
-
-const sampleReadNextChapter = () => {
-  if (sampleReadCurrentIndex.value < sampleReadChapters.value.length - 1)
-    sampleReadCurrentIndex.value++;
-  nextTick(() => {
-    if (sampleReadContentRef.value) {
-      sampleReadContentRef.value.scrollTo({ top: 0 });
-    }
-  });
-};
-
-// 口令弹窗
 const showCodeModal = ref(false);
-const codeModalTitle = ref("");
-const codeModalPcode = ref("");
-const codeModalMsg = ref("");
-const codeModalLoading = ref(false);
-const codeModalError = ref("");
+const codeModalBook = ref<NovelBook | null>(null);
 
-const openGetCode = async (book: NovelBook) => {
-  codeModalTitle.value = book.bookName;
-  codeModalPcode.value = "";
-  codeModalMsg.value = "";
-  codeModalError.value = "";
-  codeModalLoading.value = true;
+const openSampleRead = (book: NovelBook) => {
+  sampleReadBook.value = book;
+  showSampleReadModal.value = true;
+};
+
+const openGetCode = (book: NovelBook) => {
+  codeModalBook.value = book;
   showCodeModal.value = true;
-
-  try {
-    const res = await fetch("/api/novel/get-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        book_id: book.bookId,
-        content_title: book.bookName,
-        content_author: book.author,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok && data?.pcode) {
-      codeModalPcode.value = data.pcode;
-      codeModalMsg.value = data.msg || "";
-      copy(codeModalPcode.value);
-    } else {
-      codeModalError.value = data.message || data.error || "获取口令失败";
-    }
-  } catch {
-    codeModalError.value = "获取口令失败";
-  } finally {
-    codeModalLoading.value = false;
-  }
 };
 
-const closeCodeModal = () => {
-  showCodeModal.value = false;
-  codeModalTitle.value = "";
-  codeModalPcode.value = "";
-  codeModalMsg.value = "";
-  codeModalError.value = "";
+// 试读内容里点击"获取口令"时，先关闭试读再打开口令弹窗
+const onSampleReadGetCode = (book: NovelBook) => {
+  showSampleReadModal.value = false;
+  codeModalBook.value = book;
+  showCodeModal.value = true;
 };
-
-const { success } = useToast();
-const { copy } = useClipboard();
 
 const getTag = (tags: string) => {
   return [
@@ -436,18 +322,18 @@ const getTag = (tags: string) => {
 useHead({
   title: () => {
     if (isSearchMode.value && books.value.length > 0) {
-      return `"${searchKeyword.value}" - 搜小说 - 下歌吧`;
+      return `"${searchKeyword.value}" - 搜小说 - 全盘搜`;
     }
-    if (isSearchMode.value) return `"${searchKeyword.value}" - 搜小说 - 下歌吧`;
+    if (isSearchMode.value) return `"${searchKeyword.value}" - 搜小说 - 全盘搜`;
     return books.value.length > 0
-      ? `搜小说 - 第${currentPage.value}页 - 下歌吧`
-      : "搜小说 - 下歌吧";
+      ? `搜小说 - 第${currentPage.value}页 - 全盘搜`
+      : "搜小说 - 全盘搜";
   },
   meta: [
     {
       name: "description",
       content:
-        "下歌吧小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。",
+        "全盘搜小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。",
     },
     { name: "robots", content: "index, follow" },
     { name: "theme-color", content: "#0f172a" },
@@ -467,12 +353,12 @@ useHead({
             v-model="searchInput"
             type="text"
             placeholder="搜你想看的小说"
-            class="input-search pl-3 pr-10 bg-zinc-900"
+            class="input-search pl-3 pr-10 bg-color-100"
             @keydown.enter="handleSearch"
           />
           <button
             v-if="searchInput"
-            class="absolute right-2 py-0.5 px-0.5 text-zinc-500 hover:text-white transition-colors bg-zinc-700 rounded-full"
+            class="absolute right-2 py-0.5 px-0.5 opacity-60 hover:opacity-100 transition-all bg-color-400 rounded-full"
             @click="clearSearch"
             aria-label="清除"
             type="button"
@@ -481,7 +367,7 @@ useHead({
           </button>
         </div>
         <button
-          class="px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+          class="px-3 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
           @click="handleSearch"
           type="button"
         >
@@ -493,20 +379,20 @@ useHead({
         <!-- 错误提示 -->
         <div v-if="errorInfo" class="card p-5 text-center mb-6" role="alert">
           <div
-            class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
+            class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 text-white"
             :class="
               errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
-                ? 'bg-yellow-900/50 text-yellow-400'
-                : 'bg-red-900/50 text-red-400'
+                ? 'bg-yellow-500'
+                : 'bg-red-500'
             "
             aria-hidden="true"
           >
             <AlertTriangle class="w-7 h-7" />
           </div>
-          <h3 class="text-lg font-medium text-white mb-1">
+          <h3 class="text-lg font-medium mb-1">
             {{ errorInfo.title }}
           </h3>
-          <p class="text-sm text-zinc-500">{{ errorInfo.message }}</p>
+          <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
           <button
             v-if="errorInfo.canRetry"
             class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
@@ -532,20 +418,20 @@ useHead({
             </div>
             <div class="flex flex-wrap gap-2 mb-4 h-10">
               <div
-                class="flex-1 min-w-24 bg-zinc-800 rounded-lg animate-pulse"
+                class="flex-1 min-w-24 bg-color-300 rounded-lg animate-pulse"
               />
               <div
-                class="flex-1 min-w-24 bg-zinc-800 rounded-lg animate-pulse"
+                class="flex-1 min-w-24 bg-color-300 rounded-lg animate-pulse"
               />
-              <div class="bg-zinc-800 w-24 rounded-lg animate-pulse" />
+              <div class="bg-color-300 w-24 rounded-lg animate-pulse" />
             </div>
           </template>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <div v-for="(_, i) in 8" :key="i" class="card p-3 animate-pulse">
-              <div class="aspect-[3/4] bg-zinc-700 rounded-lg mb-2" />
-              <div class="h-3 bg-zinc-700 rounded w-full mb-1" />
-              <div class="h-2 bg-zinc-700 rounded w-2/3 mb-1" />
-              <div class="h-2 bg-zinc-700 rounded w-1/2" />
+              <div class="aspect-[3/4] bg-color-300 rounded-lg mb-2" />
+              <div class="h-3 bg-color-300 rounded w-full mb-1" />
+              <div class="h-2 bg-color-300 rounded w-2/3 mb-1" />
+              <div class="h-2 bg-color-300 rounded w-1/2" />
             </div>
           </div>
         </div>
@@ -556,12 +442,12 @@ useHead({
           <template v-if="!isSearchMode">
             <div class="flex items-center gap-2 !my-3">
               <Filter class="w-4 h-4 text-primary-400" />
-              <h2 class="text-zinc-500 text-sm">筛选条件</h2>
+              <h2 class="text-color-500 text-sm">筛选条件</h2>
             </div>
             <div class="flex flex-wrap items-center gap-2 mb-4">
               <div class="flex-1 relative min-w-24">
                 <select
-                  class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  class="select"
                   :value="bookStatusFilter"
                   @change="
                     updateFilter(
@@ -585,7 +471,7 @@ useHead({
 
               <div class="flex-1 relative min-w-24">
                 <select
-                  class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  class="select"
                   :value="novelCategoryFilter"
                   @change="
                     updateFilter(
@@ -608,7 +494,7 @@ useHead({
               </div>
 
               <button
-                class="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 text-zinc-400 enabled:hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                class="flex items-center gap-1.5 px-3 py-2 bg-color-100 text-color-300 enabled:hover:bg-color-300 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 @click="clearFilters"
                 :disabled="!hasFilters"
               >
@@ -618,7 +504,7 @@ useHead({
             </div>
           </template>
 
-          <h2 v-if="books.length > 0" class="text-zinc-500 text-sm mb-3">
+          <h2 v-if="books.length > 0" class="text-color-500 text-sm mb-3">
             <template v-if="isSearchMode">
               搜索"<span class="text-primary-400">{{ searchKeyword }}</span
               >"找到 {{ books.length }} 本小说
@@ -642,7 +528,7 @@ useHead({
               >
                 <!-- 封面 -->
                 <div
-                  class="relative aspect-[3/4] mb-2 overflow-hidden rounded-lg bg-zinc-800 flex-shrink-0"
+                  class="relative aspect-[3/4] mb-2 overflow-hidden rounded-lg flex-shrink-0"
                 >
                   <img
                     v-if="!novelCoverError[book.bookId]"
@@ -672,7 +558,7 @@ useHead({
 
                 <!-- 小说名 -->
                 <h3
-                  class="text-sm font-medium text-white truncate mb-0.5"
+                  class="text-sm font-medium truncate mb-0.5"
                   :title="book.bookName"
                 >
                   {{ book.bookName }}
@@ -704,7 +590,7 @@ useHead({
                 <!-- 操作按钮 -->
                 <div class="flex gap-2 mt-auto pt-2">
                   <button
-                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-md transition-colors"
+                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-color-300 hover:bg-color-400 text-color-300 rounded-md transition-colors"
                     @click.prevent="openSampleRead(book)"
                   >
                     <Eye class="w-3 h-3" />
@@ -747,44 +633,11 @@ useHead({
           </template>
 
           <!-- 分页 -->
-          <div
-            v-if="totalPages > 1"
-            class="flex items-center justify-center gap-2 mt-8 flex-wrap"
-            role="navigation"
-            aria-label="分页"
-          >
-            <button
-              class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="currentPage <= 1"
-              @click="goToPage(currentPage - 1)"
-            >
-              上一页
-            </button>
-
-            <button
-              v-for="(pageNum, idx) in getPageNumbers()"
-              :key="idx"
-              class="px-4 py-2 rounded-lg transition-colors"
-              :class="
-                pageNum === currentPage
-                  ? 'bg-primary-500 text-white font-medium'
-                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-              "
-              :disabled="pageNum === '...'"
-              @click="pageNum !== '...' && goToPage(pageNum as number)"
-              :aria-current="pageNum === currentPage ? 'page' : undefined"
-            >
-              {{ pageNum }}
-            </button>
-
-            <button
-              class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="!hasMore"
-              @click="goToPage(currentPage + 1)"
-            >
-              下一页
-            </button>
-          </div>
+          <Pagination
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            @change="goToPage"
+          />
         </div>
       </main>
 
@@ -793,209 +646,19 @@ useHead({
     </div>
 
     <!-- 试读弹窗 -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showSampleReadModal"
-          class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-          @click.self="closeSampleRead"
-        >
-          <div
-            class="flex flex-col max-h-[90vh] modal-content bg-dark-300 rounded-xl max-w-2xl w-full border border-zinc-700 shadow-2xl overflow-hidden"
-          >
-            <div
-              class="flex items-center justify-between p-4 border-b border-zinc-800"
-            >
-              <h3 class="text-white font-medium truncate flex-1 mr-2">
-                {{ sampleReadBook?.bookName }} - 试读
-              </h3>
-              <button
-                class="text-zinc-400 hover:text-white transition-colors flex-shrink-0"
-                @click="closeSampleRead"
-              >
-                <X class="w-5 h-5" />
-              </button>
-            </div>
-
-            <!-- 章节导航 -->
-            <div
-              v-if="sampleReadChapters.length > 0"
-              class="flex items-center justify-between gap-2 p-3 border-b border-zinc-800 bg-zinc-900/50"
-            >
-              <button
-                class="flex items-center shrink-0 gap-1 px-3 py-1.5 rounded-md text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                :class="
-                  sampleReadCurrentIndex > 0
-                    ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                    : 'bg-zinc-800/50 text-zinc-500'
-                "
-                :disabled="sampleReadCurrentIndex === 0"
-                @click="sampleReadPrevChapter"
-              >
-                <ChevronLeft class="w-4 h-4" />
-                上一章
-              </button>
-              <span class="text-sm text-zinc-400 truncate max-w-[50%]">
-                {{ sampleReadChapters[sampleReadCurrentIndex]?.chapterTitle }}
-                <span class="text-zinc-600 ml-1"
-                  >({{ sampleReadCurrentIndex + 1 }}/{{
-                    sampleReadChapters.length
-                  }})</span
-                >
-              </span>
-              <button
-                class="flex items-center shrink-0 gap-1 px-3 py-1.5 rounded-md text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                :class="
-                  sampleReadCurrentIndex < sampleReadChapters.length - 1
-                    ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                    : 'bg-zinc-800/50 text-zinc-500'
-                "
-                :disabled="
-                  sampleReadCurrentIndex >= sampleReadChapters.length - 1
-                "
-                @click="sampleReadNextChapter"
-              >
-                下一章
-                <ChevronRight class="w-4 h-4" />
-              </button>
-            </div>
-
-            <div ref="sampleReadContentRef" class="p-4 flex-1 overflow-auto">
-              <div v-if="sampleReadLoading" class="text-center py-12">
-                <div
-                  class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
-                />
-                <p class="text-zinc-400 text-sm">正在加载试读内容...</p>
-              </div>
-              <div v-else-if="sampleReadError" class="text-center py-12">
-                <p class="text-red-400 text-sm">{{ sampleReadError }}</p>
-              </div>
-              <div v-else-if="sampleReadChapters.length > 0" class="space-y-4">
-                <h4 class="text-lg font-medium text-white text-center">
-                  {{ sampleReadChapters[sampleReadCurrentIndex]?.chapterTitle }}
-                </h4>
-                <div
-                  class="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap"
-                >
-                  {{ sampleReadChapters[sampleReadCurrentIndex]?.content }}
-                </div>
-                <button
-                  v-if="sampleReadCurrentIndex < sampleReadChapters.length - 1"
-                  class="flex w-full justify-center items-center gap-1 px-3 py-8 rounded-md text-sm transition-colors bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-                  @click="sampleReadNextChapter"
-                >
-                  下一章
-                  <ChevronRight class="w-4 h-4" />
-                </button>
-                <button
-                  v-if="sampleReadBook"
-                  class="flex w-full justify-center items-center gap-1 px-2 py-1.5 !mb-48 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors"
-                  @click="openGetCode(sampleReadBook)"
-                >
-                  获取口令
-                </button>
-              </div>
-              <div v-else class="text-center py-12">
-                <p class="text-zinc-500 text-sm">暂无试读内容</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <SampleReadModal
+      v-model="showSampleReadModal"
+      :book="sampleReadBook"
+      @get-code="onSampleReadGetCode"
+    />
 
     <!-- 口令弹窗 -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showCodeModal"
-          class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-          @click.self="closeCodeModal"
-        >
-          <div
-            class="modal-content bg-dark-300 rounded-xl max-w-md w-full border border-zinc-700 shadow-2xl overflow-hidden"
-          >
-            <div
-              class="flex items-center justify-between p-4 border-b border-zinc-800"
-            >
-              <h3 class="text-white font-medium truncate">获取口令</h3>
-              <button
-                class="text-zinc-400 hover:text-white transition-colors"
-                @click="closeCodeModal"
-              >
-                <X class="w-5 h-5" />
-              </button>
-            </div>
-            <div class="p-5">
-              <div v-if="codeModalLoading" class="text-center py-8">
-                <div
-                  class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
-                />
-                <p class="text-zinc-400 text-sm">正在生成口令...</p>
-              </div>
-              <div v-else-if="codeModalError" class="text-center py-8">
-                <p class="text-red-400 text-sm">{{ codeModalError }}</p>
-              </div>
-              <div v-else-if="codeModalPcode" class="space-y-4">
-                <p class="text-white font-medium text-center text-lg truncate">
-                  {{ codeModalTitle }}
-                </p>
-                <div
-                  class="bg-primary-500/10 border border-primary-500/30 rounded-xl p-5 text-center"
-                >
-                  <p class="text-xs text-zinc-400 mb-2">网盘口令</p>
-                  <p
-                    class="text-3xl font-mono font-bold text-primary-400 tracking-wider select-all"
-                  >
-                    {{ codeModalPcode }}
-                  </p>
-                </div>
-                <button
-                  class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                  @click="
-                    copy(codeModalPcode);
-                    success('口令已复制');
-                  "
-                >
-                  <Clipboard class="w-4 h-4" />
-                  复制口令
-                </button>
-                <p
-                  v-if="codeModalMsg"
-                  class="text-xs text-zinc-500 text-center"
-                >
-                  {{ codeModalMsg }}
-                </p>
-                <p class="text-xs text-zinc-400 text-center">
-                  打开百度网盘APP，即可阅读全本小说，确保APP已更新至最新版本
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <GetCodeModal v-model="showCodeModal" :book="codeModalBook" />
   </div>
 </template>
 
 <style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
+.select {
+  @apply w-full appearance-none bg-color-100 text-color-300 hover:bg-color-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500;
 }
 </style>

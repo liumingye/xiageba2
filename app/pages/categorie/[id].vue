@@ -12,14 +12,6 @@ const router = useRouter();
 
 const categoryId = computed(() => Number(route.params.id));
 
-interface CategoryItem {
-  id: string;
-  title: string;
-  menu: string;
-  type: string;
-  createdAt: string;
-}
-
 interface CategoryDetail {
   id: number;
   name: string;
@@ -29,7 +21,7 @@ interface CategoryDetail {
 
 interface CategoryListData {
   category: CategoryDetail;
-  data: CategoryItem[];
+  data: SourceItem[];
   total: number;
   page: number;
   pageSize: number;
@@ -82,14 +74,14 @@ const category = computed(() => data.value?.category);
 useHead({
   title: () =>
     category.value?.name
-      ? `${category.value.name} - 下歌吧资源分类`
-      : "资源分类 - 下歌吧",
+      ? `${category.value.name} - 全盘搜资源分类`
+      : "资源分类 - 全盘搜",
   meta: [
     {
       name: "description",
       content: category.value?.name
         ? `${category.value.name}分类下的网盘资源，免费下载。`
-        : "下歌吧资源分类，各类网盘资源免费下载。",
+        : "全盘搜资源分类，各类网盘资源免费下载。",
     },
   ],
   link: [
@@ -101,33 +93,13 @@ useHead({
 });
 
 const goToPage = (page: number) => {
-  if (page < 1 || page > totalPages.value) return;
+  if (page < 1 || page > totalPages.value || page === currentPage.value) return;
   router.push({
     path: `/categorie/${categoryId.value}`,
     query: { ...route.query, page: page > 1 ? String(page) : undefined },
   });
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0 });
 };
-
-const pages = computed(() => {
-  const total = totalPages.value;
-  const current = currentPage.value;
-  const result: (number | "...")[] = [];
-  const range = 2;
-
-  for (let i = 1; i <= total; i++) {
-    if (
-      i === 1 ||
-      i === total ||
-      (i >= current - range && i <= current + range)
-    ) {
-      result.push(i);
-    } else if (result[result.length - 1] !== "...") {
-      result.push("...");
-    }
-  }
-  return result;
-});
 
 const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck();
 
@@ -237,19 +209,19 @@ const closeModal = () => {
     <TopBar />
     <div class="max-w-4xl mx-auto px-2">
       <div v-if="category" class="mb-6">
-        <h1 class="text-2xl font-bold text-white mb-2">
+        <h1 class="text-2xl font-bold mb-2 text-color-300">
           {{ category.name }}
         </h1>
-        <p class="text-zinc-500 text-sm">共 {{ data?.total || 0 }} 个资源</p>
+        <p class="text-color-400 text-sm">共 {{ data?.total || 0 }} 个资源</p>
       </div>
 
       <div v-if="pending" class="text-center py-12" aria-busy="true">
         <Loader2 class="w-8 h-8 text-primary-400 animate-spin mx-auto" />
-        <p class="text-zinc-500 mt-3">加载中...</p>
+        <p class="text-color-400 mt-3">加载中...</p>
       </div>
 
       <div v-else-if="!items || items.length === 0" class="text-center py-12">
-        <p class="text-zinc-500">暂无资源</p>
+        <p class="text-color-300">暂无资源</p>
       </div>
 
       <div v-else class="space-y-3">
@@ -263,40 +235,11 @@ const closeModal = () => {
         />
       </div>
 
-      <div
-        v-if="totalPages > 1"
-        class="flex items-center justify-center gap-2 mt-8 flex-wrap"
-      >
-        <button
-          class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="currentPage <= 1"
-          @click="goToPage(currentPage - 1)"
-        >
-          上一页
-        </button>
-        <template v-for="(p, idx) in pages" :key="idx">
-          <span v-if="p === '...'" class="text-zinc-500 px-2"> ... </span>
-          <button
-            v-else
-            class="w-9 h-9 rounded text-sm transition-colors"
-            :class="
-              p === currentPage
-                ? 'bg-primary-500 text-white'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-            "
-            @click="goToPage(p as number)"
-          >
-            {{ p }}
-          </button>
-        </template>
-        <button
-          class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="currentPage >= totalPages"
-          @click="goToPage(currentPage + 1)"
-        >
-          下一页
-        </button>
-      </div>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @change="goToPage"
+      />
 
       <Qrcode />
 
@@ -319,18 +262,18 @@ const closeModal = () => {
             @click.self="closeTreeModal"
           >
             <div
-              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-zinc-700 shadow-2xl"
+              class="modal-content bg-color-100 rounded-xl max-w-lg w-full border border-color-300 shadow-2xl"
             >
               <div
-                class="flex items-center justify-between p-4 border-b border-zinc-800"
+                class="flex items-center justify-between py-2 px-3 border-b border-color-300"
               >
-                <h3 class="text-white font-medium">
-                  目录结构<span class="text-xs text-zinc-400"
+                <h3 class="font-medium text-color-300">
+                  目录结构<span class="text-xs text-color-500"
                     >（最多显示5层、150个文件）</span
                   >
                 </h3>
                 <button
-                  class="text-zinc-400 hover:text-white transition-colors"
+                  class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
                   @click="closeTreeModal"
                 >
                   <X class="w-5 h-5" />
@@ -347,14 +290,14 @@ const closeModal = () => {
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-zinc-400 text-sm">{{ funnyText }}</p>
+                  <p class="text-color-400 text-sm">{{ funnyText }}</p>
                 </div>
                 <div v-else-if="treeModalError" class="text-center py-8">
                   <p class="text-red-400 text-sm">{{ treeModalError }}</p>
                 </div>
                 <pre
                   v-else
-                  class="bg-zinc-800 rounded-lg p-4 text-sm text-zinc-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
+                  class="bg-color-300 rounded-lg p-4 text-sm text-color-100 overflow-auto max-h-[60vh] whitespace-pre font-mono"
                   >{{ treeModalContent }}</pre
                 >
               </div>

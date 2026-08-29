@@ -16,11 +16,11 @@ defineOptions({
 });
 
 useHead({
-  title: "公告列表 - 下歌吧",
+  title: "公告列表 - 全盘搜",
   meta: [
     {
       name: "description",
-      content: "查看下歌吧的最新公告与站点通知。",
+      content: "查看全盘搜的最新公告与站点通知。",
     },
     { name: "robots", content: "index, follow" },
   ],
@@ -113,30 +113,24 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen py-8 px-4">
-    <div class="max-w-4xl mx-auto">
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+    <div class="max-w-4xl mx-auto px-2">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
           <Megaphone class="w-6 h-6 text-primary-400" />
           公告列表
         </h1>
-        <NuxtLink
-          to="/"
-          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
-        >
-          <ArrowLeft class="w-4 h-4" />
-          返回首页
-        </NuxtLink>
       </div>
 
       <!-- Tab 切换 -->
-      <div class="flex items-center gap-1 mb-6 border-b border-zinc-800">
+      <div class="flex items-center gap-1 mb-6 border-b border-color-300">
         <button
           class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
           :class="
             activeTab === 'ACTIVE'
-              ? 'text-primary-400 border-primary-400'
-              : 'text-zinc-400 border-transparent hover:text-zinc-300'
+              ? 'text-[--primary] border-[--primary]'
+              : 'text-gray-500 border-transparent hover:text-color-300'
           "
           @click="switchTab('ACTIVE')"
         >
@@ -147,8 +141,8 @@ watch(
           class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
           :class="
             activeTab === 'ARCHIVED'
-              ? 'text-primary-400 border-primary-400'
-              : 'text-zinc-400 border-transparent hover:text-zinc-300'
+              ? 'text-[--primary] border-[--primary]'
+              : 'text-gray-500 border-transparent hover:text-color-300'
           "
           @click="switchTab('ARCHIVED')"
         >
@@ -160,11 +154,11 @@ watch(
       <div v-if="pending" class="space-y-4">
         <div v-for="i in 3" :key="i" class="card p-6 animate-pulse">
           <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-lg bg-zinc-700 flex-shrink-0"></div>
+            <div class="w-10 h-10 rounded-lg bg-color-400 flex-shrink-0"></div>
             <div class="flex-1 space-y-2">
-              <div class="h-4 bg-zinc-700 rounded w-1/3"></div>
-              <div class="h-3 bg-zinc-800 rounded w-1/4"></div>
-              <div class="h-3 bg-zinc-800 rounded w-full"></div>
+              <div class="h-4 bg-color-400 rounded w-1/3"></div>
+              <div class="h-3 bg-color-300 rounded w-1/4"></div>
+              <div class="h-3 bg-color-300 rounded w-full"></div>
             </div>
           </div>
         </div>
@@ -182,7 +176,7 @@ watch(
           v-for="item in announcements"
           :key="item.id"
           :to="`/announcement/${item.id}`"
-          class="card p-6 block hover:border-primary-500/50 transition-colors"
+          class="card p-3 md:p-6 block hover:border-primary-500/50 transition-colors"
         >
           <div class="flex items-center gap-4">
             <div
@@ -196,7 +190,7 @@ watch(
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <h2 class="text-base font-medium text-white truncate">
+                <h2 class="text-base font-medium truncate">
                   {{ item.title }}
                 </h2>
                 <span
@@ -206,7 +200,7 @@ watch(
                   已归档
                 </span>
               </div>
-              <p class="text-xs text-zinc-500 mt-1">
+              <p class="text-xs text-gray-500 mt-1">
                 <NuxtTime
                   :datetime="item.createdAt"
                   year="numeric"
@@ -221,7 +215,7 @@ watch(
           </div>
           <div
             v-if="item.content"
-            class="text-[0.875rem] text-zinc-400 mt-2 line-clamp-2 prose-resource"
+            class="text-[0.875rem] text-color-300 mt-2 line-clamp-2 prose-resource"
           >
             <span v-html="renderMarkdown(item.content)" />
           </div>
@@ -229,43 +223,11 @@ watch(
       </div>
 
       <!-- 分页 -->
-      <div
-        v-if="totalPages > 1"
-        class="flex items-center justify-between mt-6 px-4"
-      >
-        <div class="text-sm text-zinc-400">共 {{ total }} 条</div>
-        <div class="flex items-center gap-1">
-          <button
-            :disabled="currentPage === 1"
-            class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="onPageChange(currentPage - 1)"
-          >
-            <ChevronLeft class="w-4 h-4" />
-          </button>
-          <button
-            v-for="p in pageNumbers"
-            :key="p"
-            :class="[
-              'min-w-[36px] h-8 px-2 text-sm rounded transition-colors',
-              p === currentPage
-                ? 'bg-primary-500 text-white'
-                : p === '...'
-                  ? 'text-zinc-500 cursor-default'
-                  : 'text-zinc-400 hover:text-white',
-            ]"
-            @click="typeof p === 'number' && onPageChange(p)"
-          >
-            {{ p }}
-          </button>
-          <button
-            :disabled="currentPage === totalPages"
-            class="p-2 text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="onPageChange(currentPage + 1)"
-          >
-            <ChevronRight class="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @change="onPageChange"
+      />
     </div>
   </div>
 </template>

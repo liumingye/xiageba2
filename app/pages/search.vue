@@ -24,6 +24,7 @@ import {
   RESOURCE_FILE_TYPE_OPTIONS,
   normalizeResourceFileTypes,
 } from "#shared/resource-file-types";
+import { useScrollLock } from "@vueuse/core";
 
 interface PaginatedResponse<T = any> {
   data: T[];
@@ -53,6 +54,8 @@ const treeModalContent = ref("");
 const treeModalLoading = ref(false);
 const treeModalError = ref("");
 
+const scrollLock = useScrollLock(window);
+
 const { currentText: funnyText, bindFetching } = useFunnyLoading();
 bindFetching([modalFetching, treeModalLoading]);
 
@@ -68,6 +71,8 @@ const openTreeModal = async ({
       item: WebSearchResult;
       type: "url";
     }) => {
+  scrollLock.value = true;
+
   treeModalTitle.value = item.title || "";
   treeModalContent.value = "";
   treeModalError.value = "";
@@ -94,6 +99,7 @@ const openTreeModal = async ({
 };
 
 const closeTreeModal = () => {
+  scrollLock.value = false;
   showTreeModal.value = false;
   treeModalTitle.value = "";
   treeModalContent.value = "";
@@ -378,28 +384,28 @@ const handleRetry = () => {
 const pageTitle = computed(() => {
   const q = searchKeyword.value;
   if (isAi.value) {
-    return q ? `${q} - AI 搜索 - 下歌吧` : "AI 搜索 - 下歌吧";
+    return q ? `${q} - AI 搜索 - 全盘搜` : "AI 搜索 - 全盘搜";
   }
   const label = isMusic.value ? "歌曲" : "资源";
   if (q && results.value.length > 0) {
-    return `"${q}" - 第${currentPage.value}页 - 搜索${label} - 下歌吧`;
+    return `"${q}" - 第${currentPage.value}页 - 搜索${label} - 全盘搜`;
   }
   if (q) {
-    return `${q} - 搜索${label} - 下歌吧`;
+    return `${q} - 搜索${label} - 全盘搜`;
   }
-  return `搜索${label} - 下歌吧`;
+  return `搜索${label} - 全盘搜`;
 });
 
 const pageDescription = computed(() => {
   const q = searchKeyword.value;
   const label = isMusic.value ? "歌曲" : "网盘资源";
   if (q && total.value > 0) {
-    return `在下歌吧搜索"${q}"，共找到 ${total.value} 个相关${label}。`;
+    return `在全盘搜搜索"${q}"，共找到 ${total.value} 个相关${label}。`;
   }
   if (q) {
-    return `在下歌吧搜索"${q}"的相关结果。`;
+    return `在全盘搜搜索"${q}"的相关结果。`;
   }
-  return "下歌吧搜索 - 免费下载高品质音乐与网盘资源。";
+  return "全盘搜搜索 - 免费下载高品质音乐与网盘资源。";
 });
 
 useHead({
@@ -408,14 +414,14 @@ useHead({
     { name: "description", content: pageDescription },
     {
       name: "keywords",
-      content: `${searchKeyword.value}, 音乐搜索, 下歌吧, MP3下载, FLAC下载, 网盘搜索, 网盘下载`,
+      content: `${searchKeyword.value}, 音乐搜索, 全盘搜, MP3下载, FLAC下载, 网盘搜索, 网盘下载`,
     },
     { name: "robots", content: "index, follow" },
     { name: "theme-color", content: "#0f172a" },
     { property: "og:title", content: pageTitle },
     { property: "og:description", content: pageDescription },
     { property: "og:type", content: "website" },
-    { property: "og:site_name", content: "下歌吧" },
+    { property: "og:site_name", content: "全盘搜" },
   ],
   link: [
     {
@@ -457,24 +463,6 @@ const goToPage = (page: number) => {
     path: "/search",
     query: { ...route.query, page: page.toString() },
   });
-};
-
-const getPageNumbers = (): (number | "...")[] => {
-  const pages: (number | "...")[] = [];
-  const total = totalPages.value;
-  const current = currentPage.value;
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i);
-    return pages;
-  }
-  pages.push(1);
-  if (current > 3) pages.push("...");
-  const start = Math.max(2, current - 1);
-  const end = Math.min(total - 1, current + 1);
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
 };
 
 const skeletonList = Array.from({ length: 4 });
@@ -519,21 +507,9 @@ watch(
         <button
           class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
           :class="
-            isMusic
-              ? 'bg-primary-600 text-white font-medium'
-              : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
-          "
-          @click="switchType('music')"
-        >
-          <MusicIcon class="w-4 h-4" />
-          搜音乐
-        </button>
-        <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
-          :class="
             searchType === 'resource'
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
+              : 'bg-color-100 text-color-300 hover:bg-color-300'
           "
           @click="switchType('resource')"
         >
@@ -543,9 +519,21 @@ watch(
         <button
           class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
           :class="
+            isMusic
+              ? 'bg-primary-600 text-white font-medium'
+              : 'bg-color-100 text-color-300 hover:bg-color-300'
+          "
+          @click="switchType('music')"
+        >
+          <MusicIcon class="w-4 h-4" />
+          搜音乐
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
+          :class="
             isAi
               ? 'bg-primary-600 text-white font-medium'
-              : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
+              : 'bg-color-100 text-color-300 hover:bg-color-300'
           "
           @click="switchType('ai')"
         >
@@ -615,7 +603,7 @@ watch(
           </div>
 
           <div v-else-if="searchKeyword" class="space-y-2">
-            <h2 v-if="results.length > 0" class="text-zinc-500 text-sm mb-3">
+            <h2 v-if="results.length > 0" class="text-color-500 text-sm mb-3">
               搜索"<span class="text-primary-400">{{ searchKeyword }}</span
               >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
               <span v-if="totalPages > 1" class="ml-2"
@@ -627,11 +615,11 @@ watch(
               <!-- 音乐筛选条件 -->
               <div class="flex flex-wrap items-center gap-2 mb-4">
                 <button
-                  class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
+                  class="btn"
                   :class="
                     exactFilter
-                      ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                      ? 'bg-primary-500/20 text-primary-500 border-primary-500'
+                      : ''
                   "
                   @click="updateFilter('exact', !exactFilter)"
                 >
@@ -640,7 +628,7 @@ watch(
                 </button>
 
                 <button
-                  class="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 text-zinc-400 enabled:hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  class="btn"
                   @click="clearFilters"
                   :disabled="!hasFilters"
                 >
@@ -672,7 +660,7 @@ watch(
                   />
                   <div class="flex-1 min-w-0">
                     <h3
-                      class="text-sm font-medium text-white truncate"
+                      class="text-sm font-medium truncate"
                       v-html="highlight(music.title)"
                     />
                     <p class="text-xs text-zinc-500 truncate">
@@ -716,7 +704,7 @@ watch(
               <template v-if="searchKeyword">
                 <div class="flex items-center gap-2 !my-3">
                   <Filter class="w-4 h-4 text-primary-400" />
-                  <h2 class="text-zinc-500 text-sm">筛选条件</h2>
+                  <h2 class="text-color-500 text-sm">筛选条件</h2>
                 </div>
 
                 <!-- 资源筛选条件 -->
@@ -735,7 +723,7 @@ watch(
                   <!-- 入库时间 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="select"
                       :value="timeFilter"
                       @change="
                         updateFilter(
@@ -760,7 +748,7 @@ watch(
                   <!-- 网盘类型 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="select"
                       :value="panFilter"
                       @change="
                         updateFilter(
@@ -785,7 +773,7 @@ watch(
                   <!-- 排序 -->
                   <div class="flex-1 relative min-w-24">
                     <select
-                      class="w-full appearance-none bg-zinc-900 text-zinc-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      class="select"
                       :value="sortFilter"
                       @change="
                         updateFilter(
@@ -809,11 +797,11 @@ watch(
 
                   <!-- 精准搜索 -->
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors"
+                    class="btn"
                     :class="
                       exactFilter
-                        ? 'bg-primary-500/20 text-primary-500 border border-primary-500/50'
-                        : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                        ? 'bg-primary-500/20 text-primary-500 border-primary-500'
+                        : ''
                     "
                     @click="updateFilter('exact', !exactFilter)"
                   >
@@ -823,7 +811,7 @@ watch(
 
                   <!-- 清除筛选 -->
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 text-zinc-400 enabled:hover:bg-zinc-700 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                    class="btn"
                     @click="clearFilters"
                     :disabled="!hasFilters"
                   >
@@ -845,7 +833,7 @@ watch(
                   class="flex items-center gap-2 !my-3"
                 >
                   <Folder class="w-4 h-4 text-primary-400" />
-                  <h2 class="text-zinc-500 text-sm">本地资源</h2>
+                  <h2 class="text-color-500 text-sm">本地资源</h2>
                 </div>
                 <template v-if="results.length > 0">
                   <LocalResourceItem
@@ -886,57 +874,21 @@ watch(
               </template>
             </template>
 
-            <div
-              v-if="totalPages > 1"
-              class="flex items-center justify-center gap-2 mt-8 flex-wrap"
-              role="navigation"
-              aria-label="分页"
-            >
-              <button
-                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                :disabled="currentPage <= 1"
-                @click="goToPage(currentPage - 1)"
-              >
-                上一页
-              </button>
-
-              <template v-for="(pageNum, idx) in getPageNumbers()" :key="idx">
-                <span v-if="pageNum === '...'" class="px-3 py-2 text-zinc-500"
-                  >...</span
-                >
-                <button
-                  v-else
-                  class="px-4 py-2 rounded-lg transition-colors"
-                  :class="
-                    pageNum === currentPage
-                      ? 'bg-primary-500 text-white font-medium'
-                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                  "
-                  @click="goToPage(pageNum as number)"
-                  :aria-current="pageNum === currentPage ? 'page' : undefined"
-                >
-                  {{ pageNum }}
-                </button>
-              </template>
-
-              <button
-                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                :disabled="currentPage >= totalPages"
-                @click="goToPage(currentPage + 1)"
-              >
-                下一页
-              </button>
-            </div>
+            <Pagination
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              @change="goToPage"
+            />
           </div>
 
           <div v-else class="text-center py-20">
             <div
-              class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
+              class="w-20 h-20 bg-color-300 rounded-full flex items-center justify-center mx-auto mb-4"
               aria-hidden="true"
             >
               <CircleSlash />
             </div>
-            <p class="text-zinc-500">请输入搜索关键词</p>
+            <p class="text-gray-500">请输入搜索关键词</p>
           </div>
         </template>
       </main>
@@ -962,18 +914,18 @@ watch(
             @click.self="closeTreeModal"
           >
             <div
-              class="modal-content bg-dark-300 rounded-xl max-w-lg w-full border border-zinc-700 shadow-2xl"
+              class="modal-content bg-color-100 rounded-xl max-w-lg w-full border border-color-300 shadow-2xl"
             >
               <div
-                class="flex items-center justify-between p-4 border-b border-zinc-800"
+                class="flex items-center justify-between py-2 px-3 border-b border-color-300"
               >
-                <h3 class="text-white font-medium">
-                  目录结构<span class="text-xs text-zinc-400"
+                <h3 class="font-medium text-color-300">
+                  目录结构<span class="text-xs text-color-500"
                     >（最多显示5层、150个文件）</span
                   >
                 </h3>
                 <button
-                  class="text-zinc-400 hover:text-white transition-colors"
+                  class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
                   @click="closeTreeModal"
                 >
                   <X class="w-5 h-5" />
@@ -982,7 +934,7 @@ watch(
               <div class="p-4">
                 <h4
                   v-if="treeModalTitle"
-                  class="text-white text-sm font-medium truncate mb-3"
+                  class="text-sm font-medium truncate mb-3"
                 >
                   {{ treeModalTitle }}
                 </h4>
@@ -990,14 +942,14 @@ watch(
                   <div
                     class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
                   />
-                  <p class="text-zinc-400 text-sm">{{ funnyText }}</p>
+                  <p class="text-color-400 text-sm">{{ funnyText }}</p>
                 </div>
                 <div v-else-if="treeModalError" class="text-center py-8">
                   <p class="text-red-400 text-sm">{{ treeModalError }}</p>
                 </div>
                 <pre
                   v-else
-                  class="bg-zinc-800 rounded-lg p-4 text-sm text-zinc-300 overflow-auto max-h-[60vh] whitespace-pre font-mono"
+                  class="bg-color-300 rounded-lg p-4 text-sm text-color-100 overflow-auto max-h-[60vh] whitespace-pre font-mono"
                   >{{ treeModalContent }}</pre
                 >
               </div>
@@ -1010,6 +962,14 @@ watch(
 </template>
 
 <style scoped>
+.btn {
+  @apply flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed disabled:pointer-events-none border border-color-300 hover:border-primary-500;
+}
+
+.select {
+  @apply w-full appearance-none bg-color-100 text-color-300 hover:bg-color-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500;
+}
+
 .modal-leave-active {
   transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }

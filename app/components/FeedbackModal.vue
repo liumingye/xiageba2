@@ -100,24 +100,24 @@ const handleClose = () => {
         ></div>
 
         <div
-          class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+          class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
         >
           <button
-            class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            class="absolute top-4 right-4 p-2 opacity-80 hover:opacity-100 hover:bg-color-300 rounded-lg transition-all"
             @click="handleClose"
           >
-            <X class="w-5 h-5 text-zinc-400" />
+            <X class="w-5 h-5" />
           </button>
 
           <!-- 提交成功 -->
           <div v-if="submitted" class="text-center py-8">
             <div
-              class="w-16 h-16 bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-4"
+              class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
             >
-              <CheckCircle class="w-8 h-8 text-green-400" />
+              <CheckCircle class="w-8 h-8 text-white" />
             </div>
-            <h3 class="text-xl font-medium text-white mb-2">反馈已提交</h3>
-            <p class="text-zinc-400 text-sm">感谢您的反馈，我们会尽快处理</p>
+            <h3 class="text-xl font-medium mb-2">反馈已提交</h3>
+            <p class="text-gray-500 text-sm">感谢您的反馈，我们会尽快处理</p>
             <button
               class="mt-6 px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
               @click="handleClose"
@@ -130,27 +130,26 @@ const handleClose = () => {
           <div v-else>
             <div class="flex items-center gap-2 mb-4">
               <MessageSquare class="w-5 h-5 text-primary-500 mt-1" />
-              <h3 class="text-xl font-medium text-white">问题反馈</h3>
+              <h3 class="text-xl font-medium">问题反馈</h3>
             </div>
 
             <div class="space-y-3 mb-4">
               <label
                 v-for="type in feedbackTypes"
                 :key="type.value"
-                class="flex items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-750 rounded-lg cursor-pointer transition-colors border"
-                :class="
-                  selectedType === type.value
-                    ? 'bg-primary-500/20 border-primary-500/50'
-                    : 'border-transparent'
-                "
+                class="flex items-center gap-3 p-3 bg-color-300 hover:bg-color-750 rounded-lg cursor-pointer transition-colors"
+                :class="{
+                  'bg-primary-500/20 ring-1 ring-primary-500/50':
+                    selectedType === type.value,
+                }"
               >
                 <input
                   v-model="selectedType"
                   type="radio"
                   :value="type.value"
-                  class="w-4 h-4 text-primary-500 bg-zinc-700 border-zinc-600 focus:ring-primary-500 focus:ring-offset-0"
+                  class="w-4 h-4"
                 />
-                <span class="text-white text-sm">{{ type.label }}</span>
+                <span class="text-sm">{{ type.label }}</span>
               </label>
             </div>
 
@@ -160,7 +159,7 @@ const handleClose = () => {
                 placeholder="补充说明（选填）"
                 rows="3"
                 maxlength="100"
-                class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500/50 resize-none"
+                class="w-full bg-color-300 border border-color-300 rounded-lg px-4 py-3 text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500/50 resize-none"
                 @input="description = description.slice(0, 100)"
               ></textarea>
               <span class="absolute bottom-2 right-3 text-xs text-zinc-600">
@@ -173,7 +172,7 @@ const handleClose = () => {
                 v-model="email"
                 type="email"
                 placeholder="邮箱（选填，用于接收处理通知）"
-                class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500/50"
+                class="w-full bg-color-300 border border-color-300 rounded-lg px-4 py-3 text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500/50 resize-none"
               />
             </div>
 
@@ -183,7 +182,7 @@ const handleClose = () => {
 
             <div class="flex justify-end gap-3 mt-4">
               <button
-                class="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                class="px-4 py-2 bg-color-300 hover:bg-color-400 rounded-lg transition-colors"
                 @click="handleClose"
               >
                 取消

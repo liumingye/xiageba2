@@ -3,10 +3,6 @@ import {
   BookOpen,
   Key,
   Eye,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Clipboard,
   AlertTriangle,
   RotateCcw,
   Star,
@@ -16,7 +12,6 @@ import {
   User,
   Tag,
 } from "@lucide/vue";
-import { useClipboard } from "@vueuse/core";
 import TopBar from "~/components/TopBar.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
@@ -27,8 +22,6 @@ defineOptions({
 });
 
 const route = useRoute();
-const router = useRouter();
-const sampleReadContentRef = ref<HTMLDivElement>();
 
 const bookId = computed(() => {
   const raw = route.params.id as string;
@@ -133,119 +126,22 @@ const descriptionLines = computed(() => {
   return d.split(/\r?\n/).filter((l) => l.trim().length > 0);
 });
 
-// ======= 试读弹窗 =======
+// ======= 试读 / 口令弹窗 =======
 const showSampleReadModal = ref(false);
-const sampleReadChapters = ref<any[]>([]);
-const sampleReadCurrentIndex = ref(0);
-const sampleReadLoading = ref(false);
-const sampleReadError = ref("");
-const sampleDetail = ref<NovelDetail | null>(null);
-
-const openSampleRead = async () => {
-  if (!detail.value) return;
-  sampleDetail.value = detail.value;
-  sampleReadChapters.value = [];
-  sampleReadCurrentIndex.value = 0;
-  sampleReadError.value = "";
-  sampleReadLoading.value = true;
-  showSampleReadModal.value = true;
-
-  try {
-    const res = await fetch("/api/novel/sample-read", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ book_id: detail.value.bookId }),
-    });
-    const data = await res.json();
-    if (res.ok && data?.chapters) {
-      sampleReadChapters.value = data.chapters;
-    } else {
-      sampleReadError.value = data.message || data.error || "获取试读内容失败";
-    }
-  } catch {
-    sampleReadError.value = "获取试读内容失败";
-  } finally {
-    sampleReadLoading.value = false;
-  }
-};
-
-const closeSampleRead = () => {
-  showSampleReadModal.value = false;
-  sampleReadChapters.value = [];
-  sampleReadCurrentIndex.value = 0;
-  sampleReadError.value = "";
-};
-
-const sampleReadPrevChapter = () => {
-  if (sampleReadCurrentIndex.value > 0) sampleReadCurrentIndex.value--;
-  nextTick(() => {
-    if (sampleReadContentRef.value) {
-      sampleReadContentRef.value.scrollTo({ top: 0 });
-    }
-  });
-};
-
-const sampleReadNextChapter = () => {
-  if (sampleReadCurrentIndex.value < sampleReadChapters.value.length - 1)
-    sampleReadCurrentIndex.value++;
-  nextTick(() => {
-    if (sampleReadContentRef.value) {
-      sampleReadContentRef.value.scrollTo({ top: 0 });
-    }
-  });
-};
-
-// ======= 口令弹窗 =======
 const showCodeModal = ref(false);
-const codeModalTitle = ref("");
-const codeModalPcode = ref("");
-const codeModalMsg = ref("");
-const codeModalLoading = ref(false);
-const codeModalError = ref("");
 
-const { success } = useToast();
-const { copy } = useClipboard();
-
-const openGetCode = async () => {
-  if (!detail.value) return;
-  codeModalTitle.value = detail.value.bookName;
-  codeModalPcode.value = "";
-  codeModalMsg.value = "";
-  codeModalError.value = "";
-  codeModalLoading.value = true;
-  showCodeModal.value = true;
-
-  try {
-    const res = await fetch("/api/novel/get-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        book_id: detail.value.bookId,
-        content_title: detail.value.bookName,
-        content_author: detail.value.author,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok && data?.pcode) {
-      codeModalPcode.value = data.pcode;
-      codeModalMsg.value = data.msg || "";
-      copy(codeModalPcode.value);
-    } else {
-      codeModalError.value = data.message || data.error || "获取口令失败";
-    }
-  } catch {
-    codeModalError.value = "获取口令失败";
-  } finally {
-    codeModalLoading.value = false;
-  }
+const openSampleRead = () => {
+  showSampleReadModal.value = true;
 };
 
-const closeCodeModal = () => {
-  showCodeModal.value = false;
-  codeModalTitle.value = "";
-  codeModalPcode.value = "";
-  codeModalMsg.value = "";
-  codeModalError.value = "";
+const openGetCode = () => {
+  showCodeModal.value = true;
+};
+
+// 试读内容里点击"获取口令"时，先关闭试读再打开口令弹窗
+const onSampleReadGetCode = () => {
+  showSampleReadModal.value = false;
+  showCodeModal.value = true;
 };
 
 // 错误展示（兜底；上面 watch 遇到错误已经 throw，这里处理非 fatal 的状态）
@@ -259,7 +155,7 @@ const pageTitle = computed(() => {
   const parts: string[] = [];
   if (name) parts.push(name);
   if (author) parts.push(author);
-  parts.push("小说详情 - 下歌吧");
+  parts.push("小说详情 - 全盘搜");
   return parts.join(" - ");
 });
 
@@ -270,7 +166,7 @@ useHead({
       name: "description",
       content: () => {
         const d = detail.value;
-        if (!d?.bookName) return "下歌吧小说详情";
+        if (!d?.bookName) return "全盘搜小说详情";
         const desc = (d.description || "").replace(/\s+/g, " ").slice(0, 140);
         return `${d.bookName}（${d.author} 著）${desc}`;
       },
@@ -323,29 +219,29 @@ useHead({
             class="flex gap-4 md:gap-6 flex-col md:flex-row items-start md:items-center"
           >
             <div
-              class="w-28 h-40 md:w-36 md:h-52 rounded-xl bg-zinc-700 flex-shrink-0 mx-auto md:mx-0"
+              class="w-28 h-40 md:w-36 md:h-52 rounded-xl bg-color-300 flex-shrink-0 mx-auto md:mx-0"
             />
             <div class="flex-1 w-full space-y-3 text-center md:text-left">
-              <div class="h-7 bg-zinc-700 rounded w-3/4 mx-auto md:mx-0" />
-              <div class="h-4 bg-zinc-700 rounded w-1/3 mx-auto md:mx-0" />
+              <div class="h-7 bg-color-300 rounded w-3/4 mx-auto md:mx-0" />
+              <div class="h-4 bg-color-300 rounded w-1/3 mx-auto md:mx-0" />
               <div class="flex flex-wrap gap-2 justify-center md:justify-start">
-                <div class="h-6 bg-zinc-700 rounded w-16" />
-                <div class="h-6 bg-zinc-700 rounded w-16" />
-                <div class="h-6 bg-zinc-700 rounded w-16" />
+                <div class="h-6 bg-color-300 rounded w-16" />
+                <div class="h-6 bg-color-300 rounded w-16" />
+                <div class="h-6 bg-color-300 rounded w-16" />
               </div>
-              <div class="h-4 bg-zinc-700 rounded w-1/2 mx-auto md:mx-0" />
-              <div class="h-4 bg-zinc-700 rounded w-2/3 mx-auto md:mx-0" />
+              <div class="h-4 bg-color-300 rounded w-1/2 mx-auto md:mx-0" />
+              <div class="h-4 bg-color-300 rounded w-2/3 mx-auto md:mx-0" />
               <div class="flex gap-2 pt-2 justify-center md:justify-start">
-                <div class="h-9 bg-zinc-700 rounded w-28" />
-                <div class="h-9 bg-zinc-700 rounded w-28" />
+                <div class="h-9 bg-color-300 rounded w-28" />
+                <div class="h-9 bg-color-300 rounded w-28" />
               </div>
             </div>
           </div>
-          <div class="h-4 bg-zinc-700 rounded w-1/2" />
+          <div class="h-4 bg-color-300 rounded w-1/2" />
           <div class="space-y-2">
-            <div class="h-3 bg-zinc-700 rounded" />
-            <div class="h-3 bg-zinc-700 rounded" />
-            <div class="h-3 bg-zinc-700 rounded w-5/6" />
+            <div class="h-3 bg-color-300 rounded" />
+            <div class="h-3 bg-color-300 rounded" />
+            <div class="h-3 bg-color-300 rounded w-5/6" />
           </div>
         </div>
 
@@ -386,14 +282,14 @@ useHead({
               <!-- 文字信息 -->
               <div class="flex-1 flex flex-col text-center md:text-left">
                 <h1
-                  class="text-xl md:text-2xl font-bold text-white mb-1"
+                  class="text-xl md:text-2xl font-bold mb-1"
                   :title="detail.bookName"
                 >
                   {{ detail.bookName }}
                 </h1>
 
                 <div
-                  class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-400 justify-center md:justify-start mb-2"
+                  class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 justify-center md:justify-start mb-2"
                 >
                   <span
                     class="inline-flex items-center gap-1"
@@ -442,7 +338,7 @@ useHead({
                   <span
                     v-for="(t, i) in tagChips"
                     :key="i"
-                    class="text-xs px-2 py-0.5 rounded bg-zinc-700 text-zinc-300 truncate max-w-full"
+                    class="text-xs px-2 py-0.5 rounded bg-color-300 text-color-300 truncate max-w-full"
                     :title="
                       t
                         .replaceAll('_*', '')
@@ -467,7 +363,7 @@ useHead({
                   class="flex flex-wrap gap-2 mt-auto pt-2 justify-center md:justify-start"
                 >
                   <button
-                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-color-300 hover:bg-color-400 rounded-lg transition-colors"
                     @click="openSampleRead"
                   >
                     <Eye class="w-4 h-4" />
@@ -487,13 +383,13 @@ useHead({
 
           <!-- 简介 -->
           <div class="card p-4 md:p-6 mb-6">
-            <h3 class="flex items-center gap-2 text-white font-medium mb-3">
+            <h3 class="flex items-center gap-2 font-medium mb-3">
               <Calendar class="w-5 h-5 text-primary-400" />
               简介
             </h3>
             <div
               v-if="descriptionLines.length"
-              class="space-y-2 text-sm text-zinc-300 leading-relaxed"
+              class="space-y-2 text-sm text-color-300 leading-relaxed"
             >
               <p
                 v-for="(line, i) in descriptionLines"
@@ -503,7 +399,7 @@ useHead({
                 {{ line }}
               </p>
             </div>
-            <p v-else class="text-sm text-zinc-500">暂无简介</p>
+            <p v-else class="text-sm text-color-500">暂无简介</p>
           </div>
         </template>
 
@@ -530,207 +426,13 @@ useHead({
     </div>
 
     <!-- 试读弹窗 -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showSampleReadModal"
-          class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-          @click.self="closeSampleRead"
-        >
-          <div
-            class="flex flex-col max-h-[90vh] modal-content bg-dark-300 rounded-xl max-w-2xl w-full border border-zinc-700 shadow-2xl overflow-hidden"
-          >
-            <div
-              class="flex items-center justify-between p-4 border-b border-zinc-800"
-            >
-              <h3 class="text-white font-medium truncate flex-1 mr-2">
-                {{ sampleDetail?.bookName }} - 试读
-              </h3>
-              <button
-                class="text-zinc-400 hover:text-white transition-colors flex-shrink-0"
-                @click="closeSampleRead"
-              >
-                <X class="w-5 h-5" />
-              </button>
-            </div>
-
-            <div
-              v-if="sampleReadChapters.length > 0"
-              class="flex items-center justify-between gap-2 p-3 border-b border-zinc-800 bg-zinc-900/50"
-            >
-              <button
-                class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                :class="
-                  sampleReadCurrentIndex > 0
-                    ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                    : 'bg-zinc-800/50 text-zinc-500'
-                "
-                :disabled="sampleReadCurrentIndex === 0"
-                @click="sampleReadPrevChapter"
-              >
-                <ChevronLeft class="w-4 h-4" />
-                上一章
-              </button>
-              <span class="text-sm text-zinc-400 truncate max-w-[50%]">
-                {{ sampleReadChapters[sampleReadCurrentIndex]?.chapterTitle }}
-                <span class="text-zinc-600 ml-1"
-                  >({{ sampleReadCurrentIndex + 1 }}/{{
-                    sampleReadChapters.length
-                  }})</span
-                >
-              </span>
-              <button
-                class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                :class="
-                  sampleReadCurrentIndex < sampleReadChapters.length - 1
-                    ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                    : 'bg-zinc-800/50 text-zinc-500'
-                "
-                :disabled="
-                  sampleReadCurrentIndex >= sampleReadChapters.length - 1
-                "
-                @click="sampleReadNextChapter"
-              >
-                下一章
-                <ChevronRight class="w-4 h-4" />
-              </button>
-            </div>
-
-            <div ref="sampleReadContentRef" class="p-4 flex-1 overflow-auto">
-              <div v-if="sampleReadLoading" class="text-center py-12">
-                <div
-                  class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
-                />
-                <p class="text-zinc-400 text-sm">正在加载试读内容...</p>
-              </div>
-              <div v-else-if="sampleReadError" class="text-center py-12">
-                <p class="text-red-400 text-sm">{{ sampleReadError }}</p>
-              </div>
-              <div v-else-if="sampleReadChapters.length > 0" class="space-y-4">
-                <h4 class="text-lg font-medium text-white text-center">
-                  {{ sampleReadChapters[sampleReadCurrentIndex]?.chapterTitle }}
-                </h4>
-                <div
-                  class="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap break-words"
-                >
-                  {{ sampleReadChapters[sampleReadCurrentIndex]?.content }}
-                </div>
-                <button
-                  v-if="sampleReadCurrentIndex < sampleReadChapters.length - 1"
-                  class="flex w-full justify-center items-center gap-1 px-3 py-8 rounded-md text-sm transition-colors bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-                  @click="sampleReadNextChapter"
-                >
-                  下一章
-                  <ChevronRight class="w-4 h-4" />
-                </button>
-                <button
-                  class="flex w-full justify-center items-center gap-1 px-2 py-1.5 !mb-48 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors"
-                  @click="openGetCode()"
-                >
-                  获取口令
-                </button>
-              </div>
-              <div v-else class="text-center py-12">
-                <p class="text-zinc-500 text-sm">暂无试读内容</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <SampleReadModal
+      v-model="showSampleReadModal"
+      :book="detail"
+      @get-code="onSampleReadGetCode"
+    />
 
     <!-- 口令弹窗 -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showCodeModal"
-          class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-          @click.self="closeCodeModal"
-        >
-          <div
-            class="modal-content bg-dark-300 rounded-xl max-w-md w-full border border-zinc-700 shadow-2xl overflow-hidden"
-          >
-            <div
-              class="flex items-center justify-between p-4 border-b border-zinc-800"
-            >
-              <h3 class="text-white font-medium truncate">获取口令</h3>
-              <button
-                class="text-zinc-400 hover:text-white transition-colors"
-                @click="closeCodeModal"
-              >
-                <X class="w-5 h-5" />
-              </button>
-            </div>
-            <div class="p-5">
-              <div v-if="codeModalLoading" class="text-center py-8">
-                <div
-                  class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
-                />
-                <p class="text-zinc-400 text-sm">正在生成口令...</p>
-              </div>
-              <div v-else-if="codeModalError" class="text-center py-8">
-                <p class="text-red-400 text-sm">{{ codeModalError }}</p>
-              </div>
-              <div v-else-if="codeModalPcode" class="space-y-4">
-                <p class="text-white font-medium text-center text-lg truncate">
-                  {{ codeModalTitle }}
-                </p>
-                <div
-                  class="bg-primary-500/10 border border-primary-500/30 rounded-xl p-5 text-center"
-                >
-                  <p class="text-xs text-zinc-400 mb-2">网盘口令</p>
-                  <p
-                    class="text-3xl font-mono font-bold text-primary-400 tracking-wider select-all"
-                  >
-                    {{ codeModalPcode }}
-                  </p>
-                </div>
-                <button
-                  class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                  @click="
-                    copy(codeModalPcode);
-                    success('口令已复制');
-                  "
-                >
-                  <Clipboard class="w-4 h-4" />
-                  复制口令
-                </button>
-                <p
-                  v-if="codeModalMsg"
-                  class="text-xs text-zinc-500 text-center break-words"
-                >
-                  {{ codeModalMsg }}
-                </p>
-                <p class="text-xs text-zinc-400 text-center">
-                  打开百度网盘APP，输入口令即可阅读全本小说
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <GetCodeModal v-model="showCodeModal" :book="detail" />
   </div>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

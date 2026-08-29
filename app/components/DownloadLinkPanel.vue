@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { QrCode, Clipboard, ExternalLink, X } from "@lucide/vue";
-import { useClipboard, useMediaQuery } from "@vueuse/core";
+import {
+  useClipboard,
+  useMediaQuery,
+  refAutoReset,
+  useScrollLock,
+} from "@vueuse/core";
 import { getStorageTypeFriend } from "#shared/utils";
 
 interface Props {
@@ -117,6 +122,7 @@ const displayFunnyText = computed(() => innerFunnyText.value || "");
 // ---------------- 衍生状态 ----------------
 const { success, error: showError } = useToast();
 const { copy } = useClipboard();
+const isLocked = useScrollLock(window);
 
 const storageTypeName = computed(() =>
   props.url ? getStorageTypeFriend(props.url) : "",
@@ -128,13 +134,17 @@ const shouldShowQr = computed(() => {
   return true;
 });
 
+const message = refAutoReset("复制链接", 3000);
+
 const handleCopyUrl = async () => {
   if (!props.url) return;
   try {
     await copy(props.url);
+    message.value = "复制成功";
     success("复制成功");
     emit("copied", { url: props.url });
   } catch {
+    message.value = "复制失败";
     showError("复制失败");
   }
 };
@@ -143,6 +153,17 @@ const closeModal = () => {
   open.value = false;
   emit("close");
 };
+
+watch(
+  () => open.value,
+  (next) => {
+    if (next) {
+      isLocked.value = true;
+    } else {
+      isLocked.value = false;
+    }
+  },
+);
 </script>
 
 <template>
@@ -157,14 +178,14 @@ const closeModal = () => {
         @click.self="closeModal"
       >
         <div
-          class="flex flex-col max-h-[85vh] modal-content bg-dark-300 rounded-xl max-w-xl w-full border border-zinc-700 shadow-2xl overflow-hidden"
+          class="flex flex-col max-h-[85vh] modal-content bg-color-100 rounded-xl max-w-xl w-full border border-color-300 shadow-2xl overflow-hidden"
         >
           <div
-            class="flex items-center justify-between p-4 border-b border-zinc-800"
+            class="flex items-center justify-between py-2 px-3 border-b border-color-300"
           >
-            <h3 class="text-white font-medium">{{ modalTitle }}</h3>
+            <h3 class="text-color-300 font-medium">{{ modalTitle }}</h3>
             <button
-              class="text-zinc-400 hover:text-white transition-colors"
+              class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
               type="button"
               @click="closeModal"
             >
@@ -177,7 +198,7 @@ const closeModal = () => {
               <div
                 class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
               />
-              <p class="text-zinc-400 text-sm">
+              <p class="text-color-400 text-sm">
                 {{ displayFunnyText || "加载中..." }}
                 <br />请耐心等待，这可能需要几秒钟
               </p>
@@ -203,7 +224,7 @@ const closeModal = () => {
                     </span>
                     APP 扫码获取</span
                   >
-                  <div v-if="resolvedQr" class="flex-shrink-0">
+                  <div v-if="resolvedQr" class="flex-shrink-0 border border-color-300 rounded-lg">
                     <img
                       :src="resolvedQr"
                       alt="下载链接二维码"
@@ -218,7 +239,7 @@ const closeModal = () => {
                   </div>
                 </template>
                 <p
-                  class="w-full text-white font-medium text-center text-lg line-clamp-5"
+                  class="w-full font-medium text-center text-lg line-clamp-5"
                   :class="{ truncate: shouldShowQr }"
                 >
                   {{ title }}
@@ -234,12 +255,12 @@ const closeModal = () => {
                 </p>
                 <div class="w-full flex items-center justify-center gap-2">
                   <button
-                    class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600 hover:text-white"
+                    class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600"
                     type="button"
                     @click="handleCopyUrl"
                   >
                     <Clipboard class="w-4 h-4" />
-                    复制链接
+                    {{ message }}
                   </button>
                   <a
                     :href="url"
@@ -251,7 +272,7 @@ const closeModal = () => {
                     打开链接
                   </a>
                 </div>
-                <p class="text-xs text-zinc-400 text-center">
+                <p class="text-xs text-gray-500 text-center">
                   网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
                   文件内容请自行辨别，如发现违规请通过<a
                     href="/page/version"
@@ -278,7 +299,7 @@ const closeModal = () => {
       <div
         class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
       />
-      <p class="text-zinc-400 text-sm">
+      <p class="text-color-400 text-sm">
         {{ displayFunnyText || "加载中..." }}
         <br />请耐心等待，这可能需要几秒钟
       </p>
@@ -303,7 +324,7 @@ const closeModal = () => {
               </span>
               APP 扫码获取</span
             >
-            <div v-if="resolvedQr" class="flex-shrink-0">
+            <div v-if="resolvedQr" class="flex-shrink-0 border border-color-300 rounded-lg">
               <img
                 :src="resolvedQr"
                 alt="下载链接二维码"
@@ -318,7 +339,7 @@ const closeModal = () => {
             </div>
           </template>
           <p
-            class="w-full text-white font-medium text-center text-lg line-clamp-5"
+            class="w-full font-medium text-center text-lg line-clamp-5"
             :class="{ truncate: shouldShowQr }"
           >
             {{ title }}
@@ -335,12 +356,12 @@ const closeModal = () => {
         </p>
         <div class="w-full flex items-center justify-center gap-2">
           <button
-            class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600 hover:text-white"
+            class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600"
             type="button"
             @click="handleCopyUrl"
           >
             <Clipboard class="w-4 h-4" />
-            复制链接
+            {{ message }}
           </button>
           <a
             :href="url"
@@ -352,7 +373,7 @@ const closeModal = () => {
             打开链接
           </a>
         </div>
-        <p class="text-xs text-zinc-400 text-center">
+        <p class="text-xs text-gray-500 text-center">
           网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
           文件内容请自行辨别，如发现违规请通过<a
             href="/page/version"

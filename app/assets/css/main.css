@@ -3,21 +3,33 @@
 @tailwind utilities;
 
 /**/
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 html {
   --white: #fff;
+  --text-color: #212121;
   --bg-color-700: #e2e8f0;
   --bg-color-800: #fff;
   --bg-color-900: #f1f1f1;
   --color-text-300: rgb(10 10 10 / var(--tw-bg-opacity, 1));
   --border: #e2e8f0;
   --primary: #16a34a;
+
+  scrollbar-gutter: stable;
 }
 
 html[data-theme="dark"] {
-  --bg-color-700: rgb(63 63 70 / var(--tw-bg-opacity, 1));
-  --bg-color-800: rgb(39 39 42 / var(--tw-bg-opacity, 1));
-  --bg-color-900: rgb(10 10 10 / var(--tw-bg-opacity, 1));
-  --color-text-300: rgb(212 212 216 / var(--tw-text-opacity, 1));
+  --text-color: #fff;
+  --bg-color-700: rgb(63 63 70);
+  --bg-color-800: rgb(39 39 42);
+  --bg-color-900: rgb(10, 10, 10);
+  --color-text-300: rgb(212 212 216);
   --border: #27272a;
   --primary: #16a34a;
 }
@@ -29,156 +41,13 @@ html[data-theme="dark"] {
 }
 
 body {
+  @apply bg-neutral-50 dark:bg-zinc-950 text-[--text-color];
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-  background-color: var(--bg-color-900);
-  color: #fff;
 }
 
 hr {
+  @apply border-color-300;
   margin: 8px 0;
-  border-color: #64748b;
-}
-
-html[data-theme="dark"] {
-  color-scheme: dark;
-}
-
-html[data-theme="light"] {
-  color-scheme: light;
-}
-
-html[data-theme="light"] .bg-dark-300 {
-  background-color: #f7f7f7;
-  color: #0f172a;
-}
-
-html[data-theme="light"] .bg-zinc-900,
-html[data-theme="light"] .card {
-  background-color: #ffffff;
-}
-
-html[data-theme="light"] .bg-zinc-800 {
-  background-color: #f1f5f9;
-}
-
-html[data-theme="light"] .bg-zinc-800\/50 {
-  background-color: rgb(241 245 249 / 0.5);
-}
-
-html[data-theme="light"] .bg-zinc-900\/50 {
-  background-color: rgb(255 255 255 / 0.5);
-}
-
-html[data-theme="light"] .bg-zinc-700 {
-  background-color: #e2e8f0;
-}
-
-html[data-theme="light"] .bg-zinc-700:hover {
-  background-color: #cbd5e1;
-}
-
-html[data-theme="light"] .bg-zinc-600 {
-  background-color: #cbd5e1;
-}
-
-html[data-theme="light"] .bg-zinc-500 {
-  background-color: #94a3b8;
-}
-
-html[data-theme="light"] .text-white {
-  color: #0f172a;
-}
-
-html[data-theme="light"] .text-zinc-300 {
-  color: #334155;
-}
-
-html[data-theme="light"] .text-zinc-400 {
-  color: #475569;
-}
-
-html[data-theme="light"] .text-zinc-500 {
-  color: #64748b;
-}
-
-html[data-theme="light"] .text-zinc-600 {
-  color: #94a3b8;
-}
-
-html[data-theme="light"] .border-zinc-800 {
-  border-color: #e2e8f0;
-}
-
-html[data-theme="light"] .border-zinc-700 {
-  border-color: #cbd5e1;
-}
-
-html[data-theme="light"] .border-zinc-600 {
-  border-color: #94a3b8;
-}
-
-html[data-theme="light"] .border-white\/20 {
-  border-color: #cbd5e1;
-}
-
-html[data-theme="light"] .hover\:border-white\/40:hover {
-  border-color: #94a3b8;
-}
-
-html[data-theme="light"] .hover\:bg-zinc-800:hover {
-  background-color: #f1f5f9;
-}
-
-html[data-theme="light"] .hover\:bg-zinc-700:hover {
-  background-color: #e2e8f0;
-}
-
-html[data-theme="light"] .enabled\:hover\:bg-zinc-700:hover:enabled {
-  background-color: #e2e8f0;
-}
-
-html[data-theme="light"] .hover\:text-white:hover {
-  color: #0f172a;
-}
-
-html[data-theme="light"] .hover\:text-zinc-300:hover,
-html[data-theme="light"] .hover\:text-zinc-400:hover {
-  color: #334155;
-}
-
-html[data-theme="light"] .placeholder-white\/50::placeholder {
-  color: rgb(100 116 139 / 0.75);
-}
-
-html[data-theme="light"] .text-white\/60 {
-  color: rgb(71 85 105 / 0.8);
-}
-
-html[data-theme="light"] [class~="text-white"][class*="bg-primary-"],
-html[data-theme="light"] [class~="text-white"][class*="bg-error-"],
-html[data-theme="light"] [class~="text-white"][class*="bg-red-"],
-html[data-theme="light"] [class~="text-white"][class*="bg-orange-"],
-html[data-theme="light"] [class~="text-white"][class*="bg-yellow-"],
-html[data-theme="light"] [class~="text-white"][class*="bg-amber-"],
-html[data-theme="light"] [class~="text-white"][class*="bg-gradient-"] {
-  color: #ffffff;
-}
-
-html[data-theme="light"] .placeholder-skeleton {
-  background-color: rgb(148 163 184 / 0.25);
-}
-
-html[data-theme="light"] ::-webkit-scrollbar-corner,
-html[data-theme="light"] ::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-html[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-}
-
-html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }
 
 ::-webkit-scrollbar {
@@ -186,18 +55,33 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   height: 8px;
 }
 
-::-webkit-scrollbar-corner,
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  @apply bg-zinc-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
+  @apply bg-zinc-300;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
+  @apply bg-zinc-400;
+}
+
+html[data-theme="dark"] {
+  ::-webkit-scrollbar-corner,
+  ::-webkit-scrollbar-track {
+    @apply bg-zinc-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-700;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-600;
+  }
 }
 
 @layer components {
@@ -210,11 +94,11 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   }
 
   .input-search {
-    @apply w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-zinc-500 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all duration-200;
+    @apply w-full bg-color-200 border border-color-300 rounded-lg px-4 py-2 placeholder-zinc-500 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all duration-200;
   }
 
   .card {
-    @apply bg-zinc-900 border border-[--border] rounded-xl overflow-hidden;
+    @apply bg-white dark:bg-zinc-900 border border-color-300 rounded-xl overflow-hidden;
   }
 }
 

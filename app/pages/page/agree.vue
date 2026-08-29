@@ -7,11 +7,12 @@ marked.setOptions({ gfm: true, breaks: true, async: false });
 defineOptions({ name: "AgreementPage" });
 
 useHead({
-  title: "服务协议 - 下歌吧",
+  title: "服务协议 - 全盘搜",
   meta: [
     {
       name: "description",
-      content: "下歌吧服务协议，规范用户使用本站音乐搜索与索引服务的权利与义务。",
+      content:
+        "全盘搜服务协议，规范用户使用本站音乐搜索与索引服务的权利与义务。",
     },
     { name: "robots", content: "index, follow" },
   ],
@@ -21,7 +22,7 @@ const content = `## 服务协议
 
 **最后更新日期：2026年1月1日**
 
-欢迎您使用下歌吧（以下简称"本站"）。请您在使用本站服务前，仔细阅读并充分理解以下服务协议条款。您访问或使用本站服务，即表示您已同意接受本协议的全部条款。
+欢迎您使用全盘搜（以下简称"本站"）。请您在使用本站服务前，仔细阅读并充分理解以下服务协议条款。您访问或使用本站服务，即表示您已同意接受本协议的全部条款。
 
 ### 1. 服务内容
 
@@ -84,16 +85,18 @@ const rendered = marked.parse(content) as string;
 </script>
 
 <template>
-  <div class="min-h-screen py-8 px-4">
-    <div class="max-w-3xl mx-auto">
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+
+    <div class="max-w-4xl mx-auto px-2">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
           <FileSignature class="w-6 h-6 text-primary-400" />
           服务协议
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-color-300 hover:text-primary-400 transition-colors"
         >
           返回首页
         </NuxtLink>
@@ -101,11 +104,13 @@ const rendered = marked.parse(content) as string;
 
       <article class="card p-6">
         <div
-          class="text-sm text-zinc-300 break-words leading-relaxed prose-resource"
+          class="text-sm text-color-300 break-words leading-relaxed prose-resource"
         >
           <span v-html="rendered" />
         </div>
       </article>
+
+      <SiteFooter />
     </div>
   </div>
 </template>

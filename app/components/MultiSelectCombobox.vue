@@ -78,7 +78,7 @@ const handleFocusOut = (event: FocusEvent) => {
     @keydown.esc.prevent="close"
   >
     <summary
-      class="list-none w-full flex items-center justify-between gap-2 bg-zinc-900 text-zinc-300 px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+      class="list-none w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer bg-color-100 text-color-300 hover:bg-color-300 focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500"
       :aria-label="ariaLabel"
     >
       <span class="flex items-center gap-1.5 truncate">
@@ -91,14 +91,14 @@ const handleFocusOut = (event: FocusEvent) => {
     </summary>
 
     <div
-      class="absolute left-0 top-full z-20 mt-1 w-full min-w-36 rounded-lg border border-zinc-700 bg-zinc-800 p-1.5 shadow-xl"
+      class="absolute left-0 top-full z-20 mt-1 w-full min-w-36 rounded-lg border border-color-300 bg-color-100 p-1.5 shadow-xl"
       role="listbox"
       :aria-label="ariaLabel"
       aria-multiselectable="true"
     >
       <button
         type="button"
-        class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-zinc-300 hover:bg-zinc-700"
+        class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-color-300 hover:bg-color-300"
         role="option"
         :aria-selected="modelValue.length === 0"
         @click="clear"
@@ -109,7 +109,7 @@ const handleFocusOut = (event: FocusEvent) => {
       <label
         v-for="option in options"
         :key="option.value"
-        class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-zinc-300 hover:bg-zinc-700"
+        class="label"
         role="option"
         :aria-selected="modelValue.includes(option.value)"
       >
@@ -121,11 +121,11 @@ const handleFocusOut = (event: FocusEvent) => {
           @change="toggle(option.value)"
         />
         <span
-          class="flex h-4 w-4 items-center justify-center rounded border"
+          class="checkbox"
           :class="
             modelValue.includes(option.value)
               ? 'border-primary-500 bg-primary-500 text-white'
-              : 'border-zinc-600 text-transparent'
+              : 'border-color-500 text-transparent'
           "
           aria-hidden="true"
         >
@@ -135,3 +135,13 @@ const handleFocusOut = (event: FocusEvent) => {
     </div>
   </details>
 </template>
+
+<style scoped>
+.label {
+  @apply flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-color-300 hover:bg-color-300;
+}
+
+.checkbox {
+  @apply flex h-4 w-4 items-center justify-center rounded border;
+}
+</style>

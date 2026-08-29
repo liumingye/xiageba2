@@ -687,7 +687,7 @@ watch(isDesktop, async () => {
 
 <template>
   <nav
-    class="bg-zinc-900 backdrop-blur-md border-b border-zinc-800 sticky top-0 z-40"
+    class="bg-color-100 backdrop-blur-md border-b border-color-300 sticky top-0 z-40"
   >
     <div class="max-w-7xl mx-auto px-4 sm:px-6">
       <div class="flex items-center h-14 gap-2">
@@ -698,7 +698,7 @@ watch(isDesktop, async () => {
         <div class="flex items-center justify-between w-full md:hidden">
           <!-- 当前页面标题 -->
 
-          <span class="text-white font-semibold text-sm truncate pr-4">
+          <span class="font-semibold text-sm truncate pr-4">
             {{ currentPageLabel }}
           </span>
 
@@ -747,7 +747,7 @@ watch(isDesktop, async () => {
                 :class="
                   activeDropdown === item.label || isGroupActive(item)
                     ? 'text-primary-400 bg-primary-500/10'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                    : 'text-color-400 hover:text-color-300 hover:bg-color-300'
                 "
                 @click="toggleDropdown(item.label)"
               >
@@ -814,7 +814,7 @@ watch(isDesktop, async () => {
               :class="
                 isPathActive(item.path)
                   ? 'text-primary-400 bg-primary-500/10'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                  : 'text-color-400 hover:text-color-300 hover:bg-color-300'
               "
               @click="handleNavigate(item.path)"
             >

@@ -92,7 +92,7 @@ const handleSuggestionSelect = (word: string) => {
         :maxlength="MAX_KEYWORD_LENGTH"
         type="text"
         placeholder="请输入搜索内容"
-        class="input-search pl-3 pr-10"
+        class="input-search pl-3 pr-16"
         @input="updateSearchQuery"
         @keydown="handleKeydown"
         @focus="isInputFocused = true"
@@ -101,12 +101,19 @@ const handleSuggestionSelect = (word: string) => {
       />
       <button
         v-if="searchQuery"
-        class="absolute right-2 py-0.5 px-0.5 text-zinc-500 hover:text-white transition-colors bg-zinc-700 rounded-full"
+        class="absolute right-9 py-0.5 px-0.5 opacity-60 hover:opacity-100 transition-all bg-color-400 rounded-full"
         @click="clearInput"
         aria-label="清除"
         type="button"
       >
         <X class="w-4 h-4" />
+      </button>
+      <button
+        class="absolute right-2 py-0.5 px-0.5 opacity-60 hover:opacity-100 transition-all"
+        @click="handleSearch()"
+        type="button"
+      >
+        <Search class="w-5 h-5" />
       </button>
       <SearchSuggestions
         :query="searchQuery"
@@ -114,12 +121,5 @@ const handleSuggestionSelect = (word: string) => {
         @select="handleSuggestionSelect"
       />
     </div>
-    <button
-      class="ml-1 px-1.5 py-1.5 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
-      @click="handleSearch()"
-      type="button"
-    >
-      <Search class="w-6 h-6" />
-    </button>
   </div>
 </template>

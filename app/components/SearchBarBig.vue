@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { useMusicStore, storeToRefs } from "~/stores/music";
 import { Search, X, Music, FolderOpen, Sparkles } from "@lucide/vue";
 import SearchSuggestions from "./SearchSuggestions.vue";
+import { useMounted } from "@vueuse/core";
 
 const props = defineProps<{
   modelValue?: string;
@@ -21,11 +22,10 @@ const { searchType } = storeToRefs(musicStore);
 
 const searchQuery = ref(props.modelValue || "");
 const isFocused = ref(false);
-const isClientMounted = ref(false);
+const isMounted = useMounted();
 const searchInput = ref<HTMLInputElement>();
 
 onMounted(() => {
-  isClientMounted.value = true;
   if (document.activeElement === searchInput.value) {
     isFocused.value = true;
   }
@@ -89,7 +89,7 @@ const handleSuggestionSelect = (word: string) => {
 };
 
 const placeholderText = computed(() => {
-  if (!isClientMounted.value) return "";
+  if (!isMounted.value) return "";
   if (searchType.value === "music") return "搜你想要的音乐";
   if (searchType.value === "resource") return "搜你想要的网盘资源";
   if (searchType.value === "ai") return "和 AI 聊聊你想找什么...";
@@ -104,11 +104,11 @@ defineExpose({
 <template>
   <div class="w-full max-w-[720px] mx-auto mb-6">
     <div
-      class="border-2 rounded-3xl transition-all duration-300 h-28 md:h-32 relative bg-zinc-900 px-4 py-4"
+      class="border-2 rounded-3xl transition-all duration-300 h-28 md:h-32 relative bg-white dark:bg-zinc-900 px-4 py-4"
       :class="
         isFocused
           ? 'border-primary-500 shadow-lg shadow-primary-500/20'
-          : 'border-white/20 hover:border-white/40'
+          : 'border-zinc-500/40 hover:border-zinc-600/40'
       "
       @click.stop="searchInput?.focus()"
     >
@@ -119,7 +119,7 @@ defineExpose({
           :maxlength="MAX_KEYWORD_LENGTH"
           type="text"
           :placeholder="placeholderText"
-          class="w-full bg-transparent text-white text-lg outline-none placeholder-white/50"
+          class="w-full bg-transparent text-lg outline-none placeholder-zinc-500"
           @input="updateSearchQuery"
           @keydown="handleKeydown"
           @focus="isFocused = true"
@@ -140,13 +140,21 @@ defineExpose({
       <div
         class="bottom-3 left-4 right-4 absolute flex items-center justify-center"
       >
-        <div class="flex flex-1">
-          <template v-if="!isClientMounted">
+        <div class="flex flex-1 gap-2">
+          <template v-if="!isMounted">
             <div class="icon-btn placeholder-skeleton"></div>
-            <div class="icon-btn placeholder-skeleton ml-2"></div>
-            <div class="icon-btn placeholder-skeleton ml-2"></div>
+            <div class="icon-btn placeholder-skeleton"></div>
+            <div class="icon-btn placeholder-skeleton"></div>
           </template>
           <template v-else>
+            <button
+              class="icon-btn"
+              :class="{ primary: searchType === 'resource' }"
+              @click="searchType = 'resource'"
+              title="搜索资源"
+            >
+              <FolderOpen class="w-5 h-5" />
+            </button>
             <button
               class="icon-btn"
               :class="{ primary: searchType === 'music' }"
@@ -156,15 +164,7 @@ defineExpose({
               <Music class="w-5 h-5" />
             </button>
             <button
-              class="icon-btn ml-2"
-              :class="{ primary: searchType === 'resource' }"
-              @click="searchType = 'resource'"
-              title="搜索资源"
-            >
-              <FolderOpen class="w-5 h-5" />
-            </button>
-            <button
-              class="icon-btn ml-2"
+              class="icon-btn"
               :class="{ primary: searchType === 'ai' }"
               @click="searchType = 'ai'"
               title="AI 搜索"
@@ -206,7 +206,7 @@ defineExpose({
   transition: 0.2s ease;
   pointer-events: auto;
   position: relative;
-  z-index: 10;
+  /* z-index: 10; */
 
   &:hover {
     background-color: rgba(133, 133, 133, 0.16);

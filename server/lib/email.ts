@@ -27,7 +27,7 @@ const getTransporter = (): nodemailer.Transporter | null => {
     user: process.env.SMTP_USER || "",
     pass: process.env.SMTP_PASS || "",
     from: process.env.SMTP_FROM || "noreply@example.com",
-    fromName: process.env.SMTP_FROM_NAME || "下歌吧",
+    fromName: process.env.SMTP_FROM_NAME || "全盘搜",
   };
 
   if (!config.host || !config.user || !config.pass) {
@@ -57,7 +57,7 @@ export const sendEmail = async (options: SendEmailOptions): Promise<boolean> => 
     return false;
   }
 
-  const fromName = process.env.SMTP_FROM_NAME || "下歌吧";
+  const fromName = process.env.SMTP_FROM_NAME || "全盘搜";
   const fromEmail = process.env.SMTP_FROM || "noreply@example.com";
 
   try {
@@ -120,7 +120,7 @@ export const sendFeedbackResolvedEmail = async (
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
       <p style="color: #999; font-size: 12px;">
-        此邮件由下歌吧系统自动发送，请勿回复。
+        此邮件由全盘搜系统自动发送，请勿回复。
       </p>
     </div>
   `;

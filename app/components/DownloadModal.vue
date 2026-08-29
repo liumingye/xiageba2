@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch } from "vue";
 import {
   useClipboard,
   useTimeoutFn,
   useMediaQuery,
   useVModels,
+  useScrollLock,
 } from "@vueuse/core";
 import { X, Download, QrCode, Copy, Check } from "@lucide/vue";
 import type { Music, DownloadOption } from "~/stores/music";
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 const showFeedbackModal = ref(false);
 const isMobile = useMediaQuery("(max-width: 767px)");
 const qrCodeUrl = ref("");
+const isLocked = useScrollLock(window);
 
 const { selectedDownload, music, show } = useVModels(props, emit, {
   passive: true,
@@ -107,6 +109,7 @@ watch(
       music.value.downloads &&
       music.value.downloads.length > 0
     ) {
+      isLocked.value = true;
       // 初始化时，默认选择第一个下载选项
       if (!selectedDownload.value && music.value.downloads[0]) {
         selectedDownload.value = music.value.downloads[0];
@@ -116,6 +119,8 @@ watch(
         if (!selectedDownload.value?.url) return;
         await generateQrCode(selectedDownload.value.url);
       }
+    } else {
+      isLocked.value = false;
     }
   },
 );
@@ -150,24 +155,22 @@ const openFeedbackModal = () => {
         ></div>
 
         <div
-          class="modal-content relative bg-zinc-900 rounded-3xl p-6 max-w-md w-full border border-zinc-800"
+          class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
         >
           <button
-            class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            class="absolute top-4 right-4 p-2 opacity-80 hover:opacity-100 hover:bg-color-300 rounded-lg transition-all"
             @click="handleClose"
           >
-            <X class="w-5 h-5 text-zinc-400" />
+            <X class="w-5 h-5" />
           </button>
 
-          <h3 class="text-xl font-medium text-white mb-4 text-center">
-            下载音乐
-          </h3>
+          <h3 class="text-xl font-medium mb-4 text-center">下载音乐</h3>
 
           <div
             v-if="music?.downloads && music.downloads.length > 0"
             class="space-y-4"
           >
-            <div class="text-center text-zinc-400 mb-4">
+            <div class="text-center mb-4 opacity-60">
               <p>选择音质</p>
             </div>
 
@@ -176,7 +179,7 @@ const openFeedbackModal = () => {
                 <a
                   v-for="download in music.downloads"
                   :key="download.quality"
-                  class="flex flex-col w-full items-center gap-2 p-4 rounded-lg transition-colors bg-zinc-800 hover:bg-zinc-700 text-white"
+                  class="flex flex-col w-full items-center gap-2 p-4 rounded-lg transition-colors bg-color-300 hover:bg-color-400"
                   :href="download.url"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -189,19 +192,17 @@ const openFeedbackModal = () => {
 
               <div
                 v-if="pwdList.length > 0"
-                class="space-y-2 p-3 bg-zinc-800 rounded-lg"
+                class="space-y-2 p-3 bg-color-300 text-color-300 rounded-lg"
               >
-                <p class="text-zinc-400 text-sm text-center mb-2">提取码</p>
+                <p class="text-sm text-center mb-2">提取码</p>
                 <div
                   v-for="(item, index) in pwdList"
                   :key="index"
                   class="flex items-center justify-between"
                 >
-                  <span class="text-zinc-300 text-sm">{{ item.quality }}</span>
+                  <span class="text-sm">{{ item.quality }}</span>
                   <div class="flex items-center gap-2">
-                    <span class="text-white font-mono font-medium">{{
-                      item.pwd
-                    }}</span>
+                    <span class="font-mono font-medium">{{ item.pwd }}</span>
                     <button
                       class="p-1.5 text-zinc-400 hover:text-primary-400 transition-colors"
                       @click.stop="copyPwdByIndex(index, item.pwd)"
@@ -231,7 +232,7 @@ const openFeedbackModal = () => {
                   :class="
                     selectedDownload?.quality === download.quality
                       ? 'bg-[--primary] text-[--white]'
-                      : 'bg-zinc-700 hover:bg-zinc-600 text-white'
+                      : 'bg-zinc-800 hover:bg-zinc-600 text-white'
                   "
                   @click="selectDownload(download)"
                 >
@@ -239,18 +240,18 @@ const openFeedbackModal = () => {
                 </button>
               </div>
 
-              <div class="text-center text-zinc-400 mb-2">
-                <p>使用手机扫码下载</p>
+              <div class="text-center mb-2">
+                <p class="opacity-60">使用手机扫码下载</p>
                 <p
                   v-if="selectedDownload"
-                  class="text-[--primary] text-sm mt-1"
+                  class="text-primary-500 text-sm mt-1"
                 >
                   当前音质：{{ selectedDownload.quality }}
                 </p>
               </div>
 
               <div class="flex justify-center">
-                <div class="bg-white p-4 rounded-lg">
+                <div class="bg-white p-4 rounded-lg border border-color-200">
                   <img
                     v-if="qrCodeUrl"
                     :src="qrCodeUrl"
@@ -270,10 +271,8 @@ const openFeedbackModal = () => {
                 v-if="selectedPwd"
                 class="flex items-center justify-center gap-2"
               >
-                <span class="text-zinc-400 text-sm">提取码：</span>
-                <span class="text-white font-mono font-medium">{{
-                  selectedPwd
-                }}</span>
+                <span class="text-sm">提取码：</span>
+                <span class="font-mono font-medium">{{ selectedPwd }}</span>
                 <button
                   class="p-1.5 text-zinc-400 hover:text-primary-400 transition-colors"
                   @click="copyPwd"
@@ -290,7 +289,7 @@ const openFeedbackModal = () => {
                 v-if="music?.id"
                 @click="openFeedbackModal"
                 aria-label="反馈问题"
-                class="text-zinc-600"
+                class="text-zinc-500 opacity-60"
               >
                 反馈问题
               </button>
@@ -298,7 +297,7 @@ const openFeedbackModal = () => {
               <a
                 v-if="!isMobile"
                 aria-label="直接下载"
-                class="text-zinc-600 ml-2"
+                class="text-zinc-500 opacity-60 ml-2"
                 :href="selectedDownload?.url"
                 target="_blank"
               >

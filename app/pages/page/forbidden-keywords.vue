@@ -4,12 +4,12 @@ import { ShieldBan, Loader2 } from "@lucide/vue";
 defineOptions({ name: "ForbiddenKeywordsPage" });
 
 useHead({
-  title: "违禁词列表 - 下歌吧",
+  title: "违禁词列表 - 全盘搜",
   meta: [
     {
       name: "description",
       content:
-        "下歌吧违禁词列表，搜索时将屏蔽包含违禁词的关键词，以维护健康搜索环境。",
+        "全盘搜违禁词列表，搜索时将屏蔽包含违禁词的关键词，以维护健康搜索环境。",
     },
     { name: "robots", content: "index, follow" },
   ],
@@ -22,16 +22,18 @@ const { data, pending, error } = await useFetch<{
 </script>
 
 <template>
-  <div class="min-h-screen py-8 px-4">
-    <div class="max-w-3xl mx-auto">
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+
+    <div class="max-w-4xl mx-auto px-2">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
           <ShieldBan class="w-6 h-6 text-primary-400" />
           违禁词列表
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-color-300 hover:text-primary-400 transition-colors"
         >
           返回首页
         </NuxtLink>
@@ -41,14 +43,14 @@ const { data, pending, error } = await useFetch<{
         <!-- 加载中 -->
         <div
           v-if="pending"
-          class="flex items-center justify-center py-12 text-zinc-400"
+          class="flex items-center justify-center py-12 text-color-300"
         >
           <Loader2 class="w-5 h-5 animate-spin mr-2" />
           加载中...
         </div>
 
         <!-- 加载失败 -->
-        <div v-else-if="error" class="py-12 text-center text-zinc-400">
+        <div v-else-if="error" class="py-12 text-center text-red-500">
           加载失败，请稍后重试
         </div>
 
@@ -56,7 +58,7 @@ const { data, pending, error } = await useFetch<{
         <template v-else>
           <p class="text-sm text-zinc-400 mb-4">
             共
-            <span class="text-primary-400 font-semibold">{{
+            <span class="text-color-300 font-semibold">{{
               data?.total || 0
             }}</span>
             个违禁词，搜索时将屏蔽
@@ -72,17 +74,19 @@ const { data, pending, error } = await useFetch<{
             </span>
           </div>
 
-          <p v-else class="py-8 text-center text-zinc-500 text-sm">
+          <p v-else class="py-8 text-center text-color-300 text-sm">
             暂无违禁词
           </p>
         </template>
       </article>
+
+      <SiteFooter />
     </div>
   </div>
 </template>
 
 <style scoped>
 .word {
-  @apply inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-zinc-800/80 text-zinc-300 border border-zinc-700;
+  @apply inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-color-300 border border-color-300;
 }
 </style>

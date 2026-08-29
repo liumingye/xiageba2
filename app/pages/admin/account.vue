@@ -319,9 +319,9 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
 
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium text-white">账号管理</h2>
+        <h2 class="text-lg font-medium">账号管理</h2>
         <button
-          class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+          class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors text-white"
           @click="openAddForm"
         >
           <Plus class="w-4 h-4" />
@@ -381,7 +381,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                   </span>
                   <span
                     v-if="account.name"
-                    class="text-sm text-white truncate"
+                    class="text-sm truncate"
                     :title="account.name"
                   >
                     {{ account.name }}
@@ -510,7 +510,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               <X class="w-5 h-5 text-zinc-400" />
             </button>
 
-            <h3 class="text-lg font-medium text-white mb-4">
+            <h3 class="text-lg font-medium mb-4">
               {{ formIsEdit ? "编辑账号" : "添加账号" }}
             </h3>
 
@@ -552,7 +552,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <button
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     :disabled="gettingOauthUrl"
                     @click="getBaiduOauthUrl"
                   >
@@ -572,7 +572,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     class="input-search flex-1"
                   />
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
                     :disabled="gettingOauthToken || !baiduOauthCode.trim()"
                     @click="getBaiduOauthToken"
                   >
@@ -613,7 +613,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                     class="input-search flex-1"
                   />
                   <button
-                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors whitespace-nowrap"
+                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 rounded-lg transition-colors whitespace-nowrap"
                     title="从网盘选择目录"
                     @click="openDirPicker"
                   >
@@ -644,7 +644,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                 取消
               </button>
               <button
-                class="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="formSaving"
                 @click="saveForm"
               >

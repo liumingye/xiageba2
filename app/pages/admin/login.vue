@@ -61,7 +61,7 @@ const handleKeydown = (e: KeyboardEvent) => {
         >
           <Music class="w-10 h-10 text-white" />
         </div>
-        <h1 class="text-2xl font-bold text-white">下歌吧管理后台</h1>
+        <h1 class="text-2xl font-bold">全盘搜管理后台</h1>
         <p class="text-zinc-500 mt-2">管理员登录</p>
       </div>
 
@@ -75,10 +75,10 @@ const handleKeydown = (e: KeyboardEvent) => {
 
         <div class="space-y-4">
           <div>
-            <label class="block text-zinc-400 text-sm mb-2">用户名</label>
+            <label class="block text-color-300 text-sm mb-2">用户名</label>
             <div class="relative">
               <User
-                class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500"
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-color-500"
               />
               <input
                 v-model="username"
@@ -91,10 +91,10 @@ const handleKeydown = (e: KeyboardEvent) => {
           </div>
 
           <div>
-            <label class="block text-zinc-400 text-sm mb-2">密码</label>
+            <label class="block text-color-400 text-sm mb-2">密码</label>
             <div class="relative">
               <Lock
-                class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500"
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-color-500"
               />
               <input
                 v-model="password"

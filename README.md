@@ -1,4 +1,4 @@
-# 下歌吧
+# 全盘搜
 
 基于 **Nuxt 4 + Vue 3 + PostgreSQL + Prisma 7** 构建的音乐下载与网盘资源搜索网站。
 支持 jieba 中文分词全文检索、多网盘资源转存、音乐刮削、后台管理。
@@ -216,7 +216,7 @@ SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=noreply@example.com
-SMTP_FROM_NAME=下歌吧
+SMTP_FROM_NAME=全盘搜
 ```
 
 ### 3. 初始化数据库

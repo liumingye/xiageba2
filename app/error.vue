@@ -6,7 +6,7 @@ const props = defineProps({
   error: Object as () => NuxtError,
   appName: {
     type: String,
-    default: "下歌吧",
+    default: "全盘搜",
   },
   backHome: {
     type: String,

@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-下歌吧：基于 Nuxt 4 + Vue 3 + PostgreSQL + Prisma 7 的音乐下载与网盘资源搜索网站。详细技术栈与功能见 [README.md](./README.md)。
+全盘搜：基于 Nuxt 4 + Vue 3 + PostgreSQL + Prisma 7 的音乐下载与网盘资源搜索网站。详细技术栈与功能见 [README.md](./README.md)。
 
 - 包管理器：**pnpm**（workspace 协议，禁止用 npm/yarn 安装依赖）
 - Node.js ≥ 20，PostgreSQL ≥ 15，Redis 可选

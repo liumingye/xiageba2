@@ -7,11 +7,11 @@ marked.setOptions({ gfm: true, breaks: true, async: false });
 defineOptions({ name: "PrivacyPolicyPage" });
 
 useHead({
-  title: "隐私政策 - 下歌吧",
+  title: "隐私政策 - 全盘搜",
   meta: [
     {
       name: "description",
-      content: "下歌吧隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
+      content: "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
     },
     { name: "robots", content: "index, follow" },
   ],
@@ -21,7 +21,7 @@ const content = `## 隐私政策
 
 **最后更新日期：2026年1月1日**
 
-下歌吧（以下简称"本站"）重视用户隐私保护。本隐私政策说明本站如何收集、使用、存储和保护您的个人信息。请您在使用本站服务前，仔细阅读本政策。
+全盘搜（以下简称"本站"）重视用户隐私保护。本隐私政策说明本站如何收集、使用、存储和保护您的个人信息。请您在使用本站服务前，仔细阅读本政策。
 
 ### 1. 信息收集
 
@@ -106,16 +106,18 @@ const rendered = marked.parse(content) as string;
 </script>
 
 <template>
-  <div class="min-h-screen py-8 px-4">
-    <div class="max-w-3xl mx-auto">
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+
+    <div class="max-w-4xl mx-auto px-2">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
           <Lock class="w-6 h-6 text-primary-400" />
           隐私政策
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-color-300 hover:text-primary-400 transition-colors"
         >
           返回首页
         </NuxtLink>
@@ -123,11 +125,13 @@ const rendered = marked.parse(content) as string;
 
       <article class="card p-6">
         <div
-          class="text-sm text-zinc-300 break-words leading-relaxed prose-resource"
+          class="text-sm text-color-300 break-words leading-relaxed prose-resource"
         >
           <span v-html="rendered" />
         </div>
       </article>
+
+      <SiteFooter />
     </div>
   </div>
 </template>

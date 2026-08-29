@@ -94,10 +94,6 @@ const startScroll = () => {
   resumeScroll();
 };
 
-const stopScroll = () => {
-  pauseScroll();
-};
-
 const goToScrollItem = (index: number) => {
   scrollIndex.value = index;
   startScroll();
@@ -143,11 +139,11 @@ watch(normalList, () => {
   <!-- 滚动公告（正常显示方式） -->
   <div
     v-if="normalList.length > 0"
-    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-[--bg-color-800] rounded-lg"
+    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-color-100 rounded-lg border border-color-100"
   >
     <div class="items-center gap-1.5 flex-shrink-0 md:flex hidden">
-      <Megaphone class="w-4 h-4 text-[--primary]" />
-      <span class="text-sm text-[--primary] font-medium">公告</span>
+      <Megaphone class="w-4 h-4 text-primary-500" />
+      <span class="text-sm text-color-400 font-medium">公告</span>
     </div>
 
     <div class="flex-1 min-w-0 relative h-5 overflow-hidden">
@@ -155,7 +151,7 @@ watch(normalList, () => {
         <NuxtLink
           :key="normalList[scrollIndex]?.id"
           :to="`/announcement/${normalList[scrollIndex]?.id}`"
-          class="absolute inset-0 flex items-center text-sm text-zinc-300 hover:text-primary-400 transition-colors truncate"
+          class="absolute inset-0 flex items-center text-sm text-color-300 hover:text-primary-400 transition-colors truncate"
         >
           <component
             :is="iconMap[normalList[scrollIndex]?.icon || 'INFO'] || Info"
@@ -165,7 +161,7 @@ watch(normalList, () => {
           <span class="truncate">{{ normalList[scrollIndex]?.title }}</span>
           <span
             v-if="normalList[scrollIndex]"
-            class="text-zinc-600 text-sm ml-1 flex-shrink-0"
+            class="text-color-500 text-sm ml-1 flex-shrink-0"
           >
             <NuxtTime :datetime="normalList[scrollIndex]!.createdAt" relative />
           </span>
@@ -191,7 +187,7 @@ watch(normalList, () => {
 
     <NuxtLink
       to="/announcement"
-      class="flex items-center text-sm text-zinc-500 hover:text-primary-400 transition-colors flex-shrink-0"
+      class="flex items-center text-sm text-color-300 hover:text-primary-400 transition-colors flex-shrink-0"
     >
       更多
       <ChevronRight class="w-3 h-3" />
@@ -211,10 +207,10 @@ watch(normalList, () => {
             @click="closeDialog"
           ></div>
           <div
-            class="modal-content relative bg-zinc-900 rounded-2xl p-6 max-w-md w-full border border-zinc-800"
+            class="modal-content relative bg-color-100 rounded-2xl p-6 max-w-md w-full border border-color-300"
           >
             <button
-              class="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
+              class="absolute top-4 right-4 p-2 opacity-80 hover:opacity-100 hover:bg-color-300 rounded-lg transition-all"
               @click="closeDialog"
             >
               <X class="w-5 h-5" />
@@ -231,17 +227,17 @@ watch(normalList, () => {
                 />
               </div>
               <div class="flex-1 min-w-0">
-                <h3 class="text-lg font-medium text-white">
+                <h3 class="text-lg font-medium">
                   {{ currentDialog.title }}
                 </h3>
-                <p class="text-xs text-zinc-500 mt-1">
+                <p class="text-xs text-gray-500">
                   <NuxtTime :datetime="currentDialog.createdAt" relative />
                 </p>
               </div>
             </div>
 
             <div
-              class="text-sm text-zinc-300 whitespace-pre-wrap max-h-60 overflow-y-auto mb-6 leading-relaxed"
+              class="text-sm text-color-300 whitespace-pre-wrap max-h-60 overflow-y-auto mb-6 leading-relaxed"
             >
               {{ currentDialog.content || "暂无内容" }}
             </div>
@@ -256,7 +252,7 @@ watch(normalList, () => {
               </NuxtLink>
               <div class="flex items-center justify-end">
                 <button
-                  class="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
+                  class="text-xs text-color-300 hover:text-primary-500 transition-colors"
                   @click="dismissDialogForever"
                 >
                   知道了，不再提醒

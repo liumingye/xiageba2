@@ -38,9 +38,10 @@ export default defineNuxtConfig({
     // 应用清单配置（控制 PWA 安装到手机或桌面端后的外观和行为）
     manifest: {
       id: "/", // PWA 的唯一标识符，防止由于 start_url 改变导致生成两个应用
-      name: "下歌吧 - 高品质音乐下载", // 应用的完整名称（安装时显示）
-      short_name: "下歌吧", // 应用的简短名称（桌面图标下方显示）
-      description: "免费下载高品质 MP3 与 FLAC 无损音乐", // 应用描述
+      name: "全盘搜 - 高品质音乐下载", // 应用的完整名称（安装时显示）
+      short_name: "全盘搜", // 应用的简短名称（桌面图标下方显示）
+      description:
+        "一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索", // 应用描述
       lang: "zh-CN", // 应用默认语言
       start_url: "/", // 用户点击桌面图标启动应用时的初始路由
       scope: "/", // 限制 PWA 导航控制的 URL 范围，"/" 代表整个站点
@@ -130,23 +131,23 @@ export default defineNuxtConfig({
     baseURL: "/",
     head: {
       htmlAttrs: { lang: "zh-CN" },
-      title: "下歌吧 - 免费下载高品质MP3与FLAC无损音乐",
+      title: "全盘搜 - 免费下载高品质MP3与FLAC无损音乐",
       meta: [
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
           name: "description",
           content:
-            "下歌吧是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。",
+            "全盘搜是一个免费高品质音乐下载平台，提供MP3与FLAC无损音乐下载、在线试听、歌词展示等功能。",
         },
         {
           name: "keywords",
-          content: "下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听",
+          content: "全盘搜, 音乐下载, FLAC, MP3, 无损音乐, 免费下载, 在线试听",
         },
         { name: "robots", content: "index, follow" },
         { name: "theme-color", content: "#0f172a" },
-        { name: "author", content: "下歌吧" },
-        { property: "og:site_name", content: "下歌吧" },
+        { name: "author", content: "全盘搜" },
+        { property: "og:site_name", content: "全盘搜" },
         { property: "og:type", content: "website" },
       ],
       link: [

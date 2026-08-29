@@ -137,14 +137,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .suggestions-container {
+  @apply bg-color-100 border border-color-300 rounded-xl;
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
   margin-top: 8px;
-  background: var(--bg-color-800);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   z-index: 100;

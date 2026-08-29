@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useEventListener, useMediaQuery } from "@vueuse/core";
-import { Download, Play, Pause, Disc3, Key } from "@lucide/vue";
+import { useEventListener, useMediaQuery, useMounted } from "@vueuse/core";
+import { Download, Play, Pause, Disc3, Key, MicVocal } from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
@@ -64,27 +64,27 @@ const pageTitle = computed(() => {
     title.push(`《${music.value.album}》`);
   }
   if (title.length === 0) {
-    title.push("下歌吧 - 免费下载高品质音乐");
+    title.push("全盘搜 - 免费下载高品质音乐");
   }
-  return `${title.join(" - ")} - 下歌吧`;
+  return `${title.join(" - ")} - 全盘搜`;
 });
 
 const pageDescription = computed(() => {
   if (music.value) {
     const parts = [music.value.title, music.value.artist];
     if (music.value.album) parts.push(music.value.album);
-    return `${parts.join(" - ")} - 在下歌吧免费下载高品质MP3与FLAC音乐，支持在线试听。`;
+    return `${parts.join(" - ")} - 在全盘搜免费下载高品质MP3与FLAC音乐，支持在线试听。`;
   }
-  return "下歌吧，提供高品质MP3与FLAC音乐免费下载，支持在线试听、搜索与歌词展示。";
+  return "全盘搜，提供高品质MP3与FLAC音乐免费下载，支持在线试听、搜索与歌词展示。";
 });
 
 const pageKeywords = computed(() => {
   if (music.value) {
     const parts = [music.value.title, music.value.artist];
     if (music.value.album) parts.push(music.value.album);
-    return `${parts.join(", ")}, 音乐下载, FLAC, MP3, 无损音乐, 下歌吧`;
+    return `${parts.join(", ")}, 音乐下载, FLAC, MP3, 无损音乐, 全盘搜`;
   }
-  return "下歌吧, 音乐下载, FLAC, MP3, 无损音乐, 在线试听, 歌词";
+  return "全盘搜, 音乐下载, FLAC, MP3, 无损音乐, 在线试听, 歌词";
 });
 
 const formattedLyrics = computed(() => {
@@ -123,14 +123,15 @@ useHead({
     { name: "description", content: pageDescription },
     { name: "keywords", content: pageKeywords },
     { name: "robots", content: "index, follow" },
+    { name: "referrer", content: "same-origin" },
     { name: "viewport", content: "width=device-width, initial-scale=1" },
-    { name: "author", content: "下歌吧" },
+    { name: "author", content: "全盘搜" },
     { name: "theme-color", content: "#0f172a" },
 
     { property: "og:type", content: "music.song" },
     { property: "og:title", content: pageTitle },
     { property: "og:description", content: pageDescription },
-    { property: "og:site_name", content: "下歌吧" },
+    { property: "og:site_name", content: "全盘搜" },
     { property: "og:url", content: canonicalUrl },
     { property: "og:image", content: () => music.value?.cover || "" },
     { property: "og:music:musician", content: () => music.value?.artist || "" },
@@ -211,11 +212,8 @@ onMounted(() => {
 });
 
 const isMobile = useMediaQuery("(max-width: 639px)");
-const isMounted = ref(false);
 
-onMounted(() => {
-  isMounted.value = true;
-});
+const isMounted = useMounted();
 </script>
 
 <template>
@@ -294,13 +292,10 @@ onMounted(() => {
                   @keydown.enter="togglePlay"
                 >
                   <div
-                    class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center"
+                    class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center text-white"
                   >
-                    <Play
-                      v-if="!isPlaying"
-                      class="w-8 h-8 text-[--white] ml-1"
-                    />
-                    <Pause v-else class="w-8 h-8 text-[--white]" />
+                    <Play v-if="!isPlaying" class="w-8 h-8 ml-1" />
+                    <Pause v-else class="w-8 h-8" />
                   </div>
                 </div>
               </div>
@@ -309,13 +304,13 @@ onMounted(() => {
                 class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left"
               >
                 <h1
-                  class="text-2xl sm:text-3xl font-bold text-white mb-2"
+                  class="text-2xl sm:text-3xl font-bold mb-2"
                   :title="music.title"
                 >
                   {{ music.title }}
                 </h1>
                 <p
-                  class="text-zinc-400 mb-4"
+                  class="text-gray-500 mb-4"
                   itemprop="byArtist"
                   :title="music.artist"
                 >
@@ -337,7 +332,7 @@ onMounted(() => {
                   <a
                     v-for="(download, index) in music.downloads"
                     :key="index"
-                    class="cursor-pointer flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
+                    class="cursor-pointer flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors text-white"
                     :aria-label="`${download.quality}下载`"
                     :target="isMobile && isMounted ? '_blank' : undefined"
                     :href="isMobile && isMounted ? download.url : undefined"
@@ -354,7 +349,7 @@ onMounted(() => {
                   </a>
                   <button
                     v-if="music.playUrl"
-                    class="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
+                    class="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors text-white"
                     @click="togglePlay"
                     aria-label="播放或暂停"
                   >
@@ -366,7 +361,7 @@ onMounted(() => {
                 <button
                   @click="showFeedbackModal = true"
                   aria-label="反馈问题"
-                  class="text-zinc-600 mt-2 sm:hidden block"
+                  class="text-gray-500 mt-2 sm:hidden block"
                 >
                   反馈问题
                 </button>
@@ -376,22 +371,33 @@ onMounted(() => {
 
           <section
             v-if="music.album"
-            class="card p-6"
+            class="card p-4 md:p-6"
             itemscope
             itemtype="https://schema.org/MusicAlbum"
           >
-            <div class="flex items-center gap-2 text-zinc-400 mb-4">
+            <div
+              class="text-lg font-medium flex items-center gap-2 text-color-400 mb-4"
+            >
               <Disc3 class="w-5 h-5" />
               <span>所属专辑</span>
             </div>
-            <p class="text-white text-lg" itemprop="name">{{ music.album }}</p>
+            <p class="text-lg" itemprop="name">{{ music.album }}</p>
           </section>
 
-          <section class="card p-6">
-            <h3 class="text-lg font-medium text-white mb-4">歌词</h3>
+          <section
+            class="card p-4 md:p-6"
+            itemscope
+            itemtype="https://schema.org/lyrics"
+          >
+            <div
+              class="text-lg font-medium flex items-center gap-2 text-color-400 mb-4"
+            >
+              <MicVocal class="w-5 h-5" />
+              <span>歌词</span>
+            </div>
             <div
               v-if="formattedLyrics.length > 0"
-              class="space-y-2 text-zinc-300"
+              class="space-y-2"
               itemprop="lyrics"
             >
               <p

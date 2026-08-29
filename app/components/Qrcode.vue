@@ -24,7 +24,7 @@ onMounted(async () => {
     @mouseleave="isHovered = false"
   >
     <div
-      class="bg-dark-300 backdrop-blur-sm rounded-lg p-3 border border-zinc-700/50"
+      class="bg-color-100 backdrop-blur-sm rounded-lg p-3 border border-color-300 text-center"
     >
       <div class="w-36 h-36 mx-auto bg-white rounded-lg">
         <img
@@ -34,12 +34,8 @@ onMounted(async () => {
           class="w-full h-full rounded-lg"
         />
       </div>
-      <p class="text-zinc-300 text-sm text-bold mt-2 text-center">
-        使用手机「扫一扫」
-      </p>
-      <p class="text-zinc-300 text-xs mt-1 text-center">
-        手机上浏览，获得更好体验
-      </p>
+      <p class="text-sm text-bold mt-2">使用手机「扫一扫」</p>
+      <p class="text-xs mt-1">手机上浏览，获得更好体验</p>
     </div>
   </div>
 </template>

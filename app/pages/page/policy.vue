@@ -7,11 +7,11 @@ marked.setOptions({ gfm: true, breaks: true, async: false });
 defineOptions({ name: "PolicyPage" });
 
 useHead({
-  title: "免责声明 - 下歌吧",
+  title: "免责声明 - 全盘搜",
   meta: [
     {
       name: "description",
-      content: "下歌吧免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
+      content: "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
     },
     { name: "robots", content: "index, follow" },
   ],
@@ -21,7 +21,7 @@ const content = `## 免责声明
 
 **最后更新日期：2026年1月1日**
 
-下歌吧（以下简称"本站"）是一个音乐搜索与网盘资源索引工具。在使用本站服务之前，请您仔细阅读以下免责声明：
+全盘搜（以下简称"本站"）是一个音乐搜索与网盘资源索引工具。在使用本站服务之前，请您仔细阅读以下免责声明：
 
 ### 1. 服务性质
 
@@ -70,16 +70,18 @@ const rendered = marked.parse(content) as string;
 </script>
 
 <template>
-  <div class="min-h-screen py-8 px-4">
-    <div class="max-w-3xl mx-auto">
+  <div class="min-h-screen pb-4 md:pb-6">
+    <TopBar />
+
+    <div class="max-w-4xl mx-auto px-2">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
           <ShieldAlert class="w-6 h-6 text-primary-400" />
           免责声明
         </h1>
         <NuxtLink
           to="/"
-          class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-primary-400 transition-colors"
+          class="inline-flex items-center gap-1 text-sm text-color-300 hover:text-primary-400 transition-colors"
         >
           返回首页
         </NuxtLink>
@@ -87,11 +89,13 @@ const rendered = marked.parse(content) as string;
 
       <article class="card p-6">
         <div
-          class="text-sm text-zinc-300 break-words leading-relaxed prose-resource"
+          class="text-sm text-color-300 break-words leading-relaxed prose-resource"
         >
           <span v-html="rendered" />
         </div>
       </article>
+
+      <SiteFooter />
     </div>
   </div>
 </template>

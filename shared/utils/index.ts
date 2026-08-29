@@ -27,6 +27,20 @@ export type PanFilterFriend =
   | "磁力链接"
   | "其他链接";
 
+export type PanFilterFriendShort =
+  | "夸克"
+  | "百度"
+  | "迅雷"
+  | "UC"
+  | "阿里"
+  | "天翼"
+  | "移动"
+  | "123"
+  | "115"
+  | "PikPak"
+  | "磁力"
+  | "其他";
+
 // 将映射关系抽离到静态对象中，查询时间复杂度为 O(1) 且更易维护
 const STORAGE_HOST_MAP: Record<string, PanFilter> = {
   "pan.quark.cn": "quark",
@@ -92,12 +106,40 @@ const map: Partial<Record<PanFilter, PanFilterFriend>> = {
   other: "其他链接",
 };
 
+// 短字符
+const mapShort: Partial<Record<PanFilter, PanFilterFriendShort>> = {
+  quark: "夸克",
+  baidu: "百度",
+  xunlei: "迅雷",
+  uc: "UC",
+  ali: "阿里",
+  189: "天翼",
+  139: "移动",
+  123: "123",
+  115: "115",
+  pikpak: "PikPak",
+  magnet: "磁力",
+  other: "其他",
+};
+
 export const getStorageTypeFriend = (url: string): PanFilterFriend => {
   return map[getStorageType(url)] || "其他链接";
+};
+
+export const getStorageTypeFriendShort = (
+  url: string,
+): PanFilterFriendShort => {
+  return mapShort[getStorageType(url)] || "其他";
 };
 
 export const getStorageTypeFriendFromFilter = (
   pan: PanFilter,
 ): PanFilterFriend => {
   return map[pan] || "其他链接";
+};
+
+export const getStorageTypeFriendShortFromFilter = (
+  pan: PanFilter,
+): PanFilterFriendShort => {
+  return mapShort[pan] || "其他";
 };

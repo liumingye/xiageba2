@@ -191,8 +191,8 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
           >
             <Sparkles class="w-8 h-8 text-primary-400" />
           </div>
-          <h2 class="text-lg font-medium text-white mb-2">AI 智能搜索</h2>
-          <p class="text-sm text-zinc-500 max-w-md mx-auto">
+          <h2 class="text-lg font-medium mb-2">AI 智能搜索</h2>
+          <p class="text-sm text-gray-500 max-w-md mx-auto">
             告诉我你想找什么音乐或资源，即使描述模糊也没关系，我会帮你找到。
           </p>
         </div>
@@ -205,9 +205,9 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
         >
           <div
             class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            :class="msg.role === 'user' ? 'bg-zinc-700' : 'bg-primary-500/20'"
+            :class="msg.role === 'user' ? 'bg-color-300' : 'bg-primary-500/20'"
           >
-            <User v-if="msg.role === 'user'" class="w-4 h-4 text-zinc-300" />
+            <User v-if="msg.role === 'user'" class="w-4 h-4 text-color-300" />
             <Sparkles v-else class="w-4 h-4 text-primary-400" />
           </div>
 
@@ -216,7 +216,7 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
             :class="
               msg.role === 'user'
                 ? 'bg-primary-500 text-white rounded-tr-md'
-                : 'bg-zinc-800 rounded-tl-md'
+                : 'bg-color-300 rounded-tl-md'
             "
           >
             <template v-if="msg.role === 'assistant'">
