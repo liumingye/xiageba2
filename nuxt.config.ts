@@ -135,10 +135,21 @@ export default defineNuxtConfig({
       meta: [
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { name: "og:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
+        { name: "twitter:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         {
           name: "description",
           content:
             "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
+        },
+        {
+          name: "og:description",
+          content:
+            "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
+        },
+        {
+          name: "twitter:description",
+          content: "快捷便利的公开网盘搜索引擎，轻松找资源。",
         },
         {
           name: "keywords",
@@ -150,6 +161,7 @@ export default defineNuxtConfig({
         { name: "author", content: "全盘搜" },
         { property: "og:site_name", content: "全盘搜" },
         { property: "og:type", content: "website" },
+        { property: "twitter:card", content: "summary_large_image" },
       ],
       link: [
         { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -157,9 +169,7 @@ export default defineNuxtConfig({
           rel: "apple-touch-icon",
           href: "/pwa/apple-touch-icon.png",
         },
-        ...(isDev
-          ? []
-          : [{ rel: "manifest" as const, href: "/manifest.webmanifest" }]),
+        { rel: "manifest", href: "/manifest.webmanifest" },
       ],
       script: [
         {

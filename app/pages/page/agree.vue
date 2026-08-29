@@ -12,9 +12,8 @@ useHead({
     {
       name: "description",
       content:
-        "全盘搜服务协议，规范用户使用本站音乐搜索与索引服务的权利与义务。",
+        "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
     },
-    { name: "robots", content: "index, follow" },
   ],
 });
 

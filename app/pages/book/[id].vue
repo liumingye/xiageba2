@@ -159,21 +159,20 @@ const pageTitle = computed(() => {
   return parts.join(" - ");
 });
 
-useHead({
+const pageDescription = computed(() => {
+  const d = detail.value;
+  if (!d?.bookName) return "全盘搜小说详情";
+  const desc = (d.description || "").replace(/\s+/g, " ").slice(0, 140);
+  return `${d.bookName}（${d.author} 著）${desc}`;
+});
+
+useSeoMeta({
   title: pageTitle,
-  meta: [
-    {
-      name: "description",
-      content: () => {
-        const d = detail.value;
-        if (!d?.bookName) return "全盘搜小说详情";
-        const desc = (d.description || "").replace(/\s+/g, " ").slice(0, 140);
-        return `${d.bookName}（${d.author} 著）${desc}`;
-      },
-    },
-    { name: "robots", content: "index, follow" },
-    { name: "theme-color", content: "#0f172a" },
-  ],
+  description: pageDescription,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
 });
 </script>
 

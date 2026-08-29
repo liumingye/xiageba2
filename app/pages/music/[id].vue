@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useEventListener, useMediaQuery, useMounted } from "@vueuse/core";
-import { Download, Play, Pause, Disc3, Key, MicVocal, Search } from "@lucide/vue";
+import {
+  Download,
+  Play,
+  Pause,
+  Disc3,
+  Key,
+  MicVocal,
+  Search,
+} from "@lucide/vue";
 import TopBar from "~/components/TopBar.vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import SiteFooter from "~/components/SiteFooter.vue";
@@ -117,30 +125,25 @@ const jsonLd = computed(() => {
   return data;
 });
 
-useHead({
+useSeoMeta({
   title: pageTitle,
+  description: pageDescription,
+  referrer: "same-origin",
+  ogType: "music.song",
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogUrl: canonicalUrl,
+  ogImage: music.value?.cover || "",
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+  twitterImage: music.value?.cover || "",
+});
+
+useHead({
   meta: [
-    { name: "description", content: pageDescription },
     { name: "keywords", content: pageKeywords },
-    { name: "robots", content: "index, follow" },
-    { name: "referrer", content: "same-origin" },
-    { name: "viewport", content: "width=device-width, initial-scale=1" },
-    { name: "author", content: "全盘搜" },
-    { name: "theme-color", content: "#0f172a" },
-
-    { property: "og:type", content: "music.song" },
-    { property: "og:title", content: pageTitle },
-    { property: "og:description", content: pageDescription },
-    { property: "og:site_name", content: "全盘搜" },
-    { property: "og:url", content: canonicalUrl },
-    { property: "og:image", content: () => music.value?.cover || "" },
-    { property: "og:music:musician", content: () => music.value?.artist || "" },
-    { property: "og:music:album", content: () => music.value?.album || "" },
-
-    { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:title", content: pageTitle },
-    { name: "twitter:description", content: pageDescription },
-    { name: "twitter:image", content: () => music.value?.cover || "" },
+    { property: "og:music:musician", content: music.value?.artist || "" },
+    { property: "og:music:album", content: music.value?.album || "" },
   ],
   link: [{ rel: "canonical", href: canonicalUrl }],
   script: jsonLd.value
@@ -162,7 +165,9 @@ const selectedDownload = ref<DownloadOption | null>(null);
 // 没有下载链接时，跳转全网搜网盘资源（关键词：歌名 + 歌手）
 const searchNetdisk = () => {
   if (!music.value) return;
-  const keyword = [music.value.title, music.value.artist].filter(Boolean).join(" ");
+  const keyword = [music.value.title, music.value.artist]
+    .filter(Boolean)
+    .join(" ");
   router.push({
     path: "/search",
     query: { type: "resource", q: keyword },

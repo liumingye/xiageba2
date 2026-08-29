@@ -11,7 +11,6 @@ useHead({
       content:
         "全盘搜违禁词列表，搜索时将屏蔽包含违禁词的关键词，以维护健康搜索环境。",
     },
-    { name: "robots", content: "index, follow" },
   ],
 });
 

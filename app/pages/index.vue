@@ -118,42 +118,12 @@ const { data: categoriesWithLatest } = await useAsyncData(
   },
 );
 
+useSeoMeta({
+  ogUrl: config.app.baseURL,
+  ogImage: config.app.baseURL + "img/og-image.png",
+});
+
 useHead({
-  title: "全盘搜 - 免费网盘资源搜索引擎",
-  meta: [
-    {
-      name: "description",
-      content:
-        "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
-    },
-    {
-      name: "keywords",
-      content:
-        "全盘搜, 网盘搜索, 搜索引擎, 公开网盘, 资源搜索, 百度网盘, 夸克网盘, 阿里云盘, 免费资源",
-    },
-    { name: "robots", content: "index, follow" },
-    { name: "author", content: "全盘搜" },
-    { name: "theme-color", content: "#0f172a" },
-    { property: "og:type", content: "website" },
-    {
-      property: "og:title",
-      content: "全盘搜 - 免费网盘资源搜索引擎",
-    },
-    {
-      property: "og:description",
-      content:
-        "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
-    },
-    { property: "og:site_name", content: "全盘搜" },
-    { property: "og:url", content: config.app.baseURL },
-    { property: "og:image", content: config.app.baseURL + "img/og-image.png" },
-    { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
-    {
-      name: "twitter:description",
-      content: "快捷便利的公开网盘搜索引擎，轻松找资源。",
-    },
-  ],
   link: [{ rel: "canonical", href: config.app.baseURL }],
 });
 

@@ -319,7 +319,7 @@ const getTag = (tags: string) => {
   ].slice(0, 3);
 };
 
-useHead({
+useSeoMeta({
   title: () => {
     if (isSearchMode.value && books.value.length > 0) {
       return `"${searchKeyword.value}" - 搜小说 - 全盘搜`;
@@ -329,15 +329,8 @@ useHead({
       ? `搜小说 - 第${currentPage.value}页 - 全盘搜`
       : "搜小说 - 全盘搜";
   },
-  meta: [
-    {
-      name: "description",
-      content:
-        "全盘搜小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。",
-    },
-    { name: "robots", content: "index, follow" },
-    { name: "theme-color", content: "#0f172a" },
-  ],
+  description:
+    "全盘搜小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。",
 });
 </script>
 

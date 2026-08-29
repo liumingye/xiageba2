@@ -408,20 +408,21 @@ const pageDescription = computed(() => {
   return "全盘搜搜索 - 免费下载高品质音乐与网盘资源。";
 });
 
-useHead({
+useSeoMeta({
   title: pageTitle,
+  description: pageDescription,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+});
+
+useHead({
   meta: [
-    { name: "description", content: pageDescription },
     {
       name: "keywords",
       content: `${searchKeyword.value}, 音乐搜索, 全盘搜, MP3下载, FLAC下载, 网盘搜索, 网盘下载`,
     },
-    { name: "robots", content: "index, follow" },
-    { name: "theme-color", content: "#0f172a" },
-    { property: "og:title", content: pageTitle },
-    { property: "og:description", content: pageDescription },
-    { property: "og:type", content: "website" },
-    { property: "og:site_name", content: "全盘搜" },
   ],
   link: [
     {
@@ -505,11 +506,11 @@ watch(
       <!-- 搜索类型 tab -->
       <div class="flex items-center gap-2 mb-4">
         <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors border"
           :class="
             searchType === 'resource'
-              ? 'bg-primary-600 text-white font-medium'
-              : 'bg-color-100 text-color-300 hover:bg-color-300'
+              ? 'bg-primary-600 text-white font-medium border-transparent'
+              : 'bg-color-100 text-color-300 hover:bg-color-300 border-color-300'
           "
           @click="switchType('resource')"
         >
@@ -517,11 +518,11 @@ watch(
           搜资源
         </button>
         <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors border"
           :class="
             isMusic
-              ? 'bg-primary-600 text-white font-medium'
-              : 'bg-color-100 text-color-300 hover:bg-color-300'
+              ? 'bg-primary-600 text-white font-medium border-transparent'
+              : 'bg-color-100 text-color-300 hover:bg-color-300 border-color-300'
           "
           @click="switchType('music')"
         >
@@ -529,11 +530,11 @@ watch(
           搜音乐
         </button>
         <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors border"
           :class="
             isAi
-              ? 'bg-primary-600 text-white font-medium'
-              : 'bg-color-100 text-color-300 hover:bg-color-300'
+              ? 'bg-primary-600 text-white font-medium border-transparent'
+              : 'bg-color-100 text-color-300 hover:bg-color-300 border-color-300'
           "
           @click="switchType('ai')"
         >

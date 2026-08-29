@@ -93,7 +93,7 @@ const handleClose = () => {
         ></div>
 
         <div
-          class="modal-content relative bg-zinc-900 rounded-2xl p-6 max-w-md w-full border border-zinc-800 max-h-[80vh] flex flex-col"
+          class="modal-content relative bg-color-100 rounded-2xl p-6 max-w-md w-full border border-color-300 max-h-[80vh] flex flex-col"
         >
           <button
             class="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-lg transition-colors z-10"
@@ -102,15 +102,15 @@ const handleClose = () => {
             <X class="w-5 h-5 text-zinc-400" />
           </button>
 
-          <h3 class="text-lg font-medium text-white mb-1">选择临时资源目录</h3>
-          <p class="text-sm text-zinc-500 mb-4">
+          <h3 class="text-lg font-medium mb-1">选择临时资源目录</h3>
+          <p class="text-sm text-gray-500 mb-4">
             {{ getPanTypeLabel(type) }} · 根目录下的文件夹
           </p>
 
           <!-- 加载中 -->
           <div
             v-if="loading"
-            class="flex-1 flex items-center justify-center py-12 text-zinc-500"
+            class="flex-1 flex items-center justify-center py-12 text-gray-500"
           >
             <Loader2 class="w-6 h-6 animate-spin mr-2" />
             加载中...
@@ -119,9 +119,9 @@ const handleClose = () => {
           <!-- 错误 -->
           <div
             v-else-if="errorMsg"
-            class="flex-1 flex flex-col items-center justify-center py-12 text-zinc-500"
+            class="flex-1 flex flex-col items-center justify-center py-12 text-color-300"
           >
-            <FolderOpen class="w-10 h-10 mb-2 text-zinc-600" />
+            <FolderOpen class="w-10 h-10 mb-2" />
             <p class="text-sm">{{ errorMsg }}</p>
           </div>
 
@@ -130,11 +130,11 @@ const handleClose = () => {
             <button
               v-for="dir in dirs"
               :key="dir.id"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left text-color-100 border"
               :class="
                 selectedId === dir.id
-                  ? 'bg-primary-500/20 text-white ring-1 ring-primary-500/30'
-                  : 'hover:bg-zinc-800 text-zinc-300'
+                  ? 'bg-primary-500/20 border-primary-500'
+                  : 'hover:bg-color-300 border-color-300'
               "
               @click="handleSelect(dir)"
             >
@@ -160,10 +160,10 @@ const handleClose = () => {
 
           <!-- 底部操作 -->
           <div
-            class="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-zinc-800"
+            class="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-color-300"
           >
             <button
-              class="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              class="px-4 py-2 bg-color-300 hover:bg-color-400 rounded-lg text-sm transition-colors"
               @click="handleClose"
             >
               取消

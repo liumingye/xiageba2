@@ -122,26 +122,20 @@ const pageKeywords = computed(() => {
 
 const canonicalUrl = `/source/${sourceId}`;
 
-useHead({
+useSeoMeta({
   title: pageTitle,
-  meta: [
-    { name: "description", content: pageDescription },
-    { name: "keywords", content: pageKeywords },
-    { name: "robots", content: "index, follow" },
-    { name: "viewport", content: "width=device-width, initial-scale=1" },
-    { name: "author", content: "全盘搜" },
-    { name: "theme-color", content: "#0f172a" },
+  description: pageDescription,
+  ogType: "article",
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogUrl: canonicalUrl,
+  twitterCard: "summary",
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+});
 
-    { property: "og:type", content: "article" },
-    { property: "og:title", content: pageTitle },
-    { property: "og:description", content: pageDescription },
-    { property: "og:site_name", content: "全盘搜" },
-    { property: "og:url", content: canonicalUrl },
-
-    { name: "twitter:card", content: "summary" },
-    { name: "twitter:title", content: pageTitle },
-    { name: "twitter:description", content: pageDescription },
-  ],
+useHead({
+  meta: [{ name: "keywords", content: pageKeywords }],
   link: [{ rel: "canonical", href: canonicalUrl }],
 });
 
@@ -155,7 +149,9 @@ const fetchMenu = async () => {
   menuError.value = "";
 
   try {
-    const res = await fetch(`/api/source/tree?id=${encodeURIComponent(sourceId)}`);
+    const res = await fetch(
+      `/api/source/tree?id=${encodeURIComponent(sourceId)}`,
+    );
     const data = await res.json();
     if (res.ok && data?.tree) {
       fetchedMenu.value = data.tree;
@@ -271,8 +267,8 @@ onMounted(() => {
             </header>
 
             <div v-if="source.description" class="mb-6">
-              <div class="font-bold text-color-300 mb-3 text-lg">
-                <span>描述：</span>
+              <div class="font-bold text-color-300 mb-3">
+                <span class="text-lg">描述：</span>
                 <div v-html="renderedDescription" />
               </div>
             </div>
@@ -298,10 +294,7 @@ onMounted(() => {
                   :disabled="fetchingMenu"
                   @click="fetchMenu"
                 >
-                  <Loader2
-                    v-if="fetchingMenu"
-                    class="w-4 h-4 animate-spin"
-                  />
+                  <Loader2 v-if="fetchingMenu" class="w-4 h-4 animate-spin" />
                   <FolderOpen v-else class="w-4 h-4" />
                   {{ fetchingMenu ? "获取中..." : "获取菜单" }}
                 </button>

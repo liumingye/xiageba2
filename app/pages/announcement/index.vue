@@ -15,15 +15,9 @@ defineOptions({
   name: "AnnouncementListPage",
 });
 
-useHead({
+useSeoMeta({
   title: "公告列表 - 全盘搜",
-  meta: [
-    {
-      name: "description",
-      content: "查看全盘搜的最新公告与站点通知。",
-    },
-    { name: "robots", content: "index, follow" },
-  ],
+  description: "查看全盘搜的最新公告与站点通知。",
 });
 
 const route = useRoute();

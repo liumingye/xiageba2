@@ -46,24 +46,23 @@ const goToPage = (page: number) => {
   >
     <button
       v-if="currentPage > 1"
-      class="px-2 h-9 bg-color-100 hover:bg-primary-500 hover:text-white rounded text-sm transition-colors shadow-sm"
+      class="btn"
       :disabled="currentPage <= 1"
       @click="goToPage(currentPage - 1)"
     >
       上一页
     </button>
     <template v-for="(p, idx) in pageNumbers" :key="idx">
+      <span v-if="p === '...'">
+        {{ p }}
+      </span>
       <button
-        class="h-9 rounded text-sm transition-colors shadow-sm disabled:pointer-events-none disabled:w-3"
-        :class="
-          p === '...'
-            ? ''
-            : p === currentPage
-              ? 'bg-primary-500 text-white px-2 min-w-9'
-              : 'bg-color-100 hover:bg-primary-500 hover:text-white px-2 min-w-9'
-        "
+        v-else
+        class="btn"
+        :class="{
+          active: p === currentPage,
+        }"
         @click="goToPage(p as number)"
-        :disabled="p === '...'"
         :aria-current="p === currentPage ? 'page' : undefined"
       >
         {{ p }}
@@ -71,7 +70,7 @@ const goToPage = (page: number) => {
     </template>
     <button
       v-if="currentPage < totalPages"
-      class="px-2 h-9 bg-color-100 hover:bg-primary-500 hover:text-white rounded text-sm transition-colors shadow-sm"
+      class="btn"
       :disabled="currentPage >= totalPages"
       @click="goToPage(currentPage + 1)"
     >
@@ -79,3 +78,13 @@ const goToPage = (page: number) => {
     </button>
   </div>
 </template>
+
+<style scoped>
+.btn {
+  @apply rounded text-sm transition-colors shadow-sm h-9 border border-color-300 hover:text-white bg-color-100 hover:bg-primary-500 px-2 min-w-9;
+
+  &.active {
+    @apply border-transparent bg-primary-500 text-white px-2 min-w-9;
+  }
+}
+</style>
