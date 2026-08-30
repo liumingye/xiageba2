@@ -36,7 +36,8 @@ const { data: announcementData, pending } = await useFetch<{
   pageSize: number;
   totalPages: number;
 }>("/api/announcement", {
-  key: "announcement-list",
+  // key 用函数形式并包含筛选参数，避免不同 tab/页码共享同一缓存键造成数据错乱
+  key: () => `announcement-list-${activeTab.value}-${currentPage.value}`,
   server: true,
   default: () => ({ data: [], total: 0, page: 1, pageSize, totalPages: 0 }),
   query: {

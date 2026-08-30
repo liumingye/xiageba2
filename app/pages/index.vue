@@ -345,7 +345,13 @@ doubanPageCount.value = doubanInitial.value?.pagecount || 0;
 resetActiveFilters();
 
 const getPic = (url: string) => {
-  const urlObj = new URL(url);
+  // 接口返回的图片地址可能为空或非标准 URL，直接 new URL() 会抛 TypeError 导致渲染崩溃
+  let urlObj: URL;
+  try {
+    urlObj = new URL(url || "");
+  } catch {
+    return "";
+  }
 
   if (urlObj.hostname.endsWith(".doubanio.com")) {
     return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://m.douban.com`;
@@ -773,7 +779,7 @@ const getPic = (url: string) => {
               </h3>
               <p
                 class="text-xs text-color-400 truncate mt-1"
-                :title="item.vod_subtitle.replaceAll(/\s/g, '')"
+                :title="(item.vod_subtitle || '').replaceAll(/\s/g, '')"
               >
                 {{ item.vod_subtitle || "-" }}
               </p>

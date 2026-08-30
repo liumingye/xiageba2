@@ -80,9 +80,11 @@ watch(
 let disposeFunny: (() => void) | null = null;
 const innerFunnyText = ref("");
 
+// 注意：watch 源直接传原始值即可。若写成 () => [props.loading]，
+// 每次求值都返回新数组引用，会导致 watch 在每次渲染后都触发。
 watch(
-  () => [props.loading],
-  ([loading], __, onCleanup) => {
+  () => props.loading,
+  (loading, __, onCleanup) => {
     onCleanup(() => {
       if (disposeFunny) {
         disposeFunny();

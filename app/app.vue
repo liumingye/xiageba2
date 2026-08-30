@@ -21,7 +21,7 @@ if (import.meta.client && map[location.host]) {
     scriptOptions: {
       trigger: "onNuxtReady",
       // 防广告拦截
-      proxy: true,
+      // proxy: true,
     },
   });
 }

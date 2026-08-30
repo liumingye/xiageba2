@@ -10,12 +10,13 @@ defineOptions({
 });
 
 const route = useRoute();
-const announcementId = route.params.id as string;
+// 使用响应式 computed，保证 SPA 内 /announcement/A → /announcement/B 切换时 useFetch 会重新请求
+const announcementId = computed(() => route.params.id as string);
 
 const { data: responseData } = await useFetch<{
   data: Announcement;
-}>(`/api/announcement/${announcementId}`, {
-  key: `announcement-${announcementId}`,
+}>(() => `/api/announcement/${announcementId.value}`, {
+  key: () => `announcement-${announcementId.value}`,
   server: true,
   default: () => ({ data: null as any }),
 });

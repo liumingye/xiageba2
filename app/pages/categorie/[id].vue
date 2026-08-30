@@ -35,7 +35,10 @@ const {
 } = await useFetch<CategoryListData, ApiErrorResponse>(
   () => `/api/category/${categoryId.value}`,
   {
-    key: `category-${categoryId.value}-page-${route.query.page || 1}`,
+    // key 用函数形式，随 categoryId / page 变化生成不同缓存键，
+    // 避免不同分类/页码互相覆盖缓存造成数据错乱
+    key: () =>
+      `category-${categoryId.value}-page-${Number(route.query.page) || 1}`,
     query: computed(() => ({
       page: Number(route.query.page) || 1,
       pageSize: 20,

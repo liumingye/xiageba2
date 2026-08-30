@@ -22,29 +22,33 @@ const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
 
-const musicId = route.params.id as string;
+// 使用响应式 computed，保证 SPA 内 /music/A → /music/B 切换时 useFetch 会重新请求
+const musicId = computed(() => route.params.id as string);
 
 const {
   data: music,
   pending: loading,
   error: fetchApiError,
-} = await useFetch<Music, ApiErrorResponse>(() => `/api/music/${musicId}`, {
-  key: () => `music-${musicId}`,
-  lazy: true,
-  server: true,
-  default: () => {
-    return {
-      id: musicId,
-      title: "",
-      artist: "",
-      album: "",
-      cover: "",
-      lyrics: "",
-      playUrl: "",
-      downloads: [],
-    };
+} = await useFetch<Music, ApiErrorResponse>(
+  () => `/api/music/${musicId.value}`,
+  {
+    key: () => `music-${musicId.value}`,
+    lazy: true,
+    server: true,
+    default: () => {
+      return {
+        id: musicId.value,
+        title: "",
+        artist: "",
+        album: "",
+        cover: "",
+        lyrics: "",
+        playUrl: "",
+        downloads: [],
+      };
+    },
   },
-});
+);
 
 // ID 不存在时显示 404
 watch(
@@ -100,7 +104,7 @@ const formattedLyrics = computed(() => {
   return music.value.lyrics.split("\n").filter((line: string) => line.trim());
 });
 
-const canonicalUrl = `/music/${musicId}`;
+const canonicalUrl = `/music/${musicId.value}`;
 
 const jsonLd = computed(() => {
   if (!music.value) return null;

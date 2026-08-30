@@ -9,18 +9,17 @@ import {
   type PanFilter,
 } from "#shared/utils";
 import { useMusicStore } from "~/stores/music";
-import { marked } from "marked";
+import { renderSafeMarkdown } from "~/utils/markdown";
 import type { ApiErrorResponse } from "~/utils/type";
 import { useShare } from "@vueuse/core";
-
-marked.setOptions({ gfm: true, breaks: true, async: false });
 
 const { share, isSupported: isShareSupported } = useShare();
 
 const route = useRoute();
 const router = useRouter();
 
-const sourceId = route.params.id as string;
+// 使用响应式 computed，保证 SPA 内 /source/A → /source/B 切换时 useFetch 会重新请求
+const sourceId = computed(() => route.params.id as string);
 
 interface Source {
   id: string;
@@ -56,14 +55,14 @@ const {
   pending: loading,
   error: fetchApiError,
 } = await useFetch<SourceResponse, ApiErrorResponse>(
-  () => `/api/source/${sourceId}?similar=1`,
+  () => `/api/source/${sourceId.value}?similar=1`,
   {
-    key: () => `source-${sourceId}`,
+    key: () => `source-${sourceId.value}`,
     lazy: true,
     server: true,
     default: (): SourceResponse => ({
       data: {
-        id: sourceId,
+        id: sourceId.value,
         title: "",
         description: "",
         menu: "",
@@ -95,7 +94,7 @@ const similarList = computed(() => responseData.value?.similar || []);
 
 const renderedDescription = computed(() =>
   source.value?.description
-    ? (marked.parse(source.value.description) as string)
+    ? renderSafeMarkdown(source.value.description)
     : "",
 );
 
@@ -120,7 +119,7 @@ const pageKeywords = computed(() => {
   return "全盘搜, 网盘资源, 夸克网盘, 百度网盘, 迅雷网盘, UC网盘";
 });
 
-const canonicalUrl = `/source/${sourceId}`;
+const canonicalUrl = `/source/${sourceId.value}`;
 
 useSeoMeta({
   title: pageTitle,
@@ -150,7 +149,7 @@ const fetchMenu = async () => {
 
   try {
     const res = await fetch(
-      `/api/source/tree?id=${encodeURIComponent(sourceId)}`,
+      `/api/source/tree?id=${encodeURIComponent(sourceId.value)}`,
     );
     const data = await res.json();
     if (res.ok && data?.tree) {
@@ -186,7 +185,7 @@ const fetchDirectUrl = async () => {
     const res = await fetch("/api/source/geturl", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: sourceId }),
+      body: JSON.stringify({ id: sourceId.value }),
     });
     const data = await res.json();
     if (res.ok && data?.url) {

@@ -9,33 +9,7 @@ import {
   computed,
 } from "vue";
 import { Sparkles, User } from "@lucide/vue";
-import { marked } from "marked";
-import type { RendererObject, Tokens } from "marked";
-
-const renderer: RendererObject = {
-  // 新窗口打开链接
-  link(token: Tokens.Link): string {
-    const { href, title, text } = token;
-    const cleanHref = href || "#";
-    const titleAttr = title ? ` title="${title}"` : "";
-
-    return `<a href="${cleanHref}" target="_blank" rel="noopener noreferrer"${titleAttr}>${text}</a>`;
-  },
-};
-
-marked.use({ renderer });
-
-// marked 全局配置：开启 GFM、换行转 <br>、同步返回
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-  async: false,
-});
-
-const renderMarkdown = (text: string): string => {
-  if (!text) return "";
-  return marked.parse(text) as string;
-};
+import { renderSafeMarkdown as renderMarkdown } from "~/utils/markdown";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -75,14 +49,15 @@ const sendMessage = async (message?: string) => {
 
   await scrollToBottom();
 
-  abortController = new AbortController();
+  const controller = new AbortController();
+  abortController = controller;
 
   try {
     const res = await fetch("/api/ai-search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: content }),
-      signal: abortController.signal,
+      signal: controller.signal,
     });
 
     if (!res.ok) {
@@ -145,8 +120,11 @@ const sendMessage = async (message?: string) => {
       }
     }
   } finally {
-    aiLoading.value = false;
-    abortController = null;
+    // 只清理属于本次请求的控制器与状态，避免旧请求的 finally 覆盖新请求
+    if (abortController === controller) {
+      abortController = null;
+      aiLoading.value = false;
+    }
     await scrollToBottom();
   }
 };

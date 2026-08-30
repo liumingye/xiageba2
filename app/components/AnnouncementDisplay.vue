@@ -82,10 +82,14 @@ const dismissDialogForever = () => {
 
 const scrollIndex = ref(0);
 
-// useIntervalFn 每 3s 轮换一条公告，组件卸载时自动清理计时器
+// useIntervalFn 每 3s 轮换一条公告，组件卸载时自动清理计时器。
+// immediate: false 避免数据加载前定时器空转；回调内做长度防护，
+// 否则 normalList 为空时 (x + 1) % 0 会得到 NaN。
 const { resume: resumeScroll, pause: pauseScroll } = useIntervalFn(() => {
-  scrollIndex.value = (scrollIndex.value + 1) % normalList.value.length;
-}, 3000);
+  const len = normalList.value.length;
+  if (len <= 1) return;
+  scrollIndex.value = (scrollIndex.value + 1) % len;
+}, 3000, { immediate: false });
 
 const startScroll = () => {
   pauseScroll();

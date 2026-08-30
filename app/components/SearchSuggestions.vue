@@ -38,7 +38,8 @@ const removeScript = () => {
 };
 
 const fetchSuggestions = async (keyword: string) => {
-  if (!keyword.trim()) {
+  // 面板已隐藏时不发起请求（防抖回调可能在失焦后触发）
+  if (!props.visible || !keyword.trim()) {
     clearSuggestions();
     return;
   }
@@ -71,7 +72,7 @@ const fetchSuggestions = async (keyword: string) => {
 };
 
 // 查询词变化防抖 200ms 后请求联想词，watchDebounced 自动管理计时与清理
-const { stop: stopDebouncedFetch } = watchDebounced(
+watchDebounced(
   () => props.query,
   (newVal) => {
     fetchSuggestions(newVal);
@@ -79,12 +80,12 @@ const { stop: stopDebouncedFetch } = watchDebounced(
   { debounce: 200 },
 );
 
-// 联想面板不可见时取消尚未触发的防抖请求
+// 联想面板不可见时清空面板。
 watch(
   () => isVisible,
   (val) => {
     if (!val) {
-      stopDebouncedFetch();
+      clearSuggestions();
     }
   },
 );

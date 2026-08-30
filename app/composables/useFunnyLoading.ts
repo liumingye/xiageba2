@@ -2,6 +2,7 @@ import { ref, computed, watch, type Ref } from "vue";
 import { useIntervalFn } from "@vueuse/core";
 
 const funnyTexts = [
+  "数据加载中...",
   "正在殴打服务器酱...",
   "好运正在路上...",
   "数据太多，正在努力检索...",
@@ -67,12 +68,19 @@ const funnyTexts = [
 ];
 
 export function useFunnyLoading() {
-  const funnyTextIndex = ref(Math.floor(Math.random() * funnyTexts.length));
+  // 初始索引固定为 0：避免在 SSR 阶段使用 Math.random()，
+  // 否则服务端与客户端首次渲染的文案可能不一致（hydration mismatch）。
+  // 随机化统一放到 start()（仅在客户端由加载状态触发）。
+  const funnyTextIndex = ref(0);
 
   // useIntervalFn 每 5s 轮换一句文案，组件卸载时自动清理计时器
-  const { resume, pause } = useIntervalFn(() => {
-    funnyTextIndex.value = (funnyTextIndex.value + 1) % funnyTexts.length;
-  }, 5000, { immediate: false });
+  const { resume, pause } = useIntervalFn(
+    () => {
+      funnyTextIndex.value = (funnyTextIndex.value + 1) % funnyTexts.length;
+    },
+    5000,
+    { immediate: false },
+  );
 
   const start = () => {
     funnyTextIndex.value = Math.floor(Math.random() * funnyTexts.length);
