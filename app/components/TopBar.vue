@@ -72,7 +72,7 @@ const menu = computed(() => [
   },
   {
     to: "/book",
-    name: "搜小说",
+    name: "百度小说",
     icon: BookOpen,
   },
 ]);

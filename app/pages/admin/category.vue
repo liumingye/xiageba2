@@ -3,10 +3,11 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
-import { Plus, Trash2, Edit3, Tag } from "@lucide/vue";
+import { Plus, Trash2, Edit3, Tag, FolderOpen } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+import FilePickerModal from "~/components/admin/FilePickerModal.vue";
 
 interface Category {
   id: number;
@@ -32,12 +33,25 @@ const newName = ref("");
 const newImage = ref("");
 const newSort = ref(0);
 const newIsShow = ref(true);
-const editId = ref("");
+const editId = ref(0);
 const editName = ref("");
 const editImage = ref("");
 const editSort = ref(0);
 const editIsShow = ref(true);
 const error = ref("");
+
+const showAddCoverPicker = ref(false);
+const showEditCoverPicker = ref(false);
+
+const handleAddCoverPicked = (url: string) => {
+  newImage.value = url;
+  showAddCoverPicker.value = false;
+};
+
+const handleEditCoverPicked = (url: string) => {
+  editImage.value = url;
+  showEditCoverPicker.value = false;
+};
 
 const loadCategories = async () => {
   const data = await get(
@@ -135,7 +149,7 @@ const saveEdit = async () => {
   }
 };
 
-const deleteCategory = async (id: string) => {
+const deleteCategory = async (id: number) => {
   if (!confirm("确定要删除该分类吗？")) return;
 
   try {
@@ -292,12 +306,22 @@ const deleteCategory = async (id: string) => {
               </div>
               <div>
                 <label class="block text-color-400 text-sm mb-2">封面图片</label>
-                <input
-                  v-model="newImage"
-                  type="text"
-                  placeholder="图片URL"
-                  class="input-search"
-                />
+                <div class="flex gap-2">
+                  <input
+                    v-model="newImage"
+                    type="text"
+                    placeholder="图片URL"
+                    class="input-search flex-1"
+                  />
+                  <button
+                    type="button"
+                    class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                    @click="showAddCoverPicker = true"
+                  >
+                    <FolderOpen class="w-4 h-4" />
+                    选择
+                  </button>
+                </div>
               </div>
               <div>
                 <label class="block text-color-400 text-sm mb-2">排序</label>
@@ -369,12 +393,22 @@ const deleteCategory = async (id: string) => {
               </div>
               <div>
                 <label class="block text-color-400 text-sm mb-2">封面图片</label>
-                <input
-                  v-model="editImage"
-                  type="text"
-                  placeholder="图片URL"
-                  class="input-search"
-                />
+                <div class="flex gap-2">
+                  <input
+                    v-model="editImage"
+                    type="text"
+                    placeholder="图片URL"
+                    class="input-search flex-1"
+                  />
+                  <button
+                    type="button"
+                    class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                    @click="showEditCoverPicker = true"
+                  >
+                    <FolderOpen class="w-4 h-4" />
+                    选择
+                  </button>
+                </div>
               </div>
               <div>
                 <label class="block text-color-400 text-sm mb-2">排序</label>
@@ -413,6 +447,17 @@ const deleteCategory = async (id: string) => {
         </div>
       </Transition>
     </Teleport>
+
+    <FilePickerModal
+      :show="showAddCoverPicker"
+      @close="showAddCoverPicker = false"
+      @select="handleAddCoverPicked"
+    />
+    <FilePickerModal
+      :show="showEditCoverPicker"
+      @close="showEditCoverPicker = false"
+      @select="handleEditCoverPicked"
+    />
   </div>
 </template>
 
