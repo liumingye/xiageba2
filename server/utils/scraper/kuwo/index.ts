@@ -77,7 +77,7 @@ export class KuwoScraper extends MusicScraper {
         const output = Buffer.allocUnsafe(len);
 
         for (let i = 0; i < len; i++) {
-          output[i] = bufStr[i] ^ BUF_KEY[i % BUF_KEY_LEN];
+          output[i] = bufStr[i]! ^ BUF_KEY[i % BUF_KEY_LEN]!;
         }
         return output.toString("base64");
       }
@@ -112,7 +112,7 @@ export class KuwoScraper extends MusicScraper {
         const decrypted = Buffer.allocUnsafe(len);
 
         for (let i = 0; i < len; i++) {
-          decrypted[i] = base64Buf[i] ^ BUF_KEY[i % BUF_KEY_LEN];
+          decrypted[i] = base64Buf[i]! ^ BUF_KEY[i % BUF_KEY_LEN]!;
         }
 
         // 4. GB18030 转码为最终字符串
@@ -143,7 +143,7 @@ export class KuwoScraper extends MusicScraper {
         const timeOrder: number[] = [];
 
         for (let i = 0; i < lines.length; i++) {
-          const rawLine = lines[i].trim();
+          const rawLine = lines[i]!.trim();
           if (!rawLine) continue;
 
           // 过滤元数据标签 [ti:xxx], [ar:xxx]
@@ -153,8 +153,8 @@ export class KuwoScraper extends MusicScraper {
           if (!timeMatch) continue;
 
           // 解析毫秒数：[分, 秒, 毫秒]
-          const minutes = parseInt(timeMatch[1], 10);
-          const seconds = parseInt(timeMatch[2], 10);
+          const minutes = parseInt(timeMatch[1]!, 10);
+          const seconds = parseInt(timeMatch[2]!, 10);
           const msStr = (timeMatch[3] || "0").padEnd(3, "0");
           const ms = parseInt(msStr, 10);
           const timeMs = minutes * 60000 + seconds * 1000 + ms;

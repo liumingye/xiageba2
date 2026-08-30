@@ -9,7 +9,8 @@ import {
   limitUnicodeString,
 } from "#server/utils/source";
 import { getStorageType } from "#shared/utils";
-import axios, { AxiosRequestConfig } from "axios";
+import axios from "axios";
+import type { AxiosRequestConfig } from "axios";
 
 export interface WebSearchResult {
   title: string;

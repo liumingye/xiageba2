@@ -4,13 +4,10 @@ import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { clearTreeSymbols, truncateString } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
 import { parseShareUrl } from "./geturl";
-import { QuarkUCClient, IShareFile } from "@netdisk-sdk/quarkuc-sdk";
-import {
-  BaiduClient,
-  parseShareParam,
-  IShareParam,
-  IFile as IBaiduFile,
-} from "@netdisk-sdk/baidu-sdk";
+import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
+import type { IShareFile } from "@netdisk-sdk/quarkuc-sdk";
+import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
+import type { IShareParam, IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";

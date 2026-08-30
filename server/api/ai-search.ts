@@ -11,7 +11,8 @@ import { PAN_HOST_MAP } from "#server/api/source/search.get";
 import { Readable } from "stream";
 import { aiRequestQueue } from "#server/utils/queue"; // 引入刚才写的排队机
 import { getAiSearchConfig } from "#server/api/admin/config/ai-search";
-import { getStorageTypeFriend, PanFilter } from "#shared/utils";
+import { getStorageTypeFriend } from "#shared/utils";
+import type { PanFilter } from "#shared/utils";
 
 const siteHost = process.env.SITE_HOST || "";
 

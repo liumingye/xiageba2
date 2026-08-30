@@ -3,7 +3,8 @@ import {
   cutForSearch,
   prioritizeSearchTokens,
 } from "#server/utils/jieba";
-import { getStorageType, PanFilter } from "#shared/utils";
+import { getStorageType } from "#shared/utils";
+import type { PanFilter } from "#shared/utils";
 import { truncateString } from "#server/utils/source";
 import { TREE_MAX_LINE } from "#server/lib/const";
 import {

@@ -1,4 +1,5 @@
-import { webSearchConcurrent, WebSearchResult } from "#server/lib/webSearch";
+import { webSearchConcurrent } from "#server/lib/webSearch";
+import type { WebSearchResult } from "#server/lib/webSearch";
 import {
   automaton_websearch_filter_keywords,
   SimpleAC,

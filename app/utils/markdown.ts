@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import type { RendererObject, Tokens } from "marked";
+import type { Renderer, RendererObject, Tokens } from "marked";
 
 /**
  * 统一 marked 全局配置：GFM、换行转 <br>、同步返回。
@@ -35,10 +35,10 @@ const sanitizeHref = (href: string): string => {
  * - 链接 href 转义属性值并过滤危险协议
  */
 const safeRenderer: RendererObject = {
-  html(this: marked.Renderer, token: Tokens.HTML | Tokens.Tag): string {
+  html(this: Renderer, token: Tokens.HTML | Tokens.Tag): string {
     return escapeHtml(token.text);
   },
-  link(this: marked.Renderer, token: Tokens.Link): string {
+  link(this: Renderer, token: Tokens.Link): string {
     const href = sanitizeHref(token.href);
     const titleAttr = token.title
       ? ` title="${escapeHtml(token.title, true)}"`

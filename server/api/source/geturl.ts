@@ -5,6 +5,8 @@ import {
   parseShareParam,
   BaiduFSOpenApi,
   BaiduClient,
+} from "@netdisk-sdk/baidu-sdk";
+import type {
   ITransferShareResult,
   ICreateShareResult,
 } from "@netdisk-sdk/baidu-sdk";
@@ -504,7 +506,8 @@ async function transferBaidu(
       try {
         return await fn();
       } catch (err: any) {
-        const info = err.info();
+        const info =
+          typeof err?.info === "function" ? err.info() : undefined;
 
         // code 4: 请求超时，请稍后再试
 
