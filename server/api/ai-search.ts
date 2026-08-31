@@ -260,6 +260,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少 message 参数" });
   }
 
+  if (userMessage.trim().length < 2) {
+    throw createError({
+      statusCode: 400,
+      message: "搜索关键词最少 2 个字符",
+    });
+  }
+
   // 读取 AI 搜索配置
   const aiConfig = await getAiSearchConfig();
   if (!aiConfig.enabled) {

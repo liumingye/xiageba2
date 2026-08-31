@@ -96,6 +96,14 @@ export default defineCachedEventHandler(
       });
     }
 
+    if (term.length < 2) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "关键词过短",
+        message: "搜索关键词最少 2 个字符",
+      });
+    }
+
     // 关键词屏蔽：命中黑名单则拒绝搜索
     if (
       automaton_websearch_filter_keywords &&
