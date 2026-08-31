@@ -18,7 +18,7 @@ const year = new Date().getFullYear();
       <NuxtLink to="/page/agree" class="link">服务协议</NuxtLink>
       <NuxtLink to="/page/privacy-policy" class="link">隐私政策</NuxtLink>
       <NuxtLink to="/page/version" class="link">版权说明</NuxtLink>
-      <NuxtLink to="/page/forbidden-keywords" class="link">违禁词列表</NuxtLink>
+      <NuxtLink to="/page/forbidden-keywords" class="link">屏蔽词列表</NuxtLink>
     </div>
     <div class="flex items-center justify-center gap-x-4 mt-2 flex-wrap">
       <a

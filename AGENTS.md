@@ -42,7 +42,7 @@ app/                  # 业务代码（srcDir）
     music/[id].vue, source/[id].vue, categorie/[id].vue
     page/
       policy.vue, agree.vue, privacy-policy.vue, version.vue   # 静态法律页面
-      forbidden-keywords.vue                                    # 违禁词展示
+      forbidden-keywords.vue                                    # 屏蔽词展示
   stores/             # Pinia
   utils/              # 自动导入（含 request.ts axios 封装、highlight.ts）
 server/               # Nitro 服务端
@@ -96,11 +96,11 @@ prisma/               # schema 与 migrations
 - `searchVector` 字段由应用层写入，**不要建数据库触发器**
 - 搜索分页限制：最多 100 页、每页最多 20 条、总数最多 2000 条，由 `MAX_PAGE` 常量统一管理
 - 搜索关键词上限 30 字符；反馈描述上限 100 字符
-- 违禁词过滤用 [server/lib/simpleAC.ts](server/lib/simpleAC.ts) 的 `SimpleAC` 类（自实现 AC 自动机，无外部依赖）
+- 屏蔽词过滤用 [server/lib/simpleAC.ts](server/lib/simpleAC.ts) 的 `SimpleAC` 类（自实现 AC 自动机，无外部依赖）
   - `hasMatch(text)` — 子串匹配（包含即命中）
   - `hasFullMatch(text)` — 完整匹配（整词等于才命中）
   - 搜索场景用 `hasFullMatch`，避免误伤正常搜索（如"激情演唱会"不应被"激情"屏蔽）
-  - 违禁词列表通过 `autompton_websearch_filter_keywords` 导出，`websearch_filter_keywords_list` 保留原始数组供展示
+  - 屏蔽词列表通过 `autompton_websearch_filter_keywords` 导出，`websearch_filter_keywords_list` 保留原始数组供展示
 
 ### 前端
 

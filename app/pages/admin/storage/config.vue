@@ -7,13 +7,13 @@ import {
   Plus,
   Edit3,
   Trash2,
-  X,
   Loader2,
   Eye,
   EyeOff,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import AdminModal from "~/components/admin/Modal.vue";
 import { get, post, put, del } from "~/utils/request";
 
 defineOptions({ name: "StorageConfigPage" });
@@ -278,174 +278,125 @@ const deleteConfig = async (id: string) => {
       </div>
     </main>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeModal"
-          ></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-4 max-w-lg w-full border border-color-300"
-          >
-            <div class="flex items-center justify-between mb-6">
-              <h3 class="text-xl font-medium">
-                {{ isEdit ? "编辑存储配置" : "添加存储配置" }}
-              </h3>
-              <button
-                class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
-                @click="closeModal"
-              >
-                <X class="w-5 h-5" />
-              </button>
-            </div>
+    <AdminModal
+      :show="showModal"
+      :title="isEdit ? '编辑存储配置' : '添加存储配置'"
+      max-width="max-w-lg"
+      @close="closeModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
 
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">配置名称 *</label>
+          <input
+            v-model="form.name"
+            type="text"
+            placeholder="请输入配置名称"
+            class="input-search w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">存储桶 *</label>
+          <input
+            v-model="form.bucket"
+            type="text"
+            placeholder="请输入存储桶名称"
+            class="input-search w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">BaseURL</label>
+          <input
+            v-model="form.baseUrl"
+            type="text"
+            placeholder="如 https://cdn.example.com"
+            class="input-search w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">前缀</label>
+          <input
+            v-model="form.prefix"
+            type="text"
+            placeholder="对象 key 前缀"
+            class="input-search w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">端点</label>
+          <input
+            v-model="form.endpoint"
+            type="text"
+            placeholder="S3 端点地址"
+            class="input-search w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">可用区</label>
+          <input
+            v-model="form.region"
+            type="text"
+            placeholder="如 us-east-1"
+            class="input-search w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">AccessKey *</label>
+          <input
+            v-model="form.accessKey"
+            type="text"
+            placeholder="请输入 AccessKey"
+            class="input-search w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">SecretKey *</label>
+          <div class="relative">
+            <input
+              v-model="form.secretKey"
+              :type="showSecret ? 'text' : 'password'"
+              :placeholder="
+                isEdit ? '•••••••• 表示不修改' : '请输入 SecretKey'
+              "
+              class="input-search w-full pr-10"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-color-400 transition-colors"
+              @click="showSecret = !showSecret"
             >
-              {{ error }}
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >配置名称 *</label
-                >
-                <input
-                  v-model="form.name"
-                  type="text"
-                  placeholder="请输入配置名称"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >存储桶 *</label
-                >
-                <input
-                  v-model="form.bucket"
-                  type="text"
-                  placeholder="请输入存储桶名称"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">BaseURL</label>
-                <input
-                  v-model="form.baseUrl"
-                  type="text"
-                  placeholder="如 https://cdn.example.com"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">前缀</label>
-                <input
-                  v-model="form.prefix"
-                  type="text"
-                  placeholder="对象 key 前缀"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">端点</label>
-                <input
-                  v-model="form.endpoint"
-                  type="text"
-                  placeholder="S3 端点地址"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">可用区</label>
-                <input
-                  v-model="form.region"
-                  type="text"
-                  placeholder="如 us-east-1"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >AccessKey *</label
-                >
-                <input
-                  v-model="form.accessKey"
-                  type="text"
-                  placeholder="请输入 AccessKey"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >SecretKey *</label
-                >
-                <div class="relative">
-                  <input
-                    v-model="form.secretKey"
-                    :type="showSecret ? 'text' : 'password'"
-                    :placeholder="
-                      isEdit ? '•••••••• 表示不修改' : '请输入 SecretKey'
-                    "
-                    class="input-search w-full pr-10"
-                  />
-                  <button
-                    type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-color-400 transition-colors"
-                    @click="showSecret = !showSecret"
-                  >
-                    <Eye v-if="!showSecret" class="w-4 h-4" />
-                    <EyeOff v-else class="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div class="flex gap-4 pt-2">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeModal"
-                >
-                  取消
-                </button>
-                <button
-                  :disabled="saving"
-                  class="flex items-center justify-center gap-2 flex-1 py-3 bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white rounded-lg transition-colors"
-                  @click="saveConfig"
-                >
-                  <Loader2 v-if="saving" class="w-4 h-4 animate-spin" />
-                  {{ saving ? "保存中..." : "保存" }}
-                </button>
-              </div>
-            </div>
+              <Eye v-if="!showSecret" class="w-4 h-4" />
+              <EyeOff v-else class="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </Transition>
-    </Teleport>
+
+      </div>
+
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeModal"
+          >
+            取消
+          </button>
+          <button
+            :disabled="saving"
+            class="flex items-center justify-center gap-2 flex-1 py-3 bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+            @click="saveConfig"
+          >
+            <Loader2 v-if="saving" class="w-4 h-4 animate-spin" />
+            {{ saving ? "保存中..." : "保存" }}
+          </button>
+        </div>
+      </template>
+    </AdminModal>
   </div>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

@@ -7,6 +7,7 @@ import { Plus, Trash2, Edit3, Tag, FolderOpen } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+import AdminModal from "~/components/admin/Modal.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
 
 interface Category {
@@ -272,181 +273,161 @@ const deleteCategory = async (id: number) => {
       </div>
     </main>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showAddModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeAddModal"
-          ></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
-          >
-            <h3 class="text-xl font-medium mb-6">添加分类</h3>
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
+    <AdminModal
+      :show="showAddModal"
+      title="添加分类"
+      @close="closeAddModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">分类名称 *</label>
+          <input
+            v-model="newName"
+            type="text"
+            placeholder="请输入分类名称"
+            class="input-search"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">封面图片</label>
+          <div class="flex gap-2">
+            <input
+              v-model="newImage"
+              type="text"
+              placeholder="图片URL"
+              class="input-search flex-1"
+            />
+            <button
+              type="button"
+              class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              @click="showAddCoverPicker = true"
             >
-              {{ error }}
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >分类名称 *</label
-                >
-                <input
-                  v-model="newName"
-                  type="text"
-                  placeholder="请输入分类名称"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">封面图片</label>
-                <div class="flex gap-2">
-                  <input
-                    v-model="newImage"
-                    type="text"
-                    placeholder="图片URL"
-                    class="input-search flex-1"
-                  />
-                  <button
-                    type="button"
-                    class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
-                    @click="showAddCoverPicker = true"
-                  >
-                    <FolderOpen class="w-4 h-4" />
-                    选择
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">排序</label>
-                <input
-                  v-model.number="newSort"
-                  type="number"
-                  placeholder="排序值，数字越小越靠前"
-                  class="input-search"
-                />
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  id="newIsShow"
-                  v-model="newIsShow"
-                  type="checkbox"
-                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-                />
-                <label for="newIsShow" class="text-color-300 text-sm">显示该分类</label>
-              </div>
-              <div class="flex gap-4">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeAddModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="addCategory"
-                >
-                  添加
-                </button>
-              </div>
-            </div>
+              <FolderOpen class="w-4 h-4" />
+              选择
+            </button>
           </div>
         </div>
-      </Transition>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">排序</label>
+          <input
+            v-model.number="newSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="input-search"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="newIsShow"
+            v-model="newIsShow"
+            type="checkbox"
+            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+          />
+          <label for="newIsShow" class="text-color-300 text-sm">显示该分类</label>
+        </div>
+      </div>
 
-      <Transition name="modal">
-        <div
-          v-if="showEditModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeEditModal"
-          ></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeAddModal"
           >
-            <h3 class="text-xl font-medium mb-6">编辑分类</h3>
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="addCategory"
+          >
+            添加
+          </button>
+        </div>
+      </template>
+    </AdminModal>
+
+    <AdminModal
+      :show="showEditModal"
+      title="编辑分类"
+      @close="closeEditModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">分类名称 *</label>
+          <input
+            v-model="editName"
+            type="text"
+            placeholder="请输入分类名称"
+            class="input-search"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">封面图片</label>
+          <div class="flex gap-2">
+            <input
+              v-model="editImage"
+              type="text"
+              placeholder="图片URL"
+              class="input-search flex-1"
+            />
+            <button
+              type="button"
+              class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              @click="showEditCoverPicker = true"
             >
-              {{ error }}
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >分类名称 *</label
-                >
-                <input
-                  v-model="editName"
-                  type="text"
-                  placeholder="请输入分类名称"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">封面图片</label>
-                <div class="flex gap-2">
-                  <input
-                    v-model="editImage"
-                    type="text"
-                    placeholder="图片URL"
-                    class="input-search flex-1"
-                  />
-                  <button
-                    type="button"
-                    class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
-                    @click="showEditCoverPicker = true"
-                  >
-                    <FolderOpen class="w-4 h-4" />
-                    选择
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">排序</label>
-                <input
-                  v-model.number="editSort"
-                  type="number"
-                  placeholder="排序值，数字越小越靠前"
-                  class="input-search"
-                />
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  id="editIsShow"
-                  v-model="editIsShow"
-                  type="checkbox"
-                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-                />
-                <label for="editIsShow" class="text-color-300 text-sm">显示该分类</label>
-              </div>
-              <div class="flex gap-4">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeEditModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="saveEdit"
-                >
-                  保存
-                </button>
-              </div>
-            </div>
+              <FolderOpen class="w-4 h-4" />
+              选择
+            </button>
           </div>
         </div>
-      </Transition>
-    </Teleport>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">排序</label>
+          <input
+            v-model.number="editSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="input-search"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="editIsShow"
+            v-model="editIsShow"
+            type="checkbox"
+            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+          />
+          <label for="editIsShow" class="text-color-300 text-sm">显示该分类</label>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeEditModal"
+          >
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="saveEdit"
+          >
+            保存
+          </button>
+        </div>
+      </template>
+    </AdminModal>
 
     <FilePickerModal
       :show="showAddCoverPicker"
@@ -460,25 +441,3 @@ const deleteCategory = async (id: number) => {
     />
   </div>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

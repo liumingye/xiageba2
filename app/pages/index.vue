@@ -368,7 +368,7 @@ const getPic = (url: string) => {
     <div class="max-w-4xl mx-auto px-2">
       <header class="text-center mb-6">
         <div class="mb-6">
-          <div class="md:block hidden font-bold text-2xl md:text-3xl">
+          <div class="max-md:hidden font-bold text-2xl md:text-3xl">
             找网盘资源，<span class="slogan">全盘搜</span>帮你搞定
           </div>
           <div class="md:hidden flex items-center justify-center gap-3">
@@ -636,10 +636,12 @@ const getPic = (url: string) => {
 
             <NuxtLink
               :to="`/categorie/${cat.id}`"
-              class="flex items-center justify-center gap-1 mt-3 pt-3 border-t border-color-300 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              class="group flex items-center justify-center gap-1 mt-3 pt-3 border-t border-color-300 text-xs text-primary-400 hover:text-primary-300 transition-colors"
             >
               查看更多
-              <ArrowRight class="w-3 h-3" />
+              <ArrowRight
+                class="w-3 h-3 group-hover:-rotate-45 transition-transform"
+              />
             </NuxtLink>
           </div>
         </div>

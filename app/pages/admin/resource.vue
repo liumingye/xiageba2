@@ -16,6 +16,7 @@ import {
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+import AdminModal from "~/components/admin/Modal.vue";
 import { useToast } from "~/composables/useToast";
 
 interface Source {
@@ -450,19 +451,29 @@ const importSources = async () => {
         <table class="w-full table-auto">
           <thead class="bg-color-100">
             <tr>
-              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
+              <th
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
+              >
                 ID
               </th>
-              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
+              <th
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
+              >
                 资源名称
               </th>
-              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
+              <th
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
+              >
                 分类
               </th>
-              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
+              <th
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
+              >
                 地址
               </th>
-              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
+              <th
+                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
+              >
                 入库时间
               </th>
               <th
@@ -501,9 +512,7 @@ const importSources = async () => {
                 <span :title="item.id">{{ item.id }}</span>
               </td>
               <td class="px-4 py-3 max-w-60 break-words">
-                <span :title="item.title">{{
-                  item.title
-                }}</span>
+                <span :title="item.title">{{ item.title }}</span>
               </td>
               <td class="px-4 py-3 text-color-300">
                 {{ categories.find((cat) => cat.id === item.cid)?.name || "-" }}
@@ -568,330 +577,273 @@ const importSources = async () => {
       </div>
     </main>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showAddModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-lg w-full border border-color-300 max-h-[90vh] overflow-y-auto"
-          >
-            <h3 class="text-xl font-medium text-white mb-6">添加资源</h3>
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-            >
-              {{ error }}
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2">资源分类</label>
-                <select v-model="newCid" class="input-search">
-                  <option value="">无分类</option>
-                  <option
-                    v-for="cat in categories"
-                    :key="cat.id"
-                    :value="cat.id"
-                  >
-                    {{ cat.name }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >资源名称 *</label
-                >
-                <input
-                  v-model="newTitle"
-                  type="text"
-                  placeholder="请输入资源名称"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >资源地址 *</label
-                >
-                <input
-                  v-model="newUrl"
-                  type="text"
-                  placeholder="请输入网盘链接"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">资源介绍</label>
-                <textarea
-                  v-model="newDescription"
-                  rows="3"
-                  placeholder="资源说明，可选"
-                  class="input-search"
-                ></textarea>
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  id="newIsSelf"
-                  v-model="newIsSelf"
-                  type="checkbox"
-                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-                />
-                <label for="newIsSelf" class="text-color-300 text-sm"
-                  >是自己的资源，搜索结果靠前</label
-                >
-              </div>
-              <div class="flex gap-4 pt-2">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeAddModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="addSource"
-                  :disabled="addSourceing"
-                >
-                  添加
-                </button>
-              </div>
-            </div>
-          </div>
+    <AdminModal
+      :show="showAddModal"
+      title="添加资源"
+      max-width="max-w-lg"
+      :close-on-overlay="false"
+      @close="closeAddModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源分类</label>
+          <select v-model="newCid" class="input-search">
+            <option value="">无分类</option>
+            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+              {{ cat.name }}
+            </option>
+          </select>
         </div>
-      </Transition>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源名称 *</label>
+          <input
+            v-model="newTitle"
+            type="text"
+            placeholder="请输入资源名称"
+            class="input-search"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源地址 *</label>
+          <input
+            v-model="newUrl"
+            type="text"
+            placeholder="请输入网盘链接"
+            class="input-search"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源介绍</label>
+          <textarea
+            v-model="newDescription"
+            rows="3"
+            placeholder="资源说明，可选"
+            class="input-search"
+          ></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="newIsSelf"
+            v-model="newIsSelf"
+            type="checkbox"
+            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+          />
+          <label for="newIsSelf" class="text-color-300 text-sm"
+            >是自己的资源，搜索结果靠前</label
+          >
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeAddModal"
+          >
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="addSource"
+            :disabled="addSourceing"
+          >
+            添加
+          </button>
+        </div>
+      </template>
+    </AdminModal>
 
-      <Transition name="modal">
-        <div
-          v-if="showEditModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-lg w-full border border-color-300 max-h-[90vh] overflow-y-auto"
-          >
-            <h3 class="text-xl font-medium mb-6">编辑资源</h3>
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-            >
-              {{ error }}
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >资源分类 *</label
-                >
-                <select v-model="editCid" class="input-search">
-                  <option value="">无分类</option>
-                  <option
-                    v-for="cat in categories"
-                    :key="cat.id"
-                    :value="cat.id"
-                  >
-                    {{ cat.name }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >资源名称 *</label
-                >
-                <input
-                  v-model="editTitle"
-                  type="text"
-                  placeholder="请输入资源名称"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >资源地址 *</label
-                >
-                <input
-                  v-model="editUrl"
-                  type="text"
-                  placeholder="请输入网盘链接"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">资源介绍</label>
-                <textarea
-                  v-model="editDescription"
-                  rows="3"
-                  placeholder="资源说明，可选"
-                  class="input-search"
-                ></textarea>
-              </div>
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="block text-color-400 text-sm">目录</label>
-                  <button
-                    type="button"
-                    class="flex items-center gap-1 px-2 py-1 text-xs bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 rounded transition-colors disabled:opacity-50"
-                    :disabled="menuLoading"
-                    @click="fetchMenu"
-                  >
-                    <Folder class="w-3 h-3" />
-                    {{ menuLoading ? "获取中..." : "获取目录" }}
-                  </button>
-                </div>
-                <textarea
-                  v-model="editMenu"
-                  rows="5"
-                  placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
-                  class="input-search font-mono text-xs"
-                ></textarea>
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  id="editIsSelf"
-                  v-model="editIsSelf"
-                  type="checkbox"
-                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-                />
-                <label for="editIsSelf" class="text-color-300 text-sm"
-                  >是自己的资源，搜索结果靠前</label
-                >
-              </div>
-              <div class="flex gap-4 pt-2">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeEditModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="saveEdit"
-                >
-                  保存
-                </button>
-              </div>
-            </div>
-          </div>
+    <AdminModal
+      :show="showEditModal"
+      title="编辑资源"
+      max-width="max-w-lg"
+      :close-on-overlay="false"
+      @close="closeEditModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源分类 *</label>
+          <select v-model="editCid" class="input-search">
+            <option value="">无分类</option>
+            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+              {{ cat.name }}
+            </option>
+          </select>
         </div>
-      </Transition>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源名称 *</label>
+          <input
+            v-model="editTitle"
+            type="text"
+            placeholder="请输入资源名称"
+            class="input-search"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源地址 *</label>
+          <input
+            v-model="editUrl"
+            type="text"
+            placeholder="请输入网盘链接"
+            class="input-search"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源介绍</label>
+          <textarea
+            v-model="editDescription"
+            rows="3"
+            placeholder="资源说明，可选"
+            class="input-search"
+          ></textarea>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-color-400 text-sm">目录</label>
+            <button
+              type="button"
+              class="flex items-center gap-1 px-2 py-1 text-xs bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 rounded transition-colors disabled:opacity-50"
+              :disabled="menuLoading"
+              @click="fetchMenu"
+            >
+              <Folder class="w-3 h-3" />
+              {{ menuLoading ? "获取中..." : "获取目录" }}
+            </button>
+          </div>
+          <textarea
+            v-model="editMenu"
+            rows="5"
+            placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
+            class="input-search font-mono text-xs"
+          ></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="editIsSelf"
+            v-model="editIsSelf"
+            type="checkbox"
+            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+          />
+          <label for="editIsSelf" class="text-color-300 text-sm"
+            >是自己的资源，搜索结果靠前</label
+          >
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeEditModal"
+          >
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="saveEdit"
+          >
+            保存
+          </button>
+        </div>
+      </template>
+    </AdminModal>
 
-      <Transition name="modal">
-        <div
-          v-if="showImportModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-lg w-full border border-color-300 max-h-[90vh] overflow-y-auto"
-          >
-            <h3 class="text-xl font-medium mb-6">导入资源</h3>
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-            >
-              {{ error }}
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2">资源分类</label>
-                <select v-model="importCid" class="input-search">
-                  <option value="">无分类</option>
-                  <option
-                    v-for="cat in categories"
-                    :key="cat.id"
-                    :value="cat.id"
-                  >
-                    {{ cat.name }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >Excel 文件 *</label
-                >
-                <input
-                  type="file"
-                  accept=".xlsx"
-                  class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-color-400 hover:file:bg-color-500"
-                  @change="handleFileChange"
-                />
-                <p class="mt-2 text-color-500 text-xs">
-                  第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
-                </p>
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  id="hasHeader"
-                  v-model="importHasHeader"
-                  type="checkbox"
-                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-                />
-                <label for="hasHeader" class="text-color-300 text-sm"
-                  >第一行为表头，跳过不导入</label
-                >
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  id="importIsSelf"
-                  v-model="importIsSelf"
-                  type="checkbox"
-                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-                />
-                <label for="importIsSelf" class="text-color-300 text-sm"
-                  >是自己的资源，搜索结果靠前</label
-                >
-              </div>
-              <div
-                v-if="importResult"
-                class="p-3 bg-green-900/30 border border-green-800 rounded-lg text-green-400 text-sm"
-              >
-                <p>
-                  共解析 {{ importResult.total }} 条，成功导入
-                  {{ importResult.inserted }} 条，重复
-                  {{ importResult.duplicate }} 条，失败
-                  {{ importResult.failed }} 条。
-                </p>
-              </div>
-              <div class="flex gap-4 pt-2">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeImportModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  :disabled="importing || !importFile"
-                  @click="importSources"
-                >
-                  {{ importing ? "导入中..." : "开始导入" }}
-                </button>
-              </div>
-            </div>
-          </div>
+    <AdminModal
+      :show="showImportModal"
+      title="导入资源"
+      max-width="max-w-lg"
+      :close-on-overlay="false"
+      @close="closeImportModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">资源分类</label>
+          <select v-model="importCid" class="input-search">
+            <option value="">无分类</option>
+            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+              {{ cat.name }}
+            </option>
+          </select>
         </div>
-      </Transition>
-    </Teleport>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">Excel 文件 *</label>
+          <input
+            type="file"
+            accept=".xlsx"
+            class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-color-400 hover:file:bg-color-500"
+            @change="handleFileChange"
+          />
+          <p class="mt-2 text-color-500 text-xs">
+            第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="hasHeader"
+            v-model="importHasHeader"
+            type="checkbox"
+            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+          />
+          <label for="hasHeader" class="text-color-300 text-sm"
+            >第一行为表头，跳过不导入</label
+          >
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="importIsSelf"
+            v-model="importIsSelf"
+            type="checkbox"
+            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+          />
+          <label for="importIsSelf" class="text-color-300 text-sm"
+            >是自己的资源，搜索结果靠前</label
+          >
+        </div>
+        <div
+          v-if="importResult"
+          class="p-3 bg-green-900/30 border border-green-800 rounded-lg text-green-400 text-sm"
+        >
+          <p>
+            共解析 {{ importResult.total }} 条，成功导入
+            {{ importResult.inserted }} 条，重复
+            {{ importResult.duplicate }} 条，失败 {{ importResult.failed }} 条。
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeImportModal"
+          >
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            :disabled="importing || !importFile"
+            @click="importSources"
+          >
+            {{ importing ? "导入中..." : "开始导入" }}
+          </button>
+        </div>
+      </template>
+    </AdminModal>
   </div>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

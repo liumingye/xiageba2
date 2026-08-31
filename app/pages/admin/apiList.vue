@@ -10,12 +10,12 @@ import {
   Webhook,
   Globe,
   Search,
-  X,
   Zap,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+import AdminModal from "~/components/admin/Modal.vue";
 const toast = useToast();
 
 interface ApiItem {
@@ -399,277 +399,246 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
     </main>
 
     <!-- Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showModal"
-        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-      >
+    <AdminModal
+      :show="showModal"
+      :title="isEdit ? '编辑线路' : '添加线路'"
+      max-width="max-w-2xl"
+      :close-on-overlay="false"
+      @close="closeModal"
+    >
+      <div class="space-y-4">
         <div
-          class="bg-color-100 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-color-300"
+          v-if="error"
+          class="p-3 bg-red-500/20 text-red-400 rounded-lg text-sm"
         >
-          <div
-            class="flex items-center justify-between py-2 px-3 border-b border-color-300 sticky top-0 bg-color-100"
-          >
-            <h3 class="font-medium">
-              {{ isEdit ? "编辑线路" : "添加线路" }}
-            </h3>
-            <button
-              class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
-              @click="closeModal"
-            >
-              <X class="w-5 h-5" />
-            </button>
+          {{ error }}
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-color-400 text-sm mb-1">线路名称</label>
+            <input
+              v-model="form.name"
+              type="text"
+              class="input-search w-full"
+              placeholder="线路名称"
+            />
           </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-1">类型</label>
+            <select v-model="form.type" class="input-search w-full">
+              <option value="api">API接口</option>
+              <option value="pansou">PanSou</option>
+              <option value="html">网页爬虫</option>
+            </select>
+          </div>
+        </div>
 
-          <div class="p-4 space-y-4">
-            <div
-              v-if="error"
-              class="p-3 bg-red-500/20 text-red-400 rounded-lg text-sm"
-            >
-              {{ error }}
-            </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-1">{{
+            form.type === "html" ? "目标网址" : "接口地址"
+          }}</label>
+          <input
+            v-model="form.url"
+            type="text"
+            class="input-search w-full"
+            placeholder="支持 {keyword} 占位符"
+          />
+        </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-1"
-                  >线路名称</label
-                >
-                <input
-                  v-model="form.name"
-                  type="text"
-                  class="input-search w-full"
-                  placeholder="线路名称"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-1">类型</label>
-                <select v-model="form.type" class="input-search w-full">
-                  <option value="api">API接口</option>
-                  <option value="pansou">PanSou</option>
-                  <option value="html">网页爬虫</option>
-                </select>
-              </div>
-            </div>
-
+        <template v-if="form.type === 'api' || form.type === 'pansou'">
+          <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-color-400 text-sm mb-1">{{
-                form.type === "html" ? "目标网址" : "接口地址"
-              }}</label>
+              <label class="block text-color-400 text-sm mb-1">请求方式</label>
+              <select v-model="form.method" class="input-search w-full">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-color-400 text-sm mb-1">总数限制</label>
               <input
-                v-model="form.url"
-                type="text"
+                v-model.number="form.count"
+                type="number"
+                min="1"
                 class="input-search w-full"
-                placeholder="支持 {keyword} 占位符"
               />
             </div>
-
-            <template v-if="form.type === 'api' || form.type === 'pansou'">
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >请求方式</label
-                  >
-                  <select v-model="form.method" class="input-search w-full">
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >总数限制</label
-                  >
-                  <input
-                    v-model.number="form.count"
-                    type="number"
-                    min="1"
-                    class="input-search w-full"
-                  />
-                </div>
-              </div>
-
-              <template v-if="form.type === 'pansou'">
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >认证令牌（可选）</label
-                  >
-                  <input
-                    v-model="panSouToken"
-                    type="text"
-                    class="input-search w-full font-mono text-xs"
-                    placeholder="启用认证时填写，自动附加 Bearer"
-                  />
-                </div>
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >图片加速域名（可选）</label
-                  >
-                  <input
-                    v-model="panSouImageProxy"
-                    type="text"
-                    class="input-search w-full font-mono text-xs"
-                    placeholder="留空则直接使用原图，如 https://proxyd.picpi.top/"
-                  />
-                </div>
-              </template>
-
-              <template v-if="form.type === 'api'">
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >请求头 (JSON)</label
-                  >
-                  <textarea
-                    v-model="form.headers"
-                    rows="3"
-                    class="input-search w-full font-mono text-xs"
-                  ></textarea>
-                </div>
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >接口参数 (JSON)</label
-                  >
-                  <textarea
-                    v-model="form.fixed_params"
-                    rows="4"
-                    class="input-search w-full font-mono text-xs"
-                  ></textarea>
-                </div>
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >字段映射 (JSON)</label
-                  >
-                  <textarea
-                    v-model="form.field_map"
-                    rows="5"
-                    class="input-search w-full font-mono text-xs"
-                  ></textarea>
-                </div>
-              </template>
-            </template>
-
-            <template v-else>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >内容标签</label
-                  >
-                  <input
-                    v-model="form.html_item"
-                    type="text"
-                    class="input-search w-full"
-                    placeholder="如：div+merged-card"
-                  />
-                </div>
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >标题标签</label
-                  >
-                  <input
-                    v-model="form.html_title"
-                    type="text"
-                    class="input-search w-full"
-                    placeholder="如：div+result-title"
-                  />
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >是否需要详情页</label
-                  >
-                  <select
-                    v-model.number="form.html_url"
-                    class="input-search w-full"
-                  >
-                    <option :value="0">不需要</option>
-                    <option :value="1">需要</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-color-400 text-sm mb-1"
-                    >总数限制</label
-                  >
-                  <input
-                    v-model.number="form.count"
-                    type="number"
-                    min="1"
-                    class="input-search w-full"
-                  />
-                </div>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-1"
-                  >详情页标签</label
-                >
-                <input
-                  v-model="form.html_type"
-                  type="text"
-                  class="input-search w-full"
-                  placeholder="如：a+post_url"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-1"
-                  >网盘链接标签</label
-                >
-                <input
-                  v-model="form.html_url2"
-                  type="text"
-                  class="input-search w-full"
-                  placeholder="如：div+link-url"
-                />
-              </div>
-            </template>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-1">权重</label>
-                <input
-                  v-model.number="form.weight"
-                  type="number"
-                  class="input-search w-full"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-1">状态</label>
-                <select
-                  v-model.number="form.status"
-                  class="input-search w-full"
-                >
-                  <option :value="1">启用</option>
-                  <option :value="0">禁用</option>
-                </select>
-              </div>
-            </div>
           </div>
 
-          <div
-            class="flex justify-between items-center gap-3 p-4 border-t border-color-300"
-          >
-            <button
-              :disabled="testing"
-              class="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg transition-colors"
-              @click="testApi"
-            >
-              <Zap class="w-4 h-4" :class="{ 'animate-spin': testing }" />
-              {{ testing ? "测试中..." : "测试线路" }}
-            </button>
-            <div class="flex gap-3">
-              <button
-                class="px-4 py-2 text-color-400 hover:bg-color-300 rounded-lg transition-colors"
-                @click="closeModal"
+          <template v-if="form.type === 'pansou'">
+            <div>
+              <label class="block text-color-400 text-sm mb-1"
+                >认证令牌（可选）</label
               >
-                取消
-              </button>
-              <button
-                class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                @click="saveApi"
-              >
-                保存
-              </button>
+              <input
+                v-model="panSouToken"
+                type="text"
+                class="input-search w-full font-mono text-xs"
+                placeholder="启用认证时填写，自动附加 Bearer"
+              />
             </div>
+            <div>
+              <label class="block text-color-400 text-sm mb-1"
+                >图片加速域名（可选）</label
+              >
+              <input
+                v-model="panSouImageProxy"
+                type="text"
+                class="input-search w-full font-mono text-xs"
+                placeholder="留空则直接使用原图，如 https://proxyd.picpi.top/"
+              />
+            </div>
+          </template>
+
+          <template v-if="form.type === 'api'">
+            <div>
+              <label class="block text-color-400 text-sm mb-1"
+                >请求头 (JSON)</label
+              >
+              <textarea
+                v-model="form.headers"
+                rows="3"
+                class="input-search w-full font-mono text-xs"
+              ></textarea>
+            </div>
+            <div>
+              <label class="block text-color-400 text-sm mb-1"
+                >接口参数 (JSON)</label
+              >
+              <textarea
+                v-model="form.fixed_params"
+                rows="4"
+                class="input-search w-full font-mono text-xs"
+              ></textarea>
+            </div>
+            <div>
+              <label class="block text-color-400 text-sm mb-1"
+                >字段映射 (JSON)</label
+              >
+              <textarea
+                v-model="form.field_map"
+                rows="5"
+                class="input-search w-full font-mono text-xs"
+              ></textarea>
+            </div>
+          </template>
+        </template>
+
+        <template v-else>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-color-400 text-sm mb-1">内容标签</label>
+              <input
+                v-model="form.html_item"
+                type="text"
+                class="input-search w-full"
+                placeholder="如：div+merged-card"
+              />
+            </div>
+            <div>
+              <label class="block text-color-400 text-sm mb-1">标题标签</label>
+              <input
+                v-model="form.html_title"
+                type="text"
+                class="input-search w-full"
+                placeholder="如：div+result-title"
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-color-400 text-sm mb-1"
+                >是否需要详情页</label
+              >
+              <select
+                v-model.number="form.html_url"
+                class="input-search w-full"
+              >
+                <option :value="0">不需要</option>
+                <option :value="1">需要</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-color-400 text-sm mb-1">总数限制</label>
+              <input
+                v-model.number="form.count"
+                type="number"
+                min="1"
+                class="input-search w-full"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-1">详情页标签</label>
+            <input
+              v-model="form.html_type"
+              type="text"
+              class="input-search w-full"
+              placeholder="如：a+post_url"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-1">网盘链接标签</label>
+            <input
+              v-model="form.html_url2"
+              type="text"
+              class="input-search w-full"
+              placeholder="如：div+link-url"
+            />
+          </div>
+        </template>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-color-400 text-sm mb-1">权重</label>
+            <input
+              v-model.number="form.weight"
+              type="number"
+              class="input-search w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-1">状态</label>
+            <select
+              v-model.number="form.status"
+              class="input-search w-full"
+            >
+              <option :value="1">启用</option>
+              <option :value="0">禁用</option>
+            </select>
           </div>
         </div>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <div
+          class="flex justify-between items-center gap-3 mt-6 pt-4 border-t border-color-300"
+        >
+          <button
+            :disabled="testing"
+            class="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg transition-colors"
+            @click="testApi"
+          >
+            <Zap class="w-4 h-4" :class="{ 'animate-spin': testing }" />
+            {{ testing ? "测试中..." : "测试线路" }}
+          </button>
+          <div class="flex gap-3">
+            <button
+              class="px-4 py-2 text-color-400 hover:bg-color-300 rounded-lg transition-colors"
+              @click="closeModal"
+            >
+              取消
+            </button>
+            <button
+              class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+              @click="saveApi"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </template>
+    </AdminModal>
   </div>
 </template>

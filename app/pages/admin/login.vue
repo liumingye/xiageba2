@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { post } from "~/utils/request";
-import { Music, Lock, User } from "@lucide/vue";
+import { Search, Lock, User } from "@lucide/vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -59,13 +59,13 @@ const handleKeydown = (e: KeyboardEvent) => {
         <div
           class="w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4"
         >
-          <Music class="w-10 h-10 text-white" />
+          <Search class="w-10 h-10 text-white" />
         </div>
         <h1 class="text-2xl font-bold">全盘搜管理后台</h1>
         <p class="text-color-500 mt-2">管理员登录</p>
       </div>
 
-      <div class="card p-6">
+      <div class="card p-6 rounded-3xl">
         <div
           v-if="error"
           class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"

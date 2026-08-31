@@ -6,6 +6,7 @@ import { get, post, put, del } from "~/utils/request";
 import { Plus, Trash2, User, Edit3 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import AdminModal from "~/components/admin/Modal.vue";
 
 interface Admin {
   id: string;
@@ -206,154 +207,112 @@ const deleteAdmin = async (id: string) => {
       </div>
     </main>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showAddModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+    <AdminModal
+      :show="showAddModal"
+      title="添加管理员"
+      @close="closeAddModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">用户名 *</label>
+          <input
+            v-model="newUsername"
+            type="text"
+            placeholder="请输入用户名"
+            class="input-search"
+          />
+        </div>
+
+        <div>
+          <label class="block text-color-400 text-sm mb-2">密码 *</label>
+          <input
+            v-model="newPassword"
+            type="password"
+            placeholder="请输入密码"
+            class="input-search"
+          />
+        </div>
+
+      </div>
+
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
             @click="closeAddModal"
-          ></div>
-
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium mb-6">添加管理员</h3>
-
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-            >
-              {{ error }}
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2">用户名 *</label>
-                <input
-                  v-model="newUsername"
-                  type="text"
-                  placeholder="请输入用户名"
-                  class="input-search"
-                />
-              </div>
-
-              <div>
-                <label class="block text-color-400 text-sm mb-2">密码 *</label>
-                <input
-                  v-model="newPassword"
-                  type="password"
-                  placeholder="请输入密码"
-                  class="input-search"
-                />
-              </div>
-
-              <div class="flex gap-4">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeAddModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="addAdmin"
-                >
-                  添加
-                </button>
-              </div>
-            </div>
-          </div>
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="addAdmin"
+          >
+            添加
+          </button>
         </div>
-      </Transition>
+      </template>
+    </AdminModal>
 
-      <Transition name="modal">
-        <div
-          v-if="showEditModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+    <AdminModal
+      :show="showEditModal"
+      title="编辑管理员"
+      @close="closeEditModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">用户名</label>
+          <input
+            v-model="editUsername"
+            type="text"
+            placeholder="请输入用户名"
+            class="input-search"
+          />
+        </div>
+
+        <div>
+          <label class="block text-color-400 text-sm mb-2"
+            >密码（留空则不修改）</label
+          >
+          <input
+            v-model="editPassword"
+            type="password"
+            placeholder="请输入新密码"
+            class="input-search"
+          />
+        </div>
+
+      </div>
+
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
             @click="closeEditModal"
-          ></div>
-
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
           >
-            <h3 class="text-xl font-medium mb-6">编辑管理员</h3>
-
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-            >
-              {{ error }}
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2">用户名</label>
-                <input
-                  v-model="editUsername"
-                  type="text"
-                  placeholder="请输入用户名"
-                  class="input-search"
-                />
-              </div>
-
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >密码（留空则不修改）</label
-                >
-                <input
-                  v-model="editPassword"
-                  type="password"
-                  placeholder="请输入新密码"
-                  class="input-search"
-                />
-              </div>
-
-              <div class="flex gap-4">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeEditModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="editAdmin"
-                >
-                  保存
-                </button>
-              </div>
-            </div>
-          </div>
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="editAdmin"
+          >
+            保存
+          </button>
         </div>
-      </Transition>
-    </Teleport>
+      </template>
+    </AdminModal>
   </div>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

@@ -45,6 +45,11 @@ body {
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 hr {
   @apply border-color-300;
   margin: 8px 0;
@@ -98,7 +103,7 @@ html[data-theme="dark"] {
   }
 
   .card {
-    @apply bg-white dark:bg-zinc-900 border border-color-300 rounded-xl overflow-hidden;
+    @apply bg-color-100 border border-color-300 rounded-xl overflow-hidden;
   }
 }
 

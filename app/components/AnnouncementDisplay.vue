@@ -85,11 +85,15 @@ const scrollIndex = ref(0);
 // useIntervalFn 每 3s 轮换一条公告，组件卸载时自动清理计时器。
 // immediate: false 避免数据加载前定时器空转；回调内做长度防护，
 // 否则 normalList 为空时 (x + 1) % 0 会得到 NaN。
-const { resume: resumeScroll, pause: pauseScroll } = useIntervalFn(() => {
-  const len = normalList.value.length;
-  if (len <= 1) return;
-  scrollIndex.value = (scrollIndex.value + 1) % len;
-}, 3000, { immediate: false });
+const { resume: resumeScroll, pause: pauseScroll } = useIntervalFn(
+  () => {
+    const len = normalList.value.length;
+    if (len <= 1) return;
+    scrollIndex.value = (scrollIndex.value + 1) % len;
+  },
+  3000,
+  { immediate: false },
+);
 
 const startScroll = () => {
   pauseScroll();
@@ -100,7 +104,8 @@ const startScroll = () => {
 
 const goToScrollItem = (index: number) => {
   scrollIndex.value = index;
-  startScroll();
+  pauseScroll();
+  resumeScroll();
 };
 
 onMounted(() => {
@@ -128,7 +133,7 @@ watch(normalList, () => {
       v-for="item in bannerList"
       :key="item.id"
       :to="`/announcement/${item.id}`"
-      class="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition hover:opacity-90"
+      class="flex items-center gap-3 px-2 md:px-4 py-2.5 rounded-lg border transition hover:opacity-90"
       :class="bannerBgMap[item.icon] || bannerBgMap.INFO"
     >
       <component
@@ -181,7 +186,7 @@ watch(normalList, () => {
       <button
         v-for="(_, i) in normalList"
         :key="i"
-        class="w-1.5 h-1.5 rounded-full transition-colors"
+        class="w-2 h-2 rounded-full transition-colors"
         :class="
           i === scrollIndex ? 'bg-primary-400' : 'bg-zinc-600 hover:bg-zinc-500'
         "

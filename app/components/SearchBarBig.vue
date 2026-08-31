@@ -17,8 +17,9 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const musicStore = useMusicStore();
-
 const { searchType } = storeToRefs(musicStore);
+
+const MAX_KEYWORD_LENGTH = 30;
 
 const searchQuery = ref(props.modelValue || "");
 const isFocused = ref(false);
@@ -31,23 +32,25 @@ onMounted(() => {
   }
 });
 
+// 监听父组件传参
 watch(
   () => props.modelValue,
   (val) => {
-    searchQuery.value = val || "";
+    if (val !== searchQuery.value) {
+      searchQuery.value = val || "";
+    }
   },
 );
 
-const MAX_KEYWORD_LENGTH = 30;
-
-const updateSearchQuery = (e: Event) => {
-  let value = (e.target as HTMLInputElement).value;
+// v-model 仅在汉字落盘/输入完成后触发 watch
+watch(searchQuery, (val) => {
+  let value = val || "";
   if (value.length > MAX_KEYWORD_LENGTH) {
     value = value.slice(0, MAX_KEYWORD_LENGTH);
+    searchQuery.value = value;
   }
-  searchQuery.value = value;
   emit("update:modelValue", value);
-};
+});
 
 const handleSearch = (keywords?: string) => {
   let q = keywords ? keywords.trim() : searchQuery.value.trim();
@@ -69,23 +72,27 @@ const handleSearch = (keywords?: string) => {
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === "Enter") {
+  // 避免回车确认拼音时误触发搜索提交
+  if (e.key === "Enter" && !e.isComposing) {
     handleSearch();
   }
 };
 
 const clearInput = () => {
   searchQuery.value = "";
-  emit("update:modelValue", "");
-  nextTick(() => {
-    searchInput.value?.focus();
-  });
+  // nextTick(() => {
+  //   searchInput.value?.focus();
+  // });
 };
 
 const handleSuggestionSelect = (word: string) => {
   searchQuery.value = word;
-  emit("update:modelValue", word);
   handleSearch(word);
+};
+
+const handleSuggestionsClose = () => {
+  searchInput.value?.blur();
+  isFocused.value = false;
 };
 
 const placeholderText = computed(() => {
@@ -96,6 +103,10 @@ const placeholderText = computed(() => {
   return "";
 });
 
+onActivated(() => {
+  searchQuery.value = "";
+});
+
 defineExpose({
   handleSearch,
 });
@@ -104,41 +115,30 @@ defineExpose({
 <template>
   <div class="w-full max-w-[720px] mx-auto mb-6">
     <div
-      class="border-2 rounded-3xl transition-all duration-300 h-28 md:h-32 relative bg-white dark:bg-zinc-900 px-4 py-4"
+      class="border-2 rounded-3xl transition-all duration-300 h-28 md:h-32 relative bg-color-100 px-4 py-4"
       :class="
         isFocused
           ? 'border-primary-500 shadow-lg shadow-primary-500/20'
-          : 'border-zinc-500/40 hover:border-zinc-600/40'
+          : 'border-color-300'
       "
-      @click.stop="searchInput?.focus()"
     >
-      <div class="flex-1 flex">
-        <input
-          ref="searchInput"
-          :value="searchQuery"
-          :maxlength="MAX_KEYWORD_LENGTH"
-          type="text"
-          :placeholder="placeholderText"
-          class="w-full bg-transparent text-lg outline-none placeholder-zinc-500"
-          @input="updateSearchQuery"
-          @keydown="handleKeydown"
-          @focus="isFocused = true"
-          @blur="isFocused = false"
-          aria-label="搜索"
-          autofocus
-        />
-        <button
-          v-if="searchQuery"
-          class="px-3 text-white/60 hover:text-white transition-colors flex-shrink-0"
-          @click="clearInput"
-          aria-label="清除"
-          type="button"
-        >
-          <X class="w-5 h-5" />
-        </button>
-      </div>
+      <input
+        ref="searchInput"
+        v-model="searchQuery"
+        :maxlength="MAX_KEYWORD_LENGTH"
+        type="text"
+        :placeholder="placeholderText"
+        class="w-full bg-transparent text-lg outline-none placeholder-zinc-500"
+        @keydown="handleKeydown"
+        @focus="isFocused = true"
+        @blur="isFocused = false"
+        aria-label="搜索"
+        autofocus
+      />
+
       <div
         class="bottom-3 left-4 right-4 absolute flex items-center justify-center"
+        @click.stop="searchInput?.focus()"
       >
         <div class="flex flex-1 gap-2">
           <template v-if="!isMounted">
@@ -152,6 +152,7 @@ defineExpose({
               :class="{ primary: searchType === 'resource' }"
               @click="searchType = 'resource'"
               title="搜索资源"
+              type="button"
             >
               <FolderOpen class="w-5 h-5" />
             </button>
@@ -160,6 +161,7 @@ defineExpose({
               :class="{ primary: searchType === 'music' }"
               @click="searchType = 'music'"
               title="搜索音乐"
+              type="button"
             >
               <Music class="w-5 h-5" />
             </button>
@@ -168,23 +170,35 @@ defineExpose({
               :class="{ primary: searchType === 'ai' }"
               @click="searchType = 'ai'"
               title="AI 搜索"
+              type="button"
             >
               <Sparkles class="w-5 h-5" />
             </button>
           </template>
         </div>
         <button
-          class="bg-primary-600 hover:bg-primary-500 text-white rounded-full w-8 h-8 transition-all duration-200 flex items-center justify-center"
-          @click="handleSearch()"
+          v-if="searchQuery"
+          class="px-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors flex-shrink-0"
+          @click="clearInput"
+          aria-label="清除"
+          type="button"
+        >
+          <X class="w-5 h-5" />
+        </button>
+        <button
+          class="bg-primary-600 hover:bg-primary-500 text-white rounded-full w-8 h-8 transition-all duration-200 flex items-center justify-center cursor-pointer"
+          @click.stop="handleSearch()"
           type="button"
         >
           <Search class="w-4 h-4" />
         </button>
       </div>
+
       <SearchSuggestions
         :query="searchQuery"
         :visible="isFocused"
         @select="handleSuggestionSelect"
+        @close="handleSuggestionsClose"
       />
     </div>
   </div>
@@ -206,7 +220,6 @@ defineExpose({
   transition: 0.2s ease;
   pointer-events: auto;
   position: relative;
-  /* z-index: 10; */
 
   &:hover {
     background-color: rgba(133, 133, 133, 0.16);

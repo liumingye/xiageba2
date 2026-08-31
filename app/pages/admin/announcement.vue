@@ -6,6 +6,7 @@ import { Plus, Trash2, Edit3, Archive, Megaphone } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+import AdminModal from "~/components/admin/Modal.vue";
 import { formatDate } from "~/utils/file";
 import type { Announcement } from "~/utils/announcement";
 
@@ -375,207 +376,169 @@ const deleteAnnouncement = async (id: string) => {
       </div>
     </main>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showAddModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeAddModal"
-          ></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
-          >
-            <h3 class="text-xl font-medium mb-6">添加公告</h3>
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-            >
-              {{ error }}
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2">标题 *</label>
-                <input
-                  v-model="newTitle"
-                  type="text"
-                  placeholder="请输入公告标题"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">内容</label>
-                <textarea
-                  v-model="newContent"
-                  placeholder="请输入公告内容"
-                  rows="4"
-                  class="input-search resize-none"
-                ></textarea>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">显示方式</label>
-                <select v-model="newDisplayType" class="input-search">
-                  <option value="NORMAL">正常</option>
-                  <option value="BANNER">横幅</option>
-                  <option value="DIALOG">对话框</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">图标</label>
-                <select v-model="newIcon" class="input-search">
-                  <option value="INFO">信息</option>
-                  <option value="WARN">警告</option>
-                  <option value="ERROR">错误</option>
-                  <option value="SUCCESS">成功</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">排序</label>
-                <input
-                  v-model.number="newSort"
-                  type="number"
-                  placeholder="排序值，数字越小越靠前"
-                  class="input-search"
-                />
-              </div>
-              <div class="flex gap-4">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeAddModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="addAnnouncement"
-                >
-                  添加
-                </button>
-              </div>
-            </div>
-          </div>
+    <AdminModal
+      :show="showAddModal"
+      title="添加公告"
+      @close="closeAddModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">标题 *</label>
+          <input
+            v-model="newTitle"
+            type="text"
+            placeholder="请输入公告标题"
+            class="input-search"
+          />
         </div>
-      </Transition>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">内容</label>
+          <textarea
+            v-model="newContent"
+            placeholder="请输入公告内容"
+            rows="4"
+            class="input-search resize-none"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">显示方式</label>
+          <select v-model="newDisplayType" class="input-search">
+            <option value="NORMAL">正常</option>
+            <option value="BANNER">横幅</option>
+            <option value="DIALOG">对话框</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">图标</label>
+          <select v-model="newIcon" class="input-search">
+            <option value="INFO">信息</option>
+            <option value="WARN">警告</option>
+            <option value="ERROR">错误</option>
+            <option value="SUCCESS">成功</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">排序</label>
+          <input
+            v-model.number="newSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="input-search"
+          />
+        </div>
+      </div>
 
-      <Transition name="modal">
-        <div
-          v-if="showEditModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeEditModal"
-          ></div>
-          <div
-            class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeAddModal"
           >
-            <h3 class="text-xl font-medium mb-6">编辑公告</h3>
-            <div
-              v-if="error"
-              class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-            >
-              {{ error }}
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-color-400 text-sm mb-2">标题 *</label>
-                <input
-                  v-model="editTitle"
-                  type="text"
-                  placeholder="请输入公告标题"
-                  class="input-search"
-                />
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">内容</label>
-                <textarea
-                  v-model="editContent"
-                  placeholder="请输入公告内容"
-                  rows="4"
-                  class="input-search resize-none"
-                ></textarea>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">显示方式</label>
-                <select v-model="editDisplayType" class="input-search">
-                  <option value="NORMAL">正常</option>
-                  <option value="BANNER">横幅</option>
-                  <option value="DIALOG">对话框</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">图标</label>
-                <select v-model="editIcon" class="input-search">
-                  <option value="INFO">信息</option>
-                  <option value="WARN">警告</option>
-                  <option value="ERROR">错误</option>
-                  <option value="SUCCESS">成功</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-color-400 text-sm mb-2">排序</label>
-                <input
-                  v-model.number="editSort"
-                  type="number"
-                  placeholder="排序值，数字越小越靠前"
-                  class="input-search"
-                />
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  id="editStatus"
-                  v-model="editStatus"
-                  type="checkbox"
-                  true-value="ARCHIVED"
-                  false-value="ACTIVE"
-                  class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-                />
-                <label for="editStatus" class="text-color-300 text-sm"
-                  >归档该公告</label
-                >
-              </div>
-              <div class="flex gap-4">
-                <button
-                  class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-                  @click="closeEditModal"
-                >
-                  取消
-                </button>
-                <button
-                  class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-                  @click="saveEdit"
-                >
-                  保存
-                </button>
-              </div>
-            </div>
-          </div>
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="addAnnouncement"
+          >
+            添加
+          </button>
         </div>
-      </Transition>
-    </Teleport>
+      </template>
+    </AdminModal>
+
+    <AdminModal
+      :show="showEditModal"
+      title="编辑公告"
+      @close="closeEditModal"
+    >
+      <div
+        v-if="error"
+        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
+      >
+        {{ error }}
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2">标题 *</label>
+          <input
+            v-model="editTitle"
+            type="text"
+            placeholder="请输入公告标题"
+            class="input-search"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">内容</label>
+          <textarea
+            v-model="editContent"
+            placeholder="请输入公告内容"
+            rows="4"
+            class="input-search resize-none"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">显示方式</label>
+          <select v-model="editDisplayType" class="input-search">
+            <option value="NORMAL">正常</option>
+            <option value="BANNER">横幅</option>
+            <option value="DIALOG">对话框</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">图标</label>
+          <select v-model="editIcon" class="input-search">
+            <option value="INFO">信息</option>
+            <option value="WARN">警告</option>
+            <option value="ERROR">错误</option>
+            <option value="SUCCESS">成功</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">排序</label>
+          <input
+            v-model.number="editSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="input-search"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="editStatus"
+            v-model="editStatus"
+            type="checkbox"
+            true-value="ARCHIVED"
+            false-value="ACTIVE"
+            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+          />
+          <label for="editStatus" class="text-color-300 text-sm"
+            >归档该公告</label
+          >
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex gap-4">
+          <button
+            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+            @click="closeEditModal"
+          >
+            取消
+          </button>
+          <button
+            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+            @click="saveEdit"
+          >
+            保存
+          </button>
+        </div>
+      </template>
+    </AdminModal>
   </div>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

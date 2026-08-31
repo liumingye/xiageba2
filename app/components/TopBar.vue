@@ -23,6 +23,11 @@ const emit = defineEmits<{
 const { hasBackHistory } = useBackHistory();
 const localQuery = ref(props.searchQuery);
 
+const searchBarRef = ref<typeof SearchBar | null>(null);
+const isSearchFocused = computed(
+  () => searchBarRef.value?.isInputFocused || false,
+);
+
 watch(
   () => props.searchQuery,
   (val) => {
@@ -40,6 +45,7 @@ const goBack = () => {
 
 const handleSearch = (keyword: string) => {
   emit("search", keyword);
+  searchBarRef.value?.blur();
 };
 
 // 移动端汉堡菜单展开状态
@@ -116,27 +122,38 @@ const menu = computed(() => [
       </div>
 
       <div
-        class="ml-auto flex gap-1 md:gap-2 max-w-xs flex-1 justify-end items-center"
+        class="ml-auto flex gap-1 md:gap-2 max-w-sm flex-1 justify-end items-center transition-all"
       >
         <SearchBar
+          ref="searchBarRef"
           v-if="showSearch"
           v-model="localQuery"
           :placeholder="placeholder"
           @search="handleSearch"
         />
 
-        <ThemeSwitcher v-if="!showSearch" />
-
-        <!-- 移动端汉堡菜单按钮 -->
-        <button
-          class="md:hidden p-2 opacity-80 hover:opacity-100 hover:bg-color-300 rounded-lg transition-colors"
-          :aria-label="menuOpen ? '关闭菜单' : '打开菜单'"
-          :aria-expanded="menuOpen"
-          @click="menuOpen = !menuOpen"
+        <div
+          class="flex transition-[max-width,opacity] shrink-0"
+          :class="[
+            isSearchFocused
+              ? 'max-md:max-w-0 max-md:opacity-0'
+              : 'max-md:max-w-[72px]',
+          ]"
         >
-          <X v-if="menuOpen" class="w-5 h-5" />
-          <Menu v-else class="w-5 h-5" />
-        </button>
+          <ThemeSwitcher />
+
+          <!-- 移动端汉堡菜单按钮 -->
+          <button
+            type="button"
+            class="md:hidden opacity-80 p-2 hover:opacity-100 hover:bg-color-300 rounded-lg"
+            :aria-label="menuOpen ? '关闭菜单' : '打开菜单'"
+            :aria-expanded="menuOpen"
+            @click.stop="menuOpen = !menuOpen"
+          >
+            <X v-if="menuOpen" class="w-5 h-5" />
+            <Menu v-else class="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -151,9 +168,8 @@ const menu = computed(() => [
     >
       <div
         v-if="menuOpen"
-        class="absolute left-0 right-0 md:hidden border-y border-color-300 bg-color-100 rounded-b-xl"
+        class="absolute left-0 right-0 md:hidden border-y border-color-300 bg-color-100 rounded-b-xl z-50"
       >
-        <ThemeSwitcher v-if="showSearch" class="!absolute right-2 top-2.5" />
         <nav class="max-w-4xl mx-auto p-2 flex flex-col">
           <template v-for="item in menu" :key="item.to">
             <NuxtLink

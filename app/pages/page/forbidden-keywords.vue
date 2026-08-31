@@ -4,12 +4,12 @@ import { ShieldBan, Loader2 } from "@lucide/vue";
 defineOptions({ name: "ForbiddenKeywordsPage" });
 
 useHead({
-  title: "违禁词列表 - 全盘搜",
+  title: "屏蔽词列表 - 全盘搜",
   meta: [
     {
       name: "description",
       content:
-        "全盘搜违禁词列表，搜索时将屏蔽包含违禁词的关键词，以维护健康搜索环境。",
+        "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
     },
   ],
 });
@@ -28,7 +28,7 @@ const { data, pending, error } = await useFetch<{
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold flex items-center gap-2">
           <ShieldBan class="w-6 h-6 text-primary-400" />
-          违禁词列表
+          屏蔽词列表
         </h1>
         <NuxtLink
           to="/"
@@ -60,7 +60,7 @@ const { data, pending, error } = await useFetch<{
             <span class="text-color-300 font-semibold">{{
               data?.total || 0
             }}</span>
-            个违禁词，搜索时将屏蔽
+            个屏蔽词，搜索时将屏蔽
           </p>
 
           <div v-if="data?.data?.length" class="flex flex-wrap gap-2">
@@ -74,7 +74,7 @@ const { data, pending, error } = await useFetch<{
           </div>
 
           <p v-else class="py-8 text-center text-color-300 text-sm">
-            暂无违禁词
+            暂无屏蔽词
           </p>
         </template>
       </article>

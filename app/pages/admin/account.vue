@@ -14,11 +14,11 @@ import {
   KeyRound,
   FolderOpen,
   Power,
-  X,
   UserCog,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
+import AdminModal from "~/components/admin/Modal.vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { useToast } from "~/composables/useToast";
 import { getPanTypeLabel } from "~/utils/pan";
@@ -491,176 +491,152 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
     </main>
 
     <!-- 添加/编辑弹窗 -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="formShow"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div
-            class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            @click="closeForm"
-          ></div>
-
-          <div
-            class="modal-content relative bg-color-100 rounded-2xl p-6 max-w-lg w-full border border-color-300 max-h-[85vh] overflow-y-auto"
+    <AdminModal
+      :show="formShow"
+      :title="formIsEdit ? '编辑账号' : '添加账号'"
+      max-width="max-w-lg"
+      @close="closeForm"
+    >
+      <div class="space-y-4">
+        <!-- 网盘类型 -->
+        <div>
+          <label class="block text-color-400 text-sm mb-2">网盘类型</label>
+          <select
+            v-model="formData.type"
+            class="input-search w-full"
+            :disabled="formIsEdit"
           >
+            <option value="quark">夸克网盘</option>
+            <option value="baidu">百度网盘</option>
+            <option value="uc">UC 网盘</option>
+            <option value="xunlei">迅雷云盘</option>
+          </select>
+        </div>
+
+        <!-- Cookie -->
+        <div v-if="formData.type !== 'xunlei'">
+          <label class="block text-color-400 text-sm mb-2">Cookie</label>
+          <textarea
+            v-model="formData.cookie"
+            rows="3"
+            placeholder="粘贴 Cookie"
+            class="input-search resize-none w-full font-mono text-xs"
+          ></textarea>
+        </div>
+
+        <!-- 百度 OAuth2 -->
+        <div
+          v-if="formData.type === 'baidu'"
+          class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
+        >
+          <div class="flex items-center gap-2 text-sm text-color-400">
+            <KeyRound class="w-4 h-4" />
+            <span>OAuth2 授权获取 Token</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
             <button
-              class="absolute top-4 right-4 p-2 hover:bg-color-300 rounded-lg transition-colors z-10"
-              @click="closeForm"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="gettingOauthUrl"
+              @click="getBaiduOauthUrl"
             >
-              <X class="w-5 h-5 text-color-400" />
+              <Loader2
+                v-if="gettingOauthUrl"
+                class="w-4 h-4 animate-spin"
+              />
+              <Link2 v-else class="w-4 h-4" />
+              {{ gettingOauthUrl ? "获取中..." : "获取授权链接" }}
             </button>
-
-            <h3 class="text-lg font-medium mb-4">
-              {{ formIsEdit ? "编辑账号" : "添加账号" }}
-            </h3>
-
-            <div class="space-y-4">
-              <!-- 网盘类型 -->
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >网盘类型</label
-                >
-                <select
-                  v-model="formData.type"
-                  class="input-search w-full"
-                  :disabled="formIsEdit"
-                >
-                  <option value="quark">夸克网盘</option>
-                  <option value="baidu">百度网盘</option>
-                  <option value="uc">UC 网盘</option>
-                  <option value="xunlei">迅雷云盘</option>
-                </select>
-              </div>
-
-              <!-- Cookie -->
-              <div v-if="formData.type !== 'xunlei'">
-                <label class="block text-color-400 text-sm mb-2">Cookie</label>
-                <textarea
-                  v-model="formData.cookie"
-                  rows="3"
-                  placeholder="粘贴 Cookie"
-                  class="input-search resize-none w-full font-mono text-xs"
-                ></textarea>
-              </div>
-
-              <!-- 百度 OAuth2 -->
-              <div
-                v-if="formData.type === 'baidu'"
-                class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
-              >
-                <div class="flex items-center gap-2 text-sm text-color-400">
-                  <KeyRound class="w-4 h-4" />
-                  <span>OAuth2 授权获取 Token</span>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <button
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                    :disabled="gettingOauthUrl"
-                    @click="getBaiduOauthUrl"
-                  >
-                    <Loader2
-                      v-if="gettingOauthUrl"
-                      class="w-4 h-4 animate-spin"
-                    />
-                    <Link2 v-else class="w-4 h-4" />
-                    {{ gettingOauthUrl ? "获取中..." : "获取授权链接" }}
-                  </button>
-                </div>
-                <div v-if="baiduOauthUrl" class="flex items-center gap-2">
-                  <input
-                    v-model="baiduOauthCode"
-                    type="text"
-                    placeholder="粘贴授权码 (code)"
-                    class="input-search flex-1"
-                  />
-                  <button
-                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-                    :disabled="gettingOauthToken || !baiduOauthCode.trim()"
-                    @click="getBaiduOauthToken"
-                  >
-                    <Loader2
-                      v-if="gettingOauthToken"
-                      class="w-4 h-4 animate-spin"
-                    />
-                    {{ gettingOauthToken ? "获取中..." : "获取 Token" }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Refresh Token -->
-              <div
-                v-if="formData.type === 'baidu' || formData.type === 'xunlei'"
-              >
-                <label class="block text-color-400 text-sm mb-2"
-                  >Refresh Token</label
-                >
-                <textarea
-                  v-model="formData.refreshToken"
-                  rows="2"
-                  placeholder="粘贴 Refresh Token"
-                  class="input-search resize-none w-full font-mono text-xs"
-                ></textarea>
-              </div>
-
-              <!-- 临时目录 -->
-              <div>
-                <label class="block text-color-400 text-sm mb-2"
-                  >临时资源目录</label
-                >
-                <div class="flex gap-2">
-                  <input
-                    v-model="formData.tempDir"
-                    type="text"
-                    placeholder="输入目录 ID 或路径"
-                    class="input-search flex-1"
-                  />
-                  <button
-                    class="flex items-center gap-1.5 px-3 py-2 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap"
-                    title="从网盘选择目录"
-                    @click="openDirPicker"
-                  >
-                    <FolderOpen class="w-4 h-4" />
-                    选择
-                  </button>
-                </div>
-              </div>
-
-              <!-- 状态 -->
-              <div>
-                <label class="block text-color-400 text-sm mb-2">状态</label>
-                <select v-model="formData.status" class="input-search w-full">
-                  <option :value="1">启用</option>
-                  <option :value="0">停用</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- 底部操作 -->
-            <div
-              class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-color-300"
+          </div>
+          <div v-if="baiduOauthUrl" class="flex items-center gap-2">
+            <input
+              v-model="baiduOauthCode"
+              type="text"
+              placeholder="粘贴授权码 (code)"
+              class="input-search flex-1"
+            />
+            <button
+              class="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+              :disabled="gettingOauthToken || !baiduOauthCode.trim()"
+              @click="getBaiduOauthToken"
             >
-              <button
-                class="px-4 py-2 text-sm text-color-400 hover:bg-color-300 rounded-lg transition-colors"
-                @click="closeForm"
-              >
-                取消
-              </button>
-              <button
-                class="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="formSaving"
-                @click="saveForm"
-              >
-                <Loader2 v-if="formSaving" class="w-4 h-4 animate-spin" />
-                <Save v-else class="w-4 h-4" />
-                {{ formSaving ? "保存中..." : "保存" }}
-              </button>
-            </div>
+              <Loader2
+                v-if="gettingOauthToken"
+                class="w-4 h-4 animate-spin"
+              />
+              {{ gettingOauthToken ? "获取中..." : "获取 Token" }}
+            </button>
           </div>
         </div>
-      </Transition>
-    </Teleport>
+
+        <!-- Refresh Token -->
+        <div
+          v-if="formData.type === 'baidu' || formData.type === 'xunlei'"
+        >
+          <label class="block text-color-400 text-sm mb-2"
+            >Refresh Token</label
+          >
+          <textarea
+            v-model="formData.refreshToken"
+            rows="2"
+            placeholder="粘贴 Refresh Token"
+            class="input-search resize-none w-full font-mono text-xs"
+          ></textarea>
+        </div>
+
+        <!-- 临时目录 -->
+        <div>
+          <label class="block text-color-400 text-sm mb-2">临时资源目录</label>
+          <div class="flex gap-2">
+            <input
+              v-model="formData.tempDir"
+              type="text"
+              placeholder="输入目录 ID 或路径"
+              class="input-search flex-1"
+            />
+            <button
+              class="flex items-center gap-1.5 px-3 py-2 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap"
+              title="从网盘选择目录"
+              @click="openDirPicker"
+            >
+              <FolderOpen class="w-4 h-4" />
+              选择
+            </button>
+          </div>
+        </div>
+
+        <!-- 状态 -->
+        <div>
+          <label class="block text-color-400 text-sm mb-2">状态</label>
+          <select v-model="formData.status" class="input-search w-full">
+            <option :value="1">启用</option>
+            <option :value="0">停用</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 底部操作 -->
+      <template #footer>
+        <div
+          class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-color-300"
+        >
+          <button
+            class="px-4 py-2 text-sm text-color-400 hover:bg-color-300 rounded-lg transition-colors"
+            @click="closeForm"
+          >
+            取消
+          </button>
+          <button
+            class="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="formSaving"
+            @click="saveForm"
+          >
+            <Loader2 v-if="formSaving" class="w-4 h-4 animate-spin" />
+            <Save v-else class="w-4 h-4" />
+            {{ formSaving ? "保存中..." : "保存" }}
+          </button>
+        </div>
+      </template>
+    </AdminModal>
 
     <DirPickerModal
       :show="dirPickerShow"
@@ -674,25 +650,3 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
     />
   </div>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

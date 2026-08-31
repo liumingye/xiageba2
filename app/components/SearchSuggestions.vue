@@ -13,11 +13,16 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "select", value: string): void;
+  (e: "close"): void;
 }>();
 
 const suggestions = ref<SuggestionItem[]>([]);
-const isVisible = computed(() => props.visible && suggestions.value.length > 0);
+const isVisible = computed(
+  () =>
+    props.visible && suggestions.value.length > 0 && props.query.trim() !== "",
+);
 const loading = ref(false);
+
 let scriptElement: HTMLScriptElement | null = null;
 let callbackName = "";
 
@@ -81,17 +86,18 @@ watchDebounced(
 );
 
 // 联想面板不可见时清空面板。
-watch(
-  () => isVisible,
-  (val) => {
-    if (!val) {
-      clearSuggestions();
-    }
-  },
-);
+// watch(isVisible, (val) => {
+//   if (!val) {
+//     clearSuggestions();
+//   }
+// });
 
 const handleSelect = (word: string) => {
   emit("select", word);
+};
+
+const handleClose = () => {
+  emit("close");
 };
 
 onBeforeUnmount(() => {
@@ -105,33 +111,40 @@ onBeforeUnmount(() => {
       v-if="isVisible && (suggestions.length > 0 || loading)"
       class="suggestions-container"
     >
-      <div v-if="loading" class="suggestion-item loading">
-        <span class="loading-dot"></span>
-        <span class="loading-dot"></span>
-        <span class="loading-dot"></span>
-      </div>
-      <button
-        v-for="(item, index) in suggestions"
-        :key="index"
-        class="suggestion-item"
-        @click="handleSelect(item.word)"
-        type="button"
-      >
-        <svg
-          class="w-4 h-4 text-zinc-500 mr-3 flex-shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      <div class="scroll">
+        <div v-if="loading" class="suggestion-item loading">
+          <span class="loading-dot"></span>
+          <span class="loading-dot"></span>
+          <span class="loading-dot"></span>
+        </div>
+        <button
+          v-for="(item, index) in suggestions"
+          :key="index"
+          class="suggestion-item"
+          @click="handleSelect(item.word)"
+          type="button"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          ></path>
-        </svg>
-        <span class="truncate">{{ item.word }}</span>
-      </button>
+          <svg
+            class="w-4 h-4 text-zinc-500 mr-3 flex-shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            ></path>
+          </svg>
+          <span class="truncate">{{ item.word }}</span>
+        </button>
+      </div>
+      <div class="footer">
+        <button class="close-btn" type="button" @click="handleClose">
+          关闭
+        </button>
+      </div>
     </div>
   </transition>
 </template>
@@ -145,10 +158,34 @@ onBeforeUnmount(() => {
   right: 0;
   margin-top: 8px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
   z-index: 100;
-  max-height: 320px;
+  max-height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 防止滚动条超出容器 */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+}
+
+.footer {
+  border-top: 1px solid rgba(113, 113, 122, 0.2);
+  background: inherit;
+  flex-shrink: 0;
+}
+
+.close-btn {
+  @apply text-color-200 rounded-lg transition-colors;
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 .suggestion-item {

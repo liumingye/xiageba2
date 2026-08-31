@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useMusicStore } from "~/stores/music";
 import { Search, X } from "@lucide/vue";
 import SearchSuggestions from "./SearchSuggestions.vue";
@@ -18,27 +18,31 @@ const router = useRouter();
 const route = useRoute();
 const musicStore = useMusicStore();
 
+const MAX_KEYWORD_LENGTH = 30;
+
 const searchQuery = ref(props.modelValue || "");
 const isInputFocused = ref(false);
 const searchInput = ref<HTMLInputElement>();
 
+// 监听外部传参变化
 watch(
   () => props.modelValue,
   (val) => {
-    searchQuery.value = val || "";
+    if (val !== searchQuery.value) {
+      searchQuery.value = val || "";
+    }
   },
 );
 
-const MAX_KEYWORD_LENGTH = 30;
-
-const updateSearchQuery = (e: Event) => {
-  let value = (e.target as HTMLInputElement).value;
+// v-model 绑定下，仅在中文拼音选字落盘后触发
+watch(searchQuery, (val) => {
+  let value = val || "";
   if (value.length > MAX_KEYWORD_LENGTH) {
     value = value.slice(0, MAX_KEYWORD_LENGTH);
+    searchQuery.value = value;
   }
-  searchQuery.value = value;
   emit("update:modelValue", value);
-};
+});
 
 const handleSearch = (keywords?: string) => {
   const q = keywords ? keywords.trim() : searchQuery.value.trim();
@@ -63,14 +67,14 @@ const handleSearch = (keywords?: string) => {
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === "Enter") {
+  // 避免在拼音输入阶段按回车选字时误触发搜索提交
+  if (e.key === "Enter" && !e.isComposing) {
     handleSearch();
   }
 };
 
 const clearInput = () => {
   searchQuery.value = "";
-  emit("update:modelValue", "");
   nextTick(() => {
     searchInput.value?.focus();
   });
@@ -78,9 +82,23 @@ const clearInput = () => {
 
 const handleSuggestionSelect = (word: string) => {
   searchQuery.value = word;
-  emit("update:modelValue", word);
   handleSearch(word);
 };
+
+const handleSuggestionsClose = () => {
+  searchInput.value?.blur();
+  isInputFocused.value = false;
+};
+
+const blur = () => {
+  searchInput.value?.focus();
+  searchInput.value?.blur();
+};
+
+defineExpose({
+  blur,
+  isInputFocused,
+});
 </script>
 
 <template>
@@ -88,12 +106,11 @@ const handleSuggestionSelect = (word: string) => {
     <div class="flex items-center relative flex-1">
       <input
         ref="searchInput"
-        :value="searchQuery"
+        v-model="searchQuery"
         :maxlength="MAX_KEYWORD_LENGTH"
         type="text"
         placeholder="请输入搜索内容"
         class="input-search pl-3 pr-16"
-        @input="updateSearchQuery"
         @keydown="handleKeydown"
         @focus="isInputFocused = true"
         @blur="isInputFocused = false"
@@ -119,6 +136,7 @@ const handleSuggestionSelect = (word: string) => {
         :query="searchQuery"
         :visible="isInputFocused"
         @select="handleSuggestionSelect"
+        @close="handleSuggestionsClose"
       />
     </div>
   </div>

@@ -72,7 +72,7 @@ export class SimpleAC {
 
 // 实例
 export let automaton_websearch_filter_keywords: SimpleAC | null = null;
-// 配置违禁词列表（配置词），供前端展示
+// 配置屏蔽词列表（配置词），供前端展示
 export let websearch_filter_keywords_list: string[] = [];
 export const initAutomaton_websearch_filter_keywords = async () => {
   let filterKeywordsStr = await getConfigValue("websearch_filter_keywords");
