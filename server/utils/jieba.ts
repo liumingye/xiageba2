@@ -1,8 +1,13 @@
 import { Jieba } from "@node-rs/jieba";
 import { dict } from "@node-rs/jieba/dict.js";
-import { OpenCC } from "opencc";
+import * as OpenCC from "opencc-js/core";
+import * as Locale from "opencc-js/preset";
 
-const opencc = new OpenCC("tw2sp.json");
+if (!Locale.from.twp || !Locale.to.cn) {
+  throw new Error("OpenCC locale files failed to load.");
+}
+
+const converter = OpenCC.ConverterFactory(Locale.from.twp, Locale.to.cn);
 const jieba = Jieba.withDict(dict);
 
 /**
@@ -24,7 +29,7 @@ export const cutForSearch = (input: string): string[] => {
   if (!text) return [];
 
   // 先使用 OpenCC 转换为简体
-  const simplifiedText = opencc.convertSync(text);
+  const simplifiedText = converter(text);
   const jiebaTokens = jieba.cutForSearch(simplifiedText, true);
   const groups: string[] = [];
   const normalizedText = simplifiedText.toLocaleLowerCase();

@@ -26,6 +26,9 @@ importers:
       '@node-rs/jieba':
         specifier: ^2.0.1
         version: 2.0.1
+      '@node-rs/jieba-linux-x64-gnu':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@nuxt/scripts':
         specifier: 1.3.8
         version: 1.3.8(@oxc-project/types@0.143.0)(@unhead/vue@3.3.1(@oxc-project/types@0.143.0)(esbuild@0.28.1)(lightningcss@1.33.0)(oxc-parser@0.140.0)(rolldown@1.2.3)(rollup@4.62.2)(vite@8.2.1(@types/node@26.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3)))(db0@0.3.4(@electric-sql/pglite@0.4.1)(mysql2@3.15.3))(esbuild@0.28.1)(ioredis@5.11.1)(magicast@0.5.4)(rolldown@1.2.3)(rollup@4.62.2)(typescript@6.0.3)(vite@8.2.1(@types/node@26.1.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))
@@ -71,7 +74,7 @@ importers:
       openai:
         specifier: ^6.48.0
         version: 6.48.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(ws@8.21.3)
-      opencc:
+      opencc-js:
         specifier: ^1.4.2
         version: 1.4.2
       pg:
@@ -1323,6 +1326,13 @@ packages:
     os: [linux]
     libc: [glibc]
 
+  '@node-rs/jieba-linux-x64-gnu@2.0.2':
+    resolution: {integrity: sha512-514+0NFGCZp2e9lrnVRmyfe1/Cd+zUV3IUD0pWYB2gHfmowNrHPHL95WZosJMDp96C6LYbJZuNTRKifm0PyVBA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
   '@node-rs/jieba-linux-x64-musl@2.0.1':
     resolution: {integrity: sha512-0zfP9Qy68yEXrhBFknfhF6WUJDPU/8eRuyIrkMGdMjfRpxhpSbr2fMfnsqhOQLvhuK4w3iDFvTy4t5d0s6JKMA==}
     engines: {node: '>= 10'}
@@ -1491,31 +1501,6 @@ packages:
 
   '@nuxtjs/tailwindcss@6.14.0':
     resolution: {integrity: sha512-30RyDK++LrUVRgc2A85MktGWIZoRQgeQKjE4CjjD64OXNozyl+4ScHnnYgqVToMM6Ch2ZG2W4wV2J0EN6F0zkQ==}
-
-  '@opencc/opencc-darwin-arm64@1.4.2':
-    resolution: {integrity: sha512-H1MQiCTdXwdL0KIN4IS2tnuIFUsrY9f9Y99jqwfquPehGNk7agdDdIVSbiJMxBFFAI7m8l2gYutWk4n8QOx6wA==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@opencc/opencc-darwin-x64@1.4.2':
-    resolution: {integrity: sha512-+VYjd2cUoTh/Ye4JsHV2Lq+G1jDl3zfJc+Juev0s3/RJb1xXuxBXJ1NXWtLVOPpJ3rqJxbSn8qLCiSryX4gzZg==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@opencc/opencc-linux-arm64@1.4.2':
-    resolution: {integrity: sha512-4BkuY+BLbD/EGH4dgMrFJma+RgS1SgHG6drIcbxSJtq2LzXG1IYoelltOy7IRCPyUgCY/ZzNW2PWyDrXsIwM+Q==}
-    cpu: [arm64]
-    os: [linux]
-
-  '@opencc/opencc-linux-x64@1.4.2':
-    resolution: {integrity: sha512-Mg/y2odg+3Lp78wdH8/se+YAvEmdbICb/rLisU9eDGweB0baPjaEwlSpoiRgBy3uIRRsTaiNOzvJurW1EMTlPw==}
-    cpu: [x64]
-    os: [linux]
-
-  '@opencc/opencc-win32-x64@1.4.2':
-    resolution: {integrity: sha512-oLOAfSEm87TRLQr8fXHoK0OXYHvyr3E7DkIIBRfS4FqOWlim04ZI66saMZSuTyUtvD8c93ICVKvMR1E5MblmWA==}
-    cpu: [x64]
-    os: [win32]
 
   '@oxc-parser/binding-android-arm-eabi@0.140.0':
     resolution: {integrity: sha512-ZfjDZ422mo7eo3b3VltqNsV9kmv1qt/sPEAMSl64iOSwhVfd0eIZ9LB79Mbs1xYXJnk7WSROwzBCKDIiVxPTvQ==}
@@ -5059,10 +5044,8 @@ packages:
       zod:
         optional: true
 
-  opencc@1.4.2:
-    resolution: {integrity: sha512-fAo8GJy0XhFyw9zIsEHmEVKL+qK8qbw0hcCjqKN5cn2UA7FPOU6b13xpqpSUf8mLNLhBMmIVZu6J+fEjJ2KcyQ==}
-    engines: {node: '>=20.17'}
-    hasBin: true
+  opencc-js@1.4.2:
+    resolution: {integrity: sha512-EdcspgdROiCCZDM+jZR6Pa670xW+EW2QhctPBQ8gRjg6lrx4IHEl+2s+kt5izk/TkxVRgdWuFgaGkaEdIUfdaw==}
 
   ordered-binary@1.6.1:
     resolution: {integrity: sha512-QkCdPooczexPLiXIrbVOPYkR3VO3T6v2OyKRkR1Xbhpy7/LAVXwahnRCgRp78Oe/Ehf0C/HATAxfSr6eA1oX+w==}
@@ -8104,6 +8087,8 @@ snapshots:
   '@node-rs/jieba-linux-x64-gnu@2.0.1':
     optional: true
 
+  '@node-rs/jieba-linux-x64-gnu@2.0.2': {}
+
   '@node-rs/jieba-linux-x64-musl@2.0.1':
     optional: true
 
@@ -8583,21 +8568,6 @@ snapshots:
       - supports-color
       - tsx
       - yaml
-
-  '@opencc/opencc-darwin-arm64@1.4.2':
-    optional: true
-
-  '@opencc/opencc-darwin-x64@1.4.2':
-    optional: true
-
-  '@opencc/opencc-linux-arm64@1.4.2':
-    optional: true
-
-  '@opencc/opencc-linux-x64@1.4.2':
-    optional: true
-
-  '@opencc/opencc-win32-x64@1.4.2':
-    optional: true
 
   '@oxc-parser/binding-android-arm-eabi@0.140.0':
     optional: true
@@ -12680,13 +12650,7 @@ snapshots:
       '@smithy/signature-v4': 5.6.12
       ws: 8.21.3
 
-  opencc@1.4.2:
-    optionalDependencies:
-      '@opencc/opencc-darwin-arm64': 1.4.2
-      '@opencc/opencc-darwin-x64': 1.4.2
-      '@opencc/opencc-linux-arm64': 1.4.2
-      '@opencc/opencc-linux-x64': 1.4.2
-      '@opencc/opencc-win32-x64': 1.4.2
+  opencc-js@1.4.2: {}
 
   ordered-binary@1.6.1: {}
 
