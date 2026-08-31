@@ -1,6 +1,8 @@
 import { Jieba } from "@node-rs/jieba";
 import { dict } from "@node-rs/jieba/dict.js";
+import { OpenCC } from "opencc";
 
+const opencc = new OpenCC("tw2sp.json");
 const jieba = Jieba.withDict(dict);
 
 /**
@@ -21,9 +23,11 @@ export const cutForSearch = (input: string): string[] => {
   const text = String(input).trim();
   if (!text) return [];
 
-  const jiebaTokens = jieba.cutForSearch(text, true);
+  // 先使用 OpenCC 转换为简体
+  const simplifiedText = opencc.convertSync(text);
+  const jiebaTokens = jieba.cutForSearch(simplifiedText, true);
   const groups: string[] = [];
-  const normalizedText = text.toLocaleLowerCase();
+  const normalizedText = simplifiedText.toLocaleLowerCase();
   const seen = new Set<string>();
 
   for (const token of jiebaTokens) {
@@ -55,9 +59,7 @@ export const prioritizeSearchTokens = (tokens: string[]): string[] => {
     (token) => Array.from(token).length > 1,
   );
   const withoutWeakSingles = hasLongToken
-    ? withoutRandomNumbers.filter(
-        (token) => Array.from(token).length > 1,
-      )
+    ? withoutRandomNumbers.filter((token) => Array.from(token).length > 1)
     : withoutRandomNumbers;
 
   return withoutWeakSingles.filter(
