@@ -7,48 +7,85 @@ const MAX_KEYWORD_LENGTH = 30;
 
 export default defineCachedEventHandler(
   async (event) => {
-  const query = getQuery(event);
-  const term = (query.q as string)?.trim() || "";
-  const page = Math.min(
-    MAX_PAGE,
-    Math.max(1, parseInt(query.page as string) || 1),
-  );
-  const pageSize = Math.min(
-    20,
-    Math.max(1, parseInt(query.pageSize as string) || 20),
-  );
-  const skip = (page - 1) * pageSize;
-  const exact = query.exact === "true";
+    const query = getQuery(event);
+    const term = (query.q as string)?.trim() || "";
+    const page = Math.min(
+      MAX_PAGE,
+      Math.max(1, parseInt(query.page as string) || 1),
+    );
+    const pageSize = Math.min(
+      20,
+      Math.max(1, parseInt(query.pageSize as string) || 20),
+    );
+    const skip = (page - 1) * pageSize;
+    const exact = query.exact === "true";
 
-  if (!term) {
-    return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens: [] };
-  }
+    if (!term) {
+      return {
+        data: [],
+        total: 0,
+        page: 1,
+        pageSize,
+        totalPages: 0,
+        tokens: [],
+      };
+    }
 
-  if (term.length > MAX_KEYWORD_LENGTH) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "关键词过长",
-      message: `搜索关键词最多 ${MAX_KEYWORD_LENGTH} 个字符`,
-    });
-  }
+    if (term.length > MAX_KEYWORD_LENGTH) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "关键词过长",
+        message: `搜索关键词最多 ${MAX_KEYWORD_LENGTH} 个字符`,
+      });
+    }
 
-  // 1. 获取结巴分词的 tokens 数组
-  const tokens = cutForSearch(term);
-  if (tokens.length === 0) {
-    return { data: [], total: 0, page: 1, pageSize, totalPages: 0, tokens: [] };
-  }
+    // 1. 获取结巴分词的 tokens 数组
+    const tokens = cutForSearch(term);
+    if (tokens.length === 0) {
+      return {
+        data: [],
+        total: 0,
+        page: 1,
+        pageSize,
+        totalPages: 0,
+        tokens: [],
+      };
+    }
 
-  // 2. 🔥 核心优化：构建符合 websearch_to_tsquery 语法的查询文本
-  // exact 模式（AND 精准匹配）：用纯空格连接 -> "周杰伦 1"
-  // 非 exact 模式（OR 模糊匹配）：用大写 OR 连接 -> "周杰伦 OR 1"
-  const formattedWebQuery = exact ? tokens.join(" ") : tokens.join(" OR ");
+    // 2. 🔥 核心优化：构建符合 websearch_to_tsquery 语法的查询文本
+    // exact 模式（AND 精准匹配）：用纯空格连接 -> "周杰伦 1"
+    // 非 exact 模式（OR 模糊匹配）：用大写 OR 连接 -> "周杰伦 OR 1"
+    const formattedWebQuery = exact ? tokens.join(" ") : tokens.join(" OR ");
 
-  // 使用 Promise.all 并发执行数据查询与总数统计
-  // 🔥 将 to_tsquery 替换为 websearch_to_tsquery，参数传递完全保持 Prisma 的参数化安全机制
-  const musicsPromise = prisma.$queryRaw<any[]>`
+    // 最多筛选的候选集上限 (100 * 20 = 2000 条)
+    const maxCandidates = MAX_PAGE * pageSize;
+
+    // 使用 Promise.all 并发执行数据查询与总数统计
+    // 🔥 将 to_tsquery 替换为 websearch_to_tsquery，参数传递完全保持 Prisma 的参数化安全机制
+    const musicsPromise = prisma.$queryRaw<any[]>`
     WITH parsed_query AS (
       SELECT websearch_to_tsquery('simple', ${formattedWebQuery}) AS q
+    ),
+    -- 1. 粗筛阶段：利用 GIN 索引快速锁定最多 2000 个匹配行（不计算重量级的 ts_rank）
+    candidates AS (
+      SELECT m.id
+      FROM "Music" m, parsed_query pq
+      WHERE m."searchVector" @@ pq.q
+      LIMIT ${maxCandidates}
+    ),
+    -- 2. 细筛阶段：仅对这 2000 条候选数据计算 ts_rank 并排序，获取当前页的 ID 列表
+    ranked_candidates AS (
+      SELECT c.id
+      FROM candidates c
+      JOIN "Music" m ON m.id = c.id
+      , parsed_query pq
+      ORDER BY 
+        ts_rank(m."searchVector", pq.q, 1) DESC, 
+        m."viewCount" DESC, 
+        m."createdAt" DESC
+      LIMIT ${pageSize} OFFSET ${skip}
     )
+    -- 3. 最终回表：仅回表查询当前页 20 条数据的完整字段
     SELECT 
       m.id, 
       m.title, 
@@ -56,59 +93,60 @@ export default defineCachedEventHandler(
       m.album, 
       m.cover,
       m.downloads
-    FROM "Music" m, parsed_query pq
-    WHERE m."searchVector" @@ pq.q
+    FROM ranked_candidates rc
+    JOIN "Music" m ON m.id = rc.id
+    , parsed_query pq
     ORDER BY 
       ts_rank(m."searchVector", pq.q, 1) DESC, 
       m."viewCount" DESC, 
-      m."createdAt" DESC
-    LIMIT ${pageSize} OFFSET ${skip};
+      m."createdAt" DESC;
   `;
 
-  // 📦 总数缓存到 Redis：相同关键词在 TTL 内直接复用 COUNT 结果
-  const totalCacheKey = `musicSearchTotal:${exact ? "exact" : "fuzzy"}:${term}`;
-  const cachedTotal = await getRedisCache<number>(totalCacheKey);
+    // 📦 总数缓存到 Redis：相同关键词在 TTL 内直接复用 COUNT 结果
+    const totalCacheKey = `musicSearchTotal:${exact ? "exact" : "fuzzy"}:${term}`;
+    const cachedTotal = await getRedisCache<number>(totalCacheKey);
 
-  let totalCount: number;
-  let musics: any[];
-  if (cachedTotal !== null) {
-    totalCount = cachedTotal;
-    musics = await musicsPromise;
-  } else {
-    const [musicRows, totalResult] = await Promise.all([
-      musicsPromise,
-      prisma.$queryRaw<[{ count: number }]>`
+    let totalCount: number;
+    let musics: any[];
+    if (cachedTotal !== null) {
+      totalCount = cachedTotal;
+      musics = await musicsPromise;
+    } else {
+      const [musicRows, totalResult] = await Promise.all([
+        musicsPromise,
+        prisma.$queryRaw<[{ count: number }]>`
         SELECT COUNT(*)::int as count
         FROM "Music"
         WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
         LIMIT ${MAX_PAGE * pageSize}
       `,
-    ]);
-    musics = musicRows;
-    const rawCount = totalResult[0]?.count ?? 0;
-    totalCount = Math.min(MAX_PAGE * pageSize, rawCount);
-    // 缓存计数结果
-    await setRedisCache(totalCacheKey, totalCount, 10 * 60);
-  }
+      ]);
+      musics = musicRows;
+      const rawCount = totalResult[0]?.count ?? 0;
+      totalCount = Math.min(MAX_PAGE * pageSize, rawCount);
+      // 缓存计数结果
+      await setRedisCache(totalCacheKey, totalCount, 10 * 60);
+    }
 
-  const formattedMusics = musics.map((music) => ({
-    id: music.id,
-    title: music.title,
-    artist: music.artist,
-    album: music.album,
-    cover: music.cover,
-    quality: music.downloads?.map((v: { quality: string }) => v.quality) || [],
-  }));
+    const formattedMusics = musics.map((music) => ({
+      id: music.id,
+      title: music.title,
+      artist: music.artist,
+      album: music.album,
+      cover: music.cover,
+      quality:
+        music.downloads?.map((v: { quality: string }) => v.quality) || [],
+    }));
 
-  return {
-    data: formattedMusics,
-    total: totalCount,
-    page,
-    pageSize,
-    totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
-    // 清理掉分词中可能残留的双引号，防止前端高亮匹配时错乱
-    tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
-  };
+    return {
+      data: formattedMusics,
+      total: totalCount,
+      page,
+      pageSize,
+      totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
+      // 清理掉分词中可能残留的双引号，防止前端高亮匹配时错乱
+      tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
+    };
   },
   {
     name: "api-music-search-v1",
@@ -117,12 +155,7 @@ export default defineCachedEventHandler(
     swr: true,
     getKey: (event) => {
       const query = getQuery(event);
-      return [
-        query.q,
-        query.page,
-        query.pageSize,
-        query.exact,
-      ]
+      return [query.q, query.page, query.pageSize, query.exact]
         .map((value) => encodeURIComponent(String(value ?? "")))
         .join(":");
     },

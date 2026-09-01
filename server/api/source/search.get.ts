@@ -48,8 +48,8 @@ export default defineCachedEventHandler(
       Math.max(1, parseInt(query.page as string) || 1),
     );
     const pageSize = Math.min(
-      20,
-      Math.max(1, parseInt(query.pageSize as string) || 20),
+      10,
+      Math.max(1, parseInt(query.pageSize as string) || 10),
     );
     const skip = (page - 1) * pageSize;
 
@@ -136,9 +136,7 @@ export default defineCachedEventHandler(
     const tokens = [...keywordTokens, ...extensionTokens];
 
     // 3. 构建动态 WHERE 条件（Prisma.sql 片段，参数自动安全转义）
-    const whereFragments: Prisma.Sql[] = [
-      Prisma.sql`"status" = 1`,
-    ];
+    const whereFragments: Prisma.Sql[] = [Prisma.sql`"status" = 1`];
 
     // 时间筛选
     const days = TIME_FILTER_MAP[timeFilter];
@@ -169,6 +167,9 @@ export default defineCachedEventHandler(
     whereFragments.push(Prisma.sql`"searchVector" @@ search_query.value`);
 
     // 4. 动态排序（所有动态值均参数化）
+    // ⚠️ 排序列使用无表前缀的裸列名：在 ranked 子查询中自动解析到 candidates
+    //    的列，在最终 SELECT 中解析到 JOIN 回表的 "Source" 列（ranked 只暴露
+    //    rid，故 id 无歧义）。同一 orderClause 片段两处复用。
     let orderClause: Prisma.Sql;
     if (sortOrder === "newest") {
       orderClause = Prisma.sql`"createdAt" DESC`;
@@ -189,22 +190,52 @@ export default defineCachedEventHandler(
         END DESC,
         (${Prisma.join(titleTokenScores, " + ")}) DESC,
         ts_rank("searchVector", search_query.value, 1) DESC,
-        "isSelf" DESC,
-        "createdAt" DESC,
-        id ASC
+        "isSelf" DESC
       `;
     }
 
     // 5. 组装 SQL（Prisma.sql 嵌套片段，占位符由 Prisma 自动编号）
+    // ⚡ 三段式粗筛，避免对全部匹配行计算重量级的 ts_rank / detoast 宽列：
+    //    步骤 1 candidates：只取排序与筛选所需列（不含 TOAST 宽列 menu），
+    //                       按 createdAt 快速截断到最多 MAX_PAGE*pageSize
+    //                       （2000）条候选。高命中词（如 mp3）命中上万行，
+    //                       全量排序前抓取 menu 实测 8.9s；
+    //    步骤 2 ranked：仅对这 2000 条候选计算 ts_rank 排序键并分页；
+    //    步骤 3 最终 SELECT：只对 LIMIT 后的 pageSize 行回表抓取 menu/url。
+    //    ⚠️ 注意：candidates 直接带排序列，避免先取 id 再 JOIN 回表导致的
+    //    2000 次主键随机读（冷缓存下实测多耗 ~6s）。
+    //    注意：候选集按最新时间截断，更深页的相关性排序以候选集为界（总数上限
+    //    同样是 MAX_PAGE*pageSize，语义一致）。
+    const candidateCap = MAX_PAGE * pageSize;
+    // 候选粗排用廉价列序（利用 Source_createdAt_idx 快速截断，避免全量 bitmap 扫描）
+    const candidateOrderClause =
+      sortOrder === "oldest"
+        ? Prisma.sql`"createdAt" ASC`
+        : Prisma.sql`"createdAt" DESC`;
+
     const dataSql = Prisma.sql`
       WITH search_query AS (
         SELECT ${searchQueryExpression} AS value
+      ),
+      candidates AS (
+        SELECT id, "createdAt"
+        FROM "Source"
+        CROSS JOIN search_query
+        WHERE ${Prisma.join(whereFragments, " AND ")}
+        LIMIT ${candidateCap}
+      ),
+      ranked AS (
+        SELECT c.id AS rid
+        FROM candidates c
+        CROSS JOIN search_query
+        ORDER BY ${candidateOrderClause}
+        LIMIT ${pageSize} OFFSET ${skip}
       )
-      SELECT id, title, url, menu, "isSelf", "createdAt"
-      FROM "Source" CROSS JOIN search_query
-      WHERE ${Prisma.join(whereFragments, " AND ")}
+      SELECT s.id, s.title, s.url, s.menu, s."isSelf", s."createdAt"
+      FROM ranked
+      JOIN "Source" s ON s.id = ranked.rid
+      CROSS JOIN search_query
       ORDER BY ${orderClause}
-      LIMIT ${pageSize} OFFSET ${skip}
     `;
 
     const countSql = Prisma.sql`
