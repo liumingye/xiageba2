@@ -9,7 +9,10 @@ if (!connectionString) {
 }
 
 const prismaClientSingleton = () => {
-  const adapter = new PrismaPg({ connectionString });
+  const adapter = new PrismaPg({
+    connectionString,
+    max: 30,
+  });
   return new PrismaClient({ adapter });
 };
 

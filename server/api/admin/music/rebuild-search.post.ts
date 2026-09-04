@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     // 独立轻量连接池，把常规通道留给前端在线用户
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      max: 2,
+      max: 30,
     });
 
     const taskType = all ? "all" : "inc";

@@ -1,7 +1,12 @@
 generator client {
   provider      = "prisma-client-js"
   output        = "./generated"
+  engineType    = "client"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+generator sql {
+  provider = "prisma-sql-generator"
 }
 
 datasource db {
@@ -9,26 +14,26 @@ datasource db {
 }
 
 model Admin {
-  id            String         @id @default(cuid(2)) @db.VarChar(32)
-  username      String         @unique @db.VarChar(50)
-  password      String         @db.VarChar(255)
-  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime?      @updatedAt @db.Timestamptz(3)
+  id        String    @id @default(cuid(2)) @db.VarChar(32)
+  username  String    @unique @db.VarChar(50)
+  password  String    @db.VarChar(255)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime? @updatedAt @db.Timestamptz(3)
 }
 
 model Feedback {
-  id            String         @id @default(cuid(2))
-  musicId       String
-  musicTitle    String
-  musicArtist   String
-  type          FeedbackType
-  description   String         @default("")
-  email         String         @default("")
-  status        FeedbackStatus @default(PENDING)
-  resolvedAt    DateTime?
-  resolvedBy    String?
-  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime?      @updatedAt @db.Timestamptz(3)
+  id          String         @id @default(cuid(2))
+  musicId     String
+  musicTitle  String
+  musicArtist String
+  type        FeedbackType
+  description String         @default("")
+  email       String         @default("")
+  status      FeedbackStatus @default(PENDING)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime?      @updatedAt @db.Timestamptz(3)
 
   @@index([createdAt])
   @@index([musicId])
@@ -55,31 +60,31 @@ model Music {
 }
 
 model Category {
-  id           Int              @id @default(autoincrement())
-  name         String           @db.VarChar(255)
-  image        String           @default("") @db.VarChar(2048)
-  sort         Int              @default(0) @db.SmallInt
-  isShow       Boolean          @default(true)
-  createdAt    DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime?        @updatedAt @db.Timestamptz(3)
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  image     String    @default("") @db.VarChar(2048)
+  sort      Int       @default(0) @db.SmallInt
+  isShow    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime? @updatedAt @db.Timestamptz(3)
 
   @@index([sort])
 }
 
 model Source {
-  id            String      @id @default(cuid(2)) @db.VarChar(32)
-  cid           Int?        @db.SmallInt
-  title         String
-  url           String
-  description   String      @default("")
-  menu          String      @default("")
-  status        Int         @default(1) @db.SmallInt
-  invalidNum    Int         @default(0) @db.SmallInt
-  isSelf        Boolean     @default(false)
-  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime?   @updatedAt @db.Timestamptz(3)
+  id          String    @id @default(cuid(2)) @db.VarChar(32)
+  cid         Int?      @db.SmallInt
+  title       String
+  url         String
+  description String    @default("")
+  menu        String    @default("")
+  status      Int       @default(1) @db.SmallInt
+  invalidNum  Int       @default(0) @db.SmallInt
+  isSelf      Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime? @updatedAt @db.Timestamptz(3)
 
-  searchVector  Unsupported("tsvector")?
+  searchVector Unsupported("tsvector")?
 
   @@index([cid])
   @@index([cid, createdAt(sort: Desc)])
@@ -87,11 +92,11 @@ model Source {
 }
 
 model SourceTemp {
-  id        Int       @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   url       String
   fid       String?
   accountId Int?
-  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([createdAt])
   @@index([accountId])
@@ -99,17 +104,17 @@ model SourceTemp {
 
 /// 网盘账号表（多账号）
 model PanAccount {
-  id          Int       @id @default(autoincrement())
-  type        String    @db.VarChar(20) // quark | baidu | uc | xunlei
-  name        String    @default("") @db.VarChar(100) // 网盘账号昵称
-  cookie      String    @default("") @db.Text
-  refreshToken String   @default("") @db.Text
-  accessToken String    @default("") @db.Text
-  expiresAt   DateTime? @db.Timestamptz(3)
-  tempDir     String    @default("") @db.VarChar(255)
-  status      Int       @default(1) @db.SmallInt // 1=启用 0=停用
-  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime? @updatedAt @db.Timestamptz(3)
+  id           Int       @id @default(autoincrement())
+  type         String    @db.VarChar(20) // quark | baidu | uc | xunlei
+  name         String    @default("") @db.VarChar(100) // 网盘账号昵称
+  cookie       String    @default("") @db.Text
+  refreshToken String    @default("") @db.Text
+  accessToken  String    @default("") @db.Text
+  expiresAt    DateTime? @db.Timestamptz(3)
+  tempDir      String    @default("") @db.VarChar(255)
+  status       Int       @default(1) @db.SmallInt // 1=启用 0=停用
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime? @updatedAt @db.Timestamptz(3)
 
   @@index([type])
   @@index([status])
@@ -121,24 +126,24 @@ model Config {
 }
 
 model ApiList {
-  id           String      @id @default(cuid(2))
+  id           String    @id @default(cuid(2))
   name         String
-  type         String      @default("api")
+  type         String    @default("api")
   url          String
-  method       String      @default("GET")
-  headers      String      @default("{}")
-  fixed_params String      @default("{}")
-  field_map    String      @default("{}")
-  count        Int         @default(10)
-  html_item    String      @default("")
-  html_title   String      @default("")
-  html_url     Int         @default(0)
-  html_type    String      @default("")
-  html_url2    String      @default("")
-  weight       Int         @default(0)
-  status       Int         @default(1)
-  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime?   @updatedAt @db.Timestamptz(3)
+  method       String    @default("GET")
+  headers      String    @default("{}")
+  fixed_params String    @default("{}")
+  field_map    String    @default("{}")
+  count        Int       @default(10)
+  html_item    String    @default("")
+  html_title   String    @default("")
+  html_url     Int       @default(0)
+  html_type    String    @default("")
+  html_url2    String    @default("")
+  weight       Int       @default(0)
+  status       Int       @default(1)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime? @updatedAt @db.Timestamptz(3)
 
   @@index([status])
   @@index([weight])
@@ -180,35 +185,35 @@ enum AnnouncementStatus {
 }
 
 model S3Config {
-  id         Int           @id @default(autoincrement())
-  name       String        @db.VarChar(100)
-  baseUrl    String        @default("") @db.VarChar(2048)
-  bucket     String        @db.VarChar(255)
-  prefix     String        @default("") @db.VarChar(255)
-  endpoint   String        @default("") @db.VarChar(2048)
-  region     String        @default("") @db.VarChar(100)
-  accessKey  String        @db.VarChar(255)
-  secretKey  String        @db.VarChar(255)
-  isHidden   Boolean       @default(false)
-  files      StorageFile[]
-  createdAt  DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt  DateTime?     @updatedAt @db.Timestamptz(3)
+  id        Int           @id @default(autoincrement())
+  name      String        @db.VarChar(100)
+  baseUrl   String        @default("") @db.VarChar(2048)
+  bucket    String        @db.VarChar(255)
+  prefix    String        @default("") @db.VarChar(255)
+  endpoint  String        @default("") @db.VarChar(2048)
+  region    String        @default("") @db.VarChar(100)
+  accessKey String        @db.VarChar(255)
+  secretKey String        @db.VarChar(255)
+  isHidden  Boolean       @default(false)
+  files     StorageFile[]
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime?     @updatedAt @db.Timestamptz(3)
 
   @@index([isHidden])
 }
 
 model StorageFile {
-  id         String    @id @default(cuid(2)) @db.VarChar(32)
-  configId   Int
-  config     S3Config  @relation(fields: [configId], references: [id], onDelete: Cascade)
-  path       String    @db.VarChar(2048)
-  name       String    @db.VarChar(255)
-  size       Int       @default(0)
-  mimeType   String    @default("") @db.VarChar(100)
-  url        String    @db.VarChar(2048)
-  isDeleted  Boolean   @default(false)
-  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt  DateTime? @updatedAt @db.Timestamptz(3)
+  id        String    @id @default(cuid(2)) @db.VarChar(32)
+  configId  Int
+  config    S3Config  @relation(fields: [configId], references: [id], onDelete: Cascade)
+  path      String    @db.VarChar(2048)
+  name      String    @db.VarChar(255)
+  size      Int       @default(0)
+  mimeType  String    @default("") @db.VarChar(100)
+  url       String    @db.VarChar(2048)
+  isDeleted Boolean   @default(false)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime? @updatedAt @db.Timestamptz(3)
 
   @@index([configId])
   @@index([path])

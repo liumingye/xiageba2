@@ -10,7 +10,7 @@ import {
 import { TREE_MAX_LINE } from "#server/lib/const";
 
 // 实例化 pg 连接池（保持与 Prisma 数据库连接一致）
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 30 });
 
 export default defineEventHandler(async (event) => {
   const method = event.method;

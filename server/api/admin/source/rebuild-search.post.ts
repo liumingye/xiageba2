@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   setImmediate(async () => {
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      max: 2,
+      max: 30,
     });
 
     const taskType = all ? "all" : "inc"; // 区分全量还是增量

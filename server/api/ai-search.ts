@@ -17,7 +17,7 @@ import type { PanFilter } from "#shared/utils";
 const siteHost = process.env.SITE_HOST || "";
 
 // 保持同一个连接池，或者引用你全局的 pool
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 30 });
 
 /**
  * 专供大模型 Agent 调用的底层数据库检索函数
