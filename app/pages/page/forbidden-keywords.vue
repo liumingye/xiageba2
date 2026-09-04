@@ -85,6 +85,8 @@ const { data, pending, error } = await useFetch<{
 </template>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .word {
   @apply inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-color-300 border border-color-300;
 }

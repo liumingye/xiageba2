@@ -651,6 +651,8 @@ useSeoMeta({
 </template>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .select {
   @apply w-full appearance-none bg-color-100 text-color-300 hover:bg-color-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500;
 }

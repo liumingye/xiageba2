@@ -487,18 +487,6 @@ watch(
 );
 </script>
 
-<style scoped>
-.badge {
-  @apply border border-primary-600 text-primary-600 text-xs;
-  padding: 1px 3px;
-  border-radius: 4px;
-  margin-right: 2px;
-  &:last-child {
-    margin-right: 0;
-  }
-}
-</style>
-
 <template>
   <div class="min-h-screen pb-4 md:pb-6">
     <TopBar :search-query="searchQuery" @search="performSearch" />
@@ -963,12 +951,24 @@ watch(
 </template>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .btn {
   @apply flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed disabled:pointer-events-none border border-color-300 hover:border-primary-500;
 }
 
 .select {
   @apply w-full appearance-none bg-color-100 text-color-300 hover:bg-color-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500;
+}
+
+.badge {
+  @apply border border-primary-600 text-primary-600 text-xs;
+  padding: 1px 3px;
+  border-radius: 4px;
+  margin-right: 2px;
+  &:last-child {
+    margin-right: 0;
+  }
 }
 
 .modal-leave-active {
@@ -990,4 +990,4 @@ watch(
 .modal-leave-to .modal-content {
   transform: scale(0.985) translateY(0);
 }
-</style>
+</>

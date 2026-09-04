@@ -137,6 +137,8 @@ const handleFocusOut = (event: FocusEvent) => {
 </template>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .label {
   @apply flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-color-300 hover:bg-color-300;
 }

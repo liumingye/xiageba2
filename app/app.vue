@@ -28,11 +28,11 @@ if (import.meta.client && map[location.host]) {
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <UApp>
     <NuxtAnnouncer />
     <NuxtRouteAnnouncer />
     <NuxtLoadingIndicator color="#3b82f6" :height="2" />
     <NuxtPage :keepalive="keepalive" />
     <Toast :toasts="toasts" @remove="remove" />
-  </div>
+  </UApp>
 </template>

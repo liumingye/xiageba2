@@ -80,6 +80,8 @@ const goToPage = (page: number) => {
 </template>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .btn {
   @apply rounded text-sm transition-colors shadow-sm h-9 border border-color-300 hover:text-white bg-color-100 hover:bg-primary-500 px-2 min-w-9;
 

@@ -3,6 +3,8 @@ const year = new Date().getFullYear();
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .link {
   @apply text-sm text-color-400 hover:text-color-200 transition-colors;
 }
@@ -10,9 +12,7 @@ const year = new Date().getFullYear();
 
 <template>
   <footer class="mt-8 text-center">
-    <p class="text-sm">
-      &copy; {{ year }} 全盘搜 - 公开网盘资源搜索引擎
-    </p>
+    <p class="text-sm">&copy; {{ year }} 全盘搜 - 公开网盘资源搜索引擎</p>
     <div class="flex items-center justify-center gap-x-3 mt-2 flex-wrap">
       <NuxtLink to="/page/policy" class="link">免责声明</NuxtLink>
       <NuxtLink to="/page/agree" class="link">服务协议</NuxtLink>

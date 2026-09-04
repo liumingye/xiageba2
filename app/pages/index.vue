@@ -814,6 +814,8 @@ const getPic = (url: string) => {
 </template>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .mask-bottom {
   mask: linear-gradient(
     180deg,

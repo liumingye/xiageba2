@@ -45,7 +45,7 @@ RUN pnpm install --frozen-lockfile
 # --- 源码 & 构建 ---
 COPY . .
 
-RUN DATABASE_URL="postgresql://placeholder:5432/db" npx prisma generate
+RUN DATABASE_URL="postgresql://placeholder:5432/db" PRISMA_SQL_SKIP_PLANNER=true npx prisma generate
 
 RUN pnpm build
 
@@ -94,7 +94,7 @@ COPY --from=build /app/prisma         ./prisma
 COPY --from=build /app/prisma.config.ts ./
 
 # 重生成 Prisma Client（确保 debian-openssl-3.0.x 二进制兼容）
-RUN DATABASE_URL="postgresql://placeholder:5432/db" npx prisma generate
+RUN DATABASE_URL="postgresql://placeholder:5432/db" PRISMA_SQL_SKIP_PLANNER=true npx prisma generate
 
 # --- 运行环境 ---
 ENV NODE_ENV=production

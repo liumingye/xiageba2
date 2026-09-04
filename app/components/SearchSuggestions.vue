@@ -150,6 +150,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .suggestions-container {
   @apply bg-color-100 border border-color-300 rounded-xl;
   position: absolute;

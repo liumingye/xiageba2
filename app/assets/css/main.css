@@ -1,6 +1,88 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* 基础标题样式 (对应 addBase) */
+@layer base {
+  h1 {
+    @apply text-3xl font-bold;
+  }
+  h2 {
+    @apply text-2xl font-bold;
+  }
+  h3 {
+    @apply text-xl font-bold;
+  }
+  h4 {
+    @apply text-lg font-bold;
+  }
+  h5 {
+    @apply text-sm font-bold;
+  }
+  h6 {
+    @apply text-xs font-bold;
+  }
+}
+
+/* 自定义工具类 (对应 addUtilities) */
+@utility text-color-100 {
+  @apply text-zinc-950 dark:text-zinc-100;
+}
+@utility text-color-200 {
+  @apply text-zinc-900 dark:text-zinc-200;
+}
+@utility text-color-300 {
+  @apply text-zinc-800 dark:text-zinc-300;
+}
+@utility text-color-400 {
+  @apply text-zinc-700 dark:text-zinc-400;
+}
+@utility text-color-500 {
+  @apply text-zinc-600 dark:text-zinc-500;
+}
+
+@utility border-color-100 {
+  @apply border-zinc-100 dark:border-zinc-950;
+}
+@utility border-color-200 {
+  @apply border-zinc-200 dark:border-zinc-900;
+}
+@utility border-color-300 {
+  @apply border-zinc-300 dark:border-zinc-800;
+}
+@utility border-color-400 {
+  @apply border-zinc-400 dark:border-zinc-700;
+}
+@utility border-color-500 {
+  @apply border-zinc-500 dark:border-zinc-600;
+}
+
+@utility bg-color-100 {
+  @apply bg-white dark:bg-zinc-900;
+}
+@utility bg-color-200 {
+  @apply bg-zinc-100 dark:bg-zinc-900;
+}
+@utility bg-color-300 {
+  @apply bg-zinc-100 dark:bg-zinc-800;
+}
+@utility bg-color-400 {
+  @apply bg-zinc-200 dark:bg-zinc-700;
+}
+@utility bg-color-500 {
+  @apply bg-zinc-300 dark:bg-zinc-600;
+}
+@utility bg-color-600 {
+  @apply bg-zinc-400 dark:bg-zinc-400;
+}
+@utility bg-color-700 {
+  @apply bg-zinc-500 dark:bg-zinc-300;
+}
+@utility bg-color-800 {
+  @apply bg-zinc-600 dark:bg-zinc-200;
+}
+@utility bg-color-900 {
+  @apply bg-zinc-700 dark:bg-zinc-100;
+}
 
 /**/
 html[data-theme="light"] {
@@ -32,12 +114,6 @@ html[data-theme="dark"] {
   --color-text-300: rgb(212 212 216);
   --border: #27272a;
   --primary: #16a34a;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
 }
 
 body {

@@ -1,2 +1,5 @@
 packages:
   - packages/netdisk-sdk-js/**
+
+ignoredBuiltDependencies:
+  - '@prisma/engines'
