@@ -534,7 +534,9 @@ function buildCategoryUrl(
     };
     if (genre) selectedCategories["类型"] = genre;
     if (region) selectedCategories["地区"] = region;
-    const tags = [genre, region, year, platform].filter(Boolean).join(",");
+    const tags = [selectedCategories["形式"], genre, region, year, platform]
+      .filter(Boolean)
+      .join(",");
     return `https://m.douban.com/rexxar/api/v2/tv/recommend?refresh=0&start=${start}&count=${limit}&selected_categories=${encodeURIComponent(JSON.stringify(selectedCategories))}&uncollect=false&score_range=0,10&tags=${encodeURIComponent(tags)}&sort=${sort}`;
   }
 

@@ -172,6 +172,7 @@ export default defineTask({
                   ) {
                     continue;
                   }
+                  // path可能需要encodeURIComponent
                   allPanPaths.push(path);
                   hasValidPath = true;
                 }
