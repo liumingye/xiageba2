@@ -20,7 +20,6 @@ import {
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
-import { useToast } from "~/composables/useToast";
 import { useClipboard } from "@vueuse/core";
 import { get, post, del, patch } from "~/utils/request";
 import {
@@ -73,7 +72,7 @@ const totalPages = computed(() => Math.ceil(total.value / pageSize) || 1);
 const loadConfigs = async () => {
   const data = await get("/api/admin/storage/config");
   configs.value = data.data || [];
-  if (configs.value.length > 0 && !selectedConfigId.value) {
+  if (configs.value.length > 0 && !selectedConfigId.value && configs.value[0]) {
     selectedConfigId.value = configs.value[0].id;
   }
 };
@@ -94,7 +93,11 @@ const loadFiles = async () => {
     files.value = data.data || [];
     total.value = data.total || 0;
   } catch {
-    toast.error("加载文件列表失败");
+    toast.add({
+      title: "加载文件列表失败",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     isLoading.value = false;
   }
@@ -125,11 +128,19 @@ const handleFileChange = (e: Event) => {
 
 const handleUpload = async () => {
   if (!uploadFile.value) {
-    toast.error("请选择要上传的文件");
+    toast.add({
+      title: "请选择要上传的文件",
+      icon: "i-lucide-x",
+      color: "error",
+    });
     return;
   }
   if (!selectedConfigId.value) {
-    toast.error("请先选择存储配置");
+    toast.add({
+      title: "请先选择存储配置",
+      icon: "i-lucide-x",
+      color: "error",
+    });
     return;
   }
   isUploading.value = true;
@@ -144,16 +155,28 @@ const handleUpload = async () => {
       formData,
     );
     if (data.skipped) {
-      toast.info(data.message || "文件已存在，已跳过");
+      toast.add({
+        title: data.message || "文件已存在，已跳过",
+        icon: "i-lucide-info",
+        color: "info",
+      });
     } else {
-      toast.success("上传成功");
+      toast.add({
+        title: "上传成功",
+        icon: "i-lucide-check",
+        color: "success",
+      });
     }
     uploadFile.value = null;
     uploadPath.value = "";
     showUpload.value = false;
     await loadFiles();
   } catch (err: any) {
-    toast.error(err?.response?.data?.message || "上传失败，请重试");
+    toast.add({
+      title: err?.response?.data?.message || "上传失败，请重试",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     isUploading.value = false;
   }
@@ -169,10 +192,18 @@ const handleDelete = async (file: StorageFile) => {
     await del(
       `/api/admin/storage/files/${encodeURIComponent(file.key)}?configId=${encodeURIComponent(selectedConfigId.value)}`,
     );
-    toast.success("删除成功");
+    toast.add({
+      title: "删除成功",
+      icon: "i-lucide-check",
+      color: "success",
+    });
     await loadFiles();
   } catch (err: any) {
-    toast.error(err?.response?.data?.message || "删除失败，请重试");
+    toast.add({
+      title: err?.response?.data?.message || "删除失败，请重试",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     deletingKey.value = null;
   }
@@ -183,9 +214,17 @@ const { copy: copyText } = useClipboard();
 const copyUrl = async (file: StorageFile) => {
   try {
     await copyText(file.url);
-    toast.success("链接已复制");
+    toast.add({
+      title: "链接已复制",
+      icon: "i-lucide-check",
+      color: "success",
+    });
   } catch {
-    toast.error("复制失败");
+    toast.add({
+      title: "复制失败",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 
@@ -208,7 +247,11 @@ const confirmRename = async () => {
   if (!renameTarget.value || !selectedConfigId.value) return;
   const newName = renameValue.value.trim();
   if (!newName) {
-    toast.error("文件名不能为空");
+    toast.add({
+      title: "文件名不能为空",
+      icon: "i-lucide-x",
+      color: "error",
+    });
     return;
   }
   if (newName === renameTarget.value.name) {
@@ -221,11 +264,19 @@ const confirmRename = async () => {
       `/api/admin/storage/files/${encodeURIComponent(renameTarget.value.key)}?configId=${encodeURIComponent(selectedConfigId.value)}`,
       { newName },
     );
-    toast.success("重命名成功");
+    toast.add({
+      title: "重命名成功",
+      icon: "i-lucide-check",
+      color: "success",
+    });
     cancelRename();
     await loadFiles();
   } catch (err: any) {
-    toast.error(err?.response?.data?.message || "重命名失败，请重试");
+    toast.add({
+      title: err?.response?.data?.message || "重命名失败，请重试",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     isRenaming.value = false;
   }
@@ -304,7 +355,7 @@ onMounted(async () => {
         v-if="showUpload"
         class="card p-4 mb-4 flex flex-wrap items-end gap-4"
       >
-        <div class="flex-1 min-w-[200px]">
+        <div class="flex-1 min-w-50">
           <label class="block text-color-400 text-sm mb-2">选择文件 *</label>
           <input
             type="file"
@@ -312,7 +363,7 @@ onMounted(async () => {
             @change="handleFileChange"
           />
         </div>
-        <div class="flex-1 min-w-[200px]">
+        <div class="flex-1 min-w-50">
           <label class="block text-color-400 text-sm mb-2"
             >上传路径（可选）</label
           >

@@ -138,7 +138,7 @@ watch(normalList, () => {
     >
       <component
         :is="iconMap[item.icon] || Megaphone"
-        class="w-5 h-5 flex-shrink-0"
+        class="w-5 h-5 shrink-0"
         :class="iconColorMap[item.icon]"
       />
       <span class="text-sm font-medium truncate">{{ item.title }}</span>
@@ -148,9 +148,9 @@ watch(normalList, () => {
   <!-- 滚动公告（正常显示方式） -->
   <div
     v-if="normalList.length > 0"
-    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-color-100 rounded-lg border border-color-100"
+    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-muted rounded-lg border border-muted"
   >
-    <div class="items-center gap-1.5 flex-shrink-0 md:flex hidden">
+    <div class="items-center gap-1.5 shrink-0 md:flex hidden">
       <Megaphone class="w-4 h-4 text-primary-500" />
       <span class="text-sm text-color-400 font-medium">公告</span>
     </div>
@@ -164,13 +164,13 @@ watch(normalList, () => {
         >
           <component
             :is="iconMap[normalList[scrollIndex]?.icon || 'INFO'] || Info"
-            class="w-3.5 h-3.5 flex-shrink-0 mr-1.5"
+            class="w-3.5 h-3.5 shrink-0 mr-1.5"
             :class="iconColorMap[normalList[scrollIndex]?.icon || 'INFO']"
           />
           <span class="truncate">{{ normalList[scrollIndex]?.title }}</span>
           <span
             v-if="normalList[scrollIndex]"
-            class="text-color-500 text-sm ml-1 flex-shrink-0"
+            class="text-color-500 text-sm ml-1 shrink-0"
           >
             <NuxtTime :datetime="normalList[scrollIndex]!.createdAt" relative />
           </span>
@@ -179,10 +179,7 @@ watch(normalList, () => {
     </div>
 
     <!-- 指示点 -->
-    <div
-      v-if="normalList.length > 1"
-      class="flex items-center gap-1 flex-shrink-0"
-    >
+    <div v-if="normalList.length > 1" class="flex items-center gap-1 shrink-0">
       <button
         v-for="(_, i) in normalList"
         :key="i"
@@ -196,7 +193,7 @@ watch(normalList, () => {
 
     <NuxtLink
       to="/announcement"
-      class="flex items-center text-sm text-color-300 hover:text-primary-400 transition-colors flex-shrink-0"
+      class="flex items-center text-sm text-color-300 hover:text-primary-400 transition-colors shrink-0"
     >
       更多
       <ChevronRight class="w-3 h-3" />
@@ -227,7 +224,7 @@ watch(normalList, () => {
 
             <div class="flex items-start gap-4 mb-4">
               <div
-                class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
                 :class="dialogIconBgMap[currentDialog.icon]"
               >
                 <component

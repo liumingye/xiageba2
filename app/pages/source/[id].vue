@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { Download, FolderOpen, Clock, Link, Loader2 } from "@lucide/vue";
-import TopBar from "~/components/TopBar.vue";
-import SiteFooter from "~/components/SiteFooter.vue";
 import Qrcode from "~/components/Qrcode.vue";
 import {
   getStorageTypeFriendShortFromFilter,
   type PanFilter,
 } from "#shared/utils";
 import { useMusicStore } from "~/stores/music";
-import { renderSafeMarkdown } from "~/utils/markdown";
+import { safeMarkdownPlugins } from "~/utils/comark";
 import type { ApiErrorResponse } from "~/utils/type";
 import { useShare } from "@vueuse/core";
 
@@ -91,12 +89,6 @@ watch(
 
 const source = computed(() => responseData.value?.data);
 const similarList = computed(() => responseData.value?.similar || []);
-
-const renderedDescription = computed(() =>
-  source.value?.description
-    ? renderSafeMarkdown(source.value.description)
-    : "",
-);
 
 const pageTitle = computed(() => {
   if (source.value.title) {
@@ -212,192 +204,210 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar />
-    <div class="max-w-4xl mx-auto px-2">
-      <main>
-        <div
-          v-if="loading"
-          class="space-y-6"
-          aria-busy="true"
-          aria-label="正在加载"
-        >
-          <section class="card sm:p-6 p-3 animate-pulse">
-            <div class="flex flex-col gap-6">
-              <div class="w-full bg-color-300 rounded-xl h-32" />
-              <div class="space-y-3">
-                <div class="h-6 bg-color-300 rounded w-3/4" />
-                <div class="h-4 bg-color-300 rounded w-1/2" />
-              </div>
-            </div>
-          </section>
+  <div v-if="loading" class="space-y-6" aria-busy="true" aria-label="正在加载">
+    <UCard
+      :ui="{
+        body: 'sm:p-6 p-3 animate-pulse',
+      }"
+    >
+      <template #header>
+        <div class="flex flex-col gap-6">
+          <div class="space-y-3">
+            <div class="h-6 bg-elevated rounded w-1/2" />
+            <div class="h-4 bg-elevated rounded w-1/4" />
+          </div>
         </div>
+      </template>
 
-        <div v-else-if="source" class="space-y-6">
-          <article class="card sm:p-6 p-3">
-            <header
-              class="flex items-start gap-4 mb-4 border-b border-color-300 pb-4"
-            >
-              <div class="flex-1 min-w-0">
-                <h1
-                  class="text-xl font-semibold mb-2 line-clamp-2 text-color-300"
-                >
-                  {{ source.title }}
-                </h1>
-                <div class="flex items-center gap-3 text-sm text-gray-500">
-                  <span class="flex items-center gap-1">
-                    <Link class="w-4 h-4" />
-                    {{ getStorageTypeFriendFromFilter(source.type) }}
-                  </span>
-                  <span class="flex items-center gap-1">
-                    <Clock class="w-4 h-4" />
-                    <NuxtTime
-                      :datetime="source.createdAt"
-                      year="numeric"
-                      month="short"
-                      day="numeric"
-                      hour="numeric"
-                      minute="numeric"
-                      second="numeric"
-                    />
-                  </span>
-                </div>
-              </div>
-            </header>
+      <div class="flex flex-col gap-3">
+        <div class="h-6 bg-elevated rounded w-1/4" />
+        <div class="w-full bg-elevated rounded-xl h-32" />
+      </div>
 
-            <div v-if="source.description" class="mb-6">
-              <div class="font-bold text-color-300 mb-3">
-                <span class="text-lg">描述：</span>
-                <div v-html="renderedDescription" />
-              </div>
-            </div>
-
-            <section v-if="source.menu || fetchedMenu" class="mb-6">
-              <div class="font-bold text-color-300 mb-3 text-lg">文件内容:</div>
-              <pre
-                class="bg-color-300 p-2 rounded-sm text-xs border border-color-300 max-h-56 overflow-auto text-color-300"
-                >{{ fetchedMenu || source.menu }}</pre
-              >
-            </section>
-
-            <section v-else-if="!source.menu" class="mb-6">
-              <div class="font-bold text-color-300 mb-3 text-lg">文件内容:</div>
-              <div
-                class="flex flex-col items-center justify-center gap-3 bg-color-300 border border-color-300 rounded-sm p-6 text-center"
-              >
-                <p class="text-xs text-zinc-500">
-                  该资源暂未生成文件菜单，点击按钮获取文件目录。
-                </p>
-                <button
-                  class="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:bg-primary-400 disabled:cursor-not-allowed"
-                  :disabled="fetchingMenu"
-                  @click="fetchMenu"
-                >
-                  <Loader2 v-if="fetchingMenu" class="w-4 h-4 animate-spin" />
-                  <FolderOpen v-else class="w-4 h-4" />
-                  {{ fetchingMenu ? "获取中..." : "获取菜单" }}
-                </button>
-                <p v-if="menuError" class="text-xs text-red-400">
-                  {{ menuError }}
-                </p>
-              </div>
-            </section>
-
-            <footer>
-              <div v-if="source.status === 1" class="space-y-3">
-                <h4 class="text-color-300">获取下载链接:</h4>
-
-                <!-- 未获取前：提示 + 获取按钮 -->
-                <div v-if="!fetchedUrl && !fetchingUrl" class="space-y-3">
-                  <p class="text-xs text-zinc-500">
-                    点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存，失效后可重新获取。
-                  </p>
-                  <button
-                    class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:bg-primary-400"
-                    :disabled="fetchingUrl"
-                    @click="fetchDirectUrl"
-                  >
-                    <Download v-if="!fetchingUrl" class="w-5 h-5" />
-                    {{ fetchingUrl ? "获取中..." : "获取下载链接" }}
-                  </button>
-                  <p v-if="fetchError" class="text-xs text-red-400">
-                    {{ fetchError }}
-                  </p>
-                </div>
-
-                <!-- 获取中 / 已获取 / 报错 → 内嵌公共面板（不弹窗） -->
-                <DownloadLinkPanel
-                  v-else
-                  :as-modal="false"
-                  :title="source.title"
-                  :url="fetchedUrl"
-                  :loading="fetchingUrl"
-                  :error="fetchError"
-                  :hide-qr-on-mobile="false"
-                />
-              </div>
-              <div v-else>
-                <p class="text-center text-zinc-500">该资源已被删除或不存在</p>
-              </div>
-            </footer>
-          </article>
-
-          <section v-if="similarList.length" class="card md:p-6 p-3">
-            <h4 class="text-color-300 mb-2 md:mb-4">相似资源</h4>
-            <ul class="space-y-2">
-              <li v-for="item in similarList" :key="item.id">
-                <NuxtLink
-                  :to="`/source/${item.id}`"
-                  class="flex items-center gap-2 p-3 bg-color-300 hover:bg-color-400 rounded-lg transition-colors"
-                >
-                  <span
-                    class="inline-flex items-center justify-center px-2 py-0.5 text-xs rounded bg-primary-500/90 text-white flex-shrink-0"
-                  >
-                    {{ getStorageTypeFriendShortFromFilter(item.type) }}
-                  </span>
-                  <span class="text-color-300 text-sm truncate">{{
-                    item.title
-                  }}</span>
-                </NuxtLink>
-              </li>
-            </ul>
-          </section>
-
-          <section class="card sm:p-6 p-3 flex gap-2">
-            <button
-              class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-color-300 hover:bg-color-400 text-color-300 rounded-lg transition-colors"
-              @click="goBack"
-            >
-              返回上一页
-            </button>
-            <ClientOnly>
-              <button
-                v-if="isShareSupported"
-                class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-color-300 hover:bg-color-400 text-color-300 rounded-lg transition-colors"
-                @click="shareUrl"
-              >
-                分享
-              </button>
-            </ClientOnly>
-          </section>
+      <template #footer>
+        <div class="flex flex-col gap-3">
+          <div class="h-4 bg-elevated rounded w-1/4" />
+          <div class="h-12 bg-elevated rounded" />
         </div>
-
-        <div v-else class="card p-8 text-center">
-          <FolderOpen class="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-          <h2 class="text-lg font-medium text-zinc-400 mb-2">资源不存在</h2>
-          <p class="text-sm text-zinc-500">该资源可能已被删除或不存在</p>
-          <button
-            class="mt-4 px-6 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
-            @click="goBack"
-          >
-            返回上一页
-          </button>
-        </div>
-      </main>
-
-      <Qrcode />
-
-      <SiteFooter />
-    </div>
+      </template>
+    </UCard>
   </div>
+
+  <div v-else-if="source" class="space-y-6">
+    <UCard
+      :ui="{
+        body: 'flex flex-col gap-6',
+      }"
+    >
+      <template #header>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl font-semibold mb-2 line-clamp-2 text-color-300">
+            {{ source.title }}
+          </h1>
+          <div class="flex items-center gap-3 text-sm text-gray-500">
+            <span class="flex items-center gap-1">
+              <Link class="w-4 h-4" />
+              {{ getStorageTypeFriendFromFilter(source.type) }}
+            </span>
+            <span class="flex items-center gap-1">
+              <Clock class="w-4 h-4" />
+              <NuxtTime
+                :datetime="source.createdAt"
+                year="numeric"
+                month="short"
+                day="numeric"
+                hour="numeric"
+                minute="numeric"
+                second="numeric"
+              />
+            </span>
+          </div>
+        </div>
+      </template>
+
+      <div
+        class="text-color-300 wrap-break-word"
+        v-if="source.description"
+      >
+        <span class="font-bold text-lg">描述：</span>
+        <Markdown :value="source.description" :plugins="safeMarkdownPlugins" />
+      </div>
+
+      <section v-if="source.menu || fetchedMenu">
+        <div class="font-bold text-color-300 mb-3 text-lg">文件内容:</div>
+        <pre
+          class="bg-elevated p-2 rounded-sm text-xs border border-muted max-h-56 overflow-auto text-color-300"
+          >{{ fetchedMenu || source.menu }}</pre
+        >
+      </section>
+
+      <section v-else-if="!source.menu">
+        <div class="font-bold text-color-300 mb-3 text-lg">文件内容:</div>
+        <div
+          class="flex flex-col items-center justify-center gap-3 bg-elevated border border-muted rounded-sm p-6 text-center"
+        >
+          <p class="text-sm text-muted">
+            该资源暂未生成文件菜单，点击按钮获取文件目录。
+          </p>
+          <UButton
+            size="lg"
+            :disabled="fetchingMenu"
+            @click="fetchMenu"
+            :icon="fetchingMenu ? 'i-lucide-loader-2' : 'i-lucide-folder'"
+          >
+            {{ fetchingMenu ? "获取中..." : "获取菜单" }}
+          </UButton>
+          <p v-if="menuError" class="text-xs text-red-400">
+            {{ menuError }}
+          </p>
+        </div>
+      </section>
+
+      <template #footer>
+        <div v-if="source.status === 1" class="space-y-3">
+          <h4>获取下载链接:</h4>
+
+          <div v-if="!fetchedUrl && !fetchingUrl" class="space-y-3">
+            <p class="text-xs text-zinc-500">
+              点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存，失效后可重新获取。
+            </p>
+            <UButton
+              icon="i-lucide-download"
+              block
+              :disabled="fetchingUrl"
+              @click="fetchDirectUrl"
+              class="h-12"
+            >
+              {{ fetchingUrl ? "获取中..." : "获取下载链接" }}
+            </UButton>
+            <p v-if="fetchError" class="text-xs text-red-400">
+              {{ fetchError }}
+            </p>
+          </div>
+
+          <DownloadLinkPanel
+            v-else
+            :as-modal="false"
+            :title="source.title"
+            :url="fetchedUrl"
+            :loading="fetchingUrl"
+            :error="fetchError"
+            :hide-qr-on-mobile="false"
+          />
+        </div>
+        <div v-else>
+          <p class="text-center text-error">该资源已被删除或不存在</p>
+        </div>
+      </template>
+    </UCard>
+
+    <UCard
+      v-if="similarList.length"
+      :ui="{
+        body: 'md:p-6 p-3',
+      }"
+    >
+      <template #header>
+        <h4>相似资源</h4>
+      </template>
+      <ul class="space-y-2">
+        <li v-for="item in similarList" :key="item.id">
+          <NuxtLink
+            :to="`/source/${item.id}`"
+            class="flex items-center gap-2 p-3 bg-elevated hover:bg-accented rounded-lg transition-colors"
+          >
+            <UBadge>{{
+              getStorageTypeFriendShortFromFilter(item.type)
+            }}</UBadge>
+            <span class="text-color-300 text-sm truncate">{{
+              item.title
+            }}</span>
+          </NuxtLink>
+        </li>
+      </ul>
+    </UCard>
+
+    <UCard
+      :ui="{
+        body: 'sm:p-6 p-3 flex gap-2',
+      }"
+    >
+      <UButton
+        icon="i-lucide-arrow-left"
+        block
+        :disabled="fetchingUrl"
+        @click="goBack"
+        class="h-12"
+      >
+        返回上一页
+      </UButton>
+
+      <ClientOnly>
+        <UButton
+          v-if="isShareSupported"
+          icon="i-lucide-share"
+          block
+          :disabled="fetchingUrl"
+          @click="shareUrl"
+          class="h-12"
+        >
+          分享本页
+        </UButton>
+      </ClientOnly>
+    </UCard>
+  </div>
+
+  <div v-else class="card p-8 text-center">
+    <FolderOpen class="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+    <h2 class="text-lg font-medium text-zinc-400 mb-2">资源不存在</h2>
+    <p class="text-sm text-zinc-500">该资源可能已被删除或不存在</p>
+    <button
+      class="mt-4 px-6 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
+      @click="goBack"
+    >
+      返回上一页
+    </button>
+  </div>
+
+  <Qrcode />
 </template>

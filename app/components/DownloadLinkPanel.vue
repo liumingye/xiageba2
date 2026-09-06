@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
 const displayFunnyText = computed(() => innerFunnyText.value || "");
 
 // ---------------- 衍生状态 ----------------
-const { success, error: showError } = useToast();
+const toast = useToast();
 const { copy } = useClipboard();
 const isLocked = useScrollLock(window);
 
@@ -143,11 +143,20 @@ const handleCopyUrl = async () => {
   try {
     await copy(props.url);
     message.value = "复制成功";
-    success("复制成功");
+    toast.add({
+      title: "复制资源地址成功",
+      icon: "i-lucide-check",
+      duration: 2000,
+    });
     emit("copied", { url: props.url });
   } catch {
     message.value = "复制失败";
-    showError("复制失败");
+    toast.add({
+      title: "复制资源地址失败",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
   }
 };
 
@@ -226,7 +235,10 @@ watch(
                     </span>
                     APP 扫码获取</span
                   >
-                  <div v-if="resolvedQr" class="flex-shrink-0 border border-color-300 rounded-lg">
+                  <div
+                    v-if="resolvedQr"
+                    class="shrink-0 border border-color-300 rounded-lg"
+                  >
                     <img
                       :src="resolvedQr"
                       alt="下载链接二维码"
@@ -235,7 +247,7 @@ watch(
                   </div>
                   <div
                     v-else
-                    class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0"
+                    class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center shrink-0"
                   >
                     <QrCode class="w-10 h-10 text-zinc-600" />
                   </div>
@@ -256,23 +268,31 @@ watch(
                   >
                 </p>
                 <div class="w-full flex items-center justify-center gap-2">
-                  <button
-                    class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600"
-                    type="button"
+                  <UButton
+                    color="primary"
+                    variant="outline"
+                    block
+                    size="lg"
                     @click="handleCopyUrl"
                   >
-                    <Clipboard class="w-4 h-4" />
+                    <template #leading>
+                      <Clipboard class="w-4 h-4" />
+                    </template>
                     {{ message }}
-                  </button>
-                  <a
-                    :href="url"
+                  </UButton>
+                  <UButton
+                    color="primary"
+                    variant="solid"
+                    block
+                    size="lg"
                     target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all h-9 px-4 py-2 flex-1 bg-primary-600 hover:bg-primary-700 text-white"
+                    :href="url"
                   >
-                    <ExternalLink class="w-4 h-4" />
+                    <template #leading>
+                      <ExternalLink class="w-4 h-4" />
+                    </template>
                     打开链接
-                  </a>
+                  </UButton>
                 </div>
                 <p class="text-xs text-gray-500 text-center">
                   网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
@@ -326,7 +346,10 @@ watch(
               </span>
               APP 扫码获取</span
             >
-            <div v-if="resolvedQr" class="flex-shrink-0 border border-color-300 rounded-lg">
+            <div
+              v-if="resolvedQr"
+              class="shrink-0 border border-color-300 rounded-lg"
+            >
               <img
                 :src="resolvedQr"
                 alt="下载链接二维码"
@@ -335,7 +358,7 @@ watch(
             </div>
             <div
               v-else
-              class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0"
+              class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center shrink-0"
             >
               <QrCode class="w-10 h-10 text-zinc-600" />
             </div>
@@ -357,23 +380,31 @@ watch(
           >
         </p>
         <div class="w-full flex items-center justify-center gap-2">
-          <button
-            class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all border h-9 px-4 py-2 flex-1 border-primary-600 bg-primary-800/10 hover:bg-primary-800/30 text-green-600"
-            type="button"
+          <UButton
+            color="primary"
+            variant="outline"
+            block
+            size="lg"
             @click="handleCopyUrl"
           >
-            <Clipboard class="w-4 h-4" />
+            <template #leading>
+              <Clipboard class="w-4 h-4" />
+            </template>
             {{ message }}
-          </button>
-          <a
-            :href="url"
+          </UButton>
+          <UButton
+            color="primary"
+            variant="solid"
+            block
+            size="lg"
             target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all h-9 px-4 py-2 flex-1 bg-primary-600 hover:bg-primary-700 text-white"
+            :href="url"
           >
-            <ExternalLink class="w-4 h-4" />
+            <template #leading>
+              <ExternalLink class="w-4 h-4" />
+            </template>
             打开链接
-          </a>
+          </UButton>
         </div>
         <p class="text-xs text-gray-500 text-center">
           网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />

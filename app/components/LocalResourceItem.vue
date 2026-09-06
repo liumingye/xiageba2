@@ -57,7 +57,7 @@ const emit = defineEmits<{
         </NuxtLink>
         <div class="flex gap-2">
           <div
-            class="bg-color-300 px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
           >
             <div
               v-if="item.type !== 'other'"
@@ -67,7 +67,7 @@ const emit = defineEmits<{
           </div>
           <div
             v-if="item.isSelf"
-            class="bg-gradient-to-br from-amber-900 to-orange-500 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            class="bg-linear-to-br from-amber-900 to-orange-500 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
           >
             独家精选
           </div>
@@ -76,45 +76,41 @@ const emit = defineEmits<{
               v-if="checkStatus === 'valid'"
               class="dark:bg-primary-800/60 bg-primary-600/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
-              <CheckCircle
-                class="w-4 h-4 text-[var(--white)] flex-shrink-0 mr-1"
-              />链接有效
+              <CheckCircle class="w-4 h-4 text-white shrink-0 mr-1" />链接有效
             </div>
             <div
               v-if="checkStatus === 'invalid'"
               class="bg-error-800/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
-              <XCircle class="w-4 h-4 flex-shrink-0 mr-1" />可能失效
+              <XCircle class="w-4 h-4 shrink-0 mr-1" />可能失效
             </div>
             <div
               v-if="checkStatus === 'checking'"
-              class="bg-color-300 px-2 py-1 rounded-sm text-sm self-start flex items-center"
+              class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
-              <Loader2
-                class="w-4 h-4 animate-spin flex-shrink-0 mr-1"
-              />正在检测
+              <Loader2 class="w-4 h-4 animate-spin shrink-0 mr-1" />正在检测
             </div>
           </ClientOnly>
         </div>
       </div>
       <template v-if="item.menu">
-        <div class="text-sm mb-2 text-color-300 font-bold">文件内容:</div>
+        <div class="text-sm mb-2 text-muted font-bold">文件内容:</div>
         <pre
           v-if="highlightMenu"
-          class="bg-color-300 p-2 rounded-sm text-xs border border-color-300 max-h-36 overflow-auto text-color-300"
+          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
           v-html="highlightMenu"
         ></pre>
         <pre
           v-else
-          class="bg-color-300 p-2 rounded-sm text-xs border border-color-300 max-h-36 overflow-auto text-color-300"
+          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
           >{{ item.menu }}</pre
         >
       </template>
     </div>
     <div
-      class="flex justify-between items-center gap-2 border-t border-color-300 mt-3 pt-3"
+      class="flex justify-between items-center gap-2 border-t border-muted mt-3 pt-3"
     >
-      <span class="text-xs text-color-500 flex items-center gap-1">
+      <span class="text-xs text-muted flex items-center gap-1">
         <Calendar class="w-3 h-3" />
         <NuxtTime
           :datetime="item.createdAt"
@@ -128,21 +124,25 @@ const emit = defineEmits<{
         />
       </span>
       <div class="flex items-center gap-2">
-        <button
+        <UButton
           v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
-          class="flex items-center gap-1 px-3 py-2 bg-primary-500/30 hover:bg-primary-500/50 text-color-200 hover:text-color-100 text-xs rounded-sm transition-colors flex-shrink-0"
+          variant="outline"
           @click.stop="emit('openTree', item)"
+          icon="i-lucide-folder"
+          :ui="{
+            leadingIcon: 'size-4',
+          }"
+          >目录</UButton
         >
-          <Folder class="w-3 h-3" />
-          目录
-        </button>
-        <button
-          class="flex items-center gap-1 px-3 py-2 bg-primary-500/30 hover:bg-primary-500/50 text-color-200 hover:text-color-100 text-xs rounded-sm transition-colors flex-shrink-0"
+        <UButton
+          variant="solid"
           @click.stop="emit('openModal', item)"
+          icon="i-lucide-download"
+          :ui="{
+            leadingIcon: 'size-4',
+          }"
+          >获取链接</UButton
         >
-          <Download class="w-3 h-3" />
-          获取链接
-        </button>
       </div>
     </div>
   </article>

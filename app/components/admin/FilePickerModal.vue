@@ -16,6 +16,7 @@ import {
 } from "@lucide/vue";
 import { get, post, del } from "~/utils/request";
 import { formatSize, isImage, isAudio, isVideo } from "~/utils/file";
+import { useScrollLock } from "@vueuse/core";
 
 interface S3ConfigItem {
   id: string;
@@ -33,6 +34,7 @@ interface FileItem {
 }
 
 const toast = useToast();
+const isScrollLocked = useScrollLock(window);
 
 const props = defineProps<{
   show: boolean;
@@ -67,6 +69,7 @@ watch(
   () => props.show,
   async (show) => {
     if (show) {
+      isScrollLocked.value = true;
       searchKeyword.value = "";
       currentPage.value = 1;
       selectedFileUrl.value = null;
@@ -80,6 +83,8 @@ watch(
         await loadConfigs();
       }
       await loadFiles();
+    } else {
+      isScrollLocked.value = false;
     }
   },
 );
@@ -88,7 +93,11 @@ const loadConfigs = async () => {
   try {
     const data = await get("/api/admin/storage/config");
     configs.value = data.data || [];
-    if (configs.value.length > 0 && !selectedConfigId.value) {
+    if (
+      configs.value.length > 0 &&
+      !selectedConfigId.value &&
+      configs.value[0]
+    ) {
       selectedConfigId.value = configs.value[0].id;
     }
   } catch {
@@ -168,7 +177,12 @@ const handleUpload = async () => {
     uploadPath.value = "";
     await loadFiles();
     if (data.skipped) {
-      toast.info(data.message || "文件已存在，已跳过");
+      toast.add({
+        title: data.message || "文件已存在，已跳过",
+        icon: "i-lucide-x",
+        color: "error",
+        duration: 2000,
+      });
     }
     // 自动选中新上传的文件
     if (data.data?.url) {
@@ -258,7 +272,7 @@ const pageNumbers = computed<(number | string)[]>(() => {
             </select>
 
             <!-- 搜索 -->
-            <div class="flex gap-2 flex-1 min-w-[200px]">
+            <div class="flex gap-2 flex-1 min-w-50">
               <input
                 v-model="searchKeyword"
                 type="text"
@@ -299,7 +313,7 @@ const pageNumbers = computed<(number | string)[]>(() => {
                 v-model="uploadPath"
                 type="text"
                 placeholder="自定义路径（可选，如 images/covers）"
-                class="flex-1 min-w-[160px] bg-color-300 border border-color-400 rounded-lg px-3 py-2 placeholder-gray-500 focus:outline-none focus:border-primary-500"
+                class="flex-1 min-w-40 bg-color-300 border border-color-400 rounded-lg px-3 py-2 placeholder-gray-500 focus:outline-none focus:border-primary-500"
               />
               <button
                 class="flex items-center gap-1 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
@@ -387,9 +401,8 @@ const pageNumbers = computed<(number | string)[]>(() => {
 
                   <!-- 悬浮删除按钮 -->
                   <button
-                    class="absolute top-2 left-2 p-1.5 hover:bg-red-600 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-wait"
+                    class="absolute top-2 left-2 p-1.5 hover:bg-red-600 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-wait disabled:opacity-100 disabled:bg-red-600"
                     :disabled="deletingKey === file.key"
-                    :class="{ '!opacity-100': deletingKey === file.key }"
                     @click.stop="handleDelete(file)"
                   >
                     <Loader2

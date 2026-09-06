@@ -470,7 +470,7 @@ export default defineEventHandler(async (event) => {
       if (finalMusicList.length > 0) {
         appendMarkdown += "\n\n---\n\n### 🎵 站内网盘资源直达\n";
         finalMusicList.forEach((music, index) => {
-          appendMarkdown += `${index + 1}. [${music.title} - ${music.artist}](${siteHost}/music/${music.id})\n`;
+          appendMarkdown += `${index + 1}. [${music.title} - ${music.artist}](${siteHost}/music/${music.id}){target="_blank"}\n`;
         });
       }
 
@@ -485,7 +485,7 @@ export default defineEventHandler(async (event) => {
             .replace(/\(/g, "（")
             .replace(/\)/g, "）");
 
-          appendMarkdown += `${index + 1}. [【${source.type}】${safeTitle}](${siteHost}/source/${source.id})\n`;
+          appendMarkdown += `${index + 1}. [【${source.type}】${safeTitle}](${siteHost}/source/${source.id}){target="_blank"}\n`;
         });
       }
 

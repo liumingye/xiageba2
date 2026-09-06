@@ -24,7 +24,6 @@ import {
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
-import { useToast } from "~/composables/useToast";
 import { useClipboard } from "@vueuse/core";
 import { get, post } from "~/utils/request";
 
@@ -180,7 +179,11 @@ const saveWechatConfig = async () => {
       savedWechat.value = false;
     }, 2000);
   } catch (e: any) {
-    toast.error(e?.response?.data?.message || "保存失败");
+    toast.add({
+      title: e?.response?.data?.message || "保存失败",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     savingWechat.value = false;
   }
@@ -192,7 +195,11 @@ const onPickWechatVerifyFile = (e: Event) => {
   if (file && /\.txt$/i.test(file.name)) {
     wechatVerifyFile.value = file;
   } else {
-    toast.error("请选择 .txt 文件");
+    toast.add({
+      title: "请选择 .txt 文件",
+      icon: "i-lucide-x",
+      color: "error",
+    });
     wechatVerifyFile.value = null;
     if (wechatVerifyFileInput.value) wechatVerifyFileInput.value.value = "";
   }
@@ -200,7 +207,11 @@ const onPickWechatVerifyFile = (e: Event) => {
 
 const uploadWechatVerifyFile = async () => {
   if (!wechatVerifyFile.value) {
-    toast.warning("请先选择 TXT 验证文件");
+    toast.add({
+      title: "请先选择 TXT 验证文件",
+      icon: "i-lucide-x",
+      color: "warning",
+    });
     return;
   }
   wechatVerifyUploading.value = true;
@@ -210,12 +221,20 @@ const uploadWechatVerifyFile = async () => {
     const res = await post("/api/admin/config/wechat-verify-file", fd);
     if (res?.success) {
       wechatConfig.value.verifyFileName = res.file_name || "";
-      toast.success("验证文件上传成功");
+      toast.add({
+        title: "验证文件上传成功",
+        icon: "i-lucide-check",
+        color: "success",
+      });
       wechatVerifyFile.value = null;
       if (wechatVerifyFileInput.value) wechatVerifyFileInput.value.value = "";
     }
   } catch (e: any) {
-    toast.error(e?.response?.data?.message || "上传失败");
+    toast.add({
+      title: e?.response?.data?.message || "上传失败",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     wechatVerifyUploading.value = false;
   }
@@ -223,14 +242,18 @@ const uploadWechatVerifyFile = async () => {
 
 const copyText = async (text: string, label?: string) => {
   try {
-    const ok = await copyToClipboard(text);
-    if (ok) {
-      toast.success(label ? `${label}已复制` : "已复制到剪贴板");
-    } else {
-      throw new Error("copy failed");
-    }
+    await copyToClipboard(text);
+    toast.add({
+      title: label ? `${label}已复制` : "已复制到剪贴板",
+      icon: "i-lucide-check",
+      color: "success",
+    });
   } catch {
-    toast.error("复制失败，请手动选择复制");
+    toast.add({
+      title: "复制失败，请手动选择复制",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 
@@ -643,7 +666,7 @@ const clearISRCache = async () => {
             <div
               class="w-10 h-10 shrink-0 bg-red-600 rounded-lg flex items-center justify-center"
             >
-              <Database class="w-5 h-5 text-[var(--white)]" />
+              <Database class="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 class="font-medium">缓存服务</h3>
@@ -714,7 +737,7 @@ const clearISRCache = async () => {
             <div
               class="w-10 h-10 shrink-0 bg-yellow-600 rounded-lg flex items-center justify-center"
             >
-              <Key class="w-5 h-5 text-[var(--white)]" />
+              <Key class="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 class="font-medium">AES-CBC 密钥</h3>
@@ -771,7 +794,7 @@ const clearISRCache = async () => {
             <div
               class="w-10 h-10 shrink-0 bg-emerald-600 rounded-lg flex items-center justify-center"
             >
-              <Filter class="w-5 h-5 text-[var(--white)]" />
+              <Filter class="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 class="font-medium">搜索结果过滤词</h3>
@@ -819,7 +842,7 @@ const clearISRCache = async () => {
             <div
               class="w-10 h-10 shrink-0 bg-purple-600 rounded-lg flex items-center justify-center"
             >
-              <ShieldAlert class="w-5 h-5 text-[var(--white)]" />
+              <ShieldAlert class="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 class="font-medium">转存广告过滤</h3>
@@ -877,7 +900,7 @@ const clearISRCache = async () => {
             <div
               class="w-10 h-10 shrink-0 bg-cyan-600 rounded-lg flex items-center justify-center"
             >
-              <Sparkles class="w-5 h-5 text-[var(--white)]" />
+              <Sparkles class="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 class="font-medium">AI 智能搜索</h3>
@@ -955,7 +978,7 @@ const clearISRCache = async () => {
             <div
               class="w-10 h-10 shrink-0 bg-orange-600 rounded-lg flex items-center justify-center"
             >
-              <TrendingUp class="w-5 h-5 text-[var(--white)]" />
+              <TrendingUp class="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 class="font-medium">热门搜索词</h3>
@@ -1048,7 +1071,7 @@ const clearISRCache = async () => {
             <div
               class="w-10 h-10 shrink-0 bg-blue-600 rounded-lg flex items-center justify-center"
             >
-              <Link class="w-5 h-5 text-[var(--white)]" />
+              <Link class="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 class="font-medium">PanCheck 接口</h3>
@@ -1134,7 +1157,7 @@ const clearISRCache = async () => {
               <div
                 class="w-10 h-10 shrink-0 bg-green-600 rounded-lg flex items-center justify-center"
               >
-                <MessageSquare class="w-5 h-5 text-[var(--white)]" />
+                <MessageSquare class="w-5 h-5 text-white" />
               </div>
               <div>
                 <h3 class="font-medium">基础配置</h3>

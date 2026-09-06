@@ -3,15 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
-import {
-  Plus,
-  Trash2,
-  Edit3,
-  Webhook,
-  Globe,
-  Search,
-  Zap,
-} from "@lucide/vue";
+import { Plus, Trash2, Edit3, Webhook, Globe, Search, Zap } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -225,12 +217,24 @@ const testApi = async () => {
       keyword: "凡人",
     });
     if (data.success) {
-      toast.add(`测试成功，搜索「凡人」找到 ${data.count} 条结果`, "success");
+      toast.add({
+        title: "测试成功，搜索「凡人」找到 ${data.count} 条结果",
+        icon: "i-lucide-check",
+        color: "success",
+      });
     } else {
-      toast.add(`测试失败，错误信息： ${data.message || "未知错误"}`, "error");
+      toast.add({
+        title: `测试失败，错误信息： ${data.message || "未知错误"}`,
+        icon: "i-lucide-x",
+        color: "error",
+      });
     }
   } catch {
-    toast.add("测试失败，网络错误", "error");
+    toast.add({
+      title: "测试失败，网络错误",
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     testing.value = false;
   }
@@ -328,10 +332,10 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs"
                   :class="
                     item.type === 'api'
-                      ? 'bg-blue-600 text-[var(--white)]'
+                      ? 'bg-blue-600 text-white'
                       : item.type === 'pansou'
-                        ? 'bg-violet-600 text-[var(--white)]'
-                        : 'bg-green-600 text-[var(--white)]'
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-green-600 text-white'
                   "
                 >
                   <component
@@ -355,8 +359,8 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                   class="px-2 py-1 rounded text-xs"
                   :class="
                     item.status === 1
-                      ? 'bg-green-600 text-[var(--white)]'
-                      : 'bg-red-600 text-[var(--white)]'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-red-600 text-white'
                   "
                 >
                   {{ statusLabel(item.status) }}
@@ -365,14 +369,14 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                   <button
-                    class="p-1.5 text-blue-400 hover:bg-blue-500 hover:text-[var(--white)] rounded transition-colors"
+                    class="p-1.5 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors"
                     title="编辑"
                     @click="openEdit(item)"
                   >
                     <Edit3 class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-1.5 text-red-400 hover:bg-red-500 hover:text-[var(--white)] rounded transition-colors"
+                    class="p-1.5 text-red-400 hover:bg-red-500 hover:text-white rounded transition-colors"
                     title="删除"
                     @click="deleteApi(item.id)"
                   >
@@ -579,7 +583,9 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
             />
           </div>
           <div>
-            <label class="block text-color-400 text-sm mb-1">网盘链接标签</label>
+            <label class="block text-color-400 text-sm mb-1"
+              >网盘链接标签</label
+            >
             <input
               v-model="form.html_url2"
               type="text"
@@ -600,10 +606,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
           </div>
           <div>
             <label class="block text-color-400 text-sm mb-1">状态</label>
-            <select
-              v-model.number="form.status"
-              class="input-search w-full"
-            >
+            <select v-model.number="form.status" class="input-search w-full">
               <option :value="1">启用</option>
               <option :value="0">禁用</option>
             </select>

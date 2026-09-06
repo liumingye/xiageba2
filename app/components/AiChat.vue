@@ -9,7 +9,7 @@ import {
   computed,
 } from "vue";
 import { Sparkles, User } from "@lucide/vue";
-import { renderSafeMarkdown as renderMarkdown } from "~/utils/markdown";
+import { safeMarkdownPlugins } from "~/utils/comark";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -182,54 +182,45 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
           :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'"
         >
           <div
-            class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            :class="msg.role === 'user' ? 'bg-color-300' : 'bg-primary-500/20'"
+            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            :class="msg.role === 'user' ? 'bg-elevated' : 'bg-primary-600/20'"
           >
-            <User v-if="msg.role === 'user'" class="w-4 h-4 text-color-300" />
+            <User v-if="msg.role === 'user'" class="w-4 h-4" />
             <Sparkles v-else class="w-4 h-4 text-primary-400" />
           </div>
 
           <div
-            class="max-w-[80%] md:max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words"
+            class="max-w-[80%] md:max-w-[75%] rounded-2xl text-sm leading-relaxed wrap-break-word"
             :class="
               msg.role === 'user'
-                ? 'bg-primary-500 text-white rounded-tr-md'
-                : 'bg-color-300 rounded-tl-md'
+                ? 'bg-primary text-inverted rounded-tr-md'
+                : 'bg-elevated rounded-tl-md'
             "
           >
             <template v-if="msg.role === 'assistant'">
-              <!-- 内容为空且加载中：显示三点动画 -->
-              <div
-                v-if="!msg.content && aiLoading"
-                class="flex items-center gap-1 py-0.5"
-              >
-                <span
-                  class="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-                  style="animation-delay: 0ms"
-                ></span>
-                <span
-                  class="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-                  style="animation-delay: 150ms"
-                ></span>
-                <span
-                  class="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-                  style="animation-delay: 300ms"
-                ></span>
+              <div class="ai-markdown mx-4 my-2.5">
+                <UChatShimmer
+                  v-if="!msg.content && aiLoading"
+                  text="Thinking..."
+                />
+                <Markdown
+                  v-else
+                  :value="msg.content"
+                  streaming
+                  :plugins="safeMarkdownPlugins"
+                />
               </div>
               <!-- 有内容：渲染 markdown -->
-              <div
-                v-else
-                class="ai-markdown"
-                v-html="renderMarkdown(msg.content)"
-              />
             </template>
-            <div v-else class="whitespace-pre-wrap">{{ msg.content }}</div>
+            <div v-else class="whitespace-pre-wrap mx-4 my-2.5">
+              {{ msg.content }}
+            </div>
           </div>
         </div>
 
         <div v-if="aiError" class="flex gap-3 flex-row">
           <div
-            class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary-500/20"
+            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary-500/20"
           >
             <Sparkles class="w-4 h-4 text-primary-400" />
           </div>
@@ -243,29 +234,3 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
     </div>
   </div>
 </template>
-
-<style scoped>
-:deep(.ai-markdown) {
-  word-break: break-word;
-}
-:deep(.ai-markdown a) {
-  color: #60a5fa;
-  text-decoration: underline;
-}
-:deep(.ai-code-block) {
-  background: #1a1a1a;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  overflow-x: auto;
-  margin: 0.5rem 0;
-  font-size: 0.8rem;
-  font-family: monospace;
-}
-:deep(.ai-markdown ul) {
-  list-style: none;
-  padding: 0;
-}
-:deep(.ai-markdown p:last-child) {
-  margin-bottom: 0;
-}
-</style>

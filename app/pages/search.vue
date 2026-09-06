@@ -9,9 +9,6 @@ import {
   Folder,
   AlertTriangle,
   Filter,
-  Calendar,
-  HardDrive,
-  ArrowUpDown,
   Target,
   RotateCcwSquare,
   Sparkles,
@@ -24,7 +21,6 @@ import {
   RESOURCE_FILE_TYPE_OPTIONS,
   normalizeResourceFileTypes,
 } from "#shared/resource-file-types";
-import { useScrollLock } from "@vueuse/core";
 
 interface PaginatedResponse<T = any> {
   data: T[];
@@ -54,8 +50,6 @@ const treeModalContent = ref("");
 const treeModalLoading = ref(false);
 const treeModalError = ref("");
 
-const scrollLock = useScrollLock(window);
-
 const { currentText: funnyText, bindFetching } = useFunnyLoading();
 bindFetching([modalFetching, treeModalLoading]);
 
@@ -71,8 +65,6 @@ const openTreeModal = async ({
       item: WebSearchResult;
       type: "url";
     }) => {
-  scrollLock.value = true;
-
   treeModalTitle.value = item.title || "";
   treeModalContent.value = "";
   treeModalError.value = "";
@@ -96,14 +88,6 @@ const openTreeModal = async ({
   } finally {
     treeModalLoading.value = false;
   }
-};
-
-const closeTreeModal = () => {
-  scrollLock.value = false;
-  showTreeModal.value = false;
-  treeModalTitle.value = "";
-  treeModalContent.value = "";
-  treeModalError.value = "";
 };
 
 const setModalLoading = (title: string) => {
@@ -154,9 +138,7 @@ const closeModal = () => {
   modalTitle.value = "";
   modalUrl.value = "";
 };
-const musicStore = useMusicStore();
 
-const searchQuery = ref("");
 const currentPage = computed(() =>
   Math.max(1, parseInt(route.query.page as string) || 1),
 );
@@ -433,20 +415,6 @@ useHead({
   ],
 });
 
-watch(
-  searchKeyword,
-  (val) => {
-    searchQuery.value = val;
-  },
-  { immediate: true },
-);
-
-const performSearch = (keyword: string) => {
-  if (!keyword.trim()) return;
-  musicStore.addSearchHistory(keyword);
-  searchQuery.value = keyword;
-};
-
 const switchType = (type: "music" | "resource" | "ai") => {
   if (type === searchType.value) return;
   const q = searchKeyword.value;
@@ -488,481 +456,390 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar :search-query="searchQuery" @search="performSearch" />
-    <div class="max-w-4xl mx-auto px-2">
-      <!-- 搜索类型 tab -->
-      <div class="flex items-center gap-2 mb-4">
-        <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors border"
+  <!-- 搜索类型 tab -->
+  <div class="flex items-center gap-2 mb-4">
+    <UButton
+      v-for="item in [
+        {
+          type: 'resource',
+          label: '搜资源',
+          icon: 'i-lucide-folder',
+        },
+        {
+          type: 'music',
+          label: '搜音乐',
+          icon: 'i-lucide-music',
+        },
+        {
+          type: 'ai',
+          label: 'AI 搜索',
+          icon: 'i-lucide-sparkles',
+        },
+      ]"
+      variant="soft"
+      color="neutral"
+      @click="switchType(item.type)"
+      :icon="item.icon"
+      :ui="{
+        leadingIcon: 'size-4',
+      }"
+      :active="searchType === item.type"
+      active-class="pointer-events-none"
+      active-variant="solid"
+      active-color="primary"
+      size="lg"
+      >{{ item.label }}</UButton
+    >
+  </div>
+
+  <main>
+    <!-- AI 搜索模式 -->
+    <ClientOnly v-if="isAi">
+      <AiChat :initial-query="searchKeyword" />
+    </ClientOnly>
+
+    <template v-else>
+      <div
+        v-if="errorInfo && searchKeyword"
+        class="card p-5 text-center mb-6"
+        role="alert"
+      >
+        <div
+          class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
           :class="
-            searchType === 'resource'
-              ? 'bg-primary-600 text-white font-medium border-transparent'
-              : 'bg-color-100 text-color-300 hover:bg-color-300 border-color-300'
+            errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
+              ? 'bg-yellow-900/50 text-yellow-400'
+              : 'bg-red-900/50 text-red-400'
           "
-          @click="switchType('resource')"
+          aria-hidden="true"
         >
-          <FolderOpen class="w-4 h-4" />
-          搜资源
-        </button>
+          <AlertTriangle class="w-7 h-7" />
+        </div>
+        <h3 class="text-lg font-medium text-white mb-1">
+          {{ errorInfo.title }}
+        </h3>
+        <p class="text-sm text-zinc-500">{{ errorInfo.message }}</p>
         <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors border"
-          :class="
-            isMusic
-              ? 'bg-primary-600 text-white font-medium border-transparent'
-              : 'bg-color-100 text-color-300 hover:bg-color-300 border-color-300'
-          "
-          @click="switchType('music')"
+          v-if="errorInfo.canRetry"
+          class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+          @click="handleRetry"
         >
-          <MusicIcon class="w-4 h-4" />
-          搜音乐
-        </button>
-        <button
-          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm transition-colors border"
-          :class="
-            isAi
-              ? 'bg-primary-600 text-white font-medium border-transparent'
-              : 'bg-color-100 text-color-300 hover:bg-color-300 border-color-300'
-          "
-          @click="switchType('ai')"
-        >
-          <Sparkles class="w-4 h-4" />
-          AI 搜索
+          <RotateCcw class="w-4 h-4" />
+          重新搜索
         </button>
       </div>
 
-      <main>
-        <!-- AI 搜索模式 -->
-        <ClientOnly v-if="isAi">
-          <AiChat :initial-query="searchKeyword" />
-        </ClientOnly>
+      <div
+        v-else-if="loading && searchKeyword"
+        class="space-y-2"
+        :class="{ 'mt-3': !isMusic }"
+        aria-busy="true"
+        aria-label="正在加载搜索结果"
+      >
+        <div class="h-3 bg-zinc-700 rounded w-1/4 animate-pulse mb-2" />
+        <article
+          v-for="(_, i) in skeletonList"
+          :key="i"
+          class="card p-3 animate-pulse"
+        >
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-zinc-700 rounded-lg" />
+            <div class="flex-1 space-y-1">
+              <div class="h-3 bg-zinc-700 rounded w-3/4" />
+              <div class="h-2 bg-zinc-700 rounded w-1/3" />
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div v-else-if="searchKeyword" class="space-y-2">
+        <h2 v-if="results.length > 0" class="text-muted text-sm mb-3">
+          搜索"<span class="text-primary-400">{{ searchKeyword }}</span
+          >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
+          <span v-if="totalPages > 1" class="ml-2"
+            >（第 {{ currentPage }} / {{ totalPages }} 页）</span
+          >
+        </h2>
+
+        <template v-if="isMusic">
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <UButton
+              variant="outline"
+              color="neutral"
+              size="lg"
+              :active="exactFilter"
+              active-color="primary"
+              active-variant="solid"
+              icon="i-lucide-target"
+              @click="updateFilter('exact', !exactFilter)"
+            >
+              精准搜索
+            </UButton>
+            <UButton
+              variant="outline"
+              color="neutral"
+              size="lg"
+              @click="clearFilters"
+              :disabled="!hasFilters"
+              icon="i-lucide-rotate-ccw-square"
+            >
+              清除筛选
+            </UButton>
+          </div>
+
+          <article
+            v-for="music in <MusicSearch[]>results"
+            :key="music.id"
+            class="card cursor-pointer hover:border-primary-500/50 transition-colors"
+            role="article"
+          >
+            <NuxtLink
+              :to="`/music/${music.id}`"
+              class="flex items-center gap-3 p-3"
+            >
+              <img
+                :src="music.cover || config.app.baseURL + 'img/cover.png'"
+                :alt="music.title"
+                class="w-12 h-12 rounded-lg object-cover"
+                loading="lazy"
+                decoding="async"
+                @error="
+                  ($event.target as HTMLImageElement).src =
+                    config.app.baseURL + 'img/cover.png'
+                "
+              />
+              <div class="flex-1 min-w-0">
+                <h3
+                  class="text-sm font-medium truncate"
+                  v-html="highlight(music.title)"
+                />
+                <p class="text-xs text-zinc-500 truncate">
+                  <span v-html="highlight(music.artist)" /><span
+                    v-if="music.album"
+                  >
+                    - <span v-html="highlight(music.album)"
+                  /></span>
+                </p>
+                <div class="flex mt-0.5">
+                  <span
+                    v-if="music.quality"
+                    v-for="q in music.quality"
+                    :key="q"
+                    class="badge"
+                  >
+                    {{ q }}
+                  </span>
+                </div>
+              </div>
+              <ArrowRight class="w-4 h-4 text-zinc-600 shrink-0" />
+            </NuxtLink>
+          </article>
+
+          <template v-if="results.length === 0">
+            <div class="text-center py-20">
+              <div
+                class="w-20 h-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
+                aria-hidden="true"
+              >
+                <CircleSlash />
+              </div>
+              <p class="text-muted">
+                {{ "此搜索关键词暂无结果" }}
+              </p>
+            </div>
+          </template>
+        </template>
 
         <template v-else>
-          <div
-            v-if="errorInfo && searchKeyword"
-            class="card p-5 text-center mb-6"
-            role="alert"
-          >
-            <div
-              class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
-              :class="
-                errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
-                  ? 'bg-yellow-900/50 text-yellow-400'
-                  : 'bg-red-900/50 text-red-400'
-              "
-              aria-hidden="true"
-            >
-              <AlertTriangle class="w-7 h-7" />
+          <template v-if="searchKeyword">
+            <div class="flex items-center gap-2 my-3">
+              <Filter class="w-4 h-4 text-primary-400" />
+              <h2 class="text-muted text-sm">筛选条件</h2>
             </div>
-            <h3 class="text-lg font-medium text-white mb-1">
-              {{ errorInfo.title }}
-            </h3>
-            <p class="text-sm text-zinc-500">{{ errorInfo.message }}</p>
-            <button
-              v-if="errorInfo.canRetry"
-              class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-              @click="handleRetry"
-            >
-              <RotateCcw class="w-4 h-4" />
-              重新搜索
-            </button>
-          </div>
 
-          <div
-            v-else-if="loading && searchKeyword"
-            class="space-y-2"
-            :class="{ 'mt-3': !isMusic }"
-            aria-busy="true"
-            aria-label="正在加载搜索结果"
+            <div class="flex flex-wrap items-center gap-2 mb-4">
+              <MultiSelectCombobox
+                class="flex-1 min-w-32"
+                :model-value="fileTypeFilter"
+                :options="RESOURCE_FILE_TYPE_OPTIONS"
+                placeholder="所有文件"
+                clear-label="清空选择"
+                aria-label="选择文件类型"
+                @update:model-value="updateFilter('fileType', $event)"
+              />
+
+              <USelect
+                class="flex-1 min-w-24"
+                size="lg"
+                color="neutral"
+                variant="outline"
+                value-key="value"
+                :items="timeOptions"
+                :model-value="timeFilter"
+                aria-label="选择入库时间"
+                @update:model-value="updateFilter('time', $event as string)"
+              />
+
+              <USelect
+                class="flex-1 min-w-24"
+                size="lg"
+                color="neutral"
+                variant="outline"
+                value-key="value"
+                :items="panOptions"
+                :model-value="panFilter"
+                aria-label="选择网盘类型"
+                @update:model-value="updateFilter('pan', $event as string)"
+              />
+
+              <USelect
+                class="flex-1 min-w-24"
+                size="lg"
+                color="neutral"
+                variant="outline"
+                value-key="value"
+                :items="sortOptions"
+                :model-value="sortFilter"
+                aria-label="选择排序方式"
+                @update:model-value="updateFilter('sort', $event as string)"
+              />
+
+              <UButton
+                variant="outline"
+                color="neutral"
+                size="lg"
+                :active="exactFilter"
+                active-color="primary"
+                active-variant="solid"
+                icon="i-lucide-target"
+                @click="updateFilter('exact', !exactFilter)"
+              >
+                精准搜索
+              </UButton>
+
+              <UButton
+                variant="outline"
+                color="neutral"
+                size="lg"
+                @click="clearFilters"
+                :disabled="!hasFilters"
+                icon="i-lucide-rotate-ccw-square"
+              >
+                清除筛选
+              </UButton>
+            </div>
+          </template>
+
+          <template
+            v-if="
+              ['all', 'quark', 'baidu', 'uc', 'xunlei', 'ali'].includes(
+                panFilter,
+              )
+            "
           >
-            <div class="h-3 bg-zinc-700 rounded w-1/4 animate-pulse mb-2" />
-            <article
-              v-for="(_, i) in skeletonList"
-              :key="i"
-              class="card p-3 animate-pulse"
-            >
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-zinc-700 rounded-lg" />
-                <div class="flex-1 space-y-1">
-                  <div class="h-3 bg-zinc-700 rounded w-3/4" />
-                  <div class="h-2 bg-zinc-700 rounded w-1/3" />
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <div v-else-if="searchKeyword" class="space-y-2">
-            <h2 v-if="results.length > 0" class="text-color-500 text-sm mb-3">
-              搜索"<span class="text-primary-400">{{ searchKeyword }}</span
-              >"找到 {{ total }} {{ isMusic ? "首歌曲" : "个资源" }}
-              <span v-if="totalPages > 1" class="ml-2"
-                >（第 {{ currentPage }} / {{ totalPages }} 页）</span
-              >
-            </h2>
-
-            <template v-if="isMusic">
-              <!-- 音乐筛选条件 -->
-              <div class="flex flex-wrap items-center gap-2 mb-4">
-                <button
-                  class="btn"
-                  :class="
-                    exactFilter
-                      ? 'bg-primary-500/20 text-primary-500 border-primary-500'
-                      : ''
-                  "
-                  @click="updateFilter('exact', !exactFilter)"
-                >
-                  <Target class="w-3.5 h-3.5" />
-                  精准搜索
-                </button>
-
-                <button
-                  class="btn"
-                  @click="clearFilters"
-                  :disabled="!hasFilters"
-                >
-                  <RotateCcwSquare class="w-3.5 h-3.5" />
-                  清除筛选
-                </button>
-              </div>
-
-              <article
-                v-for="music in <MusicSearch[]>results"
-                :key="music.id"
-                class="card cursor-pointer hover:border-primary-500/50 transition-colors"
-                role="article"
-              >
-                <NuxtLink
-                  :to="`/music/${music.id}`"
-                  class="flex items-center gap-3 p-3"
-                >
-                  <img
-                    :src="music.cover || config.app.baseURL + 'img/cover.png'"
-                    :alt="music.title"
-                    class="w-12 h-12 rounded-lg object-cover"
-                    loading="lazy"
-                    decoding="async"
-                    @error="
-                      ($event.target as HTMLImageElement).src =
-                        config.app.baseURL + 'img/cover.png'
-                    "
-                  />
-                  <div class="flex-1 min-w-0">
-                    <h3
-                      class="text-sm font-medium truncate"
-                      v-html="highlight(music.title)"
-                    />
-                    <p class="text-xs text-zinc-500 truncate">
-                      <span v-html="highlight(music.artist)" /><span
-                        v-if="music.album"
-                      >
-                        - <span v-html="highlight(music.album)"
-                      /></span>
-                    </p>
-                    <div class="flex mt-0.5">
-                      <span
-                        v-if="music.quality"
-                        v-for="q in music.quality"
-                        :key="q"
-                        class="badge"
-                      >
-                        {{ q }}
-                      </span>
-                    </div>
-                  </div>
-                  <ArrowRight class="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                </NuxtLink>
-              </article>
-
-              <template v-if="results.length === 0">
-                <div class="text-center py-20">
-                  <div
-                    class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
-                    aria-hidden="true"
-                  >
-                    <CircleSlash />
-                  </div>
-                  <p class="text-zinc-500">
-                    {{ "此搜索关键词暂无结果" }}
-                  </p>
-                </div>
-              </template>
+            <div v-if="currentPage === 1" class="flex items-center gap-2 my-3">
+              <Folder class="w-4 h-4 text-primary-400" />
+              <h2 class="text-muted text-sm">本地资源</h2>
+            </div>
+            <template v-if="results.length > 0">
+              <LocalResourceItem
+                v-for="item in <SourceItem[]>results"
+                :key="item.id"
+                :item="item"
+                :check-status="getCheckStatus(item.id)"
+                :highlight-html="highlight(item.title)"
+                :highlight-menu="highlight(item.menu)"
+                @open-tree="openTreeModal({ item, type: 'id' })"
+                @open-modal="openModal({ item, type: 'id' })"
+              />
             </template>
-
             <template v-else>
-              <template v-if="searchKeyword">
-                <div class="flex items-center gap-2 !my-3">
-                  <Filter class="w-4 h-4 text-primary-400" />
-                  <h2 class="text-color-500 text-sm">筛选条件</h2>
-                </div>
-
-                <!-- 资源筛选条件 -->
-                <div class="flex flex-wrap items-center gap-2 mb-4">
-                  <!-- 文件类型（多选） -->
-                  <MultiSelectCombobox
-                    class="flex-1 min-w-32"
-                    :model-value="fileTypeFilter"
-                    :options="RESOURCE_FILE_TYPE_OPTIONS"
-                    placeholder="所有文件"
-                    clear-label="清空选择"
-                    aria-label="选择文件类型"
-                    @update:model-value="updateFilter('fileType', $event)"
-                  />
-
-                  <!-- 入库时间 -->
-                  <div class="flex-1 relative min-w-24">
-                    <select
-                      class="select"
-                      :value="timeFilter"
-                      @change="
-                        updateFilter(
-                          'time',
-                          ($event.target as HTMLSelectElement).value,
-                        )
-                      "
-                    >
-                      <option
-                        v-for="opt in timeOptions"
-                        :key="opt.value"
-                        :value="opt.value"
-                      >
-                        {{ opt.label }}
-                      </option>
-                    </select>
-                    <Calendar
-                      class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    />
-                  </div>
-
-                  <!-- 网盘类型 -->
-                  <div class="flex-1 relative min-w-24">
-                    <select
-                      class="select"
-                      :value="panFilter"
-                      @change="
-                        updateFilter(
-                          'pan',
-                          ($event.target as HTMLSelectElement).value,
-                        )
-                      "
-                    >
-                      <option
-                        v-for="opt in panOptions"
-                        :key="opt.value"
-                        :value="opt.value"
-                      >
-                        {{ opt.label }}
-                      </option>
-                    </select>
-                    <HardDrive
-                      class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    />
-                  </div>
-
-                  <!-- 排序 -->
-                  <div class="flex-1 relative min-w-24">
-                    <select
-                      class="select"
-                      :value="sortFilter"
-                      @change="
-                        updateFilter(
-                          'sort',
-                          ($event.target as HTMLSelectElement).value,
-                        )
-                      "
-                    >
-                      <option
-                        v-for="opt in sortOptions"
-                        :key="opt.value"
-                        :value="opt.value"
-                      >
-                        {{ opt.label }}
-                      </option>
-                    </select>
-                    <ArrowUpDown
-                      class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    />
-                  </div>
-
-                  <!-- 精准搜索 -->
-                  <button
-                    class="btn"
-                    :class="
-                      exactFilter
-                        ? 'bg-primary-500/20 text-primary-500 border-primary-500'
-                        : ''
-                    "
-                    @click="updateFilter('exact', !exactFilter)"
-                  >
-                    <Target class="w-3.5 h-3.5" />
-                    精准搜索
-                  </button>
-
-                  <!-- 清除筛选 -->
-                  <button
-                    class="btn"
-                    @click="clearFilters"
-                    :disabled="!hasFilters"
-                  >
-                    <RotateCcwSquare class="w-3.5 h-3.5" />
-                    清除筛选
-                  </button>
-                </div>
-              </template>
-
-              <template
-                v-if="
-                  ['all', 'quark', 'baidu', 'uc', 'xunlei', 'ali'].includes(
-                    panFilter,
-                  )
-                "
-              >
+              <div class="text-center py-20">
                 <div
-                  v-if="currentPage === 1"
-                  class="flex items-center gap-2 !my-3"
+                  class="w-20 h-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
+                  aria-hidden="true"
                 >
-                  <Folder class="w-4 h-4 text-primary-400" />
-                  <h2 class="text-color-500 text-sm">本地资源</h2>
+                  <CircleSlash />
                 </div>
-                <template v-if="results.length > 0">
-                  <LocalResourceItem
-                    v-for="item in <SourceItem[]>results"
-                    :key="item.id"
-                    :item="item"
-                    :check-status="getCheckStatus(item.id)"
-                    :highlight-html="highlight(item.title)"
-                    :highlight-menu="highlight(item.menu)"
-                    @open-tree="openTreeModal({ item, type: 'id' })"
-                    @open-modal="openModal({ item, type: 'id' })"
-                  />
-                </template>
-                <template v-else>
-                  <div class="text-center py-20">
-                    <div
-                      class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
-                      aria-hidden="true"
-                    >
-                      <CircleSlash />
-                    </div>
-                    <p class="text-zinc-500">本地搜索暂无结果</p>
-                  </div>
-                </template>
-              </template>
-
-              <template v-if="currentPage === 1">
-                <WebSearchResults
-                  :keyword="searchKeyword"
-                  :disabled="isMusic"
-                  :highlight-html="highlight"
-                  :filter="panFilter"
-                  @open-tree-modal="
-                    (item) => openTreeModal({ item, type: 'url' })
-                  "
-                  @open-modal="(item) => openModal({ item, type: 'url' })"
-                />
-              </template>
+                <p class="text-muted">本地搜索暂无结果</p>
+              </div>
             </template>
+          </template>
 
-            <Pagination
-              :current-page="currentPage"
-              :total-pages="totalPages"
-              @change="goToPage"
+          <template v-if="currentPage === 1">
+            <WebSearchResults
+              :keyword="searchKeyword"
+              :disabled="isMusic"
+              :highlight-html="highlight"
+              :filter="panFilter"
+              @open-tree="(item) => openTreeModal({ item, type: 'url' })"
+              @open-modal="(item) => openModal({ item, type: 'url' })"
             />
-          </div>
-
-          <div v-else class="text-center py-20">
-            <div
-              class="w-20 h-20 bg-color-300 rounded-full flex items-center justify-center mx-auto mb-4"
-              aria-hidden="true"
-            >
-              <CircleSlash />
-            </div>
-            <p class="text-gray-500">请输入搜索关键词</p>
-          </div>
+          </template>
         </template>
-      </main>
 
-      <Qrcode v-if="!isAi" />
+        <Pagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          @change="goToPage"
+        />
+      </div>
 
-      <SiteFooter v-if="!isAi" />
+      <div v-else class="text-center py-20">
+        <div
+          class="w-20 h-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
+          aria-hidden="true"
+        >
+          <CircleSlash />
+        </div>
+        <p class="text-muted">请输入搜索关键词</p>
+      </div>
+    </template>
+  </main>
 
-      <DownloadLinkPanel
-        v-model:open="showModal"
-        :title="modalTitle"
-        :url="modalUrl"
-        :loading="modalFetching"
-        :error="modalError"
-        @close="closeModal"
-      />
+  <Qrcode v-if="!isAi" />
 
-      <Teleport to="body">
-        <Transition name="modal">
-          <div
-            v-if="showTreeModal"
-            class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-            @click.self="closeTreeModal"
-          >
-            <div
-              class="modal-content bg-color-100 rounded-xl max-w-lg w-full border border-color-300 shadow-2xl"
-            >
-              <div
-                class="flex items-center justify-between py-2 px-3 border-b border-color-300"
-              >
-                <h3 class="font-medium text-color-300">
-                  目录结构<span class="text-xs text-color-500"
-                    >（最多显示5层、150个文件）</span
-                  >
-                </h3>
-                <button
-                  class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
-                  @click="closeTreeModal"
-                >
-                  <X class="w-5 h-5" />
-                </button>
-              </div>
-              <div class="p-4">
-                <h4
-                  v-if="treeModalTitle"
-                  class="text-sm font-medium truncate mb-3"
-                >
-                  {{ treeModalTitle }}
-                </h4>
-                <div v-if="treeModalLoading" class="text-center py-8">
-                  <div
-                    class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
-                  />
-                  <p class="text-color-400 text-sm">{{ funnyText }}</p>
-                </div>
-                <div v-else-if="treeModalError" class="text-center py-8">
-                  <p class="text-red-400 text-sm">{{ treeModalError }}</p>
-                </div>
-                <pre
-                  v-else
-                  class="bg-color-300 rounded-lg p-4 text-sm text-color-100 overflow-auto max-h-[60vh] whitespace-pre font-mono"
-                  >{{ treeModalContent }}</pre
-                >
-              </div>
-            </div>
-          </div>
-        </Transition>
-      </Teleport>
-    </div>
-  </div>
+  <DownloadLinkPanel
+    v-model:open="showModal"
+    :title="modalTitle"
+    :url="modalUrl"
+    :loading="modalFetching"
+    :error="modalError"
+    @close="closeModal"
+  />
+
+  <UModal v-model:open="showTreeModal">
+    <template #title>
+      目录结构<span class="text-xs text-muted">（最多显示5层、150个文件）</span>
+    </template>
+
+    <template #body>
+      <h4 v-if="treeModalTitle" class="text-sm font-medium truncate mb-3">
+        {{ treeModalTitle }}
+      </h4>
+      <div v-if="treeModalLoading" class="text-center py-8">
+        <div
+          class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+        />
+        <p class="text-muted text-sm">{{ funnyText }}</p>
+      </div>
+      <div v-else-if="treeModalError" class="text-center py-8">
+        <p class="text-red-400 text-sm">{{ treeModalError }}</p>
+      </div>
+      <pre
+        v-else
+        class="bg-elevated rounded-lg p-4 text-sm overflow-auto max-h-[60vh] whitespace-pre font-mono"
+        >{{ treeModalContent }}</pre
+      >
+    </template>
+  </UModal>
 </template>
 
 <style scoped>
 @reference "~/assets/css/main.css";
 
-.btn {
-  @apply flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed disabled:pointer-events-none border border-color-300 hover:border-primary-500;
-}
-
-.select {
-  @apply w-full appearance-none bg-color-100 text-color-300 hover:bg-color-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500;
-}
-
 .badge {
-  @apply border border-primary-600 text-primary-600 text-xs;
+  @apply border border-muted text-muted text-xs;
   padding: 1px 3px;
   border-radius: 4px;
   margin-right: 2px;
@@ -990,4 +867,4 @@ watch(
 .modal-leave-to .modal-content {
   transform: scale(0.985) translateY(0);
 }
-</>
+</style>

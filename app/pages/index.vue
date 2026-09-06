@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import SiteFooter from "~/components/SiteFooter.vue";
-import Qrcode from "~/components/Qrcode.vue";
 import type { Music } from "~/stores/music";
 import {
   Music as MusicIcon,
@@ -363,116 +361,103 @@ const getPic = (url: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar :showSearch="false" />
-    <div class="max-w-4xl mx-auto px-2">
-      <header class="text-center mb-6">
-        <div class="mb-6">
-          <div class="max-md:hidden font-bold text-2xl md:text-3xl">
-            找网盘资源，<span class="slogan">全盘搜</span>帮你搞定
-          </div>
-          <div class="md:hidden flex items-center justify-center gap-3">
-            <div
-              class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white"
-              aria-hidden="true"
-            >
-              <Search />
-            </div>
-            <h1 class="text-4xl font-bold">全盘搜</h1>
-          </div>
-        </div>
-        <SearchBarBig ref="searchBarRef" />
-        <div class="text-sm text-color-400 justify-center gap-4 hidden md:flex">
-          <span class="flex items-center"
-            ><CircleCheck
-              class="w-4 h-4 mr-1 text-primary-400"
-            />百万网盘资源</span
-          >
-          <span class="flex items-center"
-            ><CircleCheck
-              class="w-4 h-4 mr-1 text-primary-400"
-            />链接有效性检测</span
-          >
-          <span class="flex items-center"
-            ><CircleCheck
-              class="w-4 h-4 mr-1 text-primary-400"
-            />真免费无广告</span
-          >
-        </div>
-        <div class="text-sm text-color-400 md:hidden">
-          打开浏览器菜单，点击加入书签不迷路
-        </div>
-      </header>
-
-      <AnnouncementDisplay />
-
-      <section
-        v-if="showHistorySection"
-        :class="{
-          'mask-bottom': !sectionExpanded && sectionOverflowing,
-        }"
-        ref="sectionRef"
-        class="mb-8 overflow-hidden"
-        aria-labelledby="history-title"
-      >
-        <div class="flex items-center border-b border-color-300 mb-4">
-          <button
-            v-if="hasHotwords"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-all border-b-2"
-            :class="
-              activeHistoryTab === 'hot'
-                ? 'text-[--primary] border-[--primary]'
-                : 'opacity-65 hover:opacity-90 border-transparent'
-            "
-            @click="activeHistoryTab = 'hot'"
-          >
-            <Flame class="w-4 h-4" />
-            热门搜索
-          </button>
-          <button
-            v-if="isMounted && hasHistory"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-all border-b-2"
-            :class="
-              activeHistoryTab === 'history'
-                ? 'text-[--primary] border-[--primary]'
-                : 'opacity-65 hover:opacity-90 border-transparent'
-            "
-            @click="activeHistoryTab = 'history'"
-          >
-            <History class="w-4 h-4" />
-            搜索历史
-          </button>
-          <div class="flex ml-auto">
-            <template v-if="activeHistoryTab === 'history'">
-              <button
-                v-if="activeHistoryTab === 'history'"
-                class="flex items-center gap-1 opacity-65 hover:opacity-90 transition-all px-2"
-                @click="clearHistory"
-                aria-label="清空搜索历史"
-              >
-                <TrashIcon class="w-3.5 h-3.5" />
-                清空
-              </button>
-              <span
-                v-if="sectionOverflowing"
-                class="border-l border-color-300"
-              ></span>
-            </template>
-            <button
-              v-if="sectionOverflowing"
-              class="opacity-65 hover:opacity-90 transition-colors px-2"
-              @click="sectionExpanded = !sectionExpanded"
-            >
-              {{ sectionExpanded ? "收起" : "展开" }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 热门搜索 -->
+  <header class="text-center mb-6">
+    <div class="mb-6">
+      <div class="max-md:hidden font-bold text-2xl md:text-3xl">
+        找网盘资源，<span class="slogan">全盘搜</span>帮你搞定
+      </div>
+      <div class="md:hidden flex items-center justify-center gap-3">
         <div
-          v-if="activeHistoryTab === 'hot' && hasHotwords"
+          class="w-12 h-12 bg-linear-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white"
+          aria-hidden="true"
+        >
+          <Search />
+        </div>
+        <h1 class="text-4xl font-bold">全盘搜</h1>
+      </div>
+    </div>
+    <SearchBarBig ref="searchBarRef" />
+    <div class="text-sm text-muted justify-center gap-4 hidden md:flex">
+      <span class="flex items-center"
+        ><CircleCheck class="w-4 h-4 mr-1 text-primary" />百万网盘资源</span
+      >
+      <span class="flex items-center"
+        ><CircleCheck class="w-4 h-4 mr-1 text-primary" />链接有效性检测</span
+      >
+      <span class="flex items-center"
+        ><CircleCheck class="w-4 h-4 mr-1 text-primary" />真免费无广告</span
+      >
+    </div>
+    <div class="text-sm text-muted md:hidden">
+      打开浏览器菜单，点击加入书签不迷路
+    </div>
+  </header>
+
+  <AnnouncementDisplay />
+
+  <section
+    v-if="showHistorySection"
+    :class="{
+      'mask-bottom': !sectionExpanded && sectionOverflowing,
+    }"
+    ref="sectionRef"
+    class="mb-8 overflow-hidden"
+    aria-labelledby="history-title"
+  >
+    <UTabs
+      v-model="activeHistoryTab"
+      color="primary"
+      variant="link"
+      :ui="{
+        content: 'mt-1',
+      }"
+      :items="[
+        {
+          label: '热门搜索',
+          icon: 'i-lucide-flame',
+          value: 'hot',
+          slot: 'hot',
+          disabled: !hasHotwords,
+        },
+        {
+          label: '搜索历史',
+          icon: 'i-lucide-history',
+          value: 'history',
+          slot: 'history',
+        },
+      ]"
+    >
+      <template #list-trailing>
+        <div class="flex ml-auto">
+          <template v-if="activeHistoryTab === 'history'">
+            <button
+              v-if="activeHistoryTab === 'history'"
+              class="flex items-center gap-1 opacity-65 hover:opacity-90 transition-all px-2"
+              @click="clearHistory"
+              aria-label="清空搜索历史"
+            >
+              <TrashIcon class="w-3.5 h-3.5" />
+              清空
+            </button>
+            <span
+              v-if="sectionOverflowing"
+              class="border-l border-color-300 h-4 mt-2"
+            ></span>
+          </template>
+          <button
+            v-if="sectionOverflowing"
+            class="opacity-65 hover:opacity-90 transition-colors px-2"
+            @click="sectionExpanded = !sectionExpanded"
+          >
+            {{ sectionExpanded ? "收起" : "展开" }}
+          </button>
+        </div>
+      </template>
+
+      <template #hot>
+        <div
           class="flex flex-wrap gap-2"
-          :class="sectionExpanded ? '' : 'max-h-[200px]'"
+          :class="sectionExpanded ? '' : 'max-h-50'"
         >
           <button
             v-for="(hotword, index) in hotwords"
@@ -494,12 +479,12 @@ const getPic = (url: string) => {
             {{ hotword.word }}
           </button>
         </div>
+      </template>
 
-        <!-- 搜索历史 -->
+      <template #history>
         <div
-          v-if="activeHistoryTab === 'history' && hasHistory"
           class="flex flex-wrap gap-2 transition-all duration-300"
-          :class="sectionExpanded ? '' : 'max-h-[200px]'"
+          :class="sectionExpanded ? '' : 'max-h-50'"
         >
           <button
             v-for="keyword in musicStore.searchHistory"
@@ -510,45 +495,41 @@ const getPic = (url: string) => {
             {{ keyword }}
           </button>
         </div>
-      </section>
+      </template>
+    </UTabs>
+  </section>
 
-      <section
-        v-if="hasCategory || doubanClasses.length > 0"
-        aria-labelledby="content-title"
-        class="mb-8"
-      >
-        <div class="flex items-center border-b border-color-300 mb-4">
-          <button
-            v-if="hasCategory"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-all border-b-2"
-            :class="
-              activeContentTab === 'category'
-                ? 'text-[--primary] border-[--primary]'
-                : 'opacity-65 hover:opacity-90 border-transparent'
-            "
-            @click="activeContentTab = 'category'"
-          >
-            <FolderKanban class="w-4 h-4" />
-            资源分类
-          </button>
-          <button
-            v-if="doubanClasses.length > 0"
-            class="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm font-medium transition-all border-b-2"
-            :class="
-              activeContentTab === 'douban'
-                ? 'text-[--primary] border-[--primary]'
-                : 'opacity-65 hover:opacity-90 border-transparent'
-            "
-            @click="activeContentTab = 'douban'"
-          >
-            <Flame class="w-4 h-4" />
-            热门影视
-          </button>
-        </div>
-
-        <!-- 资源分类 -->
+  <section
+    v-if="hasCategory || doubanClasses.length > 0"
+    aria-labelledby="content-title"
+    class="mb-8"
+  >
+    <UTabs
+      v-model="activeContentTab"
+      color="primary"
+      variant="link"
+      :ui="{
+        content: 'mt-1',
+      }"
+      :items="[
+        {
+          label: '资源分类',
+          icon: 'i-lucide-folder-kanban',
+          value: 'category',
+          slot: 'category',
+          disabled: !hasCategory,
+        },
+        {
+          label: '热门影视',
+          icon: 'i-lucide-flame',
+          value: 'douban',
+          slot: 'douban',
+        },
+      ]"
+    >
+      <template #category>
         <div
-          v-if="activeContentTab === 'category' && hasCategory"
+          v-if="hasCategory"
           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4"
         >
           <div
@@ -557,7 +538,7 @@ const getPic = (url: string) => {
           >
             <div class="flex items-center gap-2 mb-3">
               <div
-                class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
               >
                 <MusicIcon class="w-6 h-6 text-primary-400" />
               </div>
@@ -572,7 +553,7 @@ const getPic = (url: string) => {
                 :key="music.id"
                 class="flex items-center gap-1 md:gap-1.5 min-w-0"
               >
-                <MusicIcon class="w-3 h-3 text-primary-400 flex-shrink-0" />
+                <MusicIcon class="w-3 h-3 text-primary-400 shrink-0" />
                 <NuxtLink
                   :to="`/music/${music.id}`"
                   class="link"
@@ -594,7 +575,7 @@ const getPic = (url: string) => {
               class="flex items-center gap-2 mb-3 group"
             >
               <div
-                class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
               >
                 <img v-if="cat.image" :src="cat.image" class="w-6 h-6" />
                 <Folder
@@ -611,8 +592,12 @@ const getPic = (url: string) => {
               </div>
             </NuxtLink>
 
-            <ul class="flex-1 space-y-1.5 min-w-0">
+            <ul class="flex-1 space-y-1.5 min-w-0 pb-3 border-b border-muted">
+              <li v-if="cat.latest.length === 0" class="text-sm text-muted">
+                暂无资源
+              </li>
               <li
+                v-else
                 v-for="item in cat.latest.slice(0, 10)"
                 :key="item.id"
                 class="flex items-center gap-1 md:gap-1.5 min-w-0"
@@ -629,188 +614,181 @@ const getPic = (url: string) => {
                   {{ item.title }}
                 </NuxtLink>
               </li>
-              <li v-if="cat.latest.length === 0" class="text-sm text-color-400">
-                暂无资源
-              </li>
             </ul>
 
-            <NuxtLink
+            <UButton
+              variant="link"
               :to="`/categorie/${cat.id}`"
-              class="group flex items-center justify-center gap-1 mt-3 pt-3 border-t border-color-300 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              class="justify-center mt-1 -mb-3 group"
             >
               查看更多
               <ArrowRight
-                class="w-3 h-3 group-hover:-rotate-45 transition-transform"
+                class="size-3 group-hover:-rotate-45 transition-transform"
               />
-            </NuxtLink>
+            </UButton>
+          </div>
+        </div>
+      </template>
+      <template #douban>
+        <div class="space-y-3 mb-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="text-xs text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
+            >
+              分类
+            </div>
+            <div
+              class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
+              @mousedown="
+                onDragMouseDown($event, $event.currentTarget as HTMLElement)
+              "
+              @mousemove="onDragMouseMove"
+              @mouseup="onDragMouseUpOrLeave"
+              @mouseleave="onDragMouseUpOrLeave"
+            >
+              <div class="flex gap-2 min-w-max items-center h-8">
+                <button
+                  v-for="cls in doubanClasses"
+                  :key="cls.type_id"
+                  type="button"
+                  class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap shrink-0 border"
+                  :class="
+                    activeCategoryId === cls.type_id
+                      ? 'bg-muted shadow-sm border-muted'
+                      : 'opacity-80 hover:bg-muted hover:opacity-100 border-transparent'
+                  "
+                  @click="onCategoryChange(cls.type_id)"
+                >
+                  {{ cls.type_name }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-for="filter in currentFilters"
+            :key="filter.key"
+            class="flex items-center gap-3"
+          >
+            <div
+              class="text-xs text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
+            >
+              {{ filter.name }}
+            </div>
+            <div
+              class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
+              @mousedown="
+                onDragMouseDown($event, $event.currentTarget as HTMLElement)
+              "
+              @mousemove="onDragMouseMove"
+              @mouseup="onDragMouseUpOrLeave"
+              @mouseleave="onDragMouseUpOrLeave"
+            >
+              <div class="flex gap-2 min-w-max items-center h-8">
+                <button
+                  v-for="opt in filter.value"
+                  :key="opt.value"
+                  type="button"
+                  class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap shrink-0 border"
+                  :class="
+                    activeFilters[filter.key] === opt.value
+                      ? 'bg-muted shadow-sm border-muted'
+                      : 'opacity-80 hover:bg-muted hover:opacity-100 border-transparent'
+                  "
+                  @click="
+                    activeFilters[filter.key] = opt.value;
+                    onFilterChange();
+                  "
+                >
+                  {{ opt.name }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- 热门影视 -->
-        <div v-else-if="activeContentTab === 'douban'">
-          <div class="space-y-3 mb-4">
-            <div class="flex items-center gap-3">
-              <div
-                class="text-xs text-color-400 whitespace-nowrap flex-shrink-0 flex items-center h-8"
-              >
-                分类
-              </div>
-              <div
-                class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
-                @mousedown="
-                  onDragMouseDown($event, $event.currentTarget as HTMLElement)
-                "
-                @mousemove="onDragMouseMove"
-                @mouseup="onDragMouseUpOrLeave"
-                @mouseleave="onDragMouseUpOrLeave"
-              >
-                <div class="flex gap-2 min-w-max items-center h-8">
-                  <button
-                    v-for="cls in doubanClasses"
-                    :key="cls.type_id"
-                    type="button"
-                    class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0 border"
-                    :class="
-                      activeCategoryId === cls.type_id
-                        ? 'bg-color-100 shadow-sm border-color-200'
-                        : 'opacity-80 hover:bg-gray-600/20 hover:opacity-100 border-transparent'
-                    "
-                    @click="onCategoryChange(cls.type_id)"
-                  >
-                    {{ cls.type_name }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div
-              v-for="filter in currentFilters"
-              :key="filter.key"
-              class="flex items-center gap-3"
-            >
-              <div
-                class="text-xs text-color-400 whitespace-nowrap flex-shrink-0 flex items-center h-8"
-              >
-                {{ filter.name }}
-              </div>
-              <div
-                class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
-                @mousedown="
-                  onDragMouseDown($event, $event.currentTarget as HTMLElement)
-                "
-                @mousemove="onDragMouseMove"
-                @mouseup="onDragMouseUpOrLeave"
-                @mouseleave="onDragMouseUpOrLeave"
-              >
-                <div class="flex gap-2 min-w-max items-center h-8">
-                  <button
-                    v-for="opt in filter.value"
-                    :key="opt.value"
-                    type="button"
-                    class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap flex-shrink-0 border"
-                    :class="
-                      activeFilters[filter.key] === opt.value
-                        ? 'bg-color-100 shadow-sm border-color-200'
-                        : 'opacity-80 hover:bg-gray-600/20 hover:opacity-100 border-transparent'
-                    "
-                    @click="
-                      activeFilters[filter.key] = opt.value;
-                      onFilterChange();
-                    "
-                  >
-                    {{ opt.name }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div
+          v-if="doubanLoading && doubanPage === 1"
+          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
+          aria-busy="true"
+        >
           <div
-            v-if="doubanLoading && doubanPage === 1"
-            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
-            aria-busy="true"
+            v-for="(_, i) in Array.from({ length: 10 })"
+            :key="i"
+            class="card animate-pulse"
           >
-            <div
-              v-for="(_, i) in Array.from({ length: 10 })"
-              :key="i"
-              class="card p-2 animate-pulse"
-            >
-              <div class="aspect-[2/3] bg-color-300 rounded-lg mb-3" />
-              <div class="h-4 bg-color-300 rounded w-3/4 mb-2" />
-              <div class="h-3 bg-color-300 rounded w-full" />
-            </div>
+            <USkeleton class="aspect-2/3 bg-accented" />
           </div>
+        </div>
 
-          <div v-else-if="doubanList.length === 0" class="text-center py-12">
-            <p class="text-color-400">暂无豆瓣推荐数据</p>
-          </div>
+        <div v-else-if="doubanList.length === 0" class="text-center py-12">
+          <p class="text-color-400">暂无豆瓣推荐数据</p>
+        </div>
 
-          <div
-            v-else
-            class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
+        <div
+          v-else
+          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
+        >
+          <article
+            v-for="item in doubanList"
+            :key="item.vod_id"
+            class="card cursor-pointer hover:border-primary-500 transition-colors relative"
+            @click="goToResourceSearch(item)"
+            :title="item.vod_name"
           >
-            <article
-              v-for="item in doubanList"
-              :key="item.vod_id"
-              class="card p-2 cursor-pointer hover:border-primary-500 transition-colors"
-              @click="goToResourceSearch(item)"
-            >
+            <div class="aspect-2/3 overflow-hidden bg-black">
+              <img
+                v-if="item.vod_pic"
+                :src="getPic(item.vod_pic)"
+                :alt="item.vod_name"
+                class="w-full h-full object-cover bg-muted mask-bottom2"
+                loading="lazy"
+                decoding="async"
+                @error="
+                  ($event.target as HTMLImageElement).style.display = 'none'
+                "
+              />
               <div
-                class="aspect-[2/3] rounded-lg overflow-hidden mb-3 bg-color-300"
+                v-else
+                class="w-full h-full flex items-center justify-center text-sm bg-muted mask-bottom2"
               >
-                <img
-                  v-if="item.vod_pic"
-                  :src="getPic(item.vod_pic)"
-                  :alt="item.vod_name"
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  @error="
-                    ($event.target as HTMLImageElement).style.display = 'none'
-                  "
-                />
-                <div
-                  v-else
-                  class="w-full h-full flex items-center justify-center text-color-300 text-sm"
-                >
-                  暂无封面
-                </div>
+                暂无封面
               </div>
-              <h3 class="font-medium text-sm truncate" :title="item.vod_name">
+            </div>
+            <div class="p-2 absolute bottom-0 left-0 right-0 text-white">
+              <h3 class="font-medium text-sm truncate">
                 {{ item.vod_name }}
               </h3>
               <p
-                class="text-xs text-color-400 truncate mt-1"
+                class="text-xs text-white/80 truncate mt-1"
                 :title="(item.vod_subtitle || '').replaceAll(/\s/g, '')"
               >
                 {{ item.vod_subtitle || "-" }}
               </p>
-            </article>
-          </div>
-
-          <div
-            v-if="doubanLoading && doubanPage > 1"
-            class="text-center py-4 text-sm text-color-400"
-            aria-busy="true"
-          >
-            加载中...
-          </div>
-
-          <InfiniteLoad
-            v-if="doubanList.length > 0 && doubanPage < doubanPageCount"
-            @infinite-load="loadMoreDouban"
-          />
-          <div v-else class="text-center py-4 text-sm text-color-400">
-            — 已经到底了 —
-          </div>
+            </div>
+          </article>
         </div>
-      </section>
 
-      <Qrcode />
+        <div
+          v-if="doubanLoading && doubanPage > 1"
+          class="text-center py-4 text-sm text-color-400"
+          aria-busy="true"
+        >
+          加载中...
+        </div>
 
-      <SiteFooter />
-    </div>
-  </div>
+        <InfiniteLoad
+          v-if="doubanList.length > 0 && doubanPage < doubanPageCount"
+          @infinite-load="loadMoreDouban"
+        />
+        <div v-else class="text-center py-4 text-sm text-color-400">
+          — 已经到底了 —
+        </div>
+      </template>
+    </UTabs>
+  </section>
+
+  <Qrcode />
 </template>
 
 <style scoped>
@@ -828,6 +806,18 @@ const getPic = (url: string) => {
   );
 }
 
+.mask-bottom2 {
+  mask: linear-gradient(
+    180deg,
+    #fff,
+    #fff,
+    #fff 20%,
+    #fff 70%,
+    hsla(0deg, 0%, 100%, 0.5) 80%,
+    hsla(0deg, 0%, 100%, 0)
+  );
+}
+
 .slogan {
   background: url(/img/title_bg.webp) no-repeat right 95%;
   background-size: 100%;
@@ -835,13 +825,13 @@ const getPic = (url: string) => {
 }
 
 .link {
-  @apply text-sm hover:text-primary-500 truncate transition-colors text-color-300;
+  @apply text-sm hover:text-primary truncate transition-colors;
 }
 
 .button-radius {
-  @apply px-3 py-2 rounded-full text-sm transition-colors bg-color-100 border border-color-200;
+  @apply px-3 py-2 rounded-full text-sm transition-colors bg-muted border border-muted;
   &:hover {
-    @apply bg-color-300;
+    @apply bg-accented;
   }
 }
 </style>

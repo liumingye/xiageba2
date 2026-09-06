@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { X, MessageSquare, Send, CheckCircle } from "@lucide/vue";
+import { CheckCircle, MessageSquare, Send } from "@lucide/vue";
+import type { RadioGroupItem } from "@nuxt/ui";
 
 const props = defineProps<{
   show: boolean;
@@ -11,13 +12,20 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const feedbackTypes = [
+const isOpen = computed({
+  get: () => props.show,
+  set: (val) => {
+    if (!val) emit("close");
+  },
+});
+
+const feedbackTypes = ref<RadioGroupItem[]>([
   { value: "BROKEN_LINK", label: "网盘链接失效" },
   { value: "WRONG_CONTENT", label: "网盘内容错误" },
   { value: "WRONG_CODE", label: "网盘提取码错误" },
   { value: "WRONG_QUALITY", label: "网盘音质错误" },
   { value: "WRONG_INFO", label: "歌名/歌手/封面/歌词错误" },
-];
+]);
 
 const selectedType = ref("");
 const description = ref("");
@@ -88,139 +96,116 @@ const handleClose = () => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="show"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      >
+  <UModal
+    v-model:open="isOpen"
+    title="问题反馈"
+    :ui="{ width: 'sm:max-w-md' }"
+    :close="{
+      color: 'neutral',
+      variant: 'ghost',
+      square: true,
+      'aria-label': '关闭',
+    }"
+    @close="handleClose"
+  >
+    <template #body>
+      <!-- 提交成功 -->
+      <div v-if="submitted" class="text-center py-6">
         <div
-          class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-          @click="handleClose"
-        ></div>
-
-        <div
-          class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-md w-full border border-color-300"
+          class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4"
         >
-          <button
-            class="absolute top-4 right-4 p-2 opacity-80 hover:opacity-100 hover:bg-color-300 rounded-lg transition-all"
+          <CheckCircle class="w-8 h-8 text-white" />
+        </div>
+        <h3 class="text-lg font-medium mb-2">反馈已提交</h3>
+        <p class="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
+          感谢您的反馈，我们会尽快处理
+        </p>
+        <UButton color="primary" variant="solid" @click="handleClose">
+          关闭
+        </UButton>
+      </div>
+
+      <!-- 反馈表单 -->
+      <div v-else class="space-y-4">
+        <div class="flex items-center gap-2">
+          <MessageSquare class="w-5 h-5 text-primary-500" />
+          <h3 class="text-lg font-medium">问题反馈</h3>
+        </div>
+
+        <URadioGroup
+          v-model="selectedType"
+          legend="反馈类型"
+          variant="list"
+          :items="feedbackTypes"
+          :ui="{ legend: 'text-sm font-medium mb-2' }"
+        />
+
+        <div>
+          <label
+            for="feedback-desc"
+            class="text-sm font-medium mb-2 block"
+          >
+            补充说明（选填）
+          </label>
+          <UTextarea
+            id="feedback-desc"
+            v-model="description"
+            placeholder="补充说明（选填）"
+            :rows="3"
+            :maxlength="100"
+            class="w-full"
+          />
+          <p class="text-right text-xs text-zinc-400 mt-1">
+            {{ description.length }}/100
+          </p>
+        </div>
+
+        <div>
+          <label
+            for="feedback-email"
+            class="text-sm font-medium mb-2 block"
+          >
+            邮箱（选填，用于接收处理通知）
+          </label>
+          <UInput
+            id="feedback-email"
+            v-model="email"
+            type="email"
+            placeholder="请输入邮箱"
+          />
+        </div>
+
+        <UAlert
+          v-if="errorMsg"
+          color="error"
+          variant="soft"
+          icon="i-lucide-circle-alert"
+          :title="errorMsg"
+          class="!p-3"
+        />
+
+        <div class="flex justify-end gap-3 pt-1">
+          <UButton
+            color="neutral"
+            variant="soft"
             @click="handleClose"
           >
-            <X class="w-5 h-5" />
-          </button>
-
-          <!-- 提交成功 -->
-          <div v-if="submitted" class="text-center py-8">
-            <div
-              class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
-            >
-              <CheckCircle class="w-8 h-8 text-white" />
-            </div>
-            <h3 class="text-xl font-medium mb-2">反馈已提交</h3>
-            <p class="text-gray-500 text-sm">感谢您的反馈，我们会尽快处理</p>
-            <button
-              class="mt-6 px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-              @click="handleClose"
-            >
-              关闭
-            </button>
-          </div>
-
-          <!-- 反馈表单 -->
-          <div v-else>
-            <div class="flex items-center gap-2 mb-4">
-              <MessageSquare class="w-5 h-5 text-primary-500 mt-1" />
-              <h3 class="text-xl font-medium">问题反馈</h3>
-            </div>
-
-            <div class="space-y-3 mb-4">
-              <label
-                v-for="type in feedbackTypes"
-                :key="type.value"
-                class="flex items-center gap-3 p-3 bg-color-300 hover:bg-color-750 rounded-lg cursor-pointer transition-colors"
-                :class="{
-                  'bg-primary-500/20 ring-1 ring-primary-500/50':
-                    selectedType === type.value,
-                }"
-              >
-                <input
-                  v-model="selectedType"
-                  type="radio"
-                  :value="type.value"
-                  class="w-4 h-4"
-                />
-                <span class="text-sm">{{ type.label }}</span>
-              </label>
-            </div>
-
-            <div class="relative">
-              <textarea
-                v-model="description"
-                placeholder="补充说明（选填）"
-                rows="3"
-                maxlength="100"
-                class="w-full bg-color-300 border border-color-300 rounded-lg px-4 py-3 text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500/50 resize-none"
-                @input="description = description.slice(0, 100)"
-              ></textarea>
-              <span class="absolute bottom-2 right-3 text-xs text-zinc-600">
-                {{ description.length }}/100
-              </span>
-            </div>
-
-            <div class="mt-3">
-              <input
-                v-model="email"
-                type="email"
-                placeholder="邮箱（选填，用于接收处理通知）"
-                class="w-full bg-color-300 border border-color-300 rounded-lg px-4 py-3 text-sm placeholder-zinc-500 focus:outline-none focus:border-primary-500/50 resize-none"
-              />
-            </div>
-
-            <p v-if="errorMsg" class="text-red-400 text-sm mt-2">
-              {{ errorMsg }}
-            </p>
-
-            <div class="flex justify-end gap-3 mt-4">
-              <button
-                class="px-4 py-2 bg-color-300 hover:bg-color-400 rounded-lg transition-colors"
-                @click="handleClose"
-              >
-                取消
-              </button>
-              <button
-                class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-                :disabled="isSubmitting"
-                @click="handleSubmit"
-              >
-                <Send class="w-4 h-4" />
-                {{ isSubmitting ? "提交中..." : "提交反馈" }}
-              </button>
-            </div>
-          </div>
+            取消
+          </UButton>
+          <UButton
+            color="primary"
+            variant="solid"
+            :loading="isSubmitting"
+            :disabled="isSubmitting"
+            @click="handleSubmit"
+          >
+            <template #leading>
+              <Send class="w-4 h-4" />
+            </template>
+            {{ isSubmitting ? "提交中..." : "提交反馈" }}
+          </UButton>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+    </template>
+  </UModal>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

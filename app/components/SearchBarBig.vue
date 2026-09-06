@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useMusicStore, storeToRefs } from "~/stores/music";
 import { Search, X, Music, FolderOpen, Sparkles } from "@lucide/vue";
@@ -19,16 +18,29 @@ const router = useRouter();
 const musicStore = useMusicStore();
 const { searchType } = storeToRefs(musicStore);
 
+const isMounted = useMounted();
+
 const MAX_KEYWORD_LENGTH = 30;
 
 const searchQuery = ref(props.modelValue || "");
-const isFocused = ref(false);
-const isMounted = useMounted();
-const searchInput = ref<HTMLInputElement>();
+const isInputFocused = ref(false);
+const showSuggestions = ref(false);
+
+const searchInput = ref(null);
+
+const getNativeInput = (): HTMLInputElement | undefined => {
+  const inst = searchInput.value as any;
+  const r = inst?.inputRef;
+  if (!r) return undefined;
+  // inputRef 可能是 Ref（需取 .value），也可能是已解包的元素
+  return typeof r === "object" && "value" in r && !("nodeType" in r)
+    ? r.value
+    : r;
+};
 
 onMounted(() => {
-  if (document.activeElement === searchInput.value) {
-    isFocused.value = true;
+  if (document.activeElement === getNativeInput()) {
+    isInputFocused.value = true;
   }
 });
 
@@ -69,6 +81,9 @@ const handleSearch = (keywords?: string) => {
   } else if (searchType.value === "ai") {
     router.push(`/search?type=ai&q=${encodeURIComponent(q)}`);
   }
+
+  isInputFocused.value = false;
+  showSuggestions.value = false;
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -80,19 +95,11 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 const clearInput = () => {
   searchQuery.value = "";
-  // nextTick(() => {
-  //   searchInput.value?.focus();
-  // });
 };
 
 const handleSuggestionSelect = (word: string) => {
   searchQuery.value = word;
   handleSearch(word);
-};
-
-const handleSuggestionsClose = () => {
-  searchInput.value?.blur();
-  isFocused.value = false;
 };
 
 const placeholderText = computed(() => {
@@ -113,125 +120,125 @@ defineExpose({
 </script>
 
 <template>
-  <div class="w-full max-w-[720px] mx-auto mb-6">
+  <div class="w-full max-w-160 mx-auto mb-6">
     <div
-      class="border-2 rounded-3xl transition-all duration-300 h-28 md:h-32 relative bg-color-100 px-4 py-4"
+      class="relative rounded-2xl sm:rounded-3xl border bg-muted transition-all duration-300 px-4 py-3"
       :class="
-        isFocused
-          ? 'border-primary-500 shadow-lg shadow-primary-500/20'
-          : 'border-color-300'
+        isInputFocused
+          ? 'border-primary-500 ring-1 ring-primary-500 shadow-lg shadow-primary-500/20'
+          : 'border-muted'
       "
+      @click.stop="getNativeInput()?.focus()"
     >
-      <input
+      <UInput
         ref="searchInput"
         v-model="searchQuery"
         :maxlength="MAX_KEYWORD_LENGTH"
         type="text"
         :placeholder="placeholderText"
-        class="w-full bg-transparent text-lg outline-none placeholder-zinc-500"
-        @keydown="handleKeydown"
-        @focus="isFocused = true"
-        @blur="isFocused = false"
-        aria-label="搜索"
+        variant="none"
+        size="xl"
         autofocus
+        :ui="{
+          root: 'mt-1 w-full',
+          base: 'placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-lg p-0',
+        }"
+        @keydown="handleKeydown"
+        @focus="
+          () => {
+            isInputFocused = true;
+            showSuggestions = true;
+          }
+        "
+        @blur="
+          () => {
+            isInputFocused = false;
+            showSuggestions = false;
+          }
+        "
+        aria-label="搜索"
       />
 
-      <div
-        class="bottom-3 left-4 right-4 absolute flex items-center justify-center"
-        @click.stop="searchInput?.focus()"
-      >
-        <div class="flex flex-1 gap-2">
-          <template v-if="!isMounted">
-            <div class="icon-btn placeholder-skeleton"></div>
-            <div class="icon-btn placeholder-skeleton"></div>
-            <div class="icon-btn placeholder-skeleton"></div>
-          </template>
-          <template v-else>
-            <button
-              class="icon-btn"
-              :class="{ primary: searchType === 'resource' }"
-              @click="searchType = 'resource'"
-              title="搜索资源"
-              type="button"
+      <div class="mt-8 flex items-center justify-center">
+        <div class="flex flex-1 items-center gap-1.5">
+          <ClientOnly>
+            <UButton
+              v-for="item in [
+                {
+                  type: 'resource',
+                  icon: FolderOpen,
+                  title: '搜索资源',
+                },
+                {
+                  type: 'music',
+                  icon: Music,
+                  title: '搜索音乐',
+                },
+                {
+                  type: 'ai',
+                  icon: Sparkles,
+                  title: 'AI 搜索',
+                },
+              ]"
+              :key="item.type"
+              color="neutral"
+              variant="soft"
+              :ui="{ base: 'rounded-full' }"
+              square
+              size="lg"
+              :active="searchType === item.type"
+              active-color="primary"
+              active-variant="solid"
+              :title="item.title"
+              :aria-label="item.title"
+              @click="searchType = item.type"
             >
-              <FolderOpen class="w-5 h-5" />
-            </button>
-            <button
-              class="icon-btn"
-              :class="{ primary: searchType === 'music' }"
-              @click="searchType = 'music'"
-              title="搜索音乐"
-              type="button"
-            >
-              <Music class="w-5 h-5" />
-            </button>
-            <button
-              class="icon-btn"
-              :class="{ primary: searchType === 'ai' }"
-              @click="searchType = 'ai'"
-              title="AI 搜索"
-              type="button"
-            >
-              <Sparkles class="w-5 h-5" />
-            </button>
-          </template>
+              <component :is="item.icon" class="w-5 h-5" />
+            </UButton>
+            <template #fallback>
+              <USkeleton
+                v-for="n in 3"
+                :key="n"
+                class="size-9 rounded-full bg-accented"
+              />
+            </template>
+          </ClientOnly>
         </div>
-        <button
-          v-if="searchQuery"
-          class="px-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors flex-shrink-0"
-          @click="clearInput"
-          aria-label="清除"
-          type="button"
-        >
-          <X class="w-5 h-5" />
-        </button>
-        <button
-          class="bg-primary-600 hover:bg-primary-500 text-white rounded-full w-8 h-8 transition-all duration-200 flex items-center justify-center cursor-pointer"
-          @click.stop="handleSearch()"
-          type="button"
-        >
-          <Search class="w-4 h-4" />
-        </button>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <UButton
+            v-if="searchQuery"
+            color="neutral"
+            variant="ghost"
+            square
+            size="lg"
+            :ui="{ base: 'rounded-full' }"
+            :aria-label="'清除'"
+            @click="clearInput"
+          >
+            <X class="w-5 h-5" />
+          </UButton>
+          <UButton
+            color="primary"
+            variant="solid"
+            square
+            size="lg"
+            :ui="{
+              base: 'rounded-full shadow-md shadow-primary-500/30 cursor-pointer',
+            }"
+            :aria-label="'搜索'"
+            @click.stop="handleSearch()"
+          >
+            <Search class="w-5 h-5" />
+          </UButton>
+        </div>
       </div>
 
       <SearchSuggestions
         :query="searchQuery"
-        :visible="isFocused"
+        v-model:visible="showSuggestions"
         @select="handleSuggestionSelect"
-        @close="handleSuggestionsClose"
       />
     </div>
   </div>
 </template>
-
-<style scoped>
-.icon-btn {
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: #94a3b8;
-  font-size: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.2s ease;
-  pointer-events: auto;
-  position: relative;
-
-  &:hover {
-    background-color: rgba(133, 133, 133, 0.16);
-  }
-}
-
-.icon-btn.primary {
-  background-color: var(--primary);
-  color: #ffffff;
-}
-
-.placeholder-skeleton {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-</style>

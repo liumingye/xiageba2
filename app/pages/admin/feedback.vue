@@ -403,7 +403,7 @@ const typeColor: Record<string, string> = {
                   <a
                     :href="`/music/${fb.musicId}`"
                     target="_blank"
-                    class="text-color-500 hover:text-primary-400 flex-shrink-0"
+                    class="text-color-500 hover:text-primary-400 shrink-0"
                     title="查看歌曲"
                   >
                     <ExternalLink class="w-3.5 h-3.5" />

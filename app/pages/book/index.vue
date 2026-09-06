@@ -7,11 +7,9 @@ import {
   AlertTriangle,
   RotateCcw,
   Filter,
-  RotateCcwSquare,
-  HardDrive,
-  Search,
 } from "@lucide/vue";
 import { useDebounceFn } from "@vueuse/core";
+import { load } from "cheerio";
 
 defineOptions({
   name: "BookIndexPage",
@@ -335,325 +333,281 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar :show-search="false" :show-theme-switcher="true" />
-
-    <div class="max-w-4xl mx-auto px-2">
-      <!-- 搜索栏 -->
-      <div class="flex items-center gap-2 mb-4">
-        <div class="flex items-center relative flex-1">
-          <input
-            v-model="searchInput"
-            type="text"
-            placeholder="搜你想看的小说"
-            class="input-search pl-3 pr-10 bg-color-100"
-            @keydown.enter="handleSearch"
-          />
-          <button
-            v-if="searchInput"
-            class="absolute right-2 py-0.5 px-0.5 opacity-60 hover:opacity-100 transition-all bg-color-400 rounded-full"
-            @click="clearSearch"
+  <!-- 搜索栏 -->
+  <div class="flex items-center gap-2 mb-4">
+    <div class="flex items-center relative flex-1">
+      <UInput
+        v-model="searchInput"
+        placeholder="搜你想看的小说"
+        class="w-full"
+        :ui="{ trailing: 'pe-1' }"
+        size="xl"
+        @keyup.enter="handleSearch"
+      >
+        <template v-if="searchInput?.length" #trailing>
+          <UButton
+            color="neutral"
+            variant="link"
+            icon="i-lucide-circle-x"
             aria-label="清除"
-            type="button"
-          >
-            <X class="w-4 h-4" />
-          </button>
-        </div>
-        <button
-          class="px-3 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-          @click="handleSearch"
-          type="button"
-        >
-          <Search class="w-5 h-5" />
-        </button>
-      </div>
-
-      <main>
-        <!-- 错误提示 -->
-        <div v-if="errorInfo" class="card p-5 text-center mb-6" role="alert">
-          <div
-            class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 text-white"
-            :class="
-              errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
-                ? 'bg-yellow-500'
-                : 'bg-red-500'
-            "
-            aria-hidden="true"
-          >
-            <AlertTriangle class="w-7 h-7" />
-          </div>
-          <h3 class="text-lg font-medium mb-1">
-            {{ errorInfo.title }}
-          </h3>
-          <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
-          <button
-            v-if="errorInfo.canRetry"
-            class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="handleRetry"
-          >
-            <RotateCcw class="w-4 h-4" />
-            重新加载
-          </button>
-        </div>
-
-        <!-- 加载骨架屏 -->
-        <div
-          v-else-if="isLoading"
-          class="space-y-2"
-          aria-busy="true"
-          aria-label="正在加载小说列表"
-        >
-          <!-- 筛选骨架（仅列表模式） -->
-          <template v-if="!isSearchMode">
-            <div class="flex items-center gap-2 !my-3">
-              <Filter class="w-4 h-4 text-primary-400" />
-              <h2 class="text-zinc-500 text-sm">筛选条件</h2>
-            </div>
-            <div class="flex flex-wrap gap-2 mb-4 h-10">
-              <div
-                class="flex-1 min-w-24 bg-color-300 rounded-lg animate-pulse"
-              />
-              <div
-                class="flex-1 min-w-24 bg-color-300 rounded-lg animate-pulse"
-              />
-              <div class="bg-color-300 w-24 rounded-lg animate-pulse" />
-            </div>
-          </template>
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            <div v-for="(_, i) in 8" :key="i" class="card p-3 animate-pulse">
-              <div class="aspect-[3/4] bg-color-300 rounded-lg mb-2" />
-              <div class="h-3 bg-color-300 rounded w-full mb-1" />
-              <div class="h-2 bg-color-300 rounded w-2/3 mb-1" />
-              <div class="h-2 bg-color-300 rounded w-1/2" />
-            </div>
-          </div>
-        </div>
-
-        <!-- 小说内容 -->
-        <div v-else class="space-y-2">
-          <!-- 筛选条件（仅列表模式） -->
-          <template v-if="!isSearchMode">
-            <div class="flex items-center gap-2 !my-3">
-              <Filter class="w-4 h-4 text-primary-400" />
-              <h2 class="text-color-500 text-sm">筛选条件</h2>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 mb-4">
-              <div class="flex-1 relative min-w-24">
-                <select
-                  class="select"
-                  :value="bookStatusFilter"
-                  @change="
-                    updateFilter(
-                      'book_status',
-                      ($event.target as HTMLSelectElement).value,
-                    )
-                  "
-                >
-                  <option
-                    v-for="opt in bookStatusOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <BookOpen
-                  class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                />
-              </div>
-
-              <div class="flex-1 relative min-w-24">
-                <select
-                  class="select"
-                  :value="novelCategoryFilter"
-                  @change="
-                    updateFilter(
-                      'category',
-                      ($event.target as HTMLSelectElement).value,
-                    )
-                  "
-                >
-                  <option
-                    v-for="opt in novelCategoryOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-                <HardDrive
-                  class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                />
-              </div>
-
-              <button
-                class="flex items-center gap-1.5 px-3 py-2 bg-color-100 text-color-300 enabled:hover:bg-color-300 rounded-lg text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                @click="clearFilters"
-                :disabled="!hasFilters"
-              >
-                <RotateCcwSquare class="w-3.5 h-3.5" />
-                清除筛选
-              </button>
-            </div>
-          </template>
-
-          <h2 v-if="books.length > 0" class="text-color-500 text-sm mb-3">
-            <template v-if="isSearchMode">
-              搜索"<span class="text-primary-400">{{ searchKeyword }}</span
-              >"找到 {{ books.length }} 本小说
-            </template>
-            <template v-else>
-              共找到 {{ books.length }} 本小说
-              <span v-if="totalPages > 1" class="ml-2"
-                >（第 {{ currentPage }} 页）</span
-              >
-            </template>
-          </h2>
-
-          <!-- 小说列表网格 -->
-          <template v-if="books.length > 0">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              <NuxtLink
-                :to="`/book/${encodeURIComponent(book.bookId)}`"
-                v-for="book in books"
-                :key="book.bookId"
-                class="card p-3 hover:border-primary-500/50 transition-colors flex flex-col cursor-pointer group"
-              >
-                <!-- 封面 -->
-                <div
-                  class="relative aspect-[3/4] mb-2 overflow-hidden rounded-lg flex-shrink-0"
-                >
-                  <img
-                    v-if="!novelCoverError[book.bookId]"
-                    :src="book.coverImage"
-                    :alt="book.bookName"
-                    class="w-full h-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                    @error="novelCoverError[book.bookId] = true"
-                  />
-                  <div
-                    v-else
-                    class="w-full h-full flex items-center justify-center"
-                  >
-                    <BookOpen class="w-10 h-10 text-zinc-600" />
-                  </div>
-                  <!-- 完结/连载标签 -->
-                  <div
-                    class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-[var(--white)]"
-                    :class="
-                      book.bookStatus === 1 ? 'bg-green-600' : 'bg-blue-600'
-                    "
-                  >
-                    {{ book.bookStatus === 1 ? "已完结" : "连载中" }}
-                  </div>
-                </div>
-
-                <!-- 小说名 -->
-                <h3
-                  class="text-sm font-medium truncate mb-0.5"
-                  :title="book.bookName"
-                >
-                  {{ book.bookName }}
-                </h3>
-
-                <!-- 作者 -->
-                <p
-                  class="text-xs text-zinc-500 truncate mb-1"
-                  :title="book.author"
-                >
-                  {{ book.author
-                  }}<template v-if="book.cpName"> · {{ book.cpName }}</template>
-                </p>
-
-                <!-- 标签 -->
-                <div class="flex flex-wrap gap-1 mb-2 min-h-[16px]">
-                  <template v-if="book.tag">
-                    <span
-                      v-for="(tag, idx) in getTag(book.tag)"
-                      :key="idx"
-                      class="text-[10px] px-1.5 py-0.5 bg-primary-500/10 text-primary-400 rounded truncate max-w-full"
-                      :title="tag"
-                    >
-                      {{ tag }}
-                    </span>
-                  </template>
-                </div>
-
-                <!-- 操作按钮 -->
-                <div class="flex gap-2 mt-auto pt-2">
-                  <button
-                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-color-300 hover:bg-color-400 text-color-300 rounded-md transition-colors"
-                    @click.prevent="openSampleRead(book)"
-                  >
-                    <Eye class="w-3 h-3" />
-                    试读
-                  </button>
-                  <button
-                    class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors"
-                    @click.prevent="openGetCode(book)"
-                  >
-                    <Key class="w-3 h-3" />
-                    口令
-                  </button>
-                </div>
-              </NuxtLink>
-            </div>
-          </template>
-
-          <template v-else>
-            <div class="text-center py-20">
-              <div
-                class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
-                aria-hidden="true"
-              >
-                <BookOpen class="w-8 h-8 text-zinc-600" />
-              </div>
-              <p class="text-zinc-500">
-                {{
-                  isSearchMode
-                    ? "服务器当前繁忙或未找到相关小说"
-                    : "暂无小说，试试其他筛选条件"
-                }}
-              </p>
-              <button
-                class="mt-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                @click="debounceRefresh()"
-              >
-                重试
-              </button>
-            </div>
-          </template>
-
-          <!-- 分页 -->
-          <Pagination
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            @change="goToPage"
+            @click="clearSearch"
           />
-        </div>
-      </main>
+        </template>
+      </UInput>
+    </div>
+    <UButton size="xl" @click="handleSearch" icon="i-lucide-search"></UButton>
+  </div>
 
-      <Qrcode />
-      <SiteFooter />
+  <main>
+    <!-- 错误提示 -->
+    <div v-if="errorInfo" class="card p-5 text-center mb-6" role="alert">
+      <div
+        class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 text-white"
+        :class="
+          errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
+            ? 'bg-yellow-500'
+            : 'bg-red-500'
+        "
+        aria-hidden="true"
+      >
+        <AlertTriangle class="w-7 h-7" />
+      </div>
+      <h3 class="text-lg font-medium mb-1">
+        {{ errorInfo.title }}
+      </h3>
+      <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
+      <button
+        v-if="errorInfo.canRetry"
+        class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+        @click="handleRetry"
+      >
+        <RotateCcw class="w-4 h-4" />
+        重新加载
+      </button>
     </div>
 
-    <!-- 试读弹窗 -->
-    <SampleReadModal
-      v-model="showSampleReadModal"
-      :book="sampleReadBook"
-      @get-code="onSampleReadGetCode"
-    />
+    <!-- 加载骨架屏 -->
+    <div
+      v-else-if="isLoading"
+      class="space-y-2"
+      aria-busy="true"
+      aria-label="正在加载小说列表"
+    >
+      <!-- 筛选骨架（仅列表模式） -->
+      <template v-if="!isSearchMode">
+        <div class="flex items-center gap-2 my-3">
+          <Filter class="w-4 h-4 text-primary-400" />
+          <h2 class="text-zinc-500 text-sm">筛选条件</h2>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-2 h-9">
+          <USkeleton class="flex-1 min-w-24" />
+          <USkeleton class="flex-1 min-w-24" />
+          <USkeleton class="w-24" />
+        </div>
+      </template>
+      <USkeleton class="h-5 w-46 my-3.5" />
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div v-for="(_, i) in 8" :key="i" class="card p-3">
+          <USkeleton class="aspect-3/4 mb-2 bg-accented" />
+          <USkeleton class="h-5 w-2/3 mb-1 bg-accented" />
+          <USkeleton class="h-4 w-full mb-1 bg-accented" />
+          <USkeleton class="h-4.5 w-1/3 mb-4 bg-accented" />
+          <div class="flex gap-3">
+            <USkeleton class="h-8 w-1/2 bg-accented" />
+            <USkeleton class="h-8 w-1/2 bg-accented" />
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- 口令弹窗 -->
-    <GetCodeModal v-model="showCodeModal" :book="codeModalBook" />
-  </div>
+    <!-- 小说内容 -->
+    <div v-else class="space-y-2">
+      <!-- 筛选条件（仅列表模式） -->
+      <template v-if="!isSearchMode">
+        <div class="flex items-center gap-2 my-3">
+          <Filter class="w-4 h-4 text-primary-400" />
+          <h2 class="text-color-500 text-sm">筛选条件</h2>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <USelect
+            class="flex-1 min-w-24"
+            color="neutral"
+            variant="outline"
+            value-key="value"
+            size="lg"
+            :items="bookStatusOptions"
+            :model-value="bookStatusFilter"
+            aria-label="选择连载状态"
+            @update:model-value="updateFilter('book_status', $event as string)"
+          />
+
+          <USelect
+            class="flex-1 min-w-24"
+            color="neutral"
+            variant="outline"
+            value-key="value"
+            size="lg"
+            :items="novelCategoryOptions"
+            :model-value="novelCategoryFilter"
+            aria-label="选择小说分类"
+            @update:model-value="updateFilter('category', $event as string)"
+          />
+
+          <UButton
+            variant="outline"
+            color="neutral"
+            size="lg"
+            @click="clearFilters"
+            :disabled="!hasFilters"
+            icon="i-lucide-rotate-ccw-square"
+          >
+            清除筛选
+          </UButton>
+        </div>
+      </template>
+
+      <h2 v-if="books.length > 0" class="text-color-500 text-sm mb-3">
+        <template v-if="isSearchMode">
+          搜索"<span class="text-primary-400">{{ searchKeyword }}</span
+          >"找到 {{ books.length }} 本小说
+        </template>
+        <template v-else>
+          共找到 {{ books.length }} 本小说
+          <span v-if="totalPages > 1" class="ml-2"
+            >（第 {{ currentPage }} 页）</span
+          >
+        </template>
+      </h2>
+
+      <!-- 小说列表网格 -->
+      <template v-if="books.length > 0">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <NuxtLink
+            :to="`/book/${encodeURIComponent(book.bookId)}`"
+            v-for="book in books"
+            :key="book.bookId"
+            class="card p-3 hover:border-primary-500/50 transition-colors flex flex-col cursor-pointer group"
+          >
+            <!-- 封面 -->
+            <div
+              class="relative aspect-3/4 mb-2 overflow-hidden rounded-lg shrink-0"
+            >
+              <img
+                v-if="!novelCoverError[book.bookId]"
+                :src="book.coverImage"
+                :alt="book.bookName"
+                class="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                @error="novelCoverError[book.bookId] = true"
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center"
+              >
+                <BookOpen class="w-10 h-10 text-muted" />
+              </div>
+              <!-- 完结/连载标签 -->
+              <div
+                class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
+                :class="book.bookStatus === 1 ? 'bg-green-600' : 'bg-blue-600'"
+              >
+                {{ book.bookStatus === 1 ? "已完结" : "连载中" }}
+              </div>
+            </div>
+
+            <!-- 小说名 -->
+            <h3
+              class="text-sm font-medium truncate mb-0.5"
+              :title="book.bookName"
+            >
+              {{ book.bookName }}
+            </h3>
+
+            <!-- 作者 -->
+            <p class="text-xs text-muted truncate mb-1" :title="book.author">
+              {{ book.author
+              }}<template v-if="book.cpName"> · {{ book.cpName }}</template>
+            </p>
+
+            <!-- 标签 -->
+            <div class="flex flex-wrap gap-1 mb-2 min-h-4">
+              <template v-if="book.tag">
+                <UBadge
+                  v-for="(tag, idx) in getTag(book.tag)"
+                  :key="idx"
+                  size="sm"
+                  variant="soft"
+                  >{{ tag }}</UBadge
+                >
+              </template>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex gap-2 mt-auto pt-2">
+              <UButton
+                variant="outline"
+                @click.prevent="openSampleRead(book)"
+                icon="i-lucide-eye"
+                block
+              >
+                试读
+              </UButton>
+
+              <UButton
+                @click.prevent="openGetCode(book)"
+                icon="i-lucide-key-round"
+                block
+              >
+                口令
+              </UButton>
+            </div>
+          </NuxtLink>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="text-center py-20">
+          <div
+            class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
+            aria-hidden="true"
+          >
+            <BookOpen class="w-8 h-8 text-zinc-600" />
+          </div>
+          <p class="text-zinc-500">
+            {{
+              isSearchMode
+                ? "服务器当前繁忙或未找到相关小说"
+                : "暂无小说，试试其他筛选条件"
+            }}
+          </p>
+          <button
+            class="mt-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            @click="debounceRefresh()"
+          >
+            重试
+          </button>
+        </div>
+      </template>
+
+      <!-- 分页 -->
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @change="goToPage"
+      />
+    </div>
+  </main>
+
+  <Qrcode />
+
+  <!-- 试读弹窗 -->
+  <SampleReadModal
+    v-model="showSampleReadModal"
+    :book="sampleReadBook"
+    @get-code="onSampleReadGetCode"
+  />
+
+  <!-- 口令弹窗 -->
+  <GetCodeModal v-model="showCodeModal" :book="codeModalBook" />
 </template>
-
-<style scoped>
-@reference "~/assets/css/main.css";
-
-.select {
-  @apply w-full appearance-none bg-color-100 text-color-300 hover:bg-color-300 px-3 py-2 pr-6 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500;
-}
-</style>

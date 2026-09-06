@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/** @Deprecated */
 /* 基础标题样式 (对应 addBase) */
 @layer base {
   h1 {
@@ -23,6 +24,7 @@
   }
 }
 
+/** @Deprecated */
 /* 自定义工具类 (对应 addUtilities) */
 @utility text-color-100 {
   @apply text-zinc-950 dark:text-zinc-100;
@@ -56,6 +58,7 @@
   @apply border-zinc-500 dark:border-zinc-600;
 }
 
+/** @Deprecated */
 @utility bg-color-100 {
   @apply bg-white dark:bg-zinc-900;
 }
@@ -84,15 +87,64 @@
   @apply bg-zinc-700 dark:bg-zinc-100;
 }
 
-/**/
-html[data-theme="light"] {
+:root {
+  --ui-bg-accented: var(--ui-color-neutral-300);
+
+  --ui-header-height: 56px;
+
+  --color-amber-400: oklch(82.8% 0.189 84.429);
+  --color-amber-500: oklch(76.9% 0.188 70.08);
+  --color-lime-400: oklch(84.1% 0.238 128.85);
+  --color-lime-500: oklch(76.8% 0.233 130.85);
+  --color-emerald-400: oklch(76.5% 0.177 163.223);
+  --color-emerald-500: oklch(69.6% 0.17 162.48);
+  --color-teal-400: oklch(77.7% 0.152 181.912);
+  --color-teal-500: oklch(70.4% 0.14 182.503);
+  --color-cyan-400: oklch(78.9% 0.154 211.53);
+  --color-cyan-500: oklch(71.5% 0.143 215.221);
+  --color-sky-400: oklch(74.6% 0.16 232.661);
+  --color-sky-500: oklch(68.5% 0.169 237.323);
+  --color-indigo-400: oklch(67.3% 0.182 276.935);
+  --color-indigo-500: oklch(58.5% 0.233 277.117);
+  --color-violet-400: oklch(70.2% 0.183 293.541);
+  --color-violet-500: oklch(60.6% 0.25 292.717);
+  --color-purple-400: oklch(71.4% 0.203 305.504);
+  --color-purple-500: oklch(62.7% 0.265 303.9);
+  --color-fuchsia-400: oklch(74% 0.238 322.16);
+  --color-fuchsia-500: oklch(66.7% 0.295 322.15);
+  --color-pink-400: oklch(71.8% 0.202 349.761);
+  --color-pink-500: oklch(65.6% 0.241 354.308);
+  --color-rose-400: oklch(71.2% 0.194 13.428);
+  --color-rose-500: oklch(64.5% 0.246 16.439);
+  --color-slate-400: oklch(70.4% 0.04 256.788);
+  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-neutral-400: var(--ui-color-neutral-400);
+  --color-neutral-500: var(--ui-color-neutral-500);
+  --color-stone-400: oklch(70.9% 0.01 56.259);
+  --color-stone-500: oklch(55.3% 0.013 58.071);
+  --color-mauve-400: oklch(71.1% 0.019 323.02);
+  --color-mauve-500: oklch(54.2% 0.034 322.5);
+  --color-olive-400: oklch(73.7% 0.021 106.9);
+  --color-olive-500: oklch(58% 0.031 107.3);
+  --color-mist-400: oklch(72.3% 0.014 214.4);
+  --color-mist-500: oklch(56% 0.021 213.5);
+  --color-taupe-400: oklch(71.4% 0.014 41.2);
+  --color-taupe-500: oklch(54.7% 0.021 43.1);
+}
+
+.dark {
+  --ui-bg-accented: var(--ui-color-neutral-700);
+}
+
+html.light {
   color-scheme: light;
 }
 
-html[data-theme="dark"] {
+html.dark {
   color-scheme: dark;
 }
 
+/* @Deprecated */
 html {
   --white: #fff;
   --text-color: #212121;
@@ -102,11 +154,10 @@ html {
   --color-text-300: rgb(10 10 10 / var(--tw-bg-opacity, 1));
   --border: #e2e8f0;
   --primary: #16a34a;
-
-  scrollbar-gutter: stable;
 }
 
-html[data-theme="dark"] {
+/* @Deprecated */
+html.dark {
   --text-color: #fff;
   --bg-color-700: rgb(63 63 70);
   --bg-color-800: rgb(39 39 42);
@@ -117,53 +168,39 @@ html[data-theme="dark"] {
 }
 
 body {
-  @apply bg-neutral-50 dark:bg-zinc-950 text-[--text-color];
-  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  @apply bg-default/50;
 }
 
-html,
-body {
+#__nuxt {
   overflow-x: hidden;
 }
 
-hr {
+body {
+  overflow-y: scroll;
+}
+
+/* hr {
   @apply border-color-300;
   margin: 8px 0;
-}
+} */
 
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-::-webkit-scrollbar-track,
-::-webkit-scrollbar-corner {
-  @apply bg-zinc-100;
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-track {
+  @apply bg-default;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-300;
-  border-radius: 4px;
+  @apply bg-accented;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-zinc-400;
-}
-
-html[data-theme="dark"] {
-  ::-webkit-scrollbar-corner,
-  ::-webkit-scrollbar-track {
-    @apply bg-zinc-900;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-700;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-zinc-600;
-  }
-}
+/* ::-webkit-scrollbar-thumb:hover {
+  @apply bg-accented;
+} */
 
 @layer components {
   .btn-primary {
@@ -175,73 +212,12 @@ html[data-theme="dark"] {
   }
 
   .input-search {
-    @apply w-full bg-color-200 border border-color-300 rounded-lg px-4 py-2 placeholder-zinc-500 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all duration-200;
+    @apply w-full bg-muted border border-muted rounded-lg px-4 py-2 placeholder-zinc-500 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all duration-200;
   }
 
   .card {
-    @apply bg-color-100 border border-color-300 rounded-xl overflow-hidden;
+    @apply bg-muted border border-muted rounded-xl overflow-hidden;
   }
-}
-
-/* Markdown 渲染样式（prose-resource） */
-.prose-resource h2 {
-  @apply text-lg font-bold text-white mb-3;
-}
-.prose-resource h3 {
-  @apply text-base font-semibold text-zinc-200 mb-2 mt-4;
-}
-.prose-resource h4 {
-  @apply text-sm font-medium text-zinc-300 mb-1 mt-3;
-}
-.prose-resource p {
-  @apply mb-3 leading-relaxed;
-}
-.prose-resource ul {
-  @apply list-disc pl-5 mb-3 space-y-1;
-}
-.prose-resource ol {
-  @apply list-decimal pl-5 mb-3 space-y-1;
-}
-.prose-resource li {
-  @apply leading-relaxed;
-}
-.prose-resource strong {
-  @apply text-white font-semibold;
-}
-.prose-resource code {
-  @apply bg-zinc-800 text-primary-400 px-1.5 py-0.5 rounded text-xs;
-}
-.prose-resource a {
-  @apply text-primary-400 hover:text-primary-300 underline;
-}
-.prose-resource blockquote {
-  @apply border-l-2 border-primary-500 pl-4 text-zinc-400 italic my-3;
-}
-.prose-resource table {
-  @apply w-full text-sm border-collapse mb-3;
-}
-.prose-resource th {
-  @apply border border-zinc-700 px-3 py-2 text-left text-zinc-300 bg-zinc-800;
-}
-.prose-resource td {
-  @apply border border-zinc-700 px-3 py-2 text-zinc-400;
-}
-.prose-resource hr {
-  @apply border-zinc-700 my-4;
-}
-
-html[data-theme="light"] .prose-resource strong {
-  color: #0f172a;
-}
-html[data-theme="light"] .prose-resource h2 {
-  color: #0f172a;
-}
-html[data-theme="light"] .prose-resource h3 {
-  color: #1e293b;
-}
-html[data-theme="light"] .prose-resource code {
-  background-color: #f1f5f9;
-  color: #6366f1;
 }
 
 /** 网盘图标 */

@@ -20,7 +20,6 @@ import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminModal from "~/components/admin/Modal.vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
-import { useToast } from "~/composables/useToast";
 import { getPanTypeLabel } from "~/utils/pan";
 
 interface AccountListItem {
@@ -125,7 +124,12 @@ const openEditForm = async (account: AccountListItem) => {
     baiduOauthCode.value = "";
     formShow.value = true;
   } catch {
-    toast.error("获取账号信息失败");
+    toast.add({
+      title: "获取账号信息失败",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
   }
 };
 
@@ -138,15 +142,30 @@ const saveForm = async () => {
 
   // 校验
   if ((f.type === "quark" || f.type === "uc") && !f.cookie) {
-    toast.error("请填写 Cookie");
+    toast.add({
+      title: "请填写 Cookie",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
     return;
   }
   if (f.type === "baidu" && !f.cookie) {
-    toast.error("请填写 Cookie");
+    toast.add({
+      title: "请填写 Cookie",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
     return;
   }
   if (f.type === "xunlei" && !f.refreshToken) {
-    toast.error("请填写 Refresh Token");
+    toast.add({
+      title: "请填写 Refresh Token",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
     return;
   }
 
@@ -164,10 +183,20 @@ const saveForm = async () => {
 
     if (f.id) {
       await put(`/api/admin/accounts/${f.id}`, payload);
-      toast.success("账号已更新");
+      toast.add({
+        title: "账号已更新",
+        icon: "i-lucide-check",
+        color: "success",
+        duration: 2000,
+      });
     } else {
       await post("/api/admin/accounts", payload);
-      toast.success("账号已添加");
+      toast.add({
+        title: "账号已添加",
+        icon: "i-lucide-check",
+        color: "success",
+        duration: 2000,
+      });
     }
     formShow.value = false;
     await loadAccounts();
@@ -185,7 +214,12 @@ const deleteAccount = async (account: AccountListItem) => {
     return;
   try {
     await del(`/api/admin/accounts/${account.id}`);
-    toast.success("账号已删除");
+    toast.add({
+      title: "账号已删除",
+      icon: "i-lucide-check",
+      color: "success",
+      duration: 2000,
+    });
     await loadAccounts();
   } catch {
     // 401 已由拦截器处理
@@ -197,7 +231,12 @@ const toggleStatus = async (account: AccountListItem) => {
   try {
     await put(`/api/admin/accounts/${account.id}`, { status: newStatus });
     account.status = newStatus;
-    toast.success(newStatus === 1 ? "账号已启用" : "账号已停用");
+    toast.add({
+      title: newStatus === 1 ? "账号已启用" : "账号已停用",
+      icon: "i-lucide-check",
+      color: "success",
+      duration: 2000,
+    });
   } catch {
     // 401 已由拦截器处理
   }
@@ -209,14 +248,27 @@ const checkAccount = async (account: AccountListItem) => {
     const data = await get(`/api/admin/check-account?accountId=${account.id}`);
     const label = getPanTypeLabel(account.type);
     if (data.success) {
-      toast.success(`${label}账号 #${account.id} 有效`);
+      toast.add({
+        title: `${label}账号 #${account.id} 有效`,
+        icon: "i-lucide-check",
+        color: "success",
+        duration: 2000,
+      });
     } else {
-      toast.error(
-        `${label}账号 #${account.id} 无效：${data.message || "未知错误"}`,
-      );
+      toast.add({
+        title: `${label}账号 #${account.id} 无效：${data.message || "未知错误"}`,
+        icon: "i-lucide-x",
+        color: "error",
+        duration: 2000,
+      });
     }
   } catch {
-    toast.error("检测失败，请重试");
+    toast.add({
+      title: "检测失败，请重试",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
   } finally {
     checking.value[account.id] = false;
   }
@@ -228,12 +280,22 @@ const openDirPicker = () => {
     const t = formData.value.type;
     if (t === "quark" || t === "uc" || t === "baidu") {
       if (!formData.value.cookie) {
-        toast.error("请先填写 Cookie");
+        toast.add({
+          title: "请先填写 Cookie",
+          icon: "i-lucide-x",
+          color: "error",
+          duration: 2000,
+        });
         return;
       }
     } else if (t === "xunlei") {
       if (!formData.value.refreshToken) {
-        toast.error("请先填写 Refresh Token");
+        toast.add({
+          title: "请先填写 Refresh Token",
+          icon: "i-lucide-x",
+          color: "error",
+          duration: 2000,
+        });
         return;
       }
     }
@@ -256,7 +318,12 @@ const getBaiduOauthUrl = async () => {
     baiduOauthCode.value = "";
     window.open(data.url, "_blank");
   } catch {
-    toast.error("获取授权链接失败");
+    toast.add({
+      title: "获取授权链接失败",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
   } finally {
     gettingOauthUrl.value = false;
   }
@@ -264,7 +331,12 @@ const getBaiduOauthUrl = async () => {
 
 const getBaiduOauthToken = async () => {
   if (!baiduOauthCode.value.trim()) {
-    toast.error("请先填写授权码");
+    toast.add({
+      title: "请先填写授权码",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
     return;
   }
   gettingOauthToken.value = true;
@@ -276,15 +348,30 @@ const getBaiduOauthToken = async () => {
     if (data.accessToken) {
       formData.value.accessToken = data.accessToken;
       formData.value.refreshToken = data.refreshToken || "";
-      toast.success("获取 Token 成功");
+      toast.add({
+        title: "获取 Token 成功",
+        icon: "i-lucide-check",
+        color: "success",
+        duration: 2000,
+      });
       baiduOauthUrl.value = "";
       baiduOauthCodeVerifier.value = "";
       baiduOauthCode.value = "";
     } else {
-      toast.error(data.message || "获取 Token 失败");
+      toast.add({
+        title: "获取 Token 失败",
+        icon: "i-lucide-x",
+        color: "error",
+        duration: 2000,
+      });
     }
   } catch {
-    toast.error("获取 Token 失败");
+    toast.add({
+      title: "获取 Token 失败",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
   } finally {
     gettingOauthToken.value = false;
   }
@@ -539,10 +626,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               :disabled="gettingOauthUrl"
               @click="getBaiduOauthUrl"
             >
-              <Loader2
-                v-if="gettingOauthUrl"
-                class="w-4 h-4 animate-spin"
-              />
+              <Loader2 v-if="gettingOauthUrl" class="w-4 h-4 animate-spin" />
               <Link2 v-else class="w-4 h-4" />
               {{ gettingOauthUrl ? "获取中..." : "获取授权链接" }}
             </button>
@@ -559,22 +643,15 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               :disabled="gettingOauthToken || !baiduOauthCode.trim()"
               @click="getBaiduOauthToken"
             >
-              <Loader2
-                v-if="gettingOauthToken"
-                class="w-4 h-4 animate-spin"
-              />
+              <Loader2 v-if="gettingOauthToken" class="w-4 h-4 animate-spin" />
               {{ gettingOauthToken ? "获取中..." : "获取 Token" }}
             </button>
           </div>
         </div>
 
         <!-- Refresh Token -->
-        <div
-          v-if="formData.type === 'baidu' || formData.type === 'xunlei'"
-        >
-          <label class="block text-color-400 text-sm mb-2"
-            >Refresh Token</label
-          >
+        <div v-if="formData.type === 'baidu' || formData.type === 'xunlei'">
+          <label class="block text-color-400 text-sm mb-2">Refresh Token</label>
           <textarea
             v-model="formData.refreshToken"
             rows="2"

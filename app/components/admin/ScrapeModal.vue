@@ -337,7 +337,7 @@ const coverSame = (cover: string) => {
                 <img
                   :src="item.cover || '/img/cover.png'"
                   :alt="item.title"
-                  class="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                  class="w-12 h-12 rounded-lg object-cover shrink-0"
                   loading="lazy"
                   @error="
                     ($event.target as HTMLImageElement).src = '/img/cover.png'
@@ -459,7 +459,7 @@ const coverSame = (cover: string) => {
                 <!-- 勾选框 -->
                 <div class="flex items-center justify-center w-full h-8">
                   <div
-                    class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0"
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors shrink-0"
                     :class="
                       selectedFields[field]
                         ? 'bg-primary-500 border-primary-500'
@@ -475,16 +475,16 @@ const coverSame = (cover: string) => {
 
                 <!-- 字段名 -->
                 <div
-                  class="mt-1 flex items-center gap-1.5 text-color-300 flex-shrink-0"
+                  class="mt-1 flex items-center gap-1.5 text-color-300 shrink-0"
                 >
                   <component
                     :is="rowIcon(field)"
-                    class="w-4 h-4 flex-shrink-0"
+                    class="w-4 h-4 shrink-0"
                   />
                   <span>{{ FIELD_LABEL[field] }}</span>
                   <span
                     v-if="hasDiff(field)"
-                    class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-green-500 text-white flex-shrink-0"
+                    class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-green-500 text-white shrink-0"
                     >变</span
                   >
                 </div>

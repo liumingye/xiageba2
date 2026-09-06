@@ -38,6 +38,6 @@ export default {
     },
   },
   future: {
-    hoverOnlyWhenSupported: true,
+    // hoverOnlyWhenSupported: true,
   },
 };

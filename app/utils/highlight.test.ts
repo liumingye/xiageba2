@@ -13,15 +13,15 @@ describe("highlightTokens", () => {
     ]);
 
     expect(html).toBe(
-      '<mark class="bg-transparent text-primary-400">a</mark>' +
-        '<mark class="bg-transparent text-primary-400">林俊杰</mark>' +
-        '<mark class="bg-transparent text-primary-400">林俊杰</mark>',
+      '<mark class="bg-transparent text-primary-400 font-bold">a</mark>' +
+        '<mark class="bg-transparent text-primary-400 font-bold">林俊杰</mark>' +
+        '<mark class="bg-transparent text-primary-400 font-bold">林俊杰</mark>',
     );
   });
 
   it("escapes untrusted text before returning HTML", () => {
     expect(highlightTokens("<script>a</script>", ["a"])).toBe(
-      '&lt;script&gt;<mark class="bg-transparent text-primary-400">a</mark>&lt;/script&gt;',
+      '&lt;script&gt;<mark class="bg-transparent text-primary-400 font-bold">a</mark>&lt;/script&gt;',
     );
   });
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Clipboard, X } from "@lucide/vue";
+import { Clipboard, KeyRound, LoaderCircle } from "@lucide/vue";
 import { useClipboard, refAutoReset } from "@vueuse/core";
 
 defineOptions({
@@ -21,8 +21,9 @@ const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
 }>();
 
+// 无 book 时不打开
 const visible = computed({
-  get: () => props.modelValue,
+  get: () => props.modelValue && !!props.book,
   set: (v: boolean) => emit("update:modelValue", v),
 });
 
@@ -31,10 +32,10 @@ const msg = ref("");
 const loading = ref(false);
 const error = ref("");
 
-const { success } = useToast();
+const toast = useToast();
 const { copy } = useClipboard();
 
-const message = refAutoReset("复制口令", 3000);
+const message = refAutoReset("复制口令", 2000);
 
 watch(
   () => props.modelValue,
@@ -80,94 +81,71 @@ const close = () => {
 
 const copyCode = () => {
   copy(pcode.value);
-  success("口令已复制");
+  toast.add({
+    icon: "i-lucide-check",
+    title: "口令已复制",
+    duration: 2000,
+  });
   message.value = "口令已复制";
 };
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="visible && book"
-        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-        @click.self="close"
-      >
-        <div
-          class="modal-content bg-color-100 rounded-xl max-w-md w-full border border-color-300 shadow-2xl overflow-hidden"
-        >
-          <div
-            class="flex items-center justify-between py-2 px-3 border-b border-color-300"
-          >
-            <h3 class="font-medium truncate">获取口令</h3>
-            <button
-              class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
-              @click="close"
-              aria-label="关闭"
-            >
-              <X class="w-5 h-5" />
-            </button>
-          </div>
-          <div class="p-5">
-            <div v-if="loading" class="text-center py-8">
-              <div
-                class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
-              />
-              <p class="text-gray-500 text-sm">正在生成口令...</p>
-            </div>
-            <div v-else-if="error" class="text-center py-8">
-              <p class="text-red-400 text-sm">{{ error }}</p>
-            </div>
-            <div v-else-if="pcode" class="space-y-4">
-              <p class="font-medium text-center text-lg truncate">
-                {{ book.bookName }}
-              </p>
-              <div
-                class="bg-primary-500/10 border border-primary-500/30 rounded-xl p-5 text-center"
-              >
-                <p class="text-xs text-color-400 mb-2">网盘口令</p>
-                <p
-                  class="text-3xl font-mono font-bold text-primary-400 tracking-wider select-all"
-                >
-                  {{ pcode }}
-                </p>
-              </div>
-              <button
-                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                @click="copyCode"
-              >
-                <Clipboard class="w-4 h-4" />
-                {{ message }}
-              </button>
-              <p class="text-xs text-color-400 text-center">
-                复制口令后，打开百度网盘APP即可阅读全本小说
-              </p>
-            </div>
-          </div>
-        </div>
+  <UModal v-model:open="visible" title="获取口令" @close="close">
+    <template #body>
+      <div v-if="loading" class="text-center py-10">
+        <LoaderCircle
+          class="w-9 h-9 animate-spin text-primary-500 mx-auto mb-3"
+        />
+        <p class="text-zinc-500 dark:text-zinc-400 text-sm">正在生成口令...</p>
       </div>
-    </Transition>
-  </Teleport>
+
+      <UAlert
+        v-else-if="error"
+        color="error"
+        variant="soft"
+        icon="i-lucide-circle-alert"
+        title="获取失败"
+        :description="error"
+      />
+
+      <div v-else-if="pcode" class="space-y-4">
+        <div class="flex items-center justify-center gap-2">
+          <KeyRound class="w-4 h-4 text-primary-500" />
+          <p class="font-medium text-center text-lg truncate">
+            {{ book?.bookName }}
+          </p>
+        </div>
+
+        <div
+          class="bg-primary-500/10 border border-primary-500/30 rounded-xl p-5 text-center"
+        >
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-2">网盘口令</p>
+          <p
+            class="text-3xl font-mono font-bold text-primary-500 tracking-wider select-all break-all"
+          >
+            {{ pcode }}
+          </p>
+          <p v-if="msg" class="text-xs text-zinc-400 mt-2">{{ msg }}</p>
+        </div>
+
+        <UButton
+          color="primary"
+          variant="outline"
+          block
+          size="lg"
+          @click="copyCode"
+        >
+          <template #leading>
+            <Clipboard class="w-4 h-4" />
+          </template>
+          {{ message }}
+        </UButton>
+
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 text-center">
+          复制口令后，打开百度网盘APP即可阅读全本小说
+        </p>
+      </div>
+    </template>
+  </UModal>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

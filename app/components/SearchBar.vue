@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useMusicStore } from "~/stores/music";
 import { Search, X } from "@lucide/vue";
-import SearchSuggestions from "./SearchSuggestions.vue";
 
-const props = defineProps<{
-  modelValue?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string;
+    placeholder?: string;
+  }>(),
+  {
+    placeholder: "",
+  },
+);
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
@@ -22,7 +26,9 @@ const MAX_KEYWORD_LENGTH = 30;
 
 const searchQuery = ref(props.modelValue || "");
 const isInputFocused = ref(false);
-const searchInput = ref<HTMLInputElement>();
+const showSuggestions = ref(false);
+
+const placeholder = computed(() => props.placeholder || "请输入搜索内容");
 
 // 监听外部传参变化
 watch(
@@ -62,8 +68,8 @@ const handleSearch = (keywords?: string) => {
       query: { type, q },
     });
   }
-  searchInput.value?.blur();
   isInputFocused.value = false;
+  showSuggestions.value = false;
 };
 
 const handleKeydown = (e: KeyboardEvent) => {
@@ -75,9 +81,6 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 const clearInput = () => {
   searchQuery.value = "";
-  nextTick(() => {
-    searchInput.value?.focus();
-  });
 };
 
 const handleSuggestionSelect = (word: string) => {
@@ -86,55 +89,76 @@ const handleSuggestionSelect = (word: string) => {
 };
 
 const handleSuggestionsClose = () => {
-  searchInput.value?.blur();
-  isInputFocused.value = false;
-};
-
-const blur = () => {
-  searchInput.value?.focus();
-  searchInput.value?.blur();
+  // isInputFocused.value = false;
 };
 
 defineExpose({
-  blur,
   isInputFocused,
 });
 </script>
 
 <template>
   <div class="flex items-center w-full">
-    <div class="flex items-center relative flex-1">
-      <input
-        ref="searchInput"
+    <div class="flex items-center relative flex-1 min-w-0">
+      <UInput
         v-model="searchQuery"
         :maxlength="MAX_KEYWORD_LENGTH"
         type="text"
-        placeholder="请输入搜索内容"
-        class="input-search pl-3 pr-16"
+        :placeholder="placeholder"
+        class="w-full"
+        size="md"
+        :ui="{
+          root: 'w-full',
+          trailing: 'pe-1',
+        }"
         @keydown="handleKeydown"
-        @focus="isInputFocused = true"
-        @blur="isInputFocused = false"
+        @focus="
+          () => {
+            isInputFocused = true;
+            showSuggestions = true;
+          }
+        "
+        @blur="
+          () => {
+            isInputFocused = false;
+            showSuggestions = false;
+          }
+        "
         aria-label="搜索"
-      />
-      <button
-        v-if="searchQuery"
-        class="absolute right-9 py-0.5 px-0.5 opacity-60 hover:opacity-100 transition-all bg-color-400 rounded-full"
-        @click="clearInput"
-        aria-label="清除"
-        type="button"
       >
-        <X class="w-4 h-4" />
-      </button>
-      <button
-        class="absolute right-2 py-0.5 px-0.5 opacity-60 hover:opacity-100 transition-all"
-        @click="handleSearch()"
-        type="button"
-      >
-        <Search class="w-5 h-5" />
-      </button>
+        <template #trailing>
+          <div class="flex items-center gap-0.5">
+            <UButton
+              v-if="searchQuery"
+              color="neutral"
+              variant="ghost"
+              square
+              size="xs"
+              :ui="{
+                base: 'text-zinc-400 hover:text-zinc-600 dark:hover:text-white',
+              }"
+              :aria-label="'清除'"
+              @click="clearInput"
+            >
+              <X class="h-4 w-4" />
+            </UButton>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              square
+              size="xs"
+              :ui="{ base: 'text-zinc-400 hover:text-primary-600' }"
+              :aria-label="'搜索'"
+              @click="handleSearch()"
+            >
+              <Search class="h-4.5 w-4.5" />
+            </UButton>
+          </div>
+        </template>
+      </UInput>
       <SearchSuggestions
         :query="searchQuery"
-        :visible="isInputFocused"
+        v-model:visible="showSuggestions"
         @select="handleSuggestionSelect"
         @close="handleSuggestionsClose"
       />

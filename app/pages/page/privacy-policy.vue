@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { Lock } from "@lucide/vue";
-import { marked } from "marked";
-
-marked.setOptions({ gfm: true, breaks: true, async: false });
+import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "PrivacyPolicyPage" });
 
@@ -16,7 +14,7 @@ useHead({
   ],
 });
 
-const content = `## 隐私政策
+const content = `# 隐私政策
 
 **最后更新日期：2026年1月1日**
 
@@ -101,36 +99,17 @@ const content = `## 隐私政策
 
 - 邮箱：liumingye2015@gmail.com`;
 
-const rendered = marked.parse(content) as string;
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar />
+  <h1 class="text-2xl font-bold flex items-center gap-2 mb-6">
+    <Lock class="w-6 h-6 text-primary-400" />
+    隐私政策
+  </h1>
 
-    <div class="max-w-4xl mx-auto px-2">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <Lock class="w-6 h-6 text-primary-400" />
-          隐私政策
-        </h1>
-        <NuxtLink
-          to="/"
-          class="inline-flex items-center gap-1 text-sm text-color-300 hover:text-primary-400 transition-colors"
-        >
-          返回首页
-        </NuxtLink>
-      </div>
-
-      <article class="card p-6">
-        <div
-          class="text-sm text-color-300 break-words leading-relaxed prose-resource"
-        >
-          <span v-html="rendered" />
-        </div>
-      </article>
-
-      <SiteFooter />
+  <article class="card">
+    <div class="wrap-break-word leading-relaxed m-6">
+      <Markdown :value="content" :plugins="markdownPlugins" />
     </div>
-  </div>
+  </article>
 </template>

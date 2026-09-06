@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import Toast from "~/components/Toast.vue";
-import { useToast } from "~/composables/useToast";
-
-const { toasts, remove } = useToast();
+import {
+  ArrowLeft,
+  BookOpen,
+  Home,
+  LoaderCircle,
+  Megaphone,
+  Menu,
+  X,
+} from "@lucide/vue";
+import { useBackHistory } from "~/composables/useBackHistory";
+import SearchBar from "~/components/SearchBar.vue";
+import type { NavigationMenuItem } from "@nuxt/ui";
 
 const keepalive = {
   include: ["IndexPage", "SearchPage"], // 指定需要缓存的页面 name
@@ -25,14 +33,249 @@ if (import.meta.client && map[location.host]) {
     },
   });
 }
+
+// ---------------- 全局壳（UHeader / UFooter）----------------
+
+const route = useRoute();
+
+const { hasBackHistory } = useBackHistory();
+
+// 后台页沿用自身布局，不套用公开站壳
+const isAdmin = computed(() => route.path.startsWith("/admin"));
+
+// AI 搜索态原设计不显示页脚
+const isAiSearch = computed(
+  () => route.path === "/search" && route.query.type === "ai",
+);
+
+// 首页与小说页使用页内独立的大搜索框，头部不重复展示搜索框
+const showHeaderSearch = computed(
+  () =>
+    !isAdmin.value && !(route.path === "/" || route.path.startsWith("/book")),
+);
+
+const showChrome = computed(() => !isAdmin.value);
+
+// 头部搜索框内容跟随当前路由关键字
+const searchQuery = computed(() => (route.query.q as string) || "");
+
+// 搜索聚焦状态：移动端聚焦搜索时收起主题按钮，避免挤占宽度
+const searchBarRef = ref<InstanceType<typeof SearchBar> | null>(null);
+const isSearchFocused = computed(
+  () => searchBarRef.value?.isInputFocused || false,
+);
+
+const goBack = () => {
+  if (hasBackHistory.value) {
+    history.back();
+  } else {
+    navigateTo("/");
+  }
+};
+
+const menuItems = computed<NavigationMenuItem[]>(() => [
+  {
+    to: "/announcement",
+    label: "公告列表",
+    icon: Megaphone,
+    active: route.path.startsWith("/announcement"),
+  },
+  {
+    to: "/book",
+    label: "百度小说",
+    icon: BookOpen,
+    active: route.path.startsWith("/book"),
+  },
+]);
+
+// ---------------- 页脚 ----------------
+const year = new Date().getFullYear();
+
+const legalLinks = [
+  { to: "/page/policy", label: "免责声明" },
+  { to: "/page/agree", label: "服务协议" },
+  { to: "/page/privacy-policy", label: "隐私政策" },
+  { to: "/page/version", label: "版权说明" },
+  { to: "/page/forbidden-keywords", label: "屏蔽词列表" },
+];
+
+const extraLinks = [
+  {
+    to: "https://beian.miit.gov.cn",
+    label: "吉ICP备2026000231号",
+    external: true,
+  },
+  { to: "https://xiageba.apifox.cn/", label: "API", external: true },
+  { to: "/sitemap.xml", label: "网站地图" },
+  { to: "/admin", label: "管理员登录", external: true },
+];
 </script>
 
 <template>
   <UApp>
     <NuxtAnnouncer />
     <NuxtRouteAnnouncer />
-    <NuxtLoadingIndicator color="#3b82f6" :height="2" />
-    <NuxtPage :keepalive="keepalive" />
-    <Toast :toasts="toasts" @remove="remove" />
+    <NuxtLoadingIndicator :height="1" />
+
+    <template v-if="showChrome">
+      <UHeader
+        :style="{ '--ui-container': 'var(--container-4xl)' }"
+        :ui="{
+          left: 'lg:flex-0',
+          right: 'flex-1',
+          container: 'px-2 sm:px-2 lg:px-2',
+          header: 'px-2 sm:px-2 lg:px-2',
+          center: 'hidden md:flex',
+          content: 'bottom-auto rounded-b-xl',
+          body: 'p-2 sm:p-2',
+        }"
+      >
+        <template #left>
+          <UButton
+            to="/"
+            color="neutral"
+            variant="ghost"
+            square
+            aria-label="首页"
+            title="首页"
+            :active="route.path === '/'"
+            active-color="primary"
+            active-variant="soft"
+          >
+            <Home class="w-5 h-5" />
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            square
+            aria-label="返回"
+            title="返回"
+            @click="goBack"
+          >
+            <ArrowLeft class="w-5 h-5" />
+          </UButton>
+        </template>
+
+        <UNavigationMenu :items="menuItems" />
+
+        <template #right>
+          <div
+            class="flex items-center justify-end gap-1 md:gap-2 flex-1 min-w-0 transition-all"
+          >
+            <div class="min-w-0 flex-1 flex justify-end">
+              <SearchBar
+                ref="searchBarRef"
+                v-if="showHeaderSearch"
+                :model-value="searchQuery"
+                class="w-full max-w-xs md:max-w-sm"
+              />
+            </div>
+            <div
+              class="flex transition-[max-width,opacity] shrink-0"
+              :class="[
+                isSearchFocused
+                  ? 'max-md:max-w-0 max-md:opacity-0'
+                  : 'max-md:max-w-19',
+              ]"
+            >
+              <ClientOnly>
+                <ThemeSwitcher />
+                <template #fallback>
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    square
+                    disabled
+                    aria-label="主题设置"
+                  >
+                    <LoaderCircle class="w-5 h-5 animate-spin" />
+                  </UButton>
+                </template>
+              </ClientOnly>
+            </div>
+          </div>
+        </template>
+
+        <template #toggle="{ open, toggle }">
+          <UButton
+            size="sm"
+            variant="ghost"
+            color="neutral"
+            square
+            class="flex md:hidden transition-all shrink-0 text-toned hover:text-highlighted"
+            :class="[
+              isSearchFocused
+                ? 'max-md:max-w-0 max-md:opacity-0 -mx-2.5'
+                : 'max-md:max-w-19',
+            ]"
+            @click="toggle"
+          >
+            <X v-if="open" class="w-5 h-5" />
+            <Menu v-else class="w-5 h-5" />
+          </UButton>
+        </template>
+
+        <template #body>
+          <UNavigationMenu
+            :items="menuItems"
+            orientation="vertical"
+            :ui="{
+              link: 'py-3',
+            }"
+          />
+        </template>
+      </UHeader>
+
+      <UMain
+        class="flex-1 pt-6"
+        :ui="{
+          base: 'min-h-0',
+        }"
+      >
+        <div class="max-w-4xl mx-auto px-2">
+          <NuxtLayout>
+            <NuxtPage :keepalive="keepalive" />
+          </NuxtLayout>
+        </div>
+      </UMain>
+
+      <UFooter
+        :style="{}"
+        :ui="{
+          container: 'px-1 sm:px-4 lg:px-6 py-4 lg:py-8',
+          center: 'flex-col',
+        }"
+      >
+        <p class="text-sm text-center">
+          &copy; 2015-{{ year }} 全盘搜 - 公开网盘资源搜索引擎
+        </p>
+
+        <div
+          class="flex items-center justify-center gap-x-1 md:gap-x-3 flex-wrap mt-2 text-sm"
+        >
+          <ULink v-for="item in legalLinks" :key="item.to" :to="item.to">
+            {{ item.label }}
+          </ULink>
+        </div>
+
+        <div
+          class="flex items-center justify-center gap-x-1 md:gap-x-3 flex-wrap mt-2 text-sm"
+        >
+          <ULink
+            v-for="item in extraLinks"
+            :key="item.to"
+            :to="item.to"
+            target="_blank"
+            :no-rel="!item.external"
+          >
+            {{ item.label }}
+          </ULink>
+        </div>
+      </UFooter>
+    </template>
+
+    <NuxtLayout v-else>
+      <NuxtPage :keepalive="keepalive" />
+    </NuxtLayout>
   </UApp>
 </template>

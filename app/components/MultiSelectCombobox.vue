@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { Check, ChevronDown, ListFilter } from "@lucide/vue";
-import { onClickOutside } from "@vueuse/core";
+import { ChevronDown, ListFilter } from "@lucide/vue";
 
-interface MultiSelectComboboxOption {
+export interface MultiSelectComboboxOption {
   value: string;
   label: string;
 }
@@ -26,7 +25,7 @@ const emit = defineEmits<{
   "update:modelValue": [value: string[]];
 }>();
 
-const comboboxRef = ref<HTMLDetailsElement | null>(null);
+const open = ref(false);
 
 const summary = computed(() => {
   if (props.modelValue.length === 0) return props.placeholder;
@@ -39,16 +38,15 @@ const summary = computed(() => {
   return `已选 ${props.modelValue.length} 项`;
 });
 
-const close = () => {
-  if (comboboxRef.value) comboboxRef.value.open = false;
-};
-
 const toggle = (value: string) => {
   const selected = new Set(props.modelValue);
   if (selected.has(value)) selected.delete(value);
   else selected.add(value);
   emit("update:modelValue", [...selected]);
-  close();
+};
+
+const close = () => {
+  open.value = false;
 };
 
 const clear = () => {
@@ -56,94 +54,55 @@ const clear = () => {
   close();
 };
 
-onClickOutside(comboboxRef, close);
+// 保持原有交互：点选/取消后收起菜单；选中项以菜单内对勾体现
+const items = computed(() => {
+  const optionItems = props.options.map((option) => ({
+    label: option.label,
+    type: "checkbox" as const,
+    checked: props.modelValue.includes(option.value),
+    onUpdateChecked: () => {
+      toggle(option.value);
+      // 同步关闭菜单（onSelect 自行关闭时此处为幂等操作）
+      nextTick(() => {
+        close();
+      });
+    },
+  }));
 
-const handleFocusOut = (event: FocusEvent) => {
-  const nextTarget = event.relatedTarget;
-  if (
-    comboboxRef.value &&
-    nextTarget instanceof Node &&
-    !comboboxRef.value.contains(nextTarget)
-  ) {
-    close();
-  }
-};
+  return [
+    [
+      {
+        label: props.clearLabel,
+        onSelect: clear,
+      },
+    ],
+    optionItems,
+  ];
+});
 </script>
 
 <template>
-  <details
-    ref="comboboxRef"
-    class="group relative"
-    @focusout="handleFocusOut"
-    @keydown.esc.prevent="close"
+  <UDropdownMenu
+    v-model:open="open"
+    :items="items"
+    :content="{ align: 'start', side: 'bottom', sideOffset: 6 }"
+    :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width)' }"
   >
-    <summary
-      class="list-none w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer bg-color-100 text-color-300 hover:bg-color-300 focus:outline-none focus:ring-1 focus:ring-primary-500 border border-color-300 hover:border-primary-500"
+    <UButton
+      color="neutral"
+      variant="outline"
+      :ui="{
+        base: 'justify-between',
+        leadingIcon: 'size-3',
+      }"
       :aria-label="ariaLabel"
+      size="lg"
+      icon="i-lucide-filter"
+      trailing-icon="i-lucide-chevron-down"
     >
-      <span class="flex items-center gap-1.5 truncate">
-        <ListFilter class="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+      <span class="text-left flex-1 truncate">
         {{ summary }}
       </span>
-      <ChevronDown
-        class="w-3.5 h-3.5 text-zinc-400 flex-shrink-0 transition-transform group-open:rotate-180"
-      />
-    </summary>
-
-    <div
-      class="absolute left-0 top-full z-20 mt-1 w-full min-w-36 rounded-lg border border-color-300 bg-color-100 p-1.5 shadow-xl"
-      role="listbox"
-      :aria-label="ariaLabel"
-      aria-multiselectable="true"
-    >
-      <button
-        type="button"
-        class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-color-300 hover:bg-color-300"
-        role="option"
-        :aria-selected="modelValue.length === 0"
-        @click="clear"
-      >
-        <span>{{ clearLabel }}</span>
-      </button>
-
-      <label
-        v-for="option in options"
-        :key="option.value"
-        class="label"
-        role="option"
-        :aria-selected="modelValue.includes(option.value)"
-      >
-        <span>{{ option.label }}</span>
-        <input
-          class="sr-only"
-          type="checkbox"
-          :checked="modelValue.includes(option.value)"
-          @change="toggle(option.value)"
-        />
-        <span
-          class="checkbox"
-          :class="
-            modelValue.includes(option.value)
-              ? 'border-primary-500 bg-primary-500 text-white'
-              : 'border-color-500 text-transparent'
-          "
-          aria-hidden="true"
-        >
-          <Check class="h-3 w-3" />
-        </span>
-      </label>
-    </div>
-  </details>
+    </UButton>
+  </UDropdownMenu>
 </template>
-
-<style scoped>
-@reference "~/assets/css/main.css";
-
-.label {
-  @apply flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-color-300 hover:bg-color-300;
-}
-
-.checkbox {
-  @apply flex h-4 w-4 items-center justify-center rounded border;
-}
-</style>

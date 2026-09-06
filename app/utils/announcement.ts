@@ -4,8 +4,8 @@
  */
 import {
   Info,
+  OctagonX,
   AlertTriangle,
-  AlertCircle,
   CheckCircle,
   Megaphone,
 } from "@lucide/vue";
@@ -32,24 +32,24 @@ interface IconConfig {
 
 /** 公告类型图标与配色映射 */
 const iconConfigMap: Record<AnnouncementIcon, IconConfig> = {
-  INFO: { class: "bg-blue-500/20 text-blue-400", component: Info },
+  INFO: { class: "bg-info-500 text-white", component: Info },
   WARN: {
-    class: "bg-yellow-500/20 text-yellow-400",
+    class: "bg-orange-500 text-white",
     component: AlertTriangle,
   },
   ERROR: {
-    class: "bg-red-500/20 text-red-400",
-    component: AlertCircle,
+    class: "bg-error-500 text-white",
+    component: OctagonX,
   },
   SUCCESS: {
-    class: "bg-green-500/20 text-green-400",
+    class: "bg-success-500 text-white",
     component: CheckCircle,
   },
 };
 
 /** 未知/默认图标配置 */
 const DEFAULT_ICON_CONFIG: IconConfig = {
-  class: "bg-zinc-500/20 text-zinc-400",
+  class: "bg-black text-white",
   component: Megaphone,
 };
 

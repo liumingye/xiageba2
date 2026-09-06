@@ -28,7 +28,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  openTreeModal: [item: WebSearchResult];
+  openTree: [item: WebSearchResult];
   openModal: [item: WebSearchResult];
 }>();
 
@@ -184,9 +184,9 @@ defineExpose({ results, searching, error });
 </script>
 
 <template>
-  <div class="flex items-center gap-2 !my-3">
+  <div class="flex items-center gap-2 my-3">
     <Globe class="w-4 h-4 text-primary-400" />
-    <h2 class="text-color-500 text-sm">全网搜</h2>
+    <h2 class="text-muted text-sm">全网搜</h2>
   </div>
   <template v-if="filteredResults.length !== 0 || searching">
     <template v-if="filteredResults.length > 0">
@@ -210,7 +210,7 @@ defineExpose({ results, searching, error });
           </div>
           <div class="flex gap-2">
             <div
-              class="bg-color-300 px-2 py-1 rounded-sm text-sm self-start flex items-center"
+              class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <div
                 v-if="item.type !== 'other'"
@@ -223,49 +223,49 @@ defineExpose({ results, searching, error });
                 v-if="getCheckStatus(item.url) === 'valid'"
                 class="dark:bg-primary-800/60 bg-primary-600/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
-                <CheckCircle
-                  class="w-4 h-4 text-[var(--white)] flex-shrink-0 mr-1"
-                />链接有效
+                <CheckCircle class="w-4 h-4 text-white shrink-0 mr-1" />链接有效
               </div>
               <div
                 v-if="getCheckStatus(item.url) === 'invalid'"
                 class="bg-error-800/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
-                <XCircle class="w-4 h-4 flex-shrink-0 mr-1" />可能失效
+                <XCircle class="w-4 h-4 shrink-0 mr-1" />可能失效
               </div>
               <div
                 v-if="getCheckStatus(item.url) === 'checking'"
-                class="bg-color-300 px-2 py-1 rounded-sm text-sm self-start flex items-center"
+                class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
-                <Loader2
-                  class="w-4 h-4 animate-spin flex-shrink-0 mr-1"
-                />正在检测
+                <Loader2 class="w-4 h-4 animate-spin shrink-0 mr-1" />正在检测
               </div>
             </ClientOnly>
           </div>
         </div>
         <div
-          class="flex justify-between items-center gap-2 border-t border-color-300 mt-3 pt-3"
+          class="flex justify-between items-center gap-2 border-t border-muted mt-3 pt-3"
         >
-          <span class="text-xs text-color-500 flex items-center"
+          <span class="text-xs text-muted flex items-center"
             >来源: {{ item.source }}</span
           >
           <div class="flex items-center gap-2">
-            <button
+            <UButton
               v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
-              class="flex items-center gap-1 px-3 py-2 bg-primary-500/30 hover:bg-primary-500/50 text-color-200 hover:text-color-100 text-xs rounded-sm transition-colors flex-shrink-0"
-              @click.stop="emit('openTreeModal', item)"
+              variant="outline"
+              @click.stop="emit('openTree', item)"
+              icon="i-lucide-folder"
+              :ui="{
+                leadingIcon: 'size-4',
+              }"
+              >目录</UButton
             >
-              <Folder class="w-3 h-3" />
-              目录
-            </button>
-            <button
-              class="flex items-center gap-1 px-3 py-2 bg-primary-500/30 hover:bg-primary-500/50 text-color-200 hover:text-color-100 text-xs rounded-sm transition-colors flex-shrink-0"
+            <UButton
+              variant="solid"
               @click.stop="emit('openModal', item)"
+              icon="i-lucide-download"
+              :ui="{
+                leadingIcon: 'size-4',
+              }"
+              >获取链接</UButton
             >
-              <Download class="w-3 h-3" />
-              获取链接
-            </button>
           </div>
         </div>
       </article>

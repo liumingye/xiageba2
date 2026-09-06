@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { Copyright } from "@lucide/vue";
-import { marked } from "marked";
-
-marked.setOptions({ gfm: true, breaks: true, async: false });
+import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "VersionPage" });
 
@@ -16,7 +14,7 @@ useHead({
   ],
 });
 
-const content = `## 版权说明
+const content = `# 版权说明
 
 **最后更新日期：2026年1月1日**
 
@@ -91,37 +89,17 @@ const content = `## 版权说明
 ### 8. 免责
 
 本站作为信息搜索索引服务提供者，依据《中华人民共和国民法典》及《信息网络传播权保护条例》的"避风港"原则，在收到合格侵权通知后及时删除侵权链接的，不承担赔偿责任。`;
-
-const rendered = marked.parse(content) as string;
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar />
+  <h1 class="text-2xl font-bold flex items-center gap-2 mb-6">
+    <Copyright class="w-6 h-6 text-primary-400" />
+    版权说明
+  </h1>
 
-    <div class="max-w-4xl mx-auto px-2">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <Copyright class="w-6 h-6 text-primary-400" />
-          版权说明
-        </h1>
-        <NuxtLink
-          to="/"
-          class="inline-flex items-center gap-1 text-sm text-color-300 hover:text-primary-400 transition-colors"
-        >
-          返回首页
-        </NuxtLink>
-      </div>
-
-      <article class="card p-6">
-        <div
-          class="text-sm text-color-300 break-words leading-relaxed prose-resource"
-        >
-          <span v-html="rendered" />
-        </div>
-      </article>
-
-      <SiteFooter />
+  <article class="card">
+    <div class="wrap-break-word leading-relaxed m-6">
+      <Markdown :value="content" :plugins="markdownPlugins" />
     </div>
-  </div>
+  </article>
 </template>

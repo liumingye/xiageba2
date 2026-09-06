@@ -17,7 +17,6 @@ import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import AdminModal from "~/components/admin/Modal.vue";
-import { useToast } from "~/composables/useToast";
 
 interface Source {
   id: string;
@@ -379,9 +378,11 @@ const importSources = async () => {
 
     if (data.success) {
       importResult.value = data;
-      toast.success(
-        `导入完成：成功 ${data.inserted} 条，重复 ${data.duplicate} 条，失败 ${data.failed} 条`,
-      );
+      toast.add({
+        title: `导入完成：成功 ${data.inserted} 条，重复 ${data.duplicate} 条，失败 ${data.failed} 条`,
+        icon: "i-lucide-check",
+        color: "success",
+      });
       await loadSources();
     } else {
       error.value = data.message || "导入失败";
@@ -511,13 +512,13 @@ const importSources = async () => {
               <td class="px-4 py-3 text-color-400 text-xs">
                 <span :title="item.id">{{ item.id }}</span>
               </td>
-              <td class="px-4 py-3 max-w-60 break-words">
+              <td class="px-4 py-3 max-w-60 wrap-break-word">
                 <span :title="item.title">{{ item.title }}</span>
               </td>
               <td class="px-4 py-3 text-color-300">
                 {{ categories.find((cat) => cat.id === item.cid)?.name || "-" }}
               </td>
-              <td class="px-4 py-3 max-w-60 break-words">
+              <td class="px-4 py-3 max-w-60 wrap-break-word">
                 <a
                   :href="item.url"
                   target="_blank"

@@ -1,18 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useEventListener, useMediaQuery, useMounted } from "@vueuse/core";
-import {
-  Download,
-  Play,
-  Pause,
-  Disc3,
-  Key,
-  MicVocal,
-  Search,
-} from "@lucide/vue";
-import TopBar from "~/components/TopBar.vue";
+import { Download, Play, Pause, Disc3, MicVocal, Search } from "@lucide/vue";
 import DownloadModal from "~/components/DownloadModal.vue";
-import SiteFooter from "~/components/SiteFooter.vue";
 import type { Music } from "~/stores/music";
 import { useMusicStore } from "~/stores/music";
 import { extractPwd } from "~/utils";
@@ -236,239 +226,239 @@ const isMounted = useMounted();
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar />
-    <div class="max-w-4xl mx-auto px-2">
-      <main>
-        <!-- 骨架屏 -->
-        <div
-          v-if="loading"
-          class="space-y-6"
-          aria-busy="true"
-          aria-label="正在加载"
-        >
-          <section class="card p-6 animate-pulse">
-            <div class="flex flex-col sm:flex-row gap-6 items-center">
-              <div class="w-48 h-48 bg-zinc-700 rounded-xl" />
-              <div class="flex-1 w-full space-y-3">
-                <div class="h-6 bg-zinc-700 rounded w-3/4 mx-auto sm:mx-0" />
-                <div class="h-4 bg-zinc-700 rounded w-1/2 mx-auto sm:mx-0" />
-                <div
-                  class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4"
-                >
-                  <div class="h-10 bg-zinc-700 rounded-lg w-28" />
-                  <div class="h-10 bg-zinc-700 rounded-lg w-28" />
-                </div>
-              </div>
+  <main>
+    <div
+      v-if="loading"
+      class="space-y-6"
+      aria-busy="true"
+      aria-label="正在加载"
+    >
+      <UCard
+        :ui="{
+          body: 'p-6 animate-pulse',
+        }"
+      >
+        <div class="flex flex-col sm:flex-row gap-6 items-center">
+          <div class="w-48 h-48 bg-zinc-700 rounded-xl" />
+          <div class="flex-1 w-full space-y-3">
+            <div class="h-6 bg-zinc-700 rounded w-3/4 mx-auto sm:mx-0" />
+            <div class="h-4 bg-zinc-700 rounded w-1/2 mx-auto sm:mx-0" />
+            <div
+              class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4"
+            >
+              <div class="h-10 bg-zinc-700 rounded-lg w-28" />
+              <div class="h-10 bg-zinc-700 rounded-lg w-28" />
             </div>
-          </section>
-
-          <section class="card p-6 animate-pulse">
-            <div class="h-5 bg-zinc-700 rounded w-1/4 mb-4" />
-            <div class="space-y-2">
-              <div
-                v-for="i in 5"
-                :key="i"
-                class="h-4 bg-zinc-700 rounded w-3/4"
-              />
-            </div>
-          </section>
+          </div>
         </div>
+      </UCard>
 
-        <article
-          v-else-if="music"
-          class="space-y-6"
-          itemscope
-          itemtype="https://schema.org/MusicRecording"
-        >
-          <meta itemprop="name" :content="music.title" />
-          <meta itemprop="byArtist" :content="music.artist" />
-          <meta itemprop="inAlbum" :content="music.album" />
-          <meta itemprop="image" :content="music.cover || ''" />
-          <meta itemprop="url" :content="canonicalUrl" />
-
-          <section class="card p-6">
-            <div class="flex flex-col sm:flex-row gap-6 items-center">
-              <div class="relative flex-shrink-0">
-                <img
-                  :src="music.cover || config.app.baseURL + 'img/cover.png'"
-                  :alt="music.title"
-                  class="w-48 h-48 rounded-xl object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  @error="
-                    ($event.target as HTMLImageElement).src =
-                      config.app.baseURL + 'img/cover.png'
-                  "
-                />
-                <div
-                  v-if="music.playUrl"
-                  class="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                  @click="togglePlay"
-                  role="button"
-                  tabindex="0"
-                  aria-label="播放/暂停"
-                  @keydown.enter="togglePlay"
-                >
-                  <div
-                    class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center text-white"
-                  >
-                    <Play v-if="!isPlaying" class="w-8 h-8 ml-1" />
-                    <Pause v-else class="w-8 h-8" />
-                  </div>
-                </div>
-              </div>
-
-              <div
-                class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left"
-              >
-                <h1
-                  class="text-2xl sm:text-3xl font-bold mb-2"
-                  :title="music.title"
-                >
-                  {{ music.title }}
-                </h1>
-                <p
-                  class="text-gray-500 mb-4"
-                  itemprop="byArtist"
-                  :title="music.artist"
-                >
-                  <button
-                    class="hover:text-primary-400 transition-colors"
-                    @click="
-                      router.push(
-                        `/search?q=${encodeURIComponent(music.artist)}`,
-                      )
-                    "
-                  >
-                    {{ music.artist }}
-                  </button>
-                </p>
-
-                <div
-                  class="flex flex-wrap gap-3 justify-center sm:justify-start"
-                >
-                  <a
-                    v-for="(download, index) in music.downloads"
-                    :key="index"
-                    class="cursor-pointer flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors text-white"
-                    :aria-label="`${download.quality}下载`"
-                    :target="isMobile && isMounted ? '_blank' : undefined"
-                    :href="isMobile && isMounted ? download.url : undefined"
-                    @click="!isMobile && openDownloadModal(download)"
-                    :title="`${download.quality}下载`"
-                  >
-                    <Download class="w-5 h-5" />
-                    {{ download.quality }}
-                    <template
-                      v-if="isMobile && isMounted && extractPwd(download.url)"
-                    >
-                      (提取码: {{ extractPwd(download.url) }})
-                    </template>
-                  </a>
-                  <button
-                    v-if="music.downloads.length === 0"
-                    class="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors text-white"
-                    @click="searchNetdisk"
-                    aria-label="搜网盘"
-                  >
-                    <Search class="w-5 h-5" />
-                    搜网盘
-                  </button>
-                  <button
-                    v-if="music.playUrl"
-                    class="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors text-white"
-                    @click="togglePlay"
-                    aria-label="播放或暂停"
-                  >
-                    <Play v-if="!isPlaying" class="w-5 h-5" />
-                    <Pause v-else class="w-5 h-5" />
-                    {{ isPlaying ? "暂停" : "播放" }}
-                  </button>
-                </div>
-                <button
-                  @click="showFeedbackModal = true"
-                  aria-label="反馈问题"
-                  class="text-gray-500 mt-2 sm:hidden block"
-                >
-                  反馈问题
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section
-            v-if="music.album"
-            class="card p-4 md:p-6"
-            itemscope
-            itemtype="https://schema.org/MusicAlbum"
-          >
-            <div
-              class="text-lg font-medium flex items-center gap-2 text-color-400 mb-4"
-            >
-              <Disc3 class="w-5 h-5" />
-              <span>所属专辑</span>
-            </div>
-            <p class="text-lg" itemprop="name">{{ music.album }}</p>
-          </section>
-
-          <section
-            class="card p-4 md:p-6"
-            itemscope
-            itemtype="https://schema.org/lyrics"
-          >
-            <div
-              class="text-lg font-medium flex items-center gap-2 text-color-400 mb-4"
-            >
-              <MicVocal class="w-5 h-5" />
-              <span>歌词</span>
-            </div>
-            <div
-              v-if="formattedLyrics.length > 0"
-              class="space-y-2"
-              itemprop="lyrics"
-            >
-              <p
-                v-for="(line, index) in formattedLyrics"
-                :key="index"
-                class="py-1"
-              >
-                {{ line }}
-              </p>
-            </div>
-            <p v-else class="text-zinc-500 text-center py-8">暂无歌词</p>
-          </section>
-        </article>
-
-        <div v-else class="text-center py-20">
-          <p class="text-zinc-500">音乐不存在</p>
-          <button
-            class="mt-4 text-primary-500 hover:text-primary-400 transition-colors"
-            @click="navigateTo('/')"
-          >
-            返回首页
-          </button>
+      <UCard
+        :ui="{
+          body: 'p-6 animate-pulse',
+        }"
+      >
+        <div class="h-5 bg-zinc-700 rounded w-1/4 mb-4" />
+        <div class="space-y-2">
+          <div v-for="i in 5" :key="i" class="h-4 bg-zinc-700 rounded w-3/4" />
         </div>
-      </main>
-
-      <Qrcode />
-
-      <DownloadModal
-        v-if="!isMobile"
-        :show="showDownloadModal"
-        :music="music"
-        :selectedDownload="selectedDownload"
-        @close="closeDownloadModal"
-      />
-
-      <FeedbackModal
-        v-else-if="music?.id"
-        :show="showFeedbackModal"
-        :music-id="music.id"
-        @close="showFeedbackModal = false"
-      />
-
-      <SiteFooter />
+      </UCard>
     </div>
-  </div>
+
+    <article
+      v-else-if="music"
+      class="space-y-6"
+      itemscope
+      itemtype="https://schema.org/MusicRecording"
+    >
+      <meta itemprop="name" :content="music.title" />
+      <meta itemprop="byArtist" :content="music.artist" />
+      <meta itemprop="inAlbum" :content="music.album" />
+      <meta itemprop="image" :content="music.cover || ''" />
+      <meta itemprop="url" :content="canonicalUrl" />
+
+      <UCard
+        :ui="{
+          body: 'p-6',
+        }"
+      >
+        <div class="flex flex-col sm:flex-row gap-6 items-center">
+          <div class="relative shrink-0">
+            <img
+              :src="music.cover || config.app.baseURL + 'img/cover.png'"
+              :alt="music.title"
+              class="w-48 h-48 rounded-xl object-cover"
+              loading="lazy"
+              decoding="async"
+              @error="
+                ($event.target as HTMLImageElement).src =
+                  config.app.baseURL + 'img/cover.png'
+              "
+            />
+            <div
+              v-if="music.playUrl"
+              class="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
+              @click="togglePlay"
+              role="button"
+              tabindex="0"
+              aria-label="播放/暂停"
+              @keydown.enter="togglePlay"
+            >
+              <div
+                class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center text-white"
+              >
+                <Play v-if="!isPlaying" class="w-8 h-8 ml-1" />
+                <Pause v-else class="w-8 h-8" />
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left"
+          >
+            <h1
+              class="text-2xl sm:text-3xl font-bold mb-2"
+              :title="music.title"
+            >
+              {{ music.title }}
+            </h1>
+            <p
+              class="text-muted mb-4"
+              itemprop="byArtist"
+              :title="music.artist"
+            >
+              <button
+                class="hover:text-primary-400 transition-colors"
+                @click="
+                  router.push(`/search?q=${encodeURIComponent(music.artist)}`)
+                "
+              >
+                {{ music.artist }}
+              </button>
+            </p>
+
+            <div class="flex flex-wrap gap-3 justify-center sm:justify-start">
+              <UButton
+                v-if="music.downloads.length === 0"
+                icon="i-lucide-search"
+                aria-label="搜网盘"
+                title="搜网盘"
+                size="xl"
+                class="px-6"
+                @click="searchNetdisk"
+              >
+                搜网盘
+              </UButton>
+              <UButton
+                v-else
+                v-for="(download, index) in music.downloads"
+                :key="index"
+                icon="i-lucide-download"
+                :aria-label="`${download.quality}下载`"
+                :title="`${download.quality}下载`"
+                size="xl"
+                class="px-6"
+                @click="!isMobile && openDownloadModal(download)"
+              >
+                {{ download.quality }}
+                <template
+                  v-if="isMobile && isMounted && extractPwd(download.url)"
+                >
+                  (提取码: {{ extractPwd(download.url) }})
+                </template>
+              </UButton>
+              <UButton
+                v-if="music.playUrl"
+                aria-label="播放或暂停"
+                title="播放或暂停"
+                :icon="isPlaying ? 'i-lucide-pause' : 'i-lucide-play'"
+                size="xl"
+                class="px-6"
+                @click="togglePlay"
+              >
+                {{ isPlaying ? "暂停" : "播放" }}
+              </UButton>
+            </div>
+            <button
+              @click="showFeedbackModal = true"
+              aria-label="反馈问题"
+              class="text-dimmed mt-2 sm:hidden block"
+            >
+              反馈问题
+            </button>
+          </div>
+        </div>
+      </UCard>
+
+      <UCard
+        v-if="music.album"
+        :ui="{
+          body: 'p-4 md:p-6',
+        }"
+        itemscope
+        itemtype="https://schema.org/MusicAlbum"
+      >
+        <div
+          class="text-lg font-medium flex items-center gap-2 text-muted mb-4"
+        >
+          <Disc3 class="w-5 h-5" />
+          <span>所属专辑</span>
+        </div>
+        <p class="text-lg" itemprop="name">{{ music.album }}</p>
+      </UCard>
+
+      <UCard
+        :ui="{
+          body: 'p-4 md:p-6',
+        }"
+        itemscope
+        itemtype="https://schema.org/lyrics"
+      >
+        <div
+          class="text-lg font-medium flex items-center gap-2 text-muted mb-4"
+        >
+          <MicVocal class="w-5 h-5" />
+          <span>歌词</span>
+        </div>
+        <div
+          v-if="formattedLyrics.length > 0"
+          class="space-y-2"
+          itemprop="lyrics"
+        >
+          <p v-for="(line, index) in formattedLyrics" :key="index" class="py-1">
+            {{ line }}
+          </p>
+        </div>
+        <p v-else class="text-zinc-500 text-center py-8">暂无歌词</p>
+      </UCard>
+    </article>
+
+    <div v-else class="text-center py-20">
+      <p class="text-zinc-500">音乐不存在</p>
+      <button
+        class="mt-4 text-primary-500 hover:text-primary-400 transition-colors"
+        @click="navigateTo('/')"
+      >
+        返回首页
+      </button>
+    </div>
+  </main>
+
+  <Qrcode />
+
+  <ClientOnly>
+    <DownloadModal
+      v-if="!isMobile"
+      v-model:show="showDownloadModal"
+      :music="music"
+      v-model:selectedDownload="selectedDownload"
+    />
+
+    <FeedbackModal
+      v-else-if="music?.id"
+      :show="showFeedbackModal"
+      :music-id="music.id"
+      @close="showFeedbackModal = false"
+    />
+  </ClientOnly>
 </template>

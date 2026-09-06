@@ -1,15 +1,7 @@
 <script setup lang="ts">
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Megaphone,
-  Archive,
-} from "@lucide/vue";
-import { marked } from "marked";
+import { Megaphone } from "@lucide/vue";
 import { getIconConfig, type Announcement } from "~/utils/announcement";
-
-marked.setOptions({ gfm: true, breaks: true, async: false });
+import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({
   name: "AnnouncementListPage",
@@ -52,11 +44,6 @@ const total = computed(() => announcementData.value?.total || 0);
 const totalPages = computed(() => announcementData.value?.totalPages || 0);
 
 // getIconConfig 已统一抽取到 ~/utils/announcement
-
-const renderMarkdown = (text: string): string => {
-  if (!text) return "";
-  return marked.parse(text) as string;
-};
 
 const switchTab = (tab: "ACTIVE" | "ARCHIVED") => {
   if (activeTab.value === tab) return;
@@ -108,79 +95,92 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen pb-4 md:pb-6">
-    <TopBar />
-    <div class="max-w-4xl mx-auto px-2">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <Megaphone class="w-6 h-6 text-primary-400" />
-          公告列表
-        </h1>
-      </div>
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+      <Megaphone class="w-6 h-6 text-primary-400" />
+      公告列表
+    </h1>
+  </div>
 
-      <!-- Tab 切换 -->
-      <div class="flex items-center gap-1 mb-6 border-b border-color-300">
-        <button
-          class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
-          :class="
-            activeTab === 'ACTIVE'
-              ? 'text-[--primary] border-[--primary]'
-              : 'text-gray-500 border-transparent hover:text-color-300'
-          "
-          @click="switchTab('ACTIVE')"
-        >
-          <Megaphone class="w-4 h-4" />
-          最新公告
-        </button>
-        <button
-          class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
-          :class="
-            activeTab === 'ARCHIVED'
-              ? 'text-[--primary] border-[--primary]'
-              : 'text-gray-500 border-transparent hover:text-color-300'
-          "
-          @click="switchTab('ARCHIVED')"
-        >
-          <Archive class="w-4 h-4" />
-          归档公告
-        </button>
-      </div>
-
+  <!-- Tab 切换 -->
+  <UTabs
+    :model-value="activeTab"
+    class="mb-6"
+    color="primary"
+    variant="link"
+    :ui="{
+      content: 'mt-1',
+    }"
+    :items="[
+      {
+        label: '最新公告',
+        icon: 'i-lucide-megaphone',
+        value: 'ACTIVE',
+        slot: 'active',
+      },
+      {
+        label: '归档公告',
+        icon: 'i-lucide-archive',
+        value: 'ARCHIVED',
+        slot: 'archived',
+      },
+    ]"
+    @update:model-value="switchTab($event as 'ACTIVE' | 'ARCHIVED')"
+  >
+    <!-- 最新公告 -->
+    <template #active>
       <div v-if="pending" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="card p-6 animate-pulse">
-          <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-lg bg-color-400 flex-shrink-0"></div>
+        <UCard
+          v-for="i in 3"
+          :key="i"
+          :ui="{
+            body: 'p-3 md:p-6',
+          }"
+          variant="subtle"
+        >
+          <div class="flex items-start gap-4 mb-6">
+            <USkeleton class="size-10 bg-accented"></USkeleton>
             <div class="flex-1 space-y-2">
-              <div class="h-4 bg-color-400 rounded w-1/3"></div>
-              <div class="h-3 bg-color-300 rounded w-1/4"></div>
-              <div class="h-3 bg-color-300 rounded w-full"></div>
+              <USkeleton class="h-4 bg-accented w-1/4 my-2"></USkeleton>
+              <USkeleton class="h-3 bg-accented w-1/2"></USkeleton>
             </div>
           </div>
-        </div>
+          <USkeleton class="h-5 bg-accented w-full mb-2"></USkeleton>
+          <USkeleton class="h-5 bg-accented w-full"></USkeleton>
+        </UCard>
       </div>
 
-      <div v-else-if="announcements.length === 0" class="card p-12 text-center">
-        <Megaphone class="w-12 h-12 mx-auto text-zinc-600 mb-3" />
-        <p class="text-zinc-500">
-          {{ activeTab === "ARCHIVED" ? "暂无归档公告" : "暂无公告" }}
-        </p>
-      </div>
+      <UCard
+        v-else-if="announcements.length === 0"
+        :ui="{
+          body: 'p-12 text-center',
+        }"
+        variant="subtle"
+      >
+        <Megaphone class="w-12 h-12 mx-auto text-muted mb-3" />
+        <p class="text-muted">暂无公告</p>
+      </UCard>
 
       <div v-else class="space-y-4">
-        <NuxtLink
+        <UPageCard
           v-for="item in announcements"
           :key="item.id"
+          as="NuxtLink"
           :to="`/announcement/${item.id}`"
-          class="card p-3 md:p-6 block hover:border-primary-500/50 transition-colors"
+          class="block transition-colors hover:border-primary-500/50"
+          :ui="{
+            body: 'p-3 md:p-6',
+          }"
+          variant="subtle"
         >
           <div class="flex items-center gap-4">
             <div
-              class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              class="size-10 rounded-lg flex items-center justify-center shrink-0"
               :class="getIconConfig(item.icon).class"
             >
               <component
                 :is="getIconConfig(item.icon).component"
-                class="w-5 h-5"
+                class="size-5"
               />
             </div>
             <div class="flex-1 min-w-0">
@@ -188,14 +188,8 @@ watch(
                 <h2 class="text-base font-medium truncate">
                   {{ item.title }}
                 </h2>
-                <span
-                  v-if="item.status === 'ARCHIVED'"
-                  class="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 flex-shrink-0"
-                >
-                  已归档
-                </span>
               </div>
-              <p class="text-xs text-gray-500 mt-1">
+              <p class="text-xs text-muted mt-1">
                 <NuxtTime
                   :datetime="item.createdAt"
                   year="numeric"
@@ -210,11 +204,11 @@ watch(
           </div>
           <div
             v-if="item.content"
-            class="text-[0.875rem] text-color-300 mt-2 line-clamp-2 prose-resource"
+            class="text-[0.875rem] text-color-300 mt-2 line-clamp-2"
           >
-            <span v-html="renderMarkdown(item.content)" />
+            <Markdown :value="item.content" :plugins="markdownPlugins" />
           </div>
-        </NuxtLink>
+        </UPageCard>
       </div>
 
       <!-- 分页 -->
@@ -223,6 +217,103 @@ watch(
         :total-pages="totalPages"
         @change="onPageChange"
       />
-    </div>
-  </div>
+    </template>
+
+    <!-- 归档公告 -->
+    <template #archived>
+      <div v-if="pending" class="space-y-4">
+        <UCard
+          v-for="i in 3"
+          :key="i"
+          :ui="{
+            body: 'p-3 md:p-6',
+          }"
+          variant="subtle"
+        >
+          <div class="flex items-start gap-4 mb-6">
+            <USkeleton class="size-10 bg-accented"></USkeleton>
+            <div class="flex-1 space-y-2">
+              <USkeleton class="h-4 bg-accented w-1/4 my-2"></USkeleton>
+              <USkeleton class="h-3 bg-accented w-1/2"></USkeleton>
+            </div>
+          </div>
+          <USkeleton class="h-5 bg-accented w-full mb-2"></USkeleton>
+          <USkeleton class="h-5 bg-accented w-full"></USkeleton>
+        </UCard>
+      </div>
+
+      <UCard
+        v-else-if="announcements.length === 0"
+        :ui="{
+          body: 'p-12 text-center',
+        }"
+        variant="subtle"
+      >
+        <Megaphone class="w-12 h-12 mx-auto text-muted mb-3" />
+        <p class="text-muted">暂无归档公告</p>
+      </UCard>
+
+      <div v-else class="space-y-4">
+        <UPageCard
+          v-for="item in announcements"
+          :key="item.id"
+          as="NuxtLink"
+          :to="`/announcement/${item.id}`"
+          class="block transition-colors hover:border-primary-500/50"
+          :ui="{
+            body: 'p-3 md:p-6',
+          }"
+          variant="subtle"
+        >
+          <div class="flex items-center gap-4">
+            <div
+              class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+              :class="getIconConfig(item.icon).class"
+            >
+              <component
+                :is="getIconConfig(item.icon).component"
+                class="w-5 h-5"
+              />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-base font-medium truncate">
+                  {{ item.title }}
+                </h2>
+                <span
+                  class="text-xs px-1.5 py-0.5 rounded bg-accented text-toned shrink-0"
+                >
+                  已归档
+                </span>
+              </div>
+              <p class="text-xs text-muted mt-1">
+                <NuxtTime
+                  :datetime="item.createdAt"
+                  year="numeric"
+                  month="short"
+                  day="numeric"
+                  hour="numeric"
+                  minute="numeric"
+                  second="numeric"
+                />
+              </p>
+            </div>
+          </div>
+          <div
+            v-if="item.content"
+            class="text-[0.875rem] text-color-300 mt-2 line-clamp-2"
+          >
+            <Markdown :value="item.content" :plugins="markdownPlugins" />
+          </div>
+        </UPageCard>
+      </div>
+
+      <!-- 分页 -->
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        @change="onPageChange"
+      />
+    </template>
+  </UTabs>
 </template>

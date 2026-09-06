@@ -151,13 +151,20 @@ prisma/               # schema 与 migrations
 
 ### Markdown 渲染
 
-统一用 `marked` 包，全局配置 `marked.setOptions({ gfm: true, breaks: true, async: false })`，**不要自实现 markdown 解析器**。当前使用位置：
+统一用 Comark（`@comark/nuxt` 的 `<Markdown>` 组件），**不要自实现 markdown 解析器，也不要再引入 `marked`**。插件与可复用数组统一放在 [app/utils/comark.ts](app/utils/comark.ts)：
 
-- [app/components/AiChat.vue](app/components/AiChat.vue) — AI 对话气泡
-- [app/pages/source/[id].vue](app/pages/source/[id].vue) — 资源描述
+- `markdownPlugins`：`breaks()` + `shiki()`，用于站点自行维护的信任内容（公告、静态法律页面）
+- `safeMarkdownPlugins`：额外加了 `security()`（拦截高危标签、剥离 `on*` 属性、校验 url），用于不可信内容（AI 输出、外部抓取的资源描述）
+
+当前使用位置：
+
+- [app/components/AiChat.vue](app/components/AiChat.vue) — AI 对话气泡（`streaming` + `safeMarkdownPlugins`）
+- [app/pages/source/[id].vue](app/pages/source/[id].vue) — 资源描述（`safeMarkdownPlugins`）
 - [app/pages/announcement/index.vue](app/pages/announcement/index.vue) — 公告列表预览
 - [app/pages/announcement/[id].vue](app/pages/announcement/[id].vue) — 公告详情
-- 静态法律页面（policy/agree/privacy-policy/version）也用 marked 渲染
+- 静态法律页面（policy/agree/privacy-policy/version）也用 `<Markdown>` 渲染
+
+代码高亮用 `shiki()`（`import shiki from '@comark/nuxt/plugins/shiki'`），需要安装 `shiki` 包。
 
 ### AI 搜索
 

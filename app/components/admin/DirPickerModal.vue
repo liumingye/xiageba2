@@ -146,7 +146,7 @@ const handleClose = () => {
               />
               <span class="flex-1 text-sm truncate">{{ dir.name }}</span>
               <span
-                class="text-xs text-zinc-600 font-mono truncate max-w-[120px]"
+                class="text-xs text-zinc-600 font-mono truncate max-w-30"
                 :title="dir.id"
               >
                 {{ dir.id }}

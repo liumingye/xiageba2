@@ -24,7 +24,7 @@ onMounted(async () => {
     @mouseleave="isHovered = false"
   >
     <div
-      class="bg-color-100 backdrop-blur-sm rounded-lg p-3 border border-color-300 text-center"
+      class="bg-default backdrop-blur-sm rounded-lg p-3 border border-muted text-center"
     >
       <div class="w-36 h-36 mx-auto bg-white rounded-lg">
         <img
