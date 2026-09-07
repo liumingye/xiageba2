@@ -1,4 +1,3 @@
-import breaks from "@comark/nuxt/plugins/breaks";
 import security from "@comark/nuxt/plugins/security";
 import shiki from "@comark/nuxt/plugins/shiki";
 
@@ -7,7 +6,7 @@ import shiki from "@comark/nuxt/plugins/shiki";
  * - 单换行转 <br>（与之前 marked 的 breaks 一致）
  * - shiki 代码高亮
  */
-export const markdownPlugins = [breaks(), shiki()];
+export const markdownPlugins = [shiki()];
 
 /** 不可信内容中会被直接丢弃的高危标签 */
 const unsafeBlockedTags = [
@@ -42,7 +41,6 @@ const unsafeBlockedTags = [
  * 剥离 on* 事件属性并校验 url 协议，防止 XSS。
  */
 export const safeMarkdownPlugins = [
-  breaks(),
   security({
     blockedTags: unsafeBlockedTags,
   }),

@@ -199,6 +199,9 @@ export default defineNuxtConfig({
     "@nuxt/scripts",
     "@comark/nuxt",
   ],
+  ui: {
+    fonts: false,
+  },
   experimental: {
     defaults: {
       nuxtLink: {
@@ -338,7 +341,17 @@ export default defineNuxtConfig({
       }) as any,
     ],
     optimizeDeps: {
-      include: ["@lucide/vue", "@vueuse/core", "pinia", "qrcode"],
+      include: [
+        "@lucide/vue",
+        "@vueuse/core",
+        "pinia",
+        "qrcode",
+        "@nuxt/ui > prosemirror-state",
+        "@nuxt/ui > prosemirror-transform",
+        "@nuxt/ui > prosemirror-model",
+        "@nuxt/ui > prosemirror-view",
+        "@nuxt/ui > prosemirror-gapcursor",
+      ],
     },
   },
   alias: {

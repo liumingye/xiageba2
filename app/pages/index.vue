@@ -20,10 +20,16 @@ defineOptions({
 
 const config = useRuntimeConfig();
 const musicStore = useMusicStore();
-const searchBarRef = ref<typeof SearchBarBig>();
-const sectionRef = ref<HTMLElement | null>(null);
+const searchBarRef = useTemplateRef("searchBarRef");
+const sectionRef = useTemplateRef("sectionRef");
 const sectionExpanded = ref(false);
 const sectionOverflowing = ref(true);
+
+// 首页宫格卡片统一使用 UCard，保持与原 .card 一致的观感
+const gridCardUi = {
+  root: "bg-muted border border-muted rounded-xl overflow-hidden",
+  body: "flex flex-col p-2 md:p-4",
+};
 
 const checkSectionOverflow = () => {
   if (!sectionRef.value || sectionExpanded.value) return;
@@ -459,25 +465,30 @@ const getPic = (url: string) => {
           class="flex flex-wrap gap-2"
           :class="sectionExpanded ? '' : 'max-h-50'"
         >
-          <button
+          <UButton
             v-for="(hotword, index) in hotwords"
             :key="hotword.word"
-            class="button-radius"
+            color="neutral"
+            variant="subtle"
+            size="lg"
+            :ui="{
+              base: 'rounded-xl',
+            }"
             @click="handleHotwordClick(hotword)"
           >
             <span
               v-if="index < 3"
-              class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium"
+              class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium shrink-0 text-white"
               :class="{
-                'bg-red-500 text-white': index === 0,
-                'bg-orange-500 text-white': index === 1,
-                'bg-yellow-500 text-white': index === 2,
+                'bg-red-500': index === 0,
+                'bg-orange-500': index === 1,
+                'bg-teal-500': index === 2,
               }"
             >
               {{ index + 1 }}
             </span>
             {{ hotword.word }}
-          </button>
+          </UButton>
         </div>
       </template>
 
@@ -486,14 +497,16 @@ const getPic = (url: string) => {
           class="flex flex-wrap gap-2 transition-all duration-300"
           :class="sectionExpanded ? '' : 'max-h-50'"
         >
-          <button
+          <UButton
             v-for="keyword in musicStore.searchHistory"
             :key="keyword"
-            class="button-radius"
+            color="neutral"
+            variant="subtle"
+            size="lg"
             @click="searchBarRef?.handleSearch(keyword)"
           >
             {{ keyword }}
-          </button>
+          </UButton>
         </div>
       </template>
     </UTabs>
@@ -502,7 +515,6 @@ const getPic = (url: string) => {
   <section
     v-if="hasCategory || doubanClasses.length > 0"
     aria-labelledby="content-title"
-    class="mb-8"
   >
     <UTabs
       v-model="activeContentTab"
@@ -532,15 +544,12 @@ const getPic = (url: string) => {
           v-if="hasCategory"
           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4"
         >
-          <div
-            v-if="hotMusic && hotMusic.length > 0"
-            class="card p-2 md:p-4 flex flex-col"
-          >
+          <UCard v-if="hotMusic && hotMusic.length > 0" :ui="gridCardUi">
             <div class="flex items-center gap-2 mb-3">
               <div
-                class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                class="size-6 rounded-lg flex items-center justify-center shrink-0"
               >
-                <MusicIcon class="w-6 h-6 text-primary-400" />
+                <MusicIcon class="size-6 text-primary-400" />
               </div>
               <div class="flex-1 min-w-0">
                 <h3 class="font-medium truncate">最新音乐</h3>
@@ -563,24 +572,42 @@ const getPic = (url: string) => {
                 </NuxtLink>
               </li>
             </ul>
-          </div>
+          </UCard>
 
-          <div
+          <UCard
             v-for="cat in categoriesWithLatest"
             :key="cat.id"
-            class="card p-2 md:p-4 flex flex-col"
+            :ui="gridCardUi"
           >
             <NuxtLink
               :to="`/categorie/${cat.id}`"
               class="flex items-center gap-2 mb-3 group"
             >
               <div
-                class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                class="size-6 rounded-lg flex items-center justify-center shrink-0"
               >
-                <img v-if="cat.image" :src="cat.image" class="w-6 h-6" />
+                <div
+                  v-if="cat.image && cat.image.endsWith('.svg')"
+                  class="size-6 bg-primary-400"
+                  :style="{
+                    maskImage: `url(${cat.image})`,
+                    maskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    maskPosition: 'center',
+                    WebkitMaskImage: `url(${cat.image})`,
+                    WebkitMaskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                  }"
+                />
+                <img
+                  v-else-if="cat.image"
+                  :src="cat.image"
+                  class="size-6 object-contain"
+                />
                 <Folder
                   v-else
-                  class="w-6 h-6 text-primary-400 fill-primary-400"
+                  class="size-6 text-primary-400 fill-primary-400"
                 />
               </div>
               <div class="flex-1 min-w-0">
@@ -626,14 +653,14 @@ const getPic = (url: string) => {
                 class="size-3 group-hover:-rotate-45 transition-transform"
               />
             </UButton>
-          </div>
+          </UCard>
         </div>
       </template>
       <template #douban>
         <div class="space-y-3 mb-4">
           <div class="flex items-center gap-3">
             <div
-              class="text-xs text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
+              class="text-sm text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
             >
               分类
             </div>
@@ -646,7 +673,7 @@ const getPic = (url: string) => {
               @mouseup="onDragMouseUpOrLeave"
               @mouseleave="onDragMouseUpOrLeave"
             >
-              <div class="flex gap-2 min-w-max items-center h-8">
+              <div class="flex gap-1 min-w-max items-center h-8">
                 <button
                   v-for="cls in doubanClasses"
                   :key="cls.type_id"
@@ -671,7 +698,7 @@ const getPic = (url: string) => {
             class="flex items-center gap-3"
           >
             <div
-              class="text-xs text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
+              class="text-sm text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
             >
               {{ filter.name }}
             </div>
@@ -684,7 +711,7 @@ const getPic = (url: string) => {
               @mouseup="onDragMouseUpOrLeave"
               @mouseleave="onDragMouseUpOrLeave"
             >
-              <div class="flex gap-2 min-w-max items-center h-8">
+              <div class="flex gap-1 min-w-max items-center h-8">
                 <button
                   v-for="opt in filter.value"
                   :key="opt.value"
@@ -712,13 +739,16 @@ const getPic = (url: string) => {
           class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
           aria-busy="true"
         >
-          <div
+          <UCard
             v-for="(_, i) in Array.from({ length: 10 })"
             :key="i"
-            class="card animate-pulse"
+            :ui="{
+              root: 'relative border border-muted ring ring-default',
+              body: 'p-0 sm:p-0',
+            }"
           >
             <USkeleton class="aspect-2/3 bg-accented" />
-          </div>
+          </UCard>
         </div>
 
         <div v-else-if="doubanList.length === 0" class="text-center py-12">
@@ -729,12 +759,14 @@ const getPic = (url: string) => {
           v-else
           class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
         >
-          <article
+          <UCard
             v-for="item in doubanList"
             :key="item.vod_id"
-            class="card cursor-pointer hover:border-primary-500 transition-colors relative"
+            :ui="{
+              root: 'relative border border-muted ring ring-default transition-all hover:ring-primary-500',
+              body: 'p-0 sm:p-0',
+            }"
             @click="goToResourceSearch(item)"
-            :title="item.vod_name"
           >
             <div class="aspect-2/3 overflow-hidden bg-black">
               <img
@@ -766,7 +798,7 @@ const getPic = (url: string) => {
                 {{ item.vod_subtitle || "-" }}
               </p>
             </div>
-          </article>
+          </UCard>
         </div>
 
         <div
@@ -826,12 +858,5 @@ const getPic = (url: string) => {
 
 .link {
   @apply text-sm hover:text-primary truncate transition-colors;
-}
-
-.button-radius {
-  @apply px-3 py-2 rounded-full text-sm transition-colors bg-muted border border-muted;
-  &:hover {
-    @apply bg-accented;
-  }
 }
 </style>

@@ -3,22 +3,9 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
-import {
-  Plus,
-  Save,
-  Pencil,
-  Trash2,
-  Check,
-  Loader2,
-  Link2,
-  KeyRound,
-  FolderOpen,
-  Power,
-  UserCog,
-} from "@lucide/vue";
+import { Loader2, KeyRound, UserCog } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
-import AdminModal from "~/components/admin/Modal.vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { getPanTypeLabel } from "~/utils/pan";
 
@@ -409,13 +396,9 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium">账号管理</h2>
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors text-white"
-          @click="openAddForm"
-        >
-          <Plus class="w-4 h-4" />
+        <UButton color="primary" icon="i-lucide-plus" @click="openAddForm">
           添加账号
-        </button>
+        </UButton>
       </div>
 
       <!-- 加载中 -->
@@ -450,24 +433,22 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
             >
           </h3>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div
+            <UCard
               v-for="account in groupedAccounts[type]"
               :key="account.id"
-              class="card p-4"
-              :class="{ 'opacity-50': account.status === 0 }"
+              :ui="{
+                root: account.status === 0 ? 'opacity-50' : '',
+                body: 'p-4',
+              }"
             >
               <div class="flex items-start justify-between mb-3">
                 <div class="flex items-center gap-2 min-w-0">
-                  <span
-                    class="inline-flex items-center justify-center w-7 h-7 shrink-0 rounded-lg text-xs font-mono"
-                    :class="
-                      account.status === 1
-                        ? 'bg-green-500 text-white'
-                        : 'bg-color-300 text-color-500'
-                    "
+                  <UBadge
+                    :color="account.status === 1 ? 'success' : 'neutral'"
+                    class="shrink-0 font-mono"
                   >
                     #{{ account.id }}
-                  </span>
+                  </UBadge>
                   <span
                     v-if="account.name"
                     class="text-sm truncate"
@@ -475,51 +456,61 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                   >
                     {{ account.name }}
                   </span>
-                  <span
-                    class="text-xs px-2 py-0.5 shrink-0 rounded-full"
-                    :class="
-                      account.status === 1
-                        ? 'bg-green-500 text-white'
-                        : 'bg-color-300 text-color-500'
-                    "
+                  <UBadge
+                    :color="account.status === 1 ? 'success' : 'neutral'"
+                    variant="soft"
+                    class="shrink-0"
                   >
                     {{ account.status === 1 ? "启用" : "停用" }}
-                  </span>
+                  </UBadge>
                 </div>
                 <div class="flex items-center gap-1">
-                  <button
-                    class="p-1.5 hover:bg-color-300 rounded-lg text-color-400 transition-colors"
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    square
+                    size="sm"
+                    icon="i-lucide-check"
+                    :loading="checking[account.id]"
                     :disabled="checking[account.id]"
                     title="检测账号"
+                    aria-label="检测账号"
                     @click="checkAccount(account)"
-                  >
-                    <Loader2
-                      v-if="checking[account.id]"
-                      class="w-4 h-4 animate-spin"
-                    />
-                    <Check v-else class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-1.5 hover:bg-color-300 rounded-lg text-color-400 transition-colors"
+                  />
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    square
+                    size="sm"
+                    icon="i-lucide-pencil"
                     title="编辑"
+                    aria-label="编辑"
                     @click="openEditForm(account)"
-                  >
-                    <Pencil class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-1.5 hover:bg-color-300 rounded-lg text-color-400 transition-colors"
+                  />
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    square
+                    size="sm"
+                    :icon="
+                      account.status === 1
+                        ? 'i-lucide-power'
+                        : 'i-lucide-power-off'
+                    "
                     :title="account.status === 1 ? '停用' : '启用'"
+                    :aria-label="account.status === 1 ? '停用' : '启用'"
                     @click="toggleStatus(account)"
-                  >
-                    <Power class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-1.5 hover:bg-red-500 rounded-lg text-color-400 hover:text-white transition-colors"
+                  />
+                  <UButton
+                    color="error"
+                    variant="ghost"
+                    square
+                    size="sm"
+                    icon="i-lucide-trash-2"
                     title="删除"
+                    aria-label="删除"
                     @click="deleteAccount(account)"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
+                  />
                 </div>
               </div>
 
@@ -571,149 +562,178 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
                   </span>
                 </div>
               </div>
-            </div>
+            </UCard>
           </div>
         </div>
       </div>
     </main>
 
     <!-- 添加/编辑弹窗 -->
-    <AdminModal
-      :show="formShow"
+    <UModal
+      :open="formShow"
       :title="formIsEdit ? '编辑账号' : '添加账号'"
-      max-width="max-w-lg"
-      @close="closeForm"
+      :dismissible="false"
+      @update:open="
+        (v) => {
+          if (!v) closeForm();
+        }
+      "
+      :ui="{
+        footer: 'justify-end',
+      }"
     >
-      <div class="space-y-4">
-        <!-- 网盘类型 -->
-        <div>
-          <label class="block text-color-400 text-sm mb-2">网盘类型</label>
-          <select
-            v-model="formData.type"
-            class="input-search w-full"
-            :disabled="formIsEdit"
+      <template #body>
+        <div class="space-y-4">
+          <!-- 网盘类型 -->
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="form-type"
+              >网盘类型</label
+            >
+            <USelect
+              id="form-type"
+              v-model="formData.type"
+              value-key="value"
+              :items="[
+                { label: '夸克网盘', value: 'quark' },
+                { label: '百度网盘', value: 'baidu' },
+                { label: 'UC 网盘', value: 'uc' },
+                { label: '迅雷云盘', value: 'xunlei' },
+              ]"
+              :disabled="formIsEdit"
+              class="w-full"
+            />
+          </div>
+
+          <!-- Cookie -->
+          <div v-if="formData.type !== 'xunlei'">
+            <label class="block text-color-400 text-sm mb-2" for="form-cookie"
+              >Cookie</label
+            >
+            <UTextarea
+              id="form-cookie"
+              v-model="formData.cookie"
+              :rows="3"
+              placeholder="粘贴 Cookie"
+              class="font-mono text-xs w-full"
+            />
+          </div>
+
+          <!-- 百度 OAuth2 -->
+          <div
+            v-if="formData.type === 'baidu'"
+            class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
           >
-            <option value="quark">夸克网盘</option>
-            <option value="baidu">百度网盘</option>
-            <option value="uc">UC 网盘</option>
-            <option value="xunlei">迅雷云盘</option>
-          </select>
-        </div>
-
-        <!-- Cookie -->
-        <div v-if="formData.type !== 'xunlei'">
-          <label class="block text-color-400 text-sm mb-2">Cookie</label>
-          <textarea
-            v-model="formData.cookie"
-            rows="3"
-            placeholder="粘贴 Cookie"
-            class="input-search resize-none w-full font-mono text-xs"
-          ></textarea>
-        </div>
-
-        <!-- 百度 OAuth2 -->
-        <div
-          v-if="formData.type === 'baidu'"
-          class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
-        >
-          <div class="flex items-center gap-2 text-sm text-color-400">
-            <KeyRound class="w-4 h-4" />
-            <span>OAuth2 授权获取 Token</span>
+            <div class="flex items-center gap-2 text-sm text-color-400">
+              <KeyRound class="w-4 h-4" />
+              <span>OAuth2 授权获取 Token</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-link-2"
+                :loading="gettingOauthUrl"
+                :disabled="gettingOauthUrl"
+                @click="getBaiduOauthUrl"
+              >
+                {{ gettingOauthUrl ? "获取中..." : "获取授权链接" }}
+              </UButton>
+            </div>
+            <div v-if="baiduOauthUrl" class="flex items-center gap-2">
+              <UInput
+                v-model="baiduOauthCode"
+                type="text"
+                placeholder="粘贴授权码 (code)"
+                class="flex-1"
+              />
+              <UButton
+                color="success"
+                icon="i-lucide-check"
+                :loading="gettingOauthToken"
+                :disabled="gettingOauthToken || !baiduOauthCode.trim()"
+                @click="getBaiduOauthToken"
+              >
+                {{ gettingOauthToken ? "获取中..." : "获取 Token" }}
+              </UButton>
+            </div>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="gettingOauthUrl"
-              @click="getBaiduOauthUrl"
+
+          <!-- Refresh Token -->
+          <div v-if="formData.type === 'baidu' || formData.type === 'xunlei'">
+            <label class="block text-color-400 text-sm mb-2" for="form-refresh"
+              >Refresh Token</label
             >
-              <Loader2 v-if="gettingOauthUrl" class="w-4 h-4 animate-spin" />
-              <Link2 v-else class="w-4 h-4" />
-              {{ gettingOauthUrl ? "获取中..." : "获取授权链接" }}
-            </button>
-          </div>
-          <div v-if="baiduOauthUrl" class="flex items-center gap-2">
-            <input
-              v-model="baiduOauthCode"
-              type="text"
-              placeholder="粘贴授权码 (code)"
-              class="input-search flex-1"
+            <UTextarea
+              id="form-refresh"
+              v-model="formData.refreshToken"
+              :rows="2"
+              placeholder="粘贴 Refresh Token"
+              class="font-mono text-xs w-full"
             />
-            <button
-              class="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-              :disabled="gettingOauthToken || !baiduOauthCode.trim()"
-              @click="getBaiduOauthToken"
-            >
-              <Loader2 v-if="gettingOauthToken" class="w-4 h-4 animate-spin" />
-              {{ gettingOauthToken ? "获取中..." : "获取 Token" }}
-            </button>
           </div>
-        </div>
 
-        <!-- Refresh Token -->
-        <div v-if="formData.type === 'baidu' || formData.type === 'xunlei'">
-          <label class="block text-color-400 text-sm mb-2">Refresh Token</label>
-          <textarea
-            v-model="formData.refreshToken"
-            rows="2"
-            placeholder="粘贴 Refresh Token"
-            class="input-search resize-none w-full font-mono text-xs"
-          ></textarea>
-        </div>
+          <!-- 临时目录 -->
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="form-tempdir"
+              >临时资源目录</label
+            >
+            <div class="flex gap-2">
+              <UInput
+                id="form-tempdir"
+                v-model="formData.tempDir"
+                type="text"
+                placeholder="输入目录 ID 或路径"
+                class="flex-1"
+              />
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-folder-open"
+                title="从网盘选择目录"
+                @click="openDirPicker"
+              >
+                选择
+              </UButton>
+            </div>
+          </div>
 
-        <!-- 临时目录 -->
-        <div>
-          <label class="block text-color-400 text-sm mb-2">临时资源目录</label>
-          <div class="flex gap-2">
-            <input
-              v-model="formData.tempDir"
-              type="text"
-              placeholder="输入目录 ID 或路径"
-              class="input-search flex-1"
+          <!-- 状态 -->
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="form-status"
+              >状态</label
+            >
+            <USelect
+              id="form-status"
+              v-model="formData.status"
+              value-key="value"
+              :items="[
+                { label: '启用', value: 1 },
+                { label: '停用', value: 0 },
+              ]"
+              class="w-full"
             />
-            <button
-              class="flex items-center gap-1.5 px-3 py-2 text-sm bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap"
-              title="从网盘选择目录"
-              @click="openDirPicker"
-            >
-              <FolderOpen class="w-4 h-4" />
-              选择
-            </button>
           </div>
         </div>
-
-        <!-- 状态 -->
-        <div>
-          <label class="block text-color-400 text-sm mb-2">状态</label>
-          <select v-model="formData.status" class="input-search w-full">
-            <option :value="1">启用</option>
-            <option :value="0">停用</option>
-          </select>
-        </div>
-      </div>
+      </template>
 
       <!-- 底部操作 -->
       <template #footer>
-        <div
-          class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-color-300"
-        >
-          <button
-            class="px-4 py-2 text-sm text-color-400 hover:bg-color-300 rounded-lg transition-colors"
-            @click="closeForm"
-          >
+        <div class="flex items-center justify-end gap-3">
+          <UButton color="neutral" variant="ghost" @click="closeForm">
             取消
-          </button>
-          <button
-            class="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          </UButton>
+          <UButton
+            color="primary"
+            icon="i-lucide-save"
+            :loading="formSaving"
             :disabled="formSaving"
             @click="saveForm"
           >
-            <Loader2 v-if="formSaving" class="w-4 h-4 animate-spin" />
-            <Save v-else class="w-4 h-4" />
             {{ formSaving ? "保存中..." : "保存" }}
-          </button>
+          </UButton>
         </div>
       </template>
-    </AdminModal>
+    </UModal>
 
     <DirPickerModal
       :show="dirPickerShow"

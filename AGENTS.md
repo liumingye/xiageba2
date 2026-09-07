@@ -31,7 +31,7 @@ node scripts/seed-admin.mjs [user] [pass]   # 创建管理员
 app/                  # 业务代码（srcDir）
   components/         # 自动导入
     admin/            # 后台组件（AdminHeader/AdminNav/AdminPagination/FilePickerModal/ScrapeModal）
-  composables/        # 自动导入（useAuth/useBackHistory/usePanCheck/useToast/useTheme/useFunnyLoading）
+  composables/        # 自动导入（useAuth/usePanCheck/useToast/useTheme/useFunnyLoading）
   pages/              # 文件路由
     admin/            # 后台页面（SSR 关闭）
       music/          # 音乐管理（add.vue, edit/[id].vue）
@@ -109,7 +109,6 @@ prisma/               # schema 与 migrations
 - Pinia 中只存客户端的状态（如 searchHistory）需用 `skipHydrate`
 - 音频元素必须在用户点击播放按钮时**动态创建**，禁止静态 `<audio>` 标签
 - 下载弹窗行为按设备区分：PC 显示二维码（切换音质自动换码），移动端直接跳转链接
-- 返回按钮逻辑统一走 [app/composables/useBackHistory.ts](app/composables/useBackHistory.ts)
 
 ### 后台请求统一用 axios
 

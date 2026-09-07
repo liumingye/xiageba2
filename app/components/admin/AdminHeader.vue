@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Music, LogOut } from "@lucide/vue";
+import { Music } from "@lucide/vue";
 import { useAuth } from "~/composables/useAuth";
 import { useRouter } from "vue-router";
 
@@ -13,11 +13,11 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <header class="bg-color-100 border-b border-color-300 px-6 py-4">
+  <header class="bg-default border-b border-muted px-6 py-4">
     <div class="flex items-center justify-between max-w-7xl mx-auto">
       <div class="flex items-center gap-3">
         <div
-          class="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
+          class="w-8 h-8 bg-linear-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
         >
           <Music class="w-5 h-5 text-white" />
         </div>
@@ -25,14 +25,15 @@ const handleLogout = () => {
       </div>
 
       <div class="flex items-center gap-4">
-        <span class="text-color-300">{{ username }}</span>
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-color-300 hover:bg-color-400 text-color-300 rounded-lg transition-colors"
+        <span class="text-muted">{{ username }}</span>
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-log-out"
           @click="handleLogout"
         >
-          <LogOut class="w-4 h-4" />
           退出
-        </button>
+        </UButton>
       </div>
     </div>
   </header>

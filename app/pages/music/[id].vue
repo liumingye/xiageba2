@@ -220,9 +220,14 @@ onMounted(() => {
   musicStore.searchType = "music";
 });
 
-const isMobile = useMediaQuery("(max-width: 639px)");
-
 const isMounted = useMounted();
+
+const isMobile = useMediaQuery("(max-width: 1366px)");
+// UA匹配 && 宽度1366px以下
+const isMobileTablet = computed(() => {
+  if (!isMounted.value) return false;
+  return isMobileOrTablet() && isMobile.value;
+});
 </script>
 
 <template>
@@ -358,11 +363,13 @@ const isMounted = useMounted();
                 :title="`${download.quality}下载`"
                 size="xl"
                 class="px-6"
-                @click="!isMobile && openDownloadModal(download)"
+                :href="isMobileTablet ? download.url : undefined"
+                :target="isMobileTablet ? '_blank' : undefined"
+                @click="!isMobileTablet && openDownloadModal(download)"
               >
                 {{ download.quality }}
                 <template
-                  v-if="isMobile && isMounted && extractPwd(download.url)"
+                  v-if="isMobileTablet && isMounted && extractPwd(download.url)"
                 >
                   (提取码: {{ extractPwd(download.url) }})
                 </template>
@@ -371,7 +378,7 @@ const isMounted = useMounted();
                 v-if="music.playUrl"
                 aria-label="播放或暂停"
                 title="播放或暂停"
-                :icon="isPlaying ? 'i-lucide-pause' : 'i-lucide-play'"
+                :icon="isPlaying ? 'i-lucide-audio-lines' : 'i-lucide-play'"
                 size="xl"
                 class="px-6"
                 @click="togglePlay"
@@ -448,14 +455,12 @@ const isMounted = useMounted();
 
   <ClientOnly>
     <DownloadModal
-      v-if="!isMobile"
       v-model:show="showDownloadModal"
       :music="music"
       v-model:selectedDownload="selectedDownload"
     />
 
     <FeedbackModal
-      v-else-if="music?.id"
       :show="showFeedbackModal"
       :music-id="music.id"
       @close="showFeedbackModal = false"

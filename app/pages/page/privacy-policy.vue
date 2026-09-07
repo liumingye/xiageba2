@@ -14,9 +14,7 @@ useHead({
   ],
 });
 
-const content = `# 隐私政策
-
-**最后更新日期：2026年1月1日**
+const content = `**最后更新日期：2026年1月1日**
 
 全盘搜（以下简称"本站"）重视用户隐私保护。本隐私政策说明本站如何收集、使用、存储和保护您的个人信息。请您在使用本站服务前，仔细阅读本政策。
 
@@ -97,8 +95,7 @@ const content = `# 隐私政策
 
 如您对本隐私政策有任何疑问或建议，请联系：
 
-- 邮箱：liumingye2015@gmail.com`;
-
+- 邮箱：[liumingye2015@gmail.com](mailto:liumingye2015@gmail.com)`;
 </script>
 
 <template>

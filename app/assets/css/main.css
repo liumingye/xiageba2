@@ -1,27 +1,10 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-/** @Deprecated */
-/* 基础标题样式 (对应 addBase) */
-@layer base {
-  h1 {
-    @apply text-3xl font-bold;
-  }
-  h2 {
-    @apply text-2xl font-bold;
-  }
-  h3 {
-    @apply text-xl font-bold;
-  }
-  h4 {
-    @apply text-lg font-bold;
-  }
-  h5 {
-    @apply text-sm font-bold;
-  }
-  h6 {
-    @apply text-xs font-bold;
-  }
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, Helvetica Neue, Helvetica, Arial,
+    PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif;
 }
 
 /** @Deprecated */
@@ -130,6 +113,10 @@
   --color-mist-500: oklch(56% 0.021 213.5);
   --color-taupe-400: oklch(71.4% 0.014 41.2);
   --color-taupe-500: oklch(54.7% 0.021 43.1);
+  --color-gray-400: oklch(70.7% 0.022 261.325);
+  --color-gray-500: oklch(55.1% 0.027 264.364);
+  --color-orange-400: oklch(75% 0.183 55.934);
+  --color-orange-500: oklch(70.5% 0.213 47.604);
 }
 
 .dark {
@@ -169,14 +156,11 @@ html.dark {
 
 body {
   @apply bg-default/50;
+  overflow-y: scroll;
 }
 
 #__nuxt {
   overflow-x: hidden;
-}
-
-body {
-  overflow-y: scroll;
 }
 
 /* hr {
@@ -184,6 +168,7 @@ body {
   margin: 8px 0;
 } */
 
+/** 滚动条 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -191,16 +176,16 @@ body {
 
 ::-webkit-scrollbar-corner,
 ::-webkit-scrollbar-track {
-  @apply bg-default;
+  @apply bg-muted/50
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-accented;
+  @apply bg-primary/50 rounded-md;
 }
 
-/* ::-webkit-scrollbar-thumb:hover {
-  @apply bg-accented;
-} */
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary;
+}
 
 @layer components {
   .btn-primary {
@@ -275,4 +260,9 @@ body {
   background: url("/img/pan/magnet.svg") no-repeat center center;
   background-size: cover;
   flex-shrink: 0;
+}
+
+/** comark */
+.comark-content img.w-full {
+  width: auto;
 }

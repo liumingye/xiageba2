@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { ArrowLeft, Save, Plus, X, Search, FolderOpen, ImageIcon } from "@lucide/vue";
+import { ImageIcon } from "@lucide/vue";
 import ScrapeModal from "~/components/admin/ScrapeModal.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
 import { get, put } from "~/utils/request";
@@ -40,9 +40,12 @@ const handleCoverPicked = (url: string) => {
 };
 
 const coverImgError = ref(false);
-watch(() => form.value.cover, () => {
-  coverImgError.value = false;
-});
+watch(
+  () => form.value.cover,
+  () => {
+    coverImgError.value = false;
+  },
+);
 
 onMounted(async () => {
   if (!initialized.value) {
@@ -130,93 +133,110 @@ const handleSubmit = async () => {
     <header class="bg-color-100 border-b border-color-300 px-6 py-4">
       <div class="flex items-center justify-between max-w-4xl mx-auto">
         <div class="flex items-center gap-4">
-          <button
-            class="p-2 hover:bg-color-300 rounded-lg transition-colors"
+          <UButton
+            color="neutral"
+            variant="ghost"
+            square
+            icon="i-lucide-arrow-left"
+            aria-label="返回"
             @click="goBack"
-          >
-            <ArrowLeft class="w-5 h-5 text-color-400" />
-          </button>
+          />
           <h1 class="text-xl font-bold">编辑音乐</h1>
         </div>
       </div>
     </header>
 
     <main class="max-w-4xl mx-auto px-6 py-6">
-      <div
+      <UAlert
         v-if="error"
-        class="mb-6 p-4 bg-red-900/50 border border-red-800 rounded-lg text-red-400"
-      >
-        {{ error }}
-      </div>
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-6"
+      />
 
       <div class="flex items-center justify-end mb-4 gap-2">
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-search"
           @click="openScrapeModal"
         >
-          <Search class="w-4 h-4" />
           刮削
-        </button>
+        </UButton>
 
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-          @click="handleSubmit"
-        >
-          <Save class="w-4 h-4" />
+        <UButton color="primary" icon="i-lucide-save" @click="handleSubmit">
           保存
-        </button>
+        </UButton>
       </div>
 
-      <div class="card p-6 space-y-6">
+      <UCard
+        :ui="{
+          body: 'p-6 space-y-6',
+        }"
+      >
         <div>
-          <label class="block text-color-400 text-sm mb-2">歌名 *</label>
-          <input
+          <label class="block text-color-400 text-sm mb-2" for="music-title"
+            >歌名 *</label
+          >
+          <UInput
+            id="music-title"
             v-model="form.title"
             type="text"
             placeholder="请输入歌名"
-            class="input-search"
+            class="w-full"
           />
         </div>
 
         <div>
-          <label class="block text-color-400 text-sm mb-2">歌手 *</label>
-          <input
+          <label class="block text-color-400 text-sm mb-2" for="music-artist"
+            >歌手 *</label
+          >
+          <UInput
+            id="music-artist"
             v-model="form.artist"
             type="text"
             placeholder="请输入歌手"
-            class="input-search"
+            class="w-full"
           />
         </div>
 
         <div>
-          <label class="block text-color-400 text-sm mb-2">专辑</label>
-          <input
+          <label class="block text-color-400 text-sm mb-2" for="music-album"
+            >专辑</label
+          >
+          <UInput
+            id="music-album"
             v-model="form.album"
             type="text"
             placeholder="请输入专辑名"
-            class="input-search"
+            class="w-full"
           />
         </div>
 
         <div>
-          <label class="block text-color-400 text-sm mb-2">封面图片URL</label>
+          <label class="block text-color-400 text-sm mb-2" for="music-cover"
+            >封面图片URL</label
+          >
           <div class="flex gap-2 items-start">
             <div class="flex-1 space-y-3">
               <div class="flex gap-2">
-                <input
+                <UInput
+                  id="music-cover"
                   v-model="form.cover"
                   type="text"
                   placeholder="请输入封面图片链接或点击右侧选择文件"
-                  class="input-search flex-1"
+                  class="flex-1"
                 />
-                <button
-                  type="button"
-                  class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                <UButton
+                  color="neutral"
+                  variant="soft"
+                  icon="i-lucide-folder-open"
+                  class="shrink-0"
                   @click="showCoverPicker = true"
                 >
-                  <FolderOpen class="w-4 h-4" />
                   选择文件
-                </button>
+                </UButton>
               </div>
               <div v-if="form.cover" class="flex items-start gap-3">
                 <div
@@ -229,10 +249,7 @@ const handleSubmit = async () => {
                     class="w-full h-full object-cover"
                     @error="coverImgError = true"
                   />
-                  <ImageIcon
-                    v-else
-                    class="w-8 h-8 text-zinc-600"
-                  />
+                  <ImageIcon v-else class="w-8 h-8 text-zinc-600" />
                 </div>
                 <div class="text-xs text-color-500 pt-1 break-all flex-1">
                   预览：<span class="text-color-400">{{ form.cover }}</span>
@@ -243,35 +260,43 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-color-400 text-sm mb-2">歌词</label>
-          <textarea
+          <label class="block text-color-400 text-sm mb-2" for="music-lyrics"
+            >歌词</label
+          >
+          <UTextarea
+            id="music-lyrics"
             v-model="form.lyrics"
-            rows="6"
+            :rows="6"
             placeholder="请输入歌词，每行一句"
-            class="input-search"
-          ></textarea>
+            class="w-full"
+          />
         </div>
 
         <div>
-          <label class="block text-color-400 text-sm mb-2">播放地址</label>
-          <input
+          <label class="block text-color-400 text-sm mb-2" for="music-play"
+            >播放地址</label
+          >
+          <UInput
+            id="music-play"
             v-model="form.playUrl"
             type="text"
             placeholder="请输入音频播放链接"
-            class="input-search"
+            class="w-full"
           />
         </div>
 
         <div>
           <div class="flex items-center justify-between mb-4">
             <label class="text-color-400 text-sm">下载链接</label>
-            <button
-              class="flex items-center gap-1 text-sm text-primary-500 hover:text-primary-400 transition-colors"
+            <UButton
+              color="primary"
+              variant="ghost"
+              size="sm"
+              icon="i-lucide-plus"
               @click="addDownload"
             >
-              <Plus class="w-4 h-4" />
               添加音质
-            </button>
+            </UButton>
           </div>
 
           <div
@@ -288,29 +313,34 @@ const handleSubmit = async () => {
               class="flex gap-3 items-start"
             >
               <div class="flex-1">
-                <input
+                <UInput
                   v-model="download.quality"
                   type="text"
                   placeholder="音质名称（如：FLAC / MP3 320k / AAC）"
-                  class="input-search mb-2"
+                  class="mb-2 w-full"
                 />
-                <input
+                <UInput
                   v-model="download.url"
                   type="text"
                   placeholder="下载链接"
-                  class="input-search"
+                  class="w-full"
                 />
               </div>
-              <button
-                class="p-2 text-color-500 hover:text-red-500 transition-colors mt-1"
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-x"
+                class="mt-1 shrink-0"
+                title="移除该音质"
+                aria-label="移除该音质"
                 @click="removeDownload(index)"
-              >
-                <X class="w-5 h-5" />
-              </button>
+              />
             </div>
           </div>
         </div>
-      </div>
+      </UCard>
     </main>
 
     <ScrapeModal

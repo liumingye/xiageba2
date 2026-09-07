@@ -96,42 +96,22 @@ const handleClose = () => {
 </script>
 
 <template>
-  <UModal
-    v-model:open="isOpen"
-    title="问题反馈"
-    :ui="{ width: 'sm:max-w-md' }"
-    :close="{
-      color: 'neutral',
-      variant: 'ghost',
-      square: true,
-      'aria-label': '关闭',
-    }"
-    @close="handleClose"
-  >
+  <UModal v-model:open="isOpen" title="问题反馈" @close="handleClose">
     <template #body>
       <!-- 提交成功 -->
       <div v-if="submitted" class="text-center py-6">
         <div
-          class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4"
+          class="w-16 h-16 bg-primary text-inverted rounded-full flex items-center justify-center mx-auto mb-4"
         >
-          <CheckCircle class="w-8 h-8 text-white" />
+          <CheckCircle class="size-8" />
         </div>
         <h3 class="text-lg font-medium mb-2">反馈已提交</h3>
-        <p class="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
-          感谢您的反馈，我们会尽快处理
-        </p>
-        <UButton color="primary" variant="solid" @click="handleClose">
-          关闭
-        </UButton>
+        <p class="text-muted text-sm mb-6">感谢您的反馈，我们会尽快处理</p>
+        <UButton @click="handleClose"> 关闭 </UButton>
       </div>
 
       <!-- 反馈表单 -->
       <div v-else class="space-y-4">
-        <div class="flex items-center gap-2">
-          <MessageSquare class="w-5 h-5 text-primary-500" />
-          <h3 class="text-lg font-medium">问题反馈</h3>
-        </div>
-
         <URadioGroup
           v-model="selectedType"
           legend="反馈类型"
@@ -141,10 +121,7 @@ const handleClose = () => {
         />
 
         <div>
-          <label
-            for="feedback-desc"
-            class="text-sm font-medium mb-2 block"
-          >
+          <label for="feedback-desc" class="text-sm font-medium mb-2 block">
             补充说明（选填）
           </label>
           <UTextarea
@@ -161,10 +138,7 @@ const handleClose = () => {
         </div>
 
         <div>
-          <label
-            for="feedback-email"
-            class="text-sm font-medium mb-2 block"
-          >
+          <label for="feedback-email" class="text-sm font-medium mb-2 block">
             邮箱（选填，用于接收处理通知）
           </label>
           <UInput
@@ -172,6 +146,7 @@ const handleClose = () => {
             v-model="email"
             type="email"
             placeholder="请输入邮箱"
+            class="w-full"
           />
         </div>
 
@@ -181,15 +156,11 @@ const handleClose = () => {
           variant="soft"
           icon="i-lucide-circle-alert"
           :title="errorMsg"
-          class="!p-3"
+          class="p-3"
         />
 
         <div class="flex justify-end gap-3 pt-1">
-          <UButton
-            color="neutral"
-            variant="soft"
-            @click="handleClose"
-          >
+          <UButton color="neutral" variant="soft" @click="handleClose">
             取消
           </UButton>
           <UButton

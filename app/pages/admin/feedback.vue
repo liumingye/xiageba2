@@ -4,15 +4,8 @@ import { useRouter, useRoute } from "vue-router";
 import { useIntervalFn } from "@vueuse/core";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
-import {
-  CheckCircle,
-  ExternalLink,
-  Trash2,
-  Search,
-  AlertCircle,
-  Loader2,
-  Edit3,
-} from "@lucide/vue";
+import { Loader2 } from "@lucide/vue";
+import type { TableColumn } from "@nuxt/ui";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -266,13 +259,37 @@ const typeLabel: Record<string, string> = {
   WRONG_INFO: "歌名/歌手/封面/歌词错误",
 };
 
-const typeColor: Record<string, string> = {
-  BROKEN_LINK: "text-[var(--white)] bg-red-600",
-  WRONG_CONTENT: "text-[var(--white)] bg-orange-600",
-  WRONG_CODE: "text-[var(--white)] bg-yellow-600",
-  WRONG_QUALITY: "text-[var(--white)] bg-blue-600",
-  WRONG_INFO: "text-[var(--white)] bg-purple-600",
+const typeBadgeColor = (type: string) => {
+  switch (type) {
+    case "BROKEN_LINK":
+      return "error";
+    case "WRONG_CONTENT":
+    case "WRONG_CODE":
+      return "warning";
+    case "WRONG_QUALITY":
+      return "info";
+    case "WRONG_INFO":
+      return "secondary";
+    default:
+      return "neutral";
+  }
 };
+
+const columns: TableColumn<any>[] = [
+  { id: "song", header: "歌曲" },
+  { id: "type", accessorKey: "type", header: "类型" },
+  { id: "description", accessorKey: "description", header: "描述" },
+  { id: "status", accessorKey: "status", header: "状态" },
+  { id: "check", header: "网盘检测" },
+  { id: "createdAt", accessorKey: "createdAt", header: "时间" },
+  {
+    id: "actions",
+    header: "操作",
+    meta: {
+      class: { th: "text-center", td: "text-center" },
+    },
+  },
+];
 </script>
 
 <template>
@@ -286,276 +303,251 @@ const typeColor: Record<string, string> = {
         class="flex sm:items-center sm:justify-between flex-col sm:flex-row mb-6 gap-3"
       >
         <h2 class="text-lg font-medium">用户反馈</h2>
-        <div class="flex items-center gap-2">
-          <button
-            class="px-3 py-1.5 rounded-lg text-sm transition-colors"
-            :class="
-              statusFilter === ''
-                ? 'bg-primary-500 text-white'
-                : 'bg-color-400 hover:bg-color-500 text-color-300'
-            "
+        <div class="flex flex-wrap items-center gap-2">
+          <UButton
+            size="sm"
+            :color="statusFilter === '' ? 'primary' : 'neutral'"
+            :variant="statusFilter === '' ? 'solid' : 'soft'"
             @click="handleStatusFilter('')"
           >
             全部
-          </button>
-          <button
-            class="px-3 py-1.5 rounded-lg text-sm transition-colors"
-            :class="
-              statusFilter === 'PENDING'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-color-400 hover:bg-color-500 text-color-300'
-            "
+          </UButton>
+          <UButton
+            size="sm"
+            :color="statusFilter === 'PENDING' ? 'warning' : 'neutral'"
+            :variant="statusFilter === 'PENDING' ? 'solid' : 'soft'"
             @click="handleStatusFilter('PENDING')"
           >
             待处理
-          </button>
-          <button
-            class="px-3 py-1.5 rounded-lg text-sm transition-colors"
-            :class="
-              statusFilter === 'DONE'
-                ? 'bg-green-600 text-white'
-                : 'bg-color-400 hover:bg-color-500 text-color-300'
-            "
+          </UButton>
+          <UButton
+            size="sm"
+            :color="statusFilter === 'DONE' ? 'success' : 'neutral'"
+            :variant="statusFilter === 'DONE' ? 'solid' : 'soft'"
             @click="handleStatusFilter('DONE')"
           >
             已完成
-          </button>
-          <button
-            class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-red-700/80 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+          </UButton>
+          <UButton
+            color="error"
+            variant="soft"
+            size="sm"
+            icon="i-lucide-trash-2"
+            :loading="isClearing"
             :disabled="isClearing"
             @click="clearDoneFeedback"
           >
-            <Trash2 class="w-3.5 h-3.5" />
             {{ isClearing ? "清空中..." : "清空已完成" }}
-          </button>
+          </UButton>
         </div>
       </div>
 
-      <div class="card overflow-x-auto">
-        <table class="w-full table-auto">
-          <thead class="bg-color-100">
-            <tr>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[220px]"
-              >
-                歌曲
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[180px]"
-              >
-                类型
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[200px]"
-              >
-                描述
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[90px]"
-              >
-                状态
-              </th>
-              <th
-                class="px-4 py-3 text-center text-color-400 text-sm font-medium min-w-[120px]"
-              >
-                网盘检测
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium min-w-[100px]"
-              >
-                时间
-              </th>
-              <th
-                class="px-4 py-3 text-center text-color-400 text-sm font-medium min-w-[190px]"
-              >
-                操作
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="isLoading">
-              <td colspan="7" class="px-4 py-8 text-center">
-                <Loader2
-                  class="w-6 h-6 text-primary-500 animate-spin mx-auto"
-                />
-                <p class="text-color-500 text-sm mt-2">加载中...</p>
-              </td>
-            </tr>
-            <tr v-else-if="feedbacks.length === 0">
-              <td colspan="7" class="px-4 py-12 text-center">
-                <p class="text-color-500">暂无反馈</p>
-              </td>
-            </tr>
-            <tr
-              v-else
-              v-for="fb in feedbacks"
-              :key="fb.id"
-              class="border-t border-color-300 hover:bg-color-300"
+      <UCard
+        :ui="{
+          body: 'p-0 sm:p-0',
+        }"
+      >
+        <UTable
+          :data="isLoading ? [] : feedbacks"
+          :columns="columns"
+          :get-row-id="(row: any) => row.id"
+        >
+          <template #song-cell="{ row }">
+            <div class="flex items-center gap-2">
+              <span class="truncate max-w-50">{{
+                row.original.musicTitle
+              }}</span>
+              <span class="text-color-500 text-sm truncate max-w-30">{{
+                row.original.musicArtist
+              }}</span>
+              <UButton
+                as="a"
+                :href="`/music/${row.original.musicId}`"
+                target="_blank"
+                color="neutral"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-external-link"
+                title="查看歌曲"
+                aria-label="查看歌曲"
+              />
+            </div>
+          </template>
+          <template #type-cell="{ row }">
+            <UBadge :color="typeBadgeColor(row.original.type)" variant="solid">
+              {{ typeLabel[row.original.type] || row.original.type }}
+            </UBadge>
+          </template>
+          <template #description-cell="{ row }">
+            <span
+              v-if="row.original.description"
+              class="block max-w-50 truncate text-sm text-color-400"
+              :title="row.original.description"
+              >{{ row.original.description }}</span
             >
-              <td class="px-4 py-4">
-                <div class="flex items-center gap-2">
-                  <span class="truncate max-w-[200px]">{{
-                    fb.musicTitle
-                  }}</span>
-                  <span class="text-color-500 text-sm truncate max-w-[120px]"
-                    >{{ fb.musicArtist }}
-                  </span>
-                  <a
-                    :href="`/music/${fb.musicId}`"
-                    target="_blank"
-                    class="text-color-500 hover:text-primary-400 shrink-0"
-                    title="查看歌曲"
-                  >
-                    <ExternalLink class="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </td>
-              <td class="px-4 py-4">
-                <span
-                  class="inline-flex px-2 py-1 text-xs rounded-md"
-                  :class="typeColor[fb.type] || 'text-color-400 bg-color-400'"
+            <span v-else class="text-sm text-zinc-600">-</span>
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge
+              :color="row.original.status === 'DONE' ? 'success' : 'warning'"
+              variant="soft"
+            >
+              {{ row.original.status === "DONE" ? "已完成" : "待处理" }}
+            </UBadge>
+          </template>
+          <template #check-cell="{ row }">
+            <div class="flex items-center justify-center gap-1.5">
+              <UButton
+                v-if="
+                  !checkResults[row.original.musicId] &&
+                  checkingId !== row.original.musicId
+                "
+                color="neutral"
+                variant="soft"
+                size="sm"
+                icon="i-lucide-search"
+                @click="checkLinks(row.original.musicId)"
+              >
+                检测
+              </UButton>
+              <UButton
+                v-else-if="checkingId === row.original.musicId"
+                color="neutral"
+                variant="soft"
+                size="sm"
+                loading
+                disabled
+              >
+                检测中
+              </UButton>
+              <template v-else>
+                <div
+                  class="flex items-center gap-1.5"
+                  :title="
+                    checkResults[row.original.musicId]?.downloads
+                      ?.map(
+                        (d: any) =>
+                          `${d.quality}: ${d.status === 'valid' ? '有效' : d.status === 'invalid' ? '失效' : '待检测'}`,
+                      )
+                      .join('\n')
+                  "
                 >
-                  {{ typeLabel[fb.type] || fb.type }}
-                </span>
-              </td>
-              <td class="px-4 py-4">
-                <span
-                  v-if="fb.description"
-                  class="text-color-400 text-sm max-w-[200px] block truncate"
-                  :title="fb.description"
-                  >{{ fb.description }}</span
-                >
-                <span v-else class="text-zinc-600 text-sm">-</span>
-              </td>
-              <td class="px-4 py-4">
-                <span
-                  v-if="fb.status === 'DONE'"
-                  class="inline-flex items-center gap-1 text-green-400 text-sm"
-                >
-                  <CheckCircle class="w-4 h-4" />
-                  已完成
-                </span>
-                <span
-                  v-else
-                  class="inline-flex items-center gap-1 text-yellow-400 text-sm"
-                >
-                  <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                  待处理
-                </span>
-              </td>
-              <td class="px-4 py-4">
-                <div class="flex items-center justify-center">
-                  <button
+                  <UBadge
                     v-if="
-                      !checkResults[fb.musicId] && checkingId !== fb.musicId
+                      checkResults[row.original.musicId]?.valid_links?.length > 0
                     "
-                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors"
-                    @click="checkLinks(fb.musicId)"
+                    color="success"
+                    variant="soft"
                   >
-                    <Search class="w-3.5 h-3.5" />
-                    检测
-                  </button>
-                  <button
-                    v-else-if="checkingId === fb.musicId"
-                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-color-400 text-color-400 rounded-lg cursor-not-allowed"
-                    disabled
-                  >
-                    <Loader2 class="w-3.5 h-3.5 animate-spin" />
-                    检测中
-                  </button>
-                  <div
-                    v-else
-                    class="flex items-center gap-2 text-sm"
-                    :title="
-                      checkResults[fb.musicId]?.downloads
-                        ?.map(
-                          (d: any) =>
-                            `${d.quality}: ${d.status === 'valid' ? '有效' : d.status === 'invalid' ? '失效' : '待检测'}`,
-                        )
-                        .join('\n')
+                    有效
+                    {{ checkResults[row.original.musicId].valid_links.length }}
+                  </UBadge>
+                  <UBadge
+                    v-if="
+                      checkResults[row.original.musicId]?.invalid_links?.length >
+                      0
                     "
+                    color="error"
+                    variant="soft"
                   >
-                    <span
-                      v-if="checkResults[fb.musicId]?.valid_links?.length > 0"
-                      class="inline-flex items-center gap-1 text-green-400"
-                    >
-                      <CheckCircle class="w-3.5 h-3.5" />
-                      {{ checkResults[fb.musicId].valid_links.length }}
-                    </span>
-                    <span
-                      v-if="checkResults[fb.musicId]?.invalid_links?.length > 0"
-                      class="inline-flex items-center gap-1 text-red-400"
-                    >
-                      <AlertCircle class="w-3.5 h-3.5" />
-                      {{ checkResults[fb.musicId].invalid_links.length }}
-                    </span>
-                    <span
-                      v-if="checkResults[fb.musicId]?.pending_links?.length > 0"
-                      class="inline-flex items-center gap-1 text-yellow-400"
-                    >
-                      <Loader2 class="w-3.5 h-3.5" />
-                      {{ checkResults[fb.musicId].pending_links.length }}
-                    </span>
-                    <button
-                      class="p-1 text-color-500 hover:text-color-300 transition-colors"
-                      title="重新检测"
-                      @click="checkLinks(fb.musicId)"
-                    >
-                      <Search class="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-4 text-color-500 text-sm">
-                {{
-                  new Date(fb.createdAt).toLocaleString("zh-CN", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                }}
-              </td>
-              <td class="px-4 py-4">
-                <div class="flex items-center justify-center gap-2">
-                  <a
-                    :href="`/admin/music/edit/${fb.musicId}`"
-                    target="_blank"
-                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
-                    title="编辑音乐"
-                  >
-                    <Edit3 class="w-4 h-4" />
-                  </a>
-                  <button
-                    v-if="fb.status === 'PENDING'"
-                    class="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-700 hover:bg-green-600 text-[var(--white)] rounded-lg transition-colors"
-                    @click="resolveFeedback(fb.id)"
-                  >
-                    <CheckCircle class="w-3.5 h-3.5" />
-                    完成
-                  </button>
-                  <span v-else class="text-zinc-600 text-sm">
-                    {{ fb.resolvedBy ? `by ${fb.resolvedBy}` : "" }}
+                    失效
                     {{
-                      fb.resolvedAt
-                        ? new Date(fb.resolvedAt).toLocaleDateString("zh-CN")
-                        : ""
+                      checkResults[row.original.musicId].invalid_links.length
                     }}
-                  </span>
-                  <button
-                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
-                    title="删除"
-                    @click="deleteFeedback(fb.id)"
+                  </UBadge>
+                  <UBadge
+                    v-if="
+                      checkResults[row.original.musicId]?.pending_links?.length >
+                      0
+                    "
+                    color="warning"
+                    variant="soft"
                   >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
+                    待检测
+                    {{
+                      checkResults[row.original.musicId].pending_links.length
+                    }}
+                  </UBadge>
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    square
+                    size="sm"
+                    icon="i-lucide-search"
+                    title="重新检测"
+                    aria-label="重新检测"
+                    @click="checkLinks(row.original.musicId)"
+                  />
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </template>
+            </div>
+          </template>
+          <template #createdAt-cell="{ row }">
+            <span class="text-sm text-color-500">{{
+              new Date(row.original.createdAt).toLocaleString("zh-CN", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            }}</span>
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex items-center justify-center gap-2">
+              <UButton
+                as="a"
+                :href="`/admin/music/edit/${row.original.musicId}`"
+                target="_blank"
+                color="neutral"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-pencil"
+                title="编辑音乐"
+                aria-label="编辑音乐"
+              />
+              <UButton
+                v-if="row.original.status === 'PENDING'"
+                color="success"
+                size="sm"
+                icon="i-lucide-check-circle"
+                @click="resolveFeedback(row.original.id)"
+              >
+                完成
+              </UButton>
+              <span v-else class="text-sm text-zinc-600">
+                {{ row.original.resolvedBy ? `by ${row.original.resolvedBy}` : "" }}
+                {{
+                  row.original.resolvedAt
+                    ? new Date(row.original.resolvedAt).toLocaleDateString(
+                        "zh-CN",
+                      )
+                    : ""
+                }}
+              </span>
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                title="删除"
+                aria-label="删除"
+                @click="deleteFeedback(row.original.id)"
+              />
+            </div>
+          </template>
+          <template #empty>
+            <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+              <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+              <p class="text-color-500 text-sm mt-2">加载中...</p>
+            </div>
+            <p v-else class="text-center text-color-500 py-12">暂无反馈</p>
+          </template>
+        </UTable>
+      </UCard>
 
       <!-- 分页 -->
       <AdminPagination

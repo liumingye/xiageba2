@@ -4,23 +4,14 @@ import { useRouter } from "vue-router";
 import { useIntervalFn } from "@vueuse/core";
 import { useAuth } from "~/composables/useAuth";
 import {
-  RefreshCw,
-  Eraser,
   Database,
-  Save,
-  Check,
   Key,
   Link,
-  Plus,
-  Trash,
   TrendingUp,
   ShieldAlert,
   Sparkles,
   Filter,
-  Copy,
-  Upload,
   MessageSquare,
-  ExternalLink,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -546,7 +537,11 @@ const clearISRCache = async () => {
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">搜索索引</h2>
         </div>
-        <div class="card p-6 space-y-4">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div v-if="rebuildMsg" class="text-sm text-primary-400">
             {{ rebuildMsg }}
           </div>
@@ -558,28 +553,26 @@ const clearISRCache = async () => {
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <button
-                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-refresh-cw"
+                :loading="isRebuilding"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(false, 'music')"
               >
-                <RefreshCw
-                  class="w-4 h-4"
-                  :class="{ 'animate-spin': isRebuilding }"
-                />
                 {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
-              </button>
-              <button
-                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
+              </UButton>
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-refresh-cw"
+                :loading="isRebuilding"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(true, 'music')"
               >
-                <RefreshCw
-                  class="w-4 h-4"
-                  :class="{ 'animate-spin': isRebuilding }"
-                />
                 {{ isRebuilding ? "重建中..." : "重建所有索引" }}
-              </button>
+              </UButton>
             </div>
           </div>
           <div class="flex items-center justify-between flex-wrap gap-3">
@@ -590,31 +583,29 @@ const clearISRCache = async () => {
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <button
-                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-refresh-cw"
+                :loading="isRebuilding"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(false, 'source')"
               >
-                <RefreshCw
-                  class="w-4 h-4"
-                  :class="{ 'animate-spin': isRebuilding }"
-                />
                 {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
-              </button>
-              <button
-                class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors disabled:opacity-50"
+              </UButton>
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-refresh-cw"
+                :loading="isRebuilding"
                 :disabled="isRebuilding"
                 @click="rebuildSearch(true, 'source')"
               >
-                <RefreshCw
-                  class="w-4 h-4"
-                  :class="{ 'animate-spin': isRebuilding }"
-                />
                 {{ isRebuilding ? "重建中..." : "重建所有索引" }}
-              </button>
+              </UButton>
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!--  缓存 -->
@@ -622,7 +613,11 @@ const clearISRCache = async () => {
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">Nitro 缓存</h2>
         </div>
-        <div class="card p-6 space-y-4">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div>清理全部缓存</div>
@@ -630,38 +625,42 @@ const clearISRCache = async () => {
                 清空全部Nitro缓存，包括路由ISR缓存、页面缓存
               </div>
             </div>
-            <button
-              class="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+            <UButton
+              color="error"
+              icon="i-lucide-eraser"
+              :loading="isClearing"
               :disabled="isClearing"
               @click="clearISRCache()"
             >
-              <Eraser class="w-4 h-4" :class="{ 'animate-spin': isClearing }" />
               清理全部
-            </button>
+            </UButton>
           </div>
 
           <div v-if="clearMsg" class="text-sm text-primary-400">
             {{ clearMsg }}
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- Redis 配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">Redis 配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedRedis }"
+          <UButton
+            color="primary"
+            :icon="savedRedis ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingRedis"
             :disabled="savingRedis || loading"
             @click="saveRedisConfig"
           >
-            <Check v-if="savedRedis" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedRedis ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-red-600 rounded-lg flex items-center justify-center"
@@ -678,61 +677,76 @@ const clearISRCache = async () => {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-color-400 text-sm mb-2">Host</label>
-              <input
+              <label class="block text-color-400 text-sm mb-2" for="redis-host"
+                >Host</label
+              >
+              <UInput
+                id="redis-host"
                 v-model="redisConfig.redis_host"
                 type="text"
                 placeholder="127.0.0.1"
-                class="input-search"
+                class="w-full"
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2">Port</label>
-              <input
+              <label class="block text-color-400 text-sm mb-2" for="redis-port"
+                >Port</label
+              >
+              <UInput
+                id="redis-port"
                 v-model="redisConfig.redis_port"
                 type="text"
                 placeholder="6379"
-                class="input-search"
+                class="w-full"
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2">DB</label>
-              <input
+              <label class="block text-color-400 text-sm mb-2" for="redis-db"
+                >DB</label
+              >
+              <UInput
+                id="redis-db"
                 v-model="redisConfig.redis_db"
                 type="text"
                 placeholder="0"
-                class="input-search"
+                class="w-full"
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2">Password</label>
-              <input
+              <label class="block text-color-400 text-sm mb-2" for="redis-pass"
+                >Password</label
+              >
+              <UInput
+                id="redis-pass"
                 v-model="redisConfig.redis_password"
                 type="password"
                 placeholder="无密码可留空"
-                class="input-search"
+                class="w-full"
               />
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- AES 配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">加密配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedAes }"
+          <UButton
+            color="primary"
+            :icon="savedAes ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingAes"
             :disabled="savingAes || loading"
             @click="saveAesConfig"
           >
-            <Check v-if="savedAes" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedAes ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-yellow-600 rounded-lg flex items-center justify-center"
@@ -749,47 +763,52 @@ const clearISRCache = async () => {
 
           <div class="space-y-4">
             <div>
-              <label class="block text-color-400 text-sm mb-2"
+              <label class="block text-color-400 text-sm mb-2" for="aes-key"
                 >Key (base64)</label
               >
-              <input
+              <UInput
+                id="aes-key"
                 v-model="aesConfig.aes_key"
                 type="text"
                 placeholder="输入 base64 编码的 AES key"
-                class="input-search font-mono text-xs"
+                class="font-mono text-xs w-full"
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2"
+              <label class="block text-color-400 text-sm mb-2" for="aes-iv"
                 >IV (base64)</label
               >
-              <input
+              <UInput
+                id="aes-iv"
                 v-model="aesConfig.aes_iv"
                 type="text"
                 placeholder="输入 base64 编码的 12 字节 IV"
-                class="input-search font-mono text-xs"
+                class="font-mono text-xs w-full"
               />
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- 全网搜过滤词配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">全网搜过滤词配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedWebSearchFilter }"
+          <UButton
+            color="primary"
+            :icon="savedWebSearchFilter ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingWebSearchFilter"
             :disabled="savingWebSearchFilter || loading"
             @click="saveWebSearchFilterConfig"
           >
-            <Check v-if="savedWebSearchFilter" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedWebSearchFilter ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-emerald-600 rounded-lg flex items-center justify-center"
@@ -805,39 +824,43 @@ const clearISRCache = async () => {
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-color-400 text-sm mb-2">
+              <label class="block text-color-400 text-sm mb-2" for="wsf-words">
                 过滤关键词（英文逗号隔开）
               </label>
-              <textarea
+              <UTextarea
+                id="wsf-words"
                 v-model="webSearchFilterConfig.websearch_filter_keywords"
-                rows="10"
+                :rows="10"
                 placeholder="例如：加微信,关注公众号,推广,广告,赌博"
-                class="input-search"
+                class="w-full"
               />
               <p class="text-color-500 text-xs mt-2">
                 标题中包含任一关键词的资源都会被过滤掉，关键词不区分大小写
               </p>
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- 广告过滤配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">广告过滤配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedAdFilter }"
+          <UButton
+            color="primary"
+            :icon="savedAdFilter ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingAdFilter"
             :disabled="savingAdFilter || loading"
             @click="saveAdFilterConfig"
           >
-            <Check v-if="savedAdFilter" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedAdFilter ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-purple-600 rounded-lg flex items-center justify-center"
@@ -853,49 +876,49 @@ const clearISRCache = async () => {
           </div>
 
           <div class="space-y-4">
-            <div class="flex items-center gap-3">
-              <input
-                id="adFilterEnabled"
-                v-model="adFilterConfig.enabled"
-                type="checkbox"
-                class="w-5 h-5 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-              />
-              <label for="adFilterEnabled"> 启用广告过滤 </label>
-            </div>
+            <UCheckbox
+              id="adFilterEnabled"
+              v-model="adFilterConfig.enabled"
+              label="启用广告过滤"
+            />
             <div>
-              <label class="block text-color-400 text-sm mb-2">
+              <label class="block text-color-400 text-sm mb-2" for="adf-words">
                 广告关键词（英文逗号隔开）
               </label>
-              <textarea
+              <UTextarea
+                id="adf-words"
                 v-model="adFilterConfig.keywords"
-                rows="10"
+                :rows="10"
                 placeholder="例如：关注公众号,加微信,广告,推广"
-                class="input-search"
+                class="w-full"
               />
               <p class="text-color-500 text-xs mt-2">
                 文件名或目录名包含任一关键词即被删除，关键词不区分大小写
               </p>
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- AI 搜索配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">AI 搜索配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedAiSearch }"
+          <UButton
+            color="primary"
+            :icon="savedAiSearch ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingAiSearch"
             :disabled="savingAiSearch || loading"
             @click="saveAiSearchConfig"
           >
-            <Check v-if="savedAiSearch" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedAiSearch ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-cyan-600 rounded-lg flex items-center justify-center"
@@ -911,69 +934,77 @@ const clearISRCache = async () => {
           </div>
 
           <div class="space-y-4">
-            <div class="flex items-center gap-3">
-              <input
-                id="aiSearchEnabled"
-                v-model="aiSearchConfig.enabled"
-                type="checkbox"
-                class="w-5 h-5 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-              />
-              <label for="aiSearchEnabled"> 启用 AI 搜索 </label>
-            </div>
+            <UCheckbox
+              id="aiSearchEnabled"
+              v-model="aiSearchConfig.enabled"
+              label="启用 AI 搜索"
+            />
             <div>
-              <label class="block text-color-400 text-sm mb-2">Base URL</label>
-              <input
+              <label class="block text-color-400 text-sm mb-2" for="ai-base"
+                >Base URL</label
+              >
+              <UInput
+                id="ai-base"
                 v-model="aiSearchConfig.baseURL"
                 type="text"
                 placeholder="https://api.deepseek.com/v1"
-                class="input-search font-mono text-xs"
+                class="font-mono text-xs w-full"
               />
               <p class="text-color-500 text-xs mt-2">
                 OpenAI 兼容的 API 地址，需包含 /v1 路径
               </p>
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2">API Key</label>
-              <input
+              <label class="block text-color-400 text-sm mb-2" for="ai-key"
+                >API Key</label
+              >
+              <UInput
+                id="ai-key"
                 v-model="aiSearchConfig.apiKey"
                 type="password"
                 placeholder="sk-..."
-                class="input-search font-mono text-xs"
+                class="font-mono text-xs w-full"
               />
               <p class="text-color-500 text-xs mt-2">模型服务商提供的密钥</p>
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2">模型名称</label>
-              <input
+              <label class="block text-color-400 text-sm mb-2" for="ai-model"
+                >模型名称</label
+              >
+              <UInput
+                id="ai-model"
                 v-model="aiSearchConfig.model"
                 type="text"
                 placeholder="qwen-plus"
-                class="input-search font-mono text-xs"
+                class="font-mono text-xs w-full"
               />
               <p class="text-color-500 text-xs mt-2">
                 调用的模型标识，如 qwen-plus、deepseek-chat 等
               </p>
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- 热搜词配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">热搜词配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedHotwords }"
+          <UButton
+            color="primary"
+            :icon="savedHotwords ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingHotwords"
             :disabled="savingHotwords || loading"
             @click="saveHotwordsConfig"
           >
-            <Check v-if="savedHotwords" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedHotwords ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-orange-600 rounded-lg flex items-center justify-center"
@@ -996,77 +1027,100 @@ const clearISRCache = async () => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-color-400 text-sm mb-2"
+                  <label
+                    class="block text-color-400 text-sm mb-2"
+                    :for="`hot-${index}-word`"
                     >搜索词</label
                   >
-                  <input
+                  <UInput
+                    :id="`hot-${index}-word`"
                     v-model="hotword.word"
                     type="text"
                     placeholder="输入搜索词"
-                    class="input-search"
+                    class="w-full"
                   />
                 </div>
                 <div>
-                  <label class="block text-color-400 text-sm mb-2">类型</label>
-                  <select
-                    v-model="hotword.type"
-                    class="input-search appearance-none cursor-pointer"
+                  <label
+                    class="block text-color-400 text-sm mb-2"
+                    :for="`hot-${index}-type`"
+                    >类型</label
                   >
-                    <option value="music">音乐</option>
-                    <option value="resource">资源</option>
-                  </select>
+                  <USelect
+                    :id="`hot-${index}-type`"
+                    v-model="hotword.type"
+                    class="w-full"
+                    :items="[
+                      { label: '音乐', value: 'music' },
+                      { label: '资源', value: 'resource' },
+                    ]"
+                  />
                 </div>
                 <div>
-                  <label class="block text-color-400 text-sm mb-2">权重</label>
-                  <input
+                  <label
+                    class="block text-color-400 text-sm mb-2"
+                    :for="`hot-${index}-weight`"
+                    >权重</label
+                  >
+                  <UInput
+                    :id="`hot-${index}-weight`"
                     v-model.number="hotword.weight"
                     type="number"
                     min="1"
                     max="999"
                     placeholder="1-999"
-                    class="input-search"
+                    class="w-full"
                   />
                 </div>
               </div>
-              <button
-                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                class="mt-6 shrink-0"
+                aria-label="删除搜索词"
                 @click="removeHotword(index)"
-              >
-                <Trash class="w-4 h-4" />
-              </button>
+              />
             </div>
 
-            <button
-              class="flex items-center gap-2 px-3 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors"
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-plus"
+              class="self-start"
               @click="addHotword"
             >
-              <Plus class="w-4 h-4" />
               添加搜索词
-            </button>
+            </UButton>
 
             <div v-if="hotwords.length === 0" class="text-color-500 text-sm">
               未配置热搜词，首页热门搜索区域将不显示
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- PanCheck 配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">网盘检测配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedPancheck }"
+          <UButton
+            color="primary"
+            :icon="savedPancheck ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingPancheck"
             :disabled="savingPancheck || loading"
             @click="savePancheckConfig"
           >
-            <Check v-if="savedPancheck" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedPancheck ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-4',
+          }"
+        >
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-blue-600 rounded-lg flex items-center justify-center"
@@ -1089,41 +1143,55 @@ const clearISRCache = async () => {
             >
               <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-color-400 text-sm mb-2"
+                  <label
+                    class="block text-color-400 text-sm mb-2"
+                    :for="`pan-${index}-url`"
                     >接口地址</label
                   >
-                  <input
+                  <UInput
+                    :id="`pan-${index}-url`"
                     v-model="server.url"
                     type="text"
                     placeholder="http://localhost:6080"
-                    class="input-search"
+                    class="w-full"
                   />
                 </div>
                 <div>
-                  <label class="block text-color-400 text-sm mb-2">密码</label>
-                  <input
+                  <label
+                    class="block text-color-400 text-sm mb-2"
+                    :for="`pan-${index}-pass`"
+                    >密码</label
+                  >
+                  <UInput
+                    :id="`pan-${index}-pass`"
                     v-model="server.password"
                     type="text"
                     placeholder="admin123"
-                    class="input-search"
+                    class="w-full"
                   />
                 </div>
               </div>
-              <button
-                class="mt-6 p-2 text-red-400 hover:text-red-300 transition-colors"
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                class="mt-6 shrink-0"
+                aria-label="删除接口"
                 @click="removePancheckServer(index)"
-              >
-                <Trash class="w-4 h-4" />
-              </button>
+              />
             </div>
 
-            <button
-              class="flex items-center gap-2 px-3 py-2 bg-color-400 hover:bg-color-500 text-color-300 rounded-lg transition-colors"
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-plus"
+              class="self-start"
               @click="addPancheckServer"
             >
-              <Plus class="w-4 h-4" />
               添加接口
-            </button>
+            </UButton>
 
             <div
               v-if="pancheckServers.length === 0"
@@ -1132,25 +1200,28 @@ const clearISRCache = async () => {
               未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
             </div>
           </div>
-        </div>
+        </UCard>
       </section>
 
       <!-- 微信公众号配置 -->
       <section class="mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">微信公众号配置</h2>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50"
-            :class="{ 'bg-green-600 hover:bg-green-600': savedWechat }"
+          <UButton
+            color="primary"
+            :icon="savedWechat ? 'i-lucide-check' : 'i-lucide-save'"
+            :loading="savingWechat"
             :disabled="savingWechat || loading"
             @click="saveWechatConfig"
           >
-            <Check v-if="savedWechat" class="w-4 h-4" />
-            <Save v-else class="w-4 h-4" />
             {{ savedWechat ? "已保存" : "保存" }}
-          </button>
+          </UButton>
         </div>
-        <div class="card p-6 space-y-8">
+        <UCard
+          :ui="{
+            body: 'p-6 space-y-8',
+          }"
+        >
           <!-- 基础配置 -->
           <div>
             <div class="flex items-center gap-3 mb-6">
@@ -1168,43 +1239,51 @@ const clearISRCache = async () => {
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-color-400 text-sm mb-2">AppID</label>
-                <input
+                <label class="block text-color-400 text-sm mb-2" for="wx-appid"
+                  >AppID</label
+                >
+                <UInput
+                  id="wx-appid"
                   v-model="wechatConfig.appId"
                   type="text"
                   placeholder="如：wx1234567890abcdef"
-                  class="input-search"
+                  class="w-full"
                 />
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2" for="wx-secret"
                   >AppSecret</label
                 >
-                <input
+                <UInput
+                  id="wx-secret"
                   v-model="wechatConfig.appSecret"
                   type="password"
                   placeholder="填写后保存以更新；已配置则显示星号"
-                  class="input-search"
+                  class="w-full"
                 />
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2">Token</label>
-                <input
+                <label class="block text-color-400 text-sm mb-2" for="wx-token"
+                  >Token</label
+                >
+                <UInput
+                  id="wx-token"
                   v-model="wechatConfig.token"
                   type="text"
                   placeholder="自定义任意字符串，服务器校验用"
-                  class="input-search"
+                  class="w-full"
                 />
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2" for="wx-aeskey"
                   >EncodingAESKey（可选）</label
                 >
-                <input
+                <UInput
+                  id="wx-aeskey"
                   v-model="wechatConfig.encodingAESKey"
                   type="password"
                   placeholder="消息加解密密钥；安全模式下必填"
-                  class="input-search"
+                  class="w-full"
                 />
               </div>
             </div>
@@ -1227,12 +1306,19 @@ const clearISRCache = async () => {
                     关闭后微信服务器回调将不再回复消息
                   </div>
                 </div>
-                <input
-                  id="wechatEnabled"
-                  v-model="wechatConfig.enabled"
-                  type="checkbox"
-                  class="w-12 h-7 appearance-none rounded-full bg-color-400 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
-                />
+                <UButton
+                  size="sm"
+                  :color="wechatConfig.enabled ? 'success' : 'neutral'"
+                  :variant="wechatConfig.enabled ? 'solid' : 'soft'"
+                  :icon="
+                    wechatConfig.enabled
+                      ? 'i-lucide-power'
+                      : 'i-lucide-power-off'
+                  "
+                  @click="wechatConfig.enabled = !wechatConfig.enabled"
+                >
+                  {{ wechatConfig.enabled ? "已启用" : "已停用" }}
+                </UButton>
               </div>
               <div
                 class="flex items-center justify-between p-3 bg-color-300 rounded-lg"
@@ -1243,38 +1329,50 @@ const clearISRCache = async () => {
                     开启后用户发送关键词将触发站内搜索回复
                   </div>
                 </div>
-                <input
-                  id="wechatAutoReplyEnabled"
-                  v-model="wechatConfig.autoReplyEnabled"
-                  type="checkbox"
-                  class="w-12 h-7 appearance-none rounded-full bg-color-400 checked:bg-primary-500 cursor-pointer relative transition-colors before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-6 before:h-6 before:rounded-full before:bg-white before:checked:translate-x-5 before:transition-transform"
-                />
+                <UButton
+                  size="sm"
+                  :color="wechatConfig.autoReplyEnabled ? 'success' : 'neutral'"
+                  :variant="wechatConfig.autoReplyEnabled ? 'solid' : 'soft'"
+                  :icon="
+                    wechatConfig.autoReplyEnabled
+                      ? 'i-lucide-power'
+                      : 'i-lucide-power-off'
+                  "
+                  @click="
+                    wechatConfig.autoReplyEnabled =
+                      !wechatConfig.autoReplyEnabled
+                  "
+                >
+                  {{ wechatConfig.autoReplyEnabled ? "已启用" : "已停用" }}
+                </UButton>
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2" for="wx-limit"
                   >搜索结果限制</label
                 >
-                <input
+                <UInput
+                  id="wx-limit"
                   v-model.number="wechatConfig.searchLimit"
                   type="number"
                   min="1"
                   max="100"
-                  class="input-search"
+                  class="w-full"
                 />
                 <p class="text-color-500 text-xs mt-1.5">
                   每次搜索最多返回的条数（1-100）
                 </p>
               </div>
               <div class="md:col-span-2">
-                <label class="block text-color-400 text-sm mb-2"
+                <label class="block text-color-400 text-sm mb-2" for="wx-msg"
                   >欢迎消息</label
                 >
-                <textarea
+                <UTextarea
+                  id="wx-msg"
                   v-model="wechatConfig.welcomeMessage"
-                  rows="3"
+                  :rows="3"
                   placeholder="新用户关注公众号时自动发送的消息"
-                  class="input-search resize-none"
-                ></textarea>
+                  class="resize-none w-full"
+                />
               </div>
             </div>
           </div>
@@ -1291,31 +1389,33 @@ const clearISRCache = async () => {
                 <label class="block text-color-400 text-sm mb-2"
                   >URL（复制使用）</label
                 >
-                <div class="flex gap-2">
-                  <input
-                    :value="
-                      wechatOrigin
-                        ? `${wechatOrigin}/api/wechat`
-                        : '/api/wechat'
-                    "
-                    readonly
-                    class="input-search flex-1 bg-color-300"
-                  />
-                  <button
-                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-color-400 hover:bg-color-500 text-color-200 rounded-lg transition-colors"
-                    title="复制 URL"
-                    @click="
-                      copyText(
-                        wechatOrigin
-                          ? `${wechatOrigin}/api/wechat`
-                          : '/api/wechat',
-                        'URL',
-                      )
-                    "
-                  >
-                    <Copy class="w-4 h-4" />
-                  </button>
-                </div>
+                <UInput
+                  :model-value="
+                    wechatOrigin ? `${wechatOrigin}/api/wechat` : '/api/wechat'
+                  "
+                  readonly
+                  class="w-full"
+                >
+                  <template #trailing>
+                    <UButton
+                      color="neutral"
+                      variant="ghost"
+                      square
+                      size="sm"
+                      icon="i-lucide-copy"
+                      title="复制 URL"
+                      aria-label="复制 URL"
+                      @click="
+                        copyText(
+                          wechatOrigin
+                            ? `${wechatOrigin}/api/wechat`
+                            : '/api/wechat',
+                          'URL',
+                        )
+                      "
+                    />
+                  </template>
+                </UInput>
                 <p class="text-color-500 text-xs mt-1.5">
                   服务器必须支持 HTTPS（微信要求）。若域名不同请手动拼接
                 </p>
@@ -1324,20 +1424,24 @@ const clearISRCache = async () => {
                 <label class="block text-color-400 text-sm mb-2"
                   >Token（同上）</label
                 >
-                <div class="flex gap-2">
-                  <input
-                    :value="wechatConfig.token"
-                    readonly
-                    class="input-search flex-1 bg-color-300 font-mono"
-                  />
-                  <button
-                    class="flex items-center justify-center w-10 h-10 shrink-0 bg-color-400 hover:bg-color-500 text-color-200 rounded-lg transition-colors"
-                    title="复制 Token"
-                    @click="copyText(wechatConfig.token, 'Token')"
-                  >
-                    <Copy class="w-4 h-4" />
-                  </button>
-                </div>
+                <UInput
+                  :model-value="wechatConfig.token"
+                  readonly
+                  class="font-mono w-full"
+                >
+                  <template #trailing>
+                    <UButton
+                      color="neutral"
+                      variant="ghost"
+                      square
+                      size="sm"
+                      icon="i-lucide-copy"
+                      title="复制 Token"
+                      aria-label="复制 Token"
+                      @click="copyText(wechatConfig.token, 'Token')"
+                    />
+                  </template>
+                </UInput>
               </div>
             </div>
           </div>
@@ -1378,11 +1482,14 @@ const clearISRCache = async () => {
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-              <label
-                class="flex items-center gap-2 px-3 py-2 bg-color-400 hover:bg-color-500 text-color-200 rounded-lg transition-colors cursor-pointer"
+              <UButton
+                as="label"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-upload"
+                class="cursor-pointer"
               >
-                <Upload class="w-4 h-4" />
-                <span>选择 TXT 文件</span>
+                选择 TXT 文件
                 <input
                   ref="wechatVerifyFileInput"
                   type="file"
@@ -1390,7 +1497,7 @@ const clearISRCache = async () => {
                   class="hidden"
                   @change="onPickWechatVerifyFile"
                 />
-              </label>
+              </UButton>
               <div class="text-sm text-color-400 min-w-0">
                 <template v-if="wechatVerifyFile">
                   已选择：{{ wechatVerifyFile.name }}
@@ -1400,18 +1507,15 @@ const clearISRCache = async () => {
                   <code class="font-mono">.txt</code> 格式）</template
                 >
               </div>
-              <button
-                class="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              <UButton
+                color="success"
+                icon="i-lucide-upload"
+                :loading="wechatVerifyUploading"
                 :disabled="!wechatVerifyFile || wechatVerifyUploading"
                 @click="uploadWechatVerifyFile"
               >
-                <Upload
-                  v-if="wechatVerifyUploading"
-                  class="w-4 h-4 animate-spin"
-                />
-                <Save v-else class="w-4 h-4" />
                 {{ wechatVerifyUploading ? "上传中..." : "上传验证文件" }}
-              </button>
+              </UButton>
             </div>
 
             <div
@@ -1428,27 +1532,34 @@ const clearISRCache = async () => {
                     >
                       {{ wechatOrigin }}/{{ wechatConfig.verifyFileName }}
                     </code>
-                    <button
-                      class="shrink-0 p-1.5 rounded hover:bg-green-700 text-white transition-colors"
+                    <UButton
+                      variant="ghost"
+                      square
+                      size="sm"
+                      icon="i-lucide-copy"
+                      class="shrink-0"
                       title="复制访问地址"
+                      aria-label="复制访问地址"
                       @click="
                         copyText(
                           `${wechatOrigin}/${wechatConfig.verifyFileName}`,
                           '访问地址',
                         )
                       "
-                    >
-                      <Copy class="w-3.5 h-3.5" />
-                    </button>
-                    <a
+                    />
+                    <UButton
+                      as="a"
                       :href="`/${wechatConfig.verifyFileName}`"
                       target="_blank"
                       rel="noreferrer"
-                      class="shrink-0 p-1.5 rounded hover:bg-green-700 text-white transition-colors"
+                      variant="ghost"
+                      square
+                      size="sm"
+                      icon="i-lucide-external-link"
+                      class="shrink-0"
                       title="新标签打开"
-                    >
-                      <ExternalLink class="w-3.5 h-3.5" />
-                    </a>
+                      aria-label="新标签打开"
+                    />
                   </div>
                 </div>
               </div>
@@ -1470,7 +1581,7 @@ const clearISRCache = async () => {
               </li>
             </ul>
           </div>
-        </div>
+        </UCard>
       </section>
     </main>
   </div>

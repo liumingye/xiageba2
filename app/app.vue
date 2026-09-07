@@ -8,7 +8,6 @@ import {
   Menu,
   X,
 } from "@lucide/vue";
-import { useBackHistory } from "~/composables/useBackHistory";
 import SearchBar from "~/components/SearchBar.vue";
 import type { NavigationMenuItem } from "@nuxt/ui";
 
@@ -38,8 +37,6 @@ if (import.meta.client && map[location.host]) {
 
 const route = useRoute();
 
-const { hasBackHistory } = useBackHistory();
-
 // 后台页沿用自身布局，不套用公开站壳
 const isAdmin = computed(() => route.path.startsWith("/admin"));
 
@@ -60,18 +57,12 @@ const showChrome = computed(() => !isAdmin.value);
 const searchQuery = computed(() => (route.query.q as string) || "");
 
 // 搜索聚焦状态：移动端聚焦搜索时收起主题按钮，避免挤占宽度
-const searchBarRef = ref<InstanceType<typeof SearchBar> | null>(null);
+
+const searchBarRef =
+  useTemplateRef<InstanceType<typeof SearchBar>>("searchBarRef");
 const isSearchFocused = computed(
   () => searchBarRef.value?.isInputFocused || false,
 );
-
-const goBack = () => {
-  if (hasBackHistory.value) {
-    history.back();
-  } else {
-    navigateTo("/");
-  }
-};
 
 const menuItems = computed<NavigationMenuItem[]>(() => [
   {
@@ -109,6 +100,13 @@ const extraLinks = [
   { to: "/sitemap.xml", label: "网站地图" },
   { to: "/admin", label: "管理员登录", external: true },
 ];
+
+const disableBack = computed(() => {
+  // use _path as dependency to force computed update
+  // eslint-disable-next-line
+  const _path = route.path;
+  return window.history.state.back === null;
+});
 </script>
 
 <template>
@@ -144,16 +142,30 @@ const extraLinks = [
           >
             <Home class="w-5 h-5" />
           </UButton>
-          <UButton
-            color="neutral"
-            variant="ghost"
-            square
-            aria-label="返回"
-            title="返回"
-            @click="goBack"
-          >
-            <ArrowLeft class="w-5 h-5" />
-          </UButton>
+          <ClientOnly>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              square
+              aria-label="返回"
+              title="返回"
+              :disabled="disableBack"
+              @click="$router.back()"
+            >
+              <ArrowLeft class="size-5" />
+            </UButton>
+            <template #fallback>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                disabled
+                aria-label="返回"
+              >
+                <ArrowLeft class="size-5" />
+              </UButton>
+            </template>
+          </ClientOnly>
         </template>
 
         <UNavigationMenu :items="menuItems" />
@@ -242,25 +254,19 @@ const extraLinks = [
       <UFooter
         :style="{}"
         :ui="{
-          container: 'px-1 sm:px-4 lg:px-6 py-4 lg:py-8',
+          container: 'px-1 sm:px-4 lg:px-6 py-4 lg:py-8 text-sm',
           center: 'flex-col',
         }"
       >
-        <p class="text-sm text-center">
-          &copy; 2015-{{ year }} 全盘搜 - 公开网盘资源搜索引擎
-        </p>
+        <p>&copy; 2015-{{ year }} 全盘搜 - 公开网盘资源搜索引擎</p>
 
-        <div
-          class="flex items-center justify-center gap-x-1 md:gap-x-3 flex-wrap mt-2 text-sm"
-        >
+        <div class="flex items-center justify-center gap-x-2 flex-wrap mt-2">
           <ULink v-for="item in legalLinks" :key="item.to" :to="item.to">
             {{ item.label }}
           </ULink>
         </div>
 
-        <div
-          class="flex items-center justify-center gap-x-1 md:gap-x-3 flex-wrap mt-2 text-sm"
-        >
+        <div class="flex items-center justify-center gap-x-2 flex-wrap mt-2">
           <ULink
             v-for="item in extraLinks"
             :key="item.to"

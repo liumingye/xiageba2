@@ -3,7 +3,8 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, del } from "~/utils/request";
-import { Plus, Search, Trash2, Edit3, Loader2 } from "@lucide/vue";
+import { Search, Loader2 } from "@lucide/vue";
+import type { TableColumn } from "@nuxt/ui";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -21,6 +22,20 @@ const pageSize = ref(20);
 const total = ref(0);
 const totalPages = ref(0);
 const isLoading = ref(false);
+
+const columns: TableColumn<MusicType>[] = [
+  { id: "cover", accessorKey: "cover", header: "封面" },
+  { id: "title", accessorKey: "title", header: "歌名" },
+  { id: "artist", accessorKey: "artist", header: "歌手" },
+  { id: "album", accessorKey: "album", header: "专辑" },
+  {
+    id: "actions",
+    header: "操作",
+    meta: {
+      class: { th: "text-center w-24", td: "text-center" },
+    },
+  },
+];
 
 onMounted(async () => {
   // 等待状态初始化
@@ -137,123 +152,98 @@ const goToPage = (page: number) => {
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium">音乐列表</h2>
         <div class="flex items-center gap-2">
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="goToAddMusic"
-          >
-            <Plus class="w-4 h-4" />
+          <UButton color="primary" icon="i-lucide-plus" @click="goToAddMusic">
             添加音乐
-          </button>
+          </UButton>
         </div>
       </div>
-      <form @submit.prevent="inputSearch" class="relative mb-4 max-w-md">
-        <Search
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-color-500"
-        />
-        <input
+      <form @submit.prevent="inputSearch" class="mb-4 max-w-md">
+        <UInput
           v-model="searchQuery"
           type="text"
           placeholder="搜索歌名或歌手..."
-          class="input-search pl-10"
-        />
+          class="w-full"
+        >
+          <template #leading>
+            <Search class="w-4 h-4 text-color-500" />
+          </template>
+        </UInput>
       </form>
 
-      <div class="card overflow-x-auto">
-        <table class="w-full table-auto">
-          <thead class="bg-color-100">
-            <tr>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-[80px] min-w-[80px]"
-              >
-                封面
-              </th>
-              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
-                歌名
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-32"
-              >
-                歌手
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-40"
-              >
-                专辑
-              </th>
-              <th
-                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-24"
-              >
-                操作
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="isLoading">
-              <td colspan="5" class="px-4 py-8 text-center">
-                <Loader2
-                  class="w-6 h-6 text-primary-500 animate-spin mx-auto"
-                />
-                <p class="text-color-500 text-sm mt-2">加载中...</p>
-              </td>
-            </tr>
-            <tr v-else-if="musics.length === 0">
-              <td colspan="5" class="px-4 py-12 text-center">
-                <p class="text-color-500">暂无音乐</p>
-              </td>
-            </tr>
-            <tr
-              v-else
-              v-for="music in musics"
-              :key="music.id"
-              class="border-t border-color-300 hover:bg-color-300"
+      <UCard
+        :ui="{
+          body: 'p-0 sm:p-0',
+        }"
+      >
+        <UTable
+          :data="isLoading ? [] : musics"
+          :columns="columns"
+          :get-row-id="(row: MusicType) => row.id"
+        >
+          <template #cover-cell="{ row }">
+            <img
+              :src="
+                row.original.cover ||
+                config.app.baseURL + 'img/cover.png'
+              "
+              :alt="row.original.title"
+              class="w-12 h-12 rounded object-cover"
+            />
+          </template>
+          <template #title-cell="{ row }">
+            <span
+              class="block max-w-50 truncate"
+              :title="row.original.title"
+              >{{ row.original.title }}</span
             >
-              <td class="px-4 py-4">
-                <img
-                  :src="music.cover || config.app.baseURL + 'img/cover.png'"
-                  :alt="music.title"
-                  class="w-12 h-12 rounded object-cover"
-                />
-              </td>
-              <td
-                class="px-4 py-4 truncate max-w-[200px]"
-                :title="music.title"
-              >
-                {{ music.title }}
-              </td>
-              <td
-                class="px-4 py-4 text-color-400 truncate max-w-[200px]"
-                :title="music.artist"
-              >
-                {{ music.artist }}
-              </td>
-              <td
-                class="px-4 py-4 text-color-400 truncate max-w-[200px]"
-                :title="music.album || '-'"
-              >
-                {{ music.album || "-" }}
-              </td>
-              <td class="px-4 py-4">
-                <div class="flex items-center justify-center gap-2">
-                  <button
-                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
-                    title="编辑"
-                    @click="editMusic(music.id)"
-                  >
-                    <Edit3 class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
-                    title="删除"
-                    @click="deleteMusic(music.id)"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          </template>
+          <template #artist-cell="{ row }">
+            <span
+              class="block max-w-50 truncate text-color-400"
+              :title="row.original.artist"
+              >{{ row.original.artist }}</span
+            >
+          </template>
+          <template #album-cell="{ row }">
+            <span
+              class="block max-w-50 truncate text-color-400"
+              :title="row.original.album || '-'"
+              >{{ row.original.album || "-" }}</span
+            >
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex items-center justify-center gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-pencil"
+                title="编辑"
+                aria-label="编辑"
+                @click="editMusic(row.original.id)"
+              />
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                title="删除"
+                aria-label="删除"
+                @click="deleteMusic(row.original.id)"
+              />
+            </div>
+          </template>
+          <template #empty>
+            <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+              <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+              <p class="text-color-500 text-sm mt-2">加载中...</p>
+            </div>
+            <p v-else class="text-center text-color-500 py-12">暂无音乐</p>
+          </template>
+        </UTable>
+      </UCard>
       <!-- 分页 -->
       <AdminPagination
         :current-page="currentPage"

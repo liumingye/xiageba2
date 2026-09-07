@@ -74,18 +74,18 @@ const emit = defineEmits<{
           <ClientOnly>
             <div
               v-if="checkStatus === 'valid'"
-              class="dark:bg-primary-800/60 bg-primary-600/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+              class="dark:bg-success-600/60 bg-success-800/80 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
-              <CheckCircle class="w-4 h-4 text-white shrink-0 mr-1" />链接有效
+              <CheckCircle class="w-4 h-4 shrink-0 mr-1" />链接有效
             </div>
             <div
-              v-if="checkStatus === 'invalid'"
+              v-else-if="checkStatus === 'invalid'"
               class="bg-error-800/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <XCircle class="w-4 h-4 shrink-0 mr-1" />可能失效
             </div>
             <div
-              v-if="checkStatus === 'checking'"
+              v-else-if="checkStatus === 'checking'"
               class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <Loader2 class="w-4 h-4 animate-spin shrink-0 mr-1" />正在检测

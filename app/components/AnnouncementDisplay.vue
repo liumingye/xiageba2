@@ -115,6 +115,7 @@ onMounted(() => {
     (a) => !dismissedIds.value.includes(a.id),
   );
   if (visible) {
+    console.log(currentDialog.value);
     currentDialog.value = visible;
     showDialog.value = true;
   }
@@ -133,7 +134,7 @@ watch(normalList, () => {
       v-for="item in bannerList"
       :key="item.id"
       :to="`/announcement/${item.id}`"
-      class="flex items-center gap-3 px-2 md:px-4 py-2.5 rounded-lg border transition hover:opacity-90"
+      class="flex items-center gap-3 px-2 md:px-4 py-2.5 rounded-xl border transition hover:opacity-90"
       :class="bannerBgMap[item.icon] || bannerBgMap.INFO"
     >
       <component
@@ -148,11 +149,11 @@ watch(normalList, () => {
   <!-- 滚动公告（正常显示方式） -->
   <div
     v-if="normalList.length > 0"
-    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-muted rounded-lg border border-muted"
+    class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-muted rounded-xl border border-muted"
   >
     <div class="items-center gap-1.5 shrink-0 md:flex hidden">
-      <Megaphone class="w-4 h-4 text-primary-500" />
-      <span class="text-sm text-color-400 font-medium">公告</span>
+      <Megaphone class="w-4 h-4 text-primary" />
+      <span class="text-sm text-muted font-medium">公告</span>
     </div>
 
     <div class="flex-1 min-w-0 relative h-5 overflow-hidden">
@@ -160,7 +161,7 @@ watch(normalList, () => {
         <NuxtLink
           :key="normalList[scrollIndex]?.id"
           :to="`/announcement/${normalList[scrollIndex]?.id}`"
-          class="absolute inset-0 flex items-center text-sm text-color-300 hover:text-primary-400 transition-colors truncate"
+          class="absolute inset-0 flex items-center text-sm text-toned hover:text-primary-500 transition-colors truncate"
         >
           <component
             :is="iconMap[normalList[scrollIndex]?.icon || 'INFO'] || Info"
@@ -170,7 +171,7 @@ watch(normalList, () => {
           <span class="truncate">{{ normalList[scrollIndex]?.title }}</span>
           <span
             v-if="normalList[scrollIndex]"
-            class="text-color-500 text-sm ml-1 shrink-0"
+            class="text-toned text-sm ml-1 shrink-0"
           >
             <NuxtTime :datetime="normalList[scrollIndex]!.createdAt" relative />
           </span>
@@ -185,7 +186,9 @@ watch(normalList, () => {
         :key="i"
         class="w-2 h-2 rounded-full transition-colors"
         :class="
-          i === scrollIndex ? 'bg-primary-400' : 'bg-zinc-600 hover:bg-zinc-500'
+          i === scrollIndex
+            ? 'bg-primary-400'
+            : 'bg-accented hover:bg-primary-500'
         "
         @click="goToScrollItem(i)"
       />
@@ -193,7 +196,7 @@ watch(normalList, () => {
 
     <NuxtLink
       to="/announcement"
-      class="flex items-center text-sm text-color-300 hover:text-primary-400 transition-colors shrink-0"
+      class="flex items-center text-sm text-toned hover:text-primary-500 transition-colors shrink-0"
     >
       更多
       <ChevronRight class="w-3 h-3" />

@@ -5,6 +5,7 @@ import {
   useTimeoutFn,
   useMediaQuery,
   useVModels,
+  useMounted,
 } from "@vueuse/core";
 import { Download, QrCode, Copy, Check } from "@lucide/vue";
 import type { Music, DownloadOption } from "~/stores/music";
@@ -26,9 +27,14 @@ const emit = defineEmits<{
 const showFeedbackModal = ref(false);
 const qrCodeUrl = ref("");
 
+const isMounted = useMounted();
+
 const isMobile = useMediaQuery("(max-width: 1366px)");
 // UA匹配 && 宽度1366px以下
-const isMobileTablet = computed(() => isMobileOrTablet() && isMobile.value);
+const isMobileTablet = computed(() => {
+  if (!isMounted.value) return false;
+  return isMobileOrTablet() && isMobile.value;
+});
 
 const { selectedDownload, music, show } = useVModels(props, emit, {
   passive: true,

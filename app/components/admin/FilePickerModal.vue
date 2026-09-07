@@ -1,22 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import {
-  X,
-  Search,
-  Upload,
-  Trash2,
-  Loader2,
-  Check,
   FileText,
   HardDrive,
-  ImageIcon,
   FileAudio,
   FileVideo,
   File,
+  Loader2,
+  Check,
 } from "@lucide/vue";
 import { get, post, del } from "~/utils/request";
 import { formatSize, isImage, isAudio, isVideo } from "~/utils/file";
-import { useScrollLock } from "@vueuse/core";
 
 interface S3ConfigItem {
   id: string;
@@ -34,7 +28,6 @@ interface FileItem {
 }
 
 const toast = useToast();
-const isScrollLocked = useScrollLock(window);
 
 const props = defineProps<{
   show: boolean;
@@ -69,7 +62,6 @@ watch(
   () => props.show,
   async (show) => {
     if (show) {
-      isScrollLocked.value = true;
       searchKeyword.value = "";
       currentPage.value = 1;
       selectedFileUrl.value = null;
@@ -83,8 +75,6 @@ watch(
         await loadConfigs();
       }
       await loadFiles();
-    } else {
-      isScrollLocked.value = false;
     }
   },
 );
@@ -233,251 +223,222 @@ const pageNumbers = computed<(number | string)[]>(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-if="show"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      >
-        <div
-          class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-          @click="handleClose"
-        ></div>
+  <UModal
+    :open="show"
+    title="选择文件"
+    :ui="{
+      content: 'max-w-3xl',
+      body: 'flex-1 flex flex-col min-h-0 overflow-hidden p-4 sm:p-6',
+      footer: 'justify-end',
+    }"
+    @update:open="(v) => { if (!v) handleClose(); }"
+  >
+    <template #body>
+      <!-- 顶部工具栏 -->
+      <div class="flex items-center gap-3 mb-4 flex-wrap">
+        <!-- S3 配置选择 -->
+        <USelect
+          v-if="!props.configId"
+          v-model="selectedConfigId"
+          size="sm"
+          class="max-w-56"
+          :items="
+            configs.map((c) => ({
+              label: `${c.name} (${c.bucket})`,
+              value: c.id,
+            }))
+          "
+          placeholder="选择存储配置"
+          @change="selectConfig"
+        />
 
-        <div
-          class="modal-content relative bg-color-100 rounded-3xl p-6 max-w-3xl w-full border border-color-300 max-h-[90vh] flex flex-col"
-        >
-          <button
-            class="absolute top-4 right-4 p-2 opacity-80 hover:opacity-100 hover:bg-color-300 rounded-lg transition-all"
-            @click="handleClose"
-          >
-            <X class="w-5 h-5" />
-          </button>
-
-          <h3 class="text-xl font-medium mb-4">选择文件</h3>
-
-          <!-- 顶部工具栏 -->
-          <div class="flex items-center gap-3 mb-4 flex-wrap">
-            <!-- S3 配置选择 -->
-            <select
-              v-if="!props.configId"
-              v-model="selectedConfigId"
-              class="bg-color-300 border border-color-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500"
-              @change="selectConfig"
-            >
-              <option value="" disabled>选择存储配置</option>
-              <option v-for="c in configs" :key="c.id" :value="c.id">
-                {{ c.name }} ({{ c.bucket }})
-              </option>
-            </select>
-
-            <!-- 搜索 -->
-            <div class="flex gap-2 flex-1 min-w-50">
-              <input
-                v-model="searchKeyword"
-                type="text"
-                placeholder="搜索文件名..."
-                class="flex-1 bg-color-300 border border-color-300 rounded-lg px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                @keydown.enter="handleSearch"
-              />
-              <button
-                class="flex items-center gap-1 px-3 py-2 bg-color-300 hover:bg-color-400 text-color-300 rounded-lg text-sm transition-colors"
-                @click="handleSearch"
-              >
-                <Search class="w-4 h-4" />
-              </button>
-            </div>
-
-            <!-- 上传按钮 -->
-            <button
-              class="flex items-center gap-1 px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors"
-              @click="showUpload = !showUpload"
-            >
-              <Upload class="w-4 h-4" />
-              上传
-            </button>
-          </div>
-
-          <!-- 上传面板 -->
-          <div
-            v-if="showUpload"
-            class="mb-4 p-4 bg-color-300 border border-color-300 rounded-xl space-y-3"
-          >
-            <div class="flex items-center gap-3 flex-wrap">
-              <input
-                type="file"
-                class="text-sm text-color-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary-500 file:text-white file:cursor-pointer"
-                @change="handleUploadChange"
-              />
-              <input
-                v-model="uploadPath"
-                type="text"
-                placeholder="自定义路径（可选，如 images/covers）"
-                class="flex-1 min-w-40 bg-color-300 border border-color-400 rounded-lg px-3 py-2 placeholder-gray-500 focus:outline-none focus:border-primary-500"
-              />
-              <button
-                class="flex items-center gap-1 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-                :disabled="!uploadFile || isUploading"
-                @click="handleUpload"
-              >
-                <Loader2 v-if="isUploading" class="w-4 h-4 animate-spin" />
-                <Upload v-else class="w-4 h-4" />
-                {{ isUploading ? "上传中..." : "确认上传" }}
-              </button>
-            </div>
-          </div>
-
-          <!-- 文件列表 -->
-          <div class="flex-1 overflow-y-auto min-h-0">
-            <div
-              v-if="isLoading"
-              class="flex items-center justify-center py-12 text-gray-500"
-            >
-              <Loader2 class="w-6 h-6 animate-spin mr-2" />
-              加载中...
-            </div>
-
-            <div
-              v-else-if="!selectedConfigId"
-              class="flex flex-col items-center justify-center py-12 text-gray-500"
-            >
-              <HardDrive class="w-10 h-10 mb-2" />
-              <p class="text-sm">请选择存储配置</p>
-            </div>
-
-            <div
-              v-else-if="files.length === 0"
-              class="flex flex-col items-center justify-center py-12 text-gray-500"
-            >
-              <FileText class="w-10 h-10 mb-2" />
-              <p class="text-sm">暂无文件</p>
-            </div>
-
-            <!-- Grid 文件列表 -->
-            <div
-              v-else
-              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
-            >
-              <div
-                v-for="file in files"
-                :key="file.key"
-                class="group relative border rounded-xl overflow-hidden cursor-pointer transition-colors"
-                :class="
-                  selectedFileUrl === file.url
-                    ? 'border-primary-500 ring-1 ring-primary-500/30'
-                    : 'border-color-300 hover:border-color-400'
-                "
-                @click="handleFileSelect(file)"
-              >
-                <!-- 预览区域 -->
-                <div
-                  class="aspect-square flex items-center justify-center relative overflow-hidden"
-                >
-                  <img
-                    v-if="isImage(file)"
-                    :src="file.url"
-                    :alt="file.name"
-                    loading="lazy"
-                    class="w-full h-full object-cover"
-                    @error="($event.target as any).style.display = 'none'"
-                  />
-                  <FileAudio
-                    v-else-if="isAudio(file)"
-                    class="w-8 h-8 text-color-300"
-                  />
-                  <FileVideo
-                    v-else-if="isVideo(file)"
-                    class="w-8 h-8 text-color-300"
-                  />
-                  <File v-else class="w-8 h-8 text-color-300" />
-
-                  <!-- 选中指示 -->
-                  <div
-                    v-if="selectedFileUrl === file.url"
-                    class="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center"
-                  >
-                    <Check class="w-3 h-3 text-white" />
-                  </div>
-
-                  <!-- 悬浮删除按钮 -->
-                  <button
-                    class="absolute top-2 left-2 p-1.5 hover:bg-red-600 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-wait disabled:opacity-100 disabled:bg-red-600"
-                    :disabled="deletingKey === file.key"
-                    @click.stop="handleDelete(file)"
-                  >
-                    <Loader2
-                      v-if="deletingKey === file.key"
-                      class="w-3.5 h-3.5 animate-spin"
-                    />
-                    <Trash2 v-else class="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <!-- 文件信息 -->
-                <div class="p-2">
-                  <p class="text-xs truncate" :title="file.name">
-                    {{ file.name }}
-                  </p>
-                  <p class="text-[10px] text-gray-500 mt-0.5">
-                    {{ formatSize(file.size) }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 分页 -->
-          <AdminPagination
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :total="total"
-            item-label="个文件"
-            @page-change="onPageChange"
+        <!-- 搜索 -->
+        <div class="flex gap-2 flex-1 min-w-50">
+          <UInput
+            v-model="searchKeyword"
+            type="text"
+            placeholder="搜索文件名..."
+            size="sm"
+            class="flex-1"
+            @keydown.enter="handleSearch"
           />
+          <UButton
+            color="neutral"
+            variant="soft"
+            square
+            size="sm"
+            icon="i-lucide-search"
+            aria-label="搜索"
+            @click="handleSearch"
+          />
+        </div>
 
-          <!-- 底部按钮 -->
-          <div
-            class="mt-4 flex items-center justify-end gap-3 border-t border-color-300 pt-4"
+        <!-- 上传按钮 -->
+        <UButton
+          color="primary"
+          size="sm"
+          icon="i-lucide-upload"
+          @click="showUpload = !showUpload"
+        >
+          上传
+        </UButton>
+      </div>
+
+      <!-- 上传面板 -->
+      <UCard
+        v-if="showUpload"
+        class="mb-4"
+        :ui="{
+          body: 'p-4 space-y-3',
+        }"
+      >
+        <div class="flex items-center gap-3 flex-wrap">
+          <UInput
+            type="file"
+            class="text-sm"
+            @change="handleUploadChange"
+          />
+          <UInput
+            v-model="uploadPath"
+            type="text"
+            placeholder="自定义路径（可选，如 images/covers）"
+            class="flex-1 min-w-40"
+          />
+          <UButton
+            color="primary"
+            icon="i-lucide-upload"
+            :loading="isUploading"
+            :disabled="!uploadFile || isUploading"
+            @click="handleUpload"
           >
-            <button
-              class="px-4 py-2 bg-color-300 hover:bg-color-400 rounded-lg text-sm transition-colors"
-              @click="handleClose"
+            {{ isUploading ? "上传中..." : "确认上传" }}
+          </UButton>
+        </div>
+      </UCard>
+
+      <!-- 文件列表 -->
+      <div class="flex-1 overflow-y-auto min-h-0">
+        <div
+          v-if="isLoading"
+          class="flex items-center justify-center py-12 text-gray-500"
+        >
+          <Loader2 class="w-6 h-6 animate-spin mr-2" />
+          加载中...
+        </div>
+
+        <div
+          v-else-if="!selectedConfigId"
+          class="flex flex-col items-center justify-center py-12 text-gray-500"
+        >
+          <HardDrive class="w-10 h-10 mb-2" />
+          <p class="text-sm">请选择存储配置</p>
+        </div>
+
+        <div
+          v-else-if="files.length === 0"
+          class="flex flex-col items-center justify-center py-12 text-gray-500"
+        >
+          <FileText class="w-10 h-10 mb-2" />
+          <p class="text-sm">暂无文件</p>
+        </div>
+
+        <!-- Grid 文件列表 -->
+        <div
+          v-else
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+        >
+          <div
+            v-for="file in files"
+            :key="file.key"
+            class="group relative border rounded-xl overflow-hidden cursor-pointer transition-colors"
+            :class="
+              selectedFileUrl === file.url
+                ? 'border-primary-500 ring-1 ring-primary-500/30'
+                : 'border-color-300 hover:border-color-400'
+            "
+            @click="handleFileSelect(file)"
+          >
+            <!-- 预览区域 -->
+            <div
+              class="aspect-square flex items-center justify-center relative overflow-hidden"
             >
-              取消
-            </button>
-            <button
-              class="flex items-center gap-2 px-5 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="!selectedFileUrl"
-              @click="confirmSelect"
-            >
-              <Check class="w-4 h-4" />
-              确认选择
-            </button>
+              <img
+                v-if="isImage(file)"
+                :src="file.url"
+                :alt="file.name"
+                loading="lazy"
+                class="w-full h-full object-cover"
+                @error="($event.target as any).style.display = 'none'"
+              />
+              <FileAudio
+                v-else-if="isAudio(file)"
+                class="w-8 h-8 text-color-300"
+              />
+              <FileVideo
+                v-else-if="isVideo(file)"
+                class="w-8 h-8 text-color-300"
+              />
+              <File v-else class="w-8 h-8 text-color-300" />
+
+              <!-- 选中指示 -->
+              <div
+                v-if="selectedFileUrl === file.url"
+                class="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center"
+              >
+                <Check class="w-3 h-3 text-white" />
+              </div>
+
+              <!-- 悬浮删除按钮 -->
+              <UButton
+                color="error"
+                variant="solid"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                :loading="deletingKey === file.key"
+                :disabled="deletingKey === file.key"
+                class="absolute top-2 left-2 z-10 shadow-lg opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-100"
+                :aria-label="`删除 ${file.name}`"
+                @click.stop="handleDelete(file)"
+              />
+            </div>
+
+            <!-- 文件信息 -->
+            <div class="p-2">
+              <p class="text-xs truncate" :title="file.name">
+                {{ file.name }}
+              </p>
+              <p class="text-[10px] text-gray-500 mt-0.5">
+                {{ formatSize(file.size) }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- 分页 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total="total"
+        item-label="个文件"
+        @page-change="onPageChange"
+      />
+    </template>
+
+    <!-- 底部操作 -->
+    <template #footer>
+      <UButton color="neutral" variant="soft" @click="handleClose">
+        取消
+      </UButton>
+      <UButton
+        color="primary"
+        icon="i-lucide-check"
+        :disabled="!selectedFileUrl"
+        @click="confirmSelect"
+      >
+        确认选择
+      </UButton>
+    </template>
+  </UModal>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

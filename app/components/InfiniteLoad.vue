@@ -10,7 +10,7 @@ const emit = defineEmits<{
   (e: "infinite-load"): void;
 }>();
 
-const target = ref<HTMLElement>();
+const target = useTemplateRef("target");
 let stopObserver: (() => void) | null = null;
 
 const startObserver = () => {

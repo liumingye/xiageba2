@@ -3,20 +3,11 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
-import {
-  Plus,
-  Trash2,
-  Edit3,
-  Database,
-  Search,
-  Folder,
-  FileUp,
-  Loader2,
-} from "@lucide/vue";
+import { Loader2 } from "@lucide/vue";
+import type { TableColumn } from "@nuxt/ui";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
-import AdminModal from "~/components/admin/Modal.vue";
 
 interface Source {
   id: string;
@@ -38,23 +29,58 @@ interface Category {
   sort: number;
 }
 
+// USelect 不允许 value 为空字符串（空串用于清除选择显示 placeholder），
+// 用哨兵值代替“全部分类/无分类”，传给 API/URL 时再归一化为空
+const FILTER_ALL = "__all__";
+const NO_CATEGORY = "__none__";
+const cidParam = (value: string) =>
+  value && value !== FILTER_ALL ? value : "";
+const toApiCid = (value: string) =>
+  value && value !== NO_CATEGORY ? value : "";
+
+const columns: TableColumn<Source>[] = [
+  { id: "id", accessorKey: "id", header: "ID" },
+  { id: "title", accessorKey: "title", header: "资源名称" },
+  { id: "category", accessorKey: "cid", header: "分类" },
+  { id: "url", accessorKey: "url", header: "地址" },
+  { id: "createdAt", accessorKey: "createdAt", header: "入库时间" },
+  {
+    id: "status",
+    accessorKey: "status",
+    header: "状态",
+    meta: {
+      class: { th: "text-center", td: "text-center" },
+    },
+  },
+  {
+    id: "actions",
+    meta: {
+      class: { th: "text-center", td: "text-center" },
+    },
+  },
+];
+
 const router = useRouter();
 const route = useRoute();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
 const toast = useToast();
+const table = useTemplateRef("table");
+const columnVisibility = ref({
+  id: false,
+});
 
 const sources = ref<Source[]>([]);
 const categories = ref<Category[]>([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const total = ref(0);
-const filterCid = ref("");
+const filterCid = ref<string>(FILTER_ALL);
 const keyword = ref("");
 const isLoading = ref(false);
 
 const showAddModal = ref(false);
 const showEditModal = ref(false);
-const newCid = ref<string>("");
+const newCid = ref<string>(NO_CATEGORY);
 const newTitle = ref("");
 const newUrl = ref("");
 const newDescription = ref("");
@@ -72,7 +98,7 @@ const menuAbortController = ref<AbortController | null>(null);
 const error = ref("");
 
 const showImportModal = ref(false);
-const importCid = ref<string>("");
+const importCid = ref<string>(NO_CATEGORY);
 const importHasHeader = ref(true);
 const importIsSelf = ref(false);
 const importFile = ref<File | null>(null);
@@ -86,8 +112,9 @@ const importResult = ref<{
 
 const loadSources = async () => {
   let url = `/api/admin/source?page=${currentPage.value}&pageSize=20`;
-  if (filterCid.value) {
-    url += `&cid=${filterCid.value}`;
+  const cid = cidParam(filterCid.value);
+  if (cid) {
+    url += `&cid=${cid}`;
   }
   if (keyword.value) {
     url += `&keyword=${encodeURIComponent(keyword.value)}`;
@@ -122,7 +149,7 @@ onMounted(async () => {
   if (page && page > 0) {
     currentPage.value = page;
   }
-  const cid = route.query.cid as string;
+  const cid = (route.query.cid as string) || FILTER_ALL;
   if (cid) {
     filterCid.value = cid;
   }
@@ -139,7 +166,7 @@ watch(
   () => route.query,
   (query) => {
     const page = parseInt(query.page as string) || 1;
-    const cid = (query.cid as string) || "";
+    const cid = (query.cid as string) || FILTER_ALL;
     const q = (query.q as string) || "";
     currentPage.value = page;
     filterCid.value = cid;
@@ -160,8 +187,9 @@ const goToPage = (page: number) => {
 const handleSearch = () => {
   currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
-  if (filterCid.value) {
-    query.cid = filterCid.value;
+  const cid = cidParam(filterCid.value);
+  if (cid) {
+    query.cid = cid;
   }
   if (keyword.value.trim()) {
     query.q = keyword.value.trim();
@@ -173,8 +201,9 @@ const handleSearch = () => {
 const handleFilterChange = () => {
   currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
-  if (filterCid.value) {
-    query.cid = filterCid.value;
+  const cid = cidParam(filterCid.value);
+  if (cid) {
+    query.cid = cid;
   }
   if (keyword.value.trim()) {
     query.q = keyword.value.trim();
@@ -200,7 +229,7 @@ const closeAddModal = () => {
 const openEditModal = (item: Source) => {
   showEditModal.value = true;
   editId.value = item.id;
-  editCid.value = item.cid?.toString() || "";
+  editCid.value = item.cid ? String(item.cid) : NO_CATEGORY;
   editTitle.value = item.title;
   editUrl.value = item.url;
   editDescription.value = item.description;
@@ -259,7 +288,7 @@ const addSource = async () => {
 
   try {
     await post("/api/admin/source", {
-      cid: newCid.value,
+      cid: toApiCid(newCid.value),
       title: newTitle.value,
       url: newUrl.value,
       description: newDescription.value,
@@ -292,7 +321,7 @@ const saveEdit = async () => {
   saveEditing.value = true;
   try {
     await put(`/api/admin/source/${editId.value}`, {
-      cid: editCid.value,
+      cid: toApiCid(editCid.value),
       title: editTitle.value,
       url: editUrl.value,
       description: editDescription.value,
@@ -339,7 +368,7 @@ const deleteSource = async (id: string) => {
 
 const openImportModal = () => {
   showImportModal.value = true;
-  importCid.value = "";
+  importCid.value = NO_CATEGORY;
   importHasHeader.value = true;
   importIsSelf.value = false;
   importFile.value = null;
@@ -370,7 +399,7 @@ const importSources = async () => {
   try {
     const formData = new FormData();
     formData.append("file", importFile.value);
-    formData.append("cid", importCid.value);
+    formData.append("cid", toApiCid(importCid.value));
     formData.append("hasHeader", String(importHasHeader.value));
     formData.append("isSelf", String(importIsSelf.value));
 
@@ -406,167 +435,157 @@ const importSources = async () => {
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-medium">资源管理</h2>
         <div class="flex items-center gap-3">
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+          <UButton
+            color="neutral"
+            variant="soft"
+            icon="i-lucide-file-up"
             @click="openImportModal"
           >
-            <FileUp class="w-4 h-4" />
             导入
-          </button>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="openAddModal"
-          >
-            <Plus class="w-4 h-4" />
+          </UButton>
+          <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
             添加资源
-          </button>
+          </UButton>
         </div>
       </div>
 
-      <div class="flex items-center gap-3 mb-3 justify-end">
-        <select
-          v-model="filterCid"
-          class="input-search py-2 px-3 text-sm flex-1 max-w-24"
-          @change="handleFilterChange"
+      <div
+        class="flex flex-col sm:flex-row sm:justify-end max-sm:items-end gap-3 mb-3"
+      >
+        <UInput
+          v-model="keyword"
+          type="text"
+          placeholder="搜索资源名称或链接"
+          class="max-w-md w-full"
+          @keyup.enter="handleSearch"
+        />
+        <div class="flex items-center gap-3">
+          <USelect
+            v-model="filterCid"
+            class="min-w-30"
+            :items="[
+              { label: '全部分类', value: FILTER_ALL },
+              ...categories.map((cat) => ({
+                label: cat.name,
+                value: cat.id.toString(),
+              })),
+            ]"
+            @change="handleFilterChange"
+          />
+          <UDropdownMenu
+            :items="
+              table?.tableApi
+                ?.getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => ({
+                  label: column.id,
+                  type: 'checkbox' as const,
+                  checked: column.getIsVisible(),
+                  onUpdateChecked(checked: boolean) {
+                    table?.tableApi
+                      ?.getColumn(column.id)
+                      ?.toggleVisibility(!!checked);
+                  },
+                  onSelect(e: Event) {
+                    e.preventDefault();
+                  },
+                }))
+            "
+            :content="{ align: 'end' }"
+          >
+            <UButton
+              label="显示/隐藏列"
+              color="neutral"
+              variant="outline"
+              trailing-icon="i-lucide-chevron-down"
+            />
+          </UDropdownMenu>
+        </div>
+      </div>
+
+      <UCard
+        :ui="{
+          body: 'sm:p-0 p-0',
+        }"
+      >
+        <UTable
+          ref="table"
+          v-model:column-visibility="columnVisibility"
+          :data="sources"
+          :loading="isLoading"
+          :columns="columns"
+          :get-row-id="(row: Source) => row.id"
         >
-          <option value="">全部分类</option>
-          <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-            {{ cat.name }}
-          </option>
-        </select>
-        <div class="relative flex-1 max-w-md">
-          <input
-            v-model="keyword"
-            type="text"
-            placeholder="搜索资源名称或链接"
-            class="input-search py-2 pl-9 pr-3 text-sm"
-            @keyup.enter="handleSearch"
-          />
-          <Search
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-color-500"
-          />
-        </div>
-      </div>
-
-      <div class="card overflow-x-auto">
-        <table class="w-full table-auto">
-          <thead class="bg-color-100">
-            <tr>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
-              >
-                ID
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
-              >
-                资源名称
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
-              >
-                分类
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
-              >
-                地址
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium"
-              >
-                入库时间
-              </th>
-              <th
-                class="px-4 py-3 text-center text-color-400 text-sm font-medium"
-              >
-                状态
-              </th>
-              <th
-                class="px-4 py-3 text-center text-color-400 text-sm font-medium"
-              >
-                操作
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="isLoading">
-              <td colspan="7" class="px-4 py-8 text-center">
-                <Loader2
-                  class="w-6 h-6 text-primary-500 animate-spin mx-auto"
-                />
-                <p class="text-color-500 text-sm mt-2">加载中...</p>
-              </td>
-            </tr>
-            <tr v-else-if="sources.length === 0">
-              <td colspan="7" class="px-4 py-12 text-center">
-                <p class="text-color-500">暂无资源</p>
-              </td>
-            </tr>
-            <tr
-              v-else
-              v-for="item in sources"
-              :key="item.id"
-              class="border-t border-color-300 hover:bg-color-300"
+          <template #id-cell="{ row }">
+            {{ row.original.id }}
+          </template>
+          <template #title-cell="{ row }">
+            {{ row.original.title }}
+          </template>
+          <template #category-cell="{ row }">
+            {{
+              categories.find((cat) => cat.id === row.original.cid)?.name || "-"
+            }}
+          </template>
+          <template #url-cell="{ row }">
+            <a
+              :href="row.original.url"
+              target="_blank"
+              :title="row.original.url"
             >
-              <td class="px-4 py-3 text-color-400 text-xs">
-                <span :title="item.id">{{ item.id }}</span>
-              </td>
-              <td class="px-4 py-3 max-w-60 wrap-break-word">
-                <span :title="item.title">{{ item.title }}</span>
-              </td>
-              <td class="px-4 py-3 text-color-300">
-                {{ categories.find((cat) => cat.id === item.cid)?.name || "-" }}
-              </td>
-              <td class="px-4 py-3 max-w-60 wrap-break-word">
-                <a
-                  :href="item.url"
-                  target="_blank"
-                  class="text-primary-400 hover:text-primary-300 text-sm"
-                  :title="item.url"
-                >
-                  {{ item.url }}
-                </a>
-              </td>
-              <td class="px-4 py-3 text-color-400 text-sm">
-                {{ new Date(item.createdAt).toLocaleString("zh-CN") }}
-              </td>
-              <td class="px-4 py-3">
-                <button
-                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                  :class="item.status === 1 ? 'bg-primary-600' : 'bg-color-400'"
-                  @click="toggleStatus(item)"
-                  :title="item.status === 1 ? '点击禁用' : '点击启用'"
-                >
-                  <span
-                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                    :class="
-                      item.status === 1 ? 'translate-x-6' : 'translate-x-1'
-                    "
-                  />
-                </button>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex items-center justify-center gap-2">
-                  <button
-                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
-                    title="编辑"
-                    @click="openEditModal(item)"
-                  >
-                    <Edit3 class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
-                    title="删除"
-                    @click="deleteSource(item.id)"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              {{ row.original.url }}
+            </a>
+          </template>
+          <template #createdAt-cell="{ row }">
+            {{ new Date(row.original.createdAt).toLocaleString("zh-CN") }}
+          </template>
+          <template #status-cell="{ row }">
+            <UButton
+              size="sm"
+              :color="row.original.status === 1 ? 'success' : 'neutral'"
+              variant="subtle"
+              :icon="
+                row.original.status === 1
+                  ? 'i-lucide-check'
+                  : 'i-lucide-circle-off'
+              "
+              @click="toggleStatus(row.original)"
+            >
+              {{ row.original.status === 1 ? "启用" : "禁用" }}
+            </UButton>
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex items-center justify-center gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-pencil"
+                title="编辑"
+                aria-label="编辑"
+                @click="openEditModal(row.original)"
+              />
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                title="删除"
+                aria-label="删除"
+                @click="deleteSource(row.original.id)"
+              />
+            </div>
+          </template>
+          <template #empty>
+            <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+              <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+              <p class="text-muted text-sm mt-2">加载中...</p>
+            </div>
+            <p v-else class="text-center text-muted py-12">暂无资源</p>
+          </template>
+        </UTable>
 
         <AdminPagination
           :current-page="currentPage"
@@ -575,276 +594,310 @@ const importSources = async () => {
           item-label="个资源"
           @page-change="goToPage"
         />
-      </div>
+      </UCard>
     </main>
 
-    <AdminModal
-      :show="showAddModal"
+    <UModal
+      v-model:open="showAddModal"
       title="添加资源"
-      max-width="max-w-lg"
-      :close-on-overlay="false"
+      :dismissible="false"
       @close="closeAddModal"
+      :ui="{
+        footer: 'justify-end',
+      }"
     >
-      <div
-        v-if="error"
-        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-      >
-        {{ error }}
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源分类</label>
-          <select v-model="newCid" class="input-search">
-            <option value="">无分类</option>
-            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-              {{ cat.name }}
-            </option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源名称 *</label>
-          <input
-            v-model="newTitle"
-            type="text"
-            placeholder="请输入资源名称"
-            class="input-search"
-          />
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源地址 *</label>
-          <input
-            v-model="newUrl"
-            type="text"
-            placeholder="请输入网盘链接"
-            class="input-search"
-          />
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源介绍</label>
-          <textarea
-            v-model="newDescription"
-            rows="3"
-            placeholder="资源说明，可选"
-            class="input-search"
-          ></textarea>
-        </div>
-        <div class="flex items-center gap-2">
-          <input
+      <template #body>
+        <UAlert
+          v-if="error"
+          color="error"
+          variant="soft"
+          :title="error"
+          class="mb-4"
+        />
+        <div class="space-y-4">
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="new-cid"
+              >资源分类</label
+            >
+            <USelect
+              id="new-cid"
+              v-model="newCid"
+              class="w-full"
+              :items="[
+                { label: '无分类', value: NO_CATEGORY },
+                ...categories.map((cat) => ({
+                  label: cat.name,
+                  value: cat.id.toString(),
+                })),
+              ]"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="new-title"
+              >资源名称 *</label
+            >
+            <UInput
+              id="new-title"
+              v-model="newTitle"
+              type="text"
+              placeholder="请输入资源名称"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="new-url"
+              >资源地址 *</label
+            >
+            <UInput
+              id="new-url"
+              v-model="newUrl"
+              type="text"
+              placeholder="请输入网盘链接"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="new-desc"
+              >资源介绍</label
+            >
+            <UTextarea
+              id="new-desc"
+              v-model="newDescription"
+              :rows="3"
+              placeholder="资源说明，可选"
+              class="w-full"
+            />
+          </div>
+          <UCheckbox
             id="newIsSelf"
             v-model="newIsSelf"
-            type="checkbox"
-            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+            label="是自己的资源，搜索结果靠前"
           />
-          <label for="newIsSelf" class="text-color-300 text-sm"
-            >是自己的资源，搜索结果靠前</label
-          >
         </div>
-      </div>
+      </template>
       <template #footer>
         <div class="flex gap-4">
-          <button
-            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-            @click="closeAddModal"
-          >
+          <UButton block color="neutral" variant="soft" @click="closeAddModal">
             取消
-          </button>
-          <button
-            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="addSource"
+          </UButton>
+          <UButton
+            block
+            color="primary"
+            :loading="addSourceing"
             :disabled="addSourceing"
+            @click="addSource"
           >
             添加
-          </button>
+          </UButton>
         </div>
       </template>
-    </AdminModal>
+    </UModal>
 
-    <AdminModal
-      :show="showEditModal"
+    <UModal
+      v-model:open="showEditModal"
       title="编辑资源"
-      max-width="max-w-lg"
-      :close-on-overlay="false"
+      :dismissible="false"
       @close="closeEditModal"
+      :ui="{
+        footer: 'justify-end',
+      }"
     >
-      <div
-        v-if="error"
-        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-      >
-        {{ error }}
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源分类 *</label>
-          <select v-model="editCid" class="input-search">
-            <option value="">无分类</option>
-            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-              {{ cat.name }}
-            </option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源名称 *</label>
-          <input
-            v-model="editTitle"
-            type="text"
-            placeholder="请输入资源名称"
-            class="input-search"
-          />
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源地址 *</label>
-          <input
-            v-model="editUrl"
-            type="text"
-            placeholder="请输入网盘链接"
-            class="input-search"
-          />
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源介绍</label>
-          <textarea
-            v-model="editDescription"
-            rows="3"
-            placeholder="资源说明，可选"
-            class="input-search"
-          ></textarea>
-        </div>
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <label class="block text-color-400 text-sm">目录</label>
-            <button
-              type="button"
-              class="flex items-center gap-1 px-2 py-1 text-xs bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 rounded transition-colors disabled:opacity-50"
-              :disabled="menuLoading"
-              @click="fetchMenu"
+      <template #body>
+        <UAlert
+          v-if="error"
+          color="error"
+          variant="soft"
+          :title="error"
+          class="mb-4"
+        />
+        <div class="space-y-4">
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="edit-cid"
+              >资源分类 *</label
             >
-              <Folder class="w-3 h-3" />
-              {{ menuLoading ? "获取中..." : "获取目录" }}
-            </button>
+            <USelect
+              id="edit-cid"
+              v-model="editCid"
+              class="w-full"
+              :items="[
+                { label: '无分类', value: NO_CATEGORY },
+                ...categories.map((cat) => ({
+                  label: cat.name,
+                  value: cat.id.toString(),
+                })),
+              ]"
+            />
           </div>
-          <textarea
-            v-model="editMenu"
-            rows="5"
-            placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
-            class="input-search font-mono text-xs"
-          ></textarea>
-        </div>
-        <div class="flex items-center gap-2">
-          <input
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="edit-title"
+              >资源名称 *</label
+            >
+            <UInput
+              id="edit-title"
+              v-model="editTitle"
+              type="text"
+              placeholder="请输入资源名称"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="edit-url"
+              >资源地址 *</label
+            >
+            <UInput
+              id="edit-url"
+              v-model="editUrl"
+              type="text"
+              placeholder="请输入网盘链接"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="edit-desc"
+              >资源介绍</label
+            >
+            <UTextarea
+              id="edit-desc"
+              v-model="editDescription"
+              :rows="3"
+              placeholder="资源说明，可选"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-color-400 text-sm">目录</label>
+              <UButton
+                type="button"
+                size="sm"
+                color="primary"
+                variant="soft"
+                icon="i-lucide-folder"
+                :loading="menuLoading"
+                :disabled="menuLoading"
+                @click="fetchMenu"
+              >
+                {{ menuLoading ? "获取中..." : "获取目录" }}
+              </UButton>
+            </div>
+            <UTextarea
+              v-model="editMenu"
+              :rows="5"
+              placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
+              class="font-mono text-xs w-full"
+            />
+          </div>
+          <UCheckbox
             id="editIsSelf"
             v-model="editIsSelf"
-            type="checkbox"
-            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+            label="是自己的资源，搜索结果靠前"
           />
-          <label for="editIsSelf" class="text-color-300 text-sm"
-            >是自己的资源，搜索结果靠前</label
-          >
-        </div>
-      </div>
-      <template #footer>
-        <div class="flex gap-4">
-          <button
-            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-            @click="closeEditModal"
-          >
-            取消
-          </button>
-          <button
-            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="saveEdit"
-          >
-            保存
-          </button>
         </div>
       </template>
-    </AdminModal>
+      <template #footer>
+        <div class="flex gap-4">
+          <UButton block color="neutral" variant="soft" @click="closeEditModal">
+            取消
+          </UButton>
+          <UButton block color="primary" @click="saveEdit">保存</UButton>
+        </div>
+      </template>
+    </UModal>
 
-    <AdminModal
-      :show="showImportModal"
+    <UModal
+      v-model:open="showImportModal"
       title="导入资源"
-      max-width="max-w-lg"
-      :close-on-overlay="false"
+      :dismissible="false"
       @close="closeImportModal"
+      :ui="{
+        footer: 'justify-end',
+      }"
     >
-      <div
-        v-if="error"
-        class="mb-4 p-3 bg-red-900/50 border border-red-800 rounded-lg text-red-400 text-sm"
-      >
-        {{ error }}
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-color-400 text-sm mb-2">资源分类</label>
-          <select v-model="importCid" class="input-search">
-            <option value="">无分类</option>
-            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-              {{ cat.name }}
-            </option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">Excel 文件 *</label>
-          <input
-            type="file"
-            accept=".xlsx"
-            class="input-search py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-color-400 hover:file:bg-color-500"
-            @change="handleFileChange"
-          />
-          <p class="mt-2 text-color-500 text-xs">
-            第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <input
+      <template #body>
+        <UAlert
+          v-if="error"
+          color="error"
+          variant="soft"
+          :title="error"
+          class="mb-4"
+        />
+        <div class="space-y-4">
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="import-cid"
+              >资源分类</label
+            >
+            <USelect
+              id="import-cid"
+              v-model="importCid"
+              class="w-full"
+              :items="[
+                { label: '无分类', value: NO_CATEGORY },
+                ...categories.map((cat) => ({
+                  label: cat.name,
+                  value: cat.id.toString(),
+                })),
+              ]"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="import-file"
+              >Excel 文件 *</label
+            >
+            <UInput
+              id="import-file"
+              type="file"
+              accept=".xlsx"
+              class="cursor-pointer"
+              @change="handleFileChange"
+            />
+            <p class="mt-2 text-color-500 text-xs">
+              第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
+            </p>
+          </div>
+          <UCheckbox
             id="hasHeader"
             v-model="importHasHeader"
-            type="checkbox"
-            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+            label="第一行为表头，跳过不导入"
           />
-          <label for="hasHeader" class="text-color-300 text-sm"
-            >第一行为表头，跳过不导入</label
-          >
-        </div>
-        <div class="flex items-center gap-2">
-          <input
+          <UCheckbox
             id="importIsSelf"
             v-model="importIsSelf"
-            type="checkbox"
-            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
+            label="是自己的资源，搜索结果靠前"
           />
-          <label for="importIsSelf" class="text-color-300 text-sm"
-            >是自己的资源，搜索结果靠前</label
+          <UAlert
+            v-if="importResult"
+            color="success"
+            variant="soft"
+            icon="i-lucide-check"
           >
-        </div>
-        <div
-          v-if="importResult"
-          class="p-3 bg-green-900/30 border border-green-800 rounded-lg text-green-400 text-sm"
-        >
-          <p>
+            <template #title>导入完成</template>
             共解析 {{ importResult.total }} 条，成功导入
             {{ importResult.inserted }} 条，重复
             {{ importResult.duplicate }} 条，失败 {{ importResult.failed }} 条。
-          </p>
+          </UAlert>
         </div>
-      </div>
-
+      </template>
       <template #footer>
         <div class="flex gap-4">
-          <button
-            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
+          <UButton
+            block
+            color="neutral"
+            variant="soft"
             @click="closeImportModal"
           >
             取消
-          </button>
-          <button
-            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          </UButton>
+          <UButton
+            block
+            color="primary"
+            :loading="importing"
             :disabled="importing || !importFile"
             @click="importSources"
           >
             {{ importing ? "导入中..." : "开始导入" }}
-          </button>
+          </UButton>
         </div>
       </template>
-    </AdminModal>
+    </UModal>
   </div>
 </template>

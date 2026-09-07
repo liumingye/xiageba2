@@ -3,11 +3,11 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
-import { Plus, Trash2, Edit3, Tag, FolderOpen } from "@lucide/vue";
+import { Tag } from "@lucide/vue";
+import type { TableColumn } from "@nuxt/ui";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
-import AdminModal from "~/components/admin/Modal.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
 
 interface Category {
@@ -19,6 +19,41 @@ interface Category {
   createdAt: string;
   updatedAt: string;
 }
+
+const columns: TableColumn<Category>[] = [
+  {
+    id: "id",
+    accessorKey: "id",
+    header: "ID",
+    meta: {
+      class: { th: "w-20" },
+    },
+  },
+  { id: "name", accessorKey: "name", header: "名称" },
+  {
+    id: "sort",
+    accessorKey: "sort",
+    header: "排序",
+    meta: {
+      class: { th: "w-20" },
+    },
+  },
+  {
+    id: "isShow",
+    accessorKey: "isShow",
+    header: "显示",
+    meta: {
+      class: { th: "text-center w-24", td: "text-center" },
+    },
+  },
+  {
+    id: "actions",
+    header: "操作",
+    meta: {
+      class: { th: "text-center w-24", td: "text-center" },
+    },
+  },
+];
 
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
@@ -170,94 +205,82 @@ const deleteCategory = async (id: number) => {
     <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-lg font-medium">分类管理</h2>
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-          @click="openAddModal"
-        >
-          <Plus class="w-4 h-4" />
+        <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
           添加分类
-        </button>
+        </UButton>
       </div>
 
-      <div class="card overflow-x-auto">
-        <table class="w-full table-auto">
-          <thead class="bg-color-100">
-            <tr>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-20"
-              >
-                ID
-              </th>
-              <th class="px-4 py-3 text-left text-color-400 text-sm font-medium">
-                名称
-              </th>
-              <th
-                class="px-4 py-3 text-left text-color-400 text-sm font-medium w-20"
-              >
-                排序
-              </th>
-              <th
-                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-24"
-              >
-                显示
-              </th>
-              <th
-                class="px-4 py-3 text-center text-color-400 text-sm font-medium w-24"
-              >
-                操作
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="cat in categories"
-              :key="cat.id"
-              class="border-t border-color-300 hover:bg-color-300"
+      <UCard
+        :ui="{
+          body: 'p-0 sm:p-0',
+        }"
+      >
+        <UTable
+          :data="categories"
+          :columns="columns"
+          :get-row-id="(row: Category) => String(row.id)"
+        >
+          <template #id-cell="{ row }">
+            <span
+              class="text-xs text-color-400 font-mono"
+              :title="String(row.original.id)"
+              >{{ row.original.id }}</span
             >
-              <td class="px-4 py-3 text-color-400 text-xs font-mono truncate">
-                <span :title="String(cat.id)">{{ cat.id }}</span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center"
-                  >
-                    <img v-if="cat.image" :src="cat.image" class="w-6 h-6" />
-                    <Tag v-else class="w-5 h-5 text-color-500" />
-                  </div>
-                  <span>{{ cat.name }}</span>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-color-300">{{ cat.sort }}</td>
-              <td class="px-4 py-3 text-center">
-                <span
-                  class="inline-flex items-center px-2 py-1 rounded-sm text-xs"
-                  :class="cat.isShow ? 'bg-green-600 text-[var(--white)]' : 'bg-color-400 text-color-400'"
-                >
-                  {{ cat.isShow ? "显示" : "隐藏" }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex items-center justify-center gap-2">
-                  <button
-                    class="p-2 text-color-400 hover:text-primary-500 transition-colors"
-                    title="编辑"
-                    @click="openEditModal(cat)"
-                  >
-                    <Edit3 class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 text-color-400 hover:text-red-500 transition-colors"
-                    title="删除"
-                    @click="deleteCategory(cat.id)"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+          <template #name-cell="{ row }">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center"
+              >
+                <img
+                  v-if="row.original.image"
+                  :src="row.original.image"
+                  class="w-6 h-6"
+                />
+                <Tag v-else class="w-5 h-5 text-color-500" />
+              </div>
+              <span>{{ row.original.name }}</span>
+            </div>
+          </template>
+          <template #sort-cell="{ row }">
+            <span class="text-color-300">{{ row.original.sort }}</span>
+          </template>
+          <template #isShow-cell="{ row }">
+            <UBadge
+              :color="row.original.isShow ? 'success' : 'neutral'"
+              variant="subtle"
+            >
+              {{ row.original.isShow ? "显示" : "隐藏" }}
+            </UBadge>
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex items-center justify-center gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-pencil"
+                title="编辑"
+                aria-label="编辑"
+                @click="openEditModal(row.original)"
+              />
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                title="删除"
+                aria-label="删除"
+                @click="deleteCategory(row.original.id)"
+              />
+            </div>
+          </template>
+          <template #empty>
+            <p class="text-center text-color-500 py-12">暂无分类</p>
+          </template>
+        </UTable>
 
         <AdminPagination
           :current-page="currentPage"
@@ -266,168 +289,176 @@ const deleteCategory = async (id: number) => {
           item-label="个分类"
           @page-change="goToPage"
         />
-
-        <div v-if="categories.length === 0" class="py-12 text-center">
-          <p class="text-color-500">暂无分类</p>
-        </div>
-      </div>
+      </UCard>
     </main>
 
-    <AdminModal
-      :show="showAddModal"
+    <UModal
+      :open="showAddModal"
       title="添加分类"
-      @close="closeAddModal"
+      :dismissible="false"
+      @update:open="
+        (v) => {
+          if (!v) closeAddModal();
+        }
+      "
+      :ui="{
+        footer: 'justify-end',
+      }"
     >
-      <div
-        v-if="error"
-        class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
-      >
-        {{ error }}
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-color-400 text-sm mb-2">分类名称 *</label>
-          <input
-            v-model="newName"
-            type="text"
-            placeholder="请输入分类名称"
-            class="input-search"
-          />
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">封面图片</label>
-          <div class="flex gap-2">
-            <input
-              v-model="newImage"
-              type="text"
-              placeholder="图片URL"
-              class="input-search flex-1"
-            />
-            <button
-              type="button"
-              class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
-              @click="showAddCoverPicker = true"
+      <template #body>
+        <UAlert
+          v-if="error"
+          color="error"
+          variant="soft"
+          :title="error"
+          class="mb-4"
+        />
+        <div class="space-y-4">
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="add-cat-name"
+              >分类名称 *</label
             >
-              <FolderOpen class="w-4 h-4" />
-              选择
-            </button>
+            <UInput
+              id="add-cat-name"
+              v-model="newName"
+              type="text"
+              placeholder="请输入分类名称"
+            />
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="add-cat-image"
+              >封面图片</label
+            >
+            <div class="flex gap-2">
+              <UInput
+                id="add-cat-image"
+                v-model="newImage"
+                type="text"
+                placeholder="图片URL"
+                class="flex-1"
+              />
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-folder-open"
+                @click="showAddCoverPicker = true"
+              >
+                选择
+              </UButton>
+            </div>
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="add-cat-sort"
+              >排序</label
+            >
+            <UInput
+              id="add-cat-sort"
+              v-model.number="newSort"
+              type="number"
+              placeholder="排序值，数字越小越靠前"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <UCheckbox v-model="newIsShow" />
+            <span class="text-color-300 text-sm">显示该分类</span>
           </div>
         </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">排序</label>
-          <input
-            v-model.number="newSort"
-            type="number"
-            placeholder="排序值，数字越小越靠前"
-            class="input-search"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <input
-            id="newIsShow"
-            v-model="newIsShow"
-            type="checkbox"
-            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-          />
-          <label for="newIsShow" class="text-color-300 text-sm">显示该分类</label>
-        </div>
-      </div>
+      </template>
 
       <template #footer>
         <div class="flex gap-4">
-          <button
-            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-            @click="closeAddModal"
-          >
+          <UButton block color="neutral" variant="soft" @click="closeAddModal">
             取消
-          </button>
-          <button
-            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="addCategory"
-          >
-            添加
-          </button>
+          </UButton>
+          <UButton block color="primary" @click="addCategory">添加</UButton>
         </div>
       </template>
-    </AdminModal>
+    </UModal>
 
-    <AdminModal
-      :show="showEditModal"
+    <UModal
+      :open="showEditModal"
       title="编辑分类"
-      @close="closeEditModal"
+      :dismissible="false"
+      @update:open="
+        (v) => {
+          if (!v) closeEditModal();
+        }
+      "
+      :ui="{
+        footer: 'justify-end',
+      }"
     >
-      <div
-        v-if="error"
-        class="mb-4 p-3 bg-red-600 border border-red-800 rounded-lg text-red-400 text-sm"
-      >
-        {{ error }}
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-color-400 text-sm mb-2">分类名称 *</label>
-          <input
-            v-model="editName"
-            type="text"
-            placeholder="请输入分类名称"
-            class="input-search"
-          />
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">封面图片</label>
-          <div class="flex gap-2">
-            <input
-              v-model="editImage"
-              type="text"
-              placeholder="图片URL"
-              class="input-search flex-1"
-            />
-            <button
-              type="button"
-              class="flex items-center gap-1.5 px-3 py-2 bg-color-400 hover:bg-color-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
-              @click="showEditCoverPicker = true"
+      <template #body>
+        <UAlert
+          v-if="error"
+          color="error"
+          variant="soft"
+          :title="error"
+          class="mb-4"
+        />
+        <div class="space-y-4">
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="edit-cat-name"
+              >分类名称 *</label
             >
-              <FolderOpen class="w-4 h-4" />
-              选择
-            </button>
+            <UInput
+              id="edit-cat-name"
+              v-model="editName"
+              type="text"
+              placeholder="请输入分类名称"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-color-400 text-sm mb-2"
+              for="edit-cat-image"
+              >封面图片</label
+            >
+            <div class="flex gap-2">
+              <UInput
+                id="edit-cat-image"
+                v-model="editImage"
+                type="text"
+                placeholder="图片URL"
+                class="flex-1"
+              />
+              <UButton
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-folder-open"
+                @click="showEditCoverPicker = true"
+              >
+                选择
+              </UButton>
+            </div>
+          </div>
+          <div>
+            <label class="block text-color-400 text-sm mb-2" for="edit-cat-sort"
+              >排序</label
+            >
+            <UInput
+              id="edit-cat-sort"
+              v-model.number="editSort"
+              type="number"
+              placeholder="排序值，数字越小越靠前"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <UCheckbox v-model="editIsShow" />
+            <span class="text-color-300 text-sm">显示该分类</span>
           </div>
         </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2">排序</label>
-          <input
-            v-model.number="editSort"
-            type="number"
-            placeholder="排序值，数字越小越靠前"
-            class="input-search"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <input
-            id="editIsShow"
-            v-model="editIsShow"
-            type="checkbox"
-            class="w-4 h-4 rounded border-color-500 bg-color-300 text-primary-500 focus:ring-primary-500"
-          />
-          <label for="editIsShow" class="text-color-300 text-sm">显示该分类</label>
-        </div>
-      </div>
+      </template>
 
       <template #footer>
         <div class="flex gap-4">
-          <button
-            class="flex-1 py-3 bg-color-400 hover:bg-color-500 rounded-lg transition-colors"
-            @click="closeEditModal"
-          >
+          <UButton block color="neutral" variant="soft" @click="closeEditModal">
             取消
-          </button>
-          <button
-            class="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
-            @click="saveEdit"
-          >
-            保存
-          </button>
+          </UButton>
+          <UButton block color="primary" @click="saveEdit">保存</UButton>
         </div>
       </template>
-    </AdminModal>
+    </UModal>
 
     <FilePickerModal
       :show="showAddCoverPicker"

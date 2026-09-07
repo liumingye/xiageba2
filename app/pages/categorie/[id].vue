@@ -183,6 +183,7 @@ const openModal = async ({ item }: { item: SourceItem }) => {
 };
 
 const closeModal = () => {
+  console.log("closeModal");
   modalTitle.value = "";
   modalUrl.value = "";
 };

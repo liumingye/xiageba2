@@ -122,7 +122,7 @@ defineExpose({
 <template>
   <div class="w-full max-w-160 mx-auto mb-6">
     <div
-      class="relative rounded-2xl sm:rounded-3xl border bg-muted transition-all duration-300 px-4 py-3"
+      class="relative rounded-2xl border bg-muted transition-all duration-300 px-4 py-3"
       :class="
         isInputFocused
           ? 'border-primary-500 ring-1 ring-primary-500 shadow-lg shadow-primary-500/20'

@@ -31,7 +31,7 @@ const visible = computed({
   set: (v: boolean) => emit("update:modelValue", v),
 });
 
-const sampleReadContentRef = ref<HTMLDivElement>();
+const sampleReadContentRef = useTemplateRef("sampleReadContentRef");
 const chapters = ref<SampleReadChapter[]>([]);
 const currentIndex = ref(0);
 const loading = ref(false);
@@ -120,9 +120,7 @@ const requestGetCode = () => {
             <ChevronLeft class="w-4 h-4" />
             上一章
           </UButton>
-          <span
-            class="text-sm text-muted truncate max-w-[50%]"
-          >
+          <span class="text-sm text-muted truncate max-w-[50%]">
             {{ currentIndex + 1 }}/{{ chapters.length }}
           </span>
           <UButton
@@ -159,10 +157,7 @@ const requestGetCode = () => {
             class="mb-2"
           />
 
-          <div
-            v-else-if="chapters.length > 0"
-            class="space-y-4"
-          >
+          <div v-else-if="chapters.length > 0" class="space-y-4">
             <h4 class="text-lg font-medium text-center">
               {{ chapters[currentIndex]?.chapterTitle }}
             </h4>

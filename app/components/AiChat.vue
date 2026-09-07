@@ -21,7 +21,7 @@ const props = defineProps<{
 }>();
 
 const chatMessages = ref<ChatMessage[]>([]);
-const chatContainer = ref<HTMLElement>();
+const chatContainer = useTemplateRef("chatContainer");
 const aiLoading = ref(false);
 const aiError = ref("");
 let abortController: AbortController | null = null;

@@ -83,7 +83,6 @@ MUSIC/
 │   │       └── ScrapeModal.vue           # 音乐抓取弹窗
 │   ├── composables/
 │   │   ├── useAuth.ts                    # 管理员登录态
-│   │   ├── useBackHistory.ts             # 返回按钮逻辑
 │   │   ├── usePanCheck.ts                # 网盘链接检测
 │   │   └── useToast.ts                   # 提示消息
 │   ├── pages/

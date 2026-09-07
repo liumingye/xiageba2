@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { QrCode, Clipboard, ExternalLink, X } from "@lucide/vue";
-import {
-  useClipboard,
-  useMediaQuery,
-  refAutoReset,
-  useScrollLock,
-} from "@vueuse/core";
+import { QrCode, Clipboard, ExternalLink } from "@lucide/vue";
+import { useClipboard, useMediaQuery, refAutoReset } from "@vueuse/core";
 import { getStorageTypeFriend } from "#shared/utils";
 
 interface Props {
-  /** 是否以弹窗（Teleport + 遮罩 + Transition）方式渲染 */
+  /** 是否以弹窗（UModal）方式渲染 */
   asModal?: boolean;
   /** 弹窗标题（仅 asModal=true 生效） */
   modalTitle?: string;
@@ -124,7 +119,6 @@ const displayFunnyText = computed(() => innerFunnyText.value || "");
 // ---------------- 衍生状态 ----------------
 const toast = useToast();
 const { copy } = useClipboard();
-const isLocked = useScrollLock(window);
 
 const storageTypeName = computed(() =>
   props.url ? getStorageTypeFriend(props.url) : "",
@@ -159,158 +153,126 @@ const handleCopyUrl = async () => {
     });
   }
 };
-
-const closeModal = () => {
-  open.value = false;
-  emit("close");
-};
-
-watch(
-  () => open.value,
-  (next) => {
-    if (next) {
-      isLocked.value = true;
-    } else {
-      isLocked.value = false;
-    }
-  },
-);
 </script>
 
 <template>
   <!-- ============================================================ -->
-  <!-- 弹窗模式：Teleport + Transition + 遮罩 + 头部关闭按钮       -->
+  <!-- 弹窗模式：UModal                                            -->
   <!-- ============================================================ -->
-  <Teleport v-if="asModal" to="body">
-    <Transition name="modal">
-      <div
-        v-if="open"
-        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4"
-        @click.self="closeModal"
-      >
+  <UModal
+    v-if="asModal"
+    v-model:open="open"
+    :title="modalTitle"
+    :ui="{
+      content: 'max-w-xl',
+    }"
+    @after:leave="() => emit('close')"
+  >
+    <template #body>
+      <!-- 加载 -->
+      <div v-if="loading" class="text-center py-8">
         <div
-          class="flex flex-col max-h-[85vh] modal-content bg-color-100 rounded-xl max-w-xl w-full border border-color-300 shadow-2xl overflow-hidden"
-        >
-          <div
-            class="flex items-center justify-between py-2 px-3 border-b border-color-300"
+          class="size-10 border-4 border-primary-500/20 border-t-primary rounded-full animate-spin mx-auto mb-3"
+        />
+        <p class="text-muted text-sm">
+          {{ displayFunnyText || "加载中..." }}
+          <br />请耐心等待，这可能需要几秒钟
+        </p>
+      </div>
+      <!-- 错误 -->
+      <div v-else-if="error" class="text-center py-8">
+        <p class="text-red-400 text-sm">{{ error }}</p>
+      </div>
+      <!-- 结果 -->
+      <div v-else-if="url" class="space-y-4">
+        <div class="flex flex-col items-center gap-4">
+          <template
+            v-if="
+              shouldShowQr &&
+              storageTypeName !== '磁力链接' &&
+              storageTypeName !== '其他链接'
+            "
           >
-            <h3 class="text-color-300 font-medium">{{ modalTitle }}</h3>
-            <button
-              class="text-color-400 transition-all opacity-80 hover:opacity-100 hover:bg-color-300 rounded-md p-2"
-              type="button"
-              @click="closeModal"
+            <span
+              >可使用
+              <span class="text-primary">
+                {{ storageTypeName }}
+              </span>
+              APP 扫码获取</span
             >
-              <X class="w-5 h-5" />
-            </button>
-          </div>
-          <div class="p-4 h-full overflow-auto">
-            <!-- 加载 -->
-            <div v-if="loading" class="text-center py-8">
-              <div
-                class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+            <div
+              v-if="resolvedQr"
+              class="shrink-0 border border-muted rounded-lg"
+            >
+              <img
+                :src="resolvedQr"
+                alt="下载链接二维码"
+                class="w-60 h-auto rounded-lg"
               />
-              <p class="text-color-400 text-sm">
-                {{ displayFunnyText || "加载中..." }}
-                <br />请耐心等待，这可能需要几秒钟
-              </p>
             </div>
-            <!-- 错误 -->
-            <div v-else-if="error" class="text-center py-8">
-              <p class="text-red-400 text-sm">{{ error }}</p>
+            <div
+              v-else
+              class="size-60 bg-muted rounded-lg flex items-center justify-center shrink-0"
+            >
+              <QrCode class="size-24 text-muted" />
             </div>
-            <!-- 结果 -->
-            <div v-else-if="url" class="space-y-4">
-              <div class="flex flex-col items-center gap-4">
-                <template
-                  v-if="
-                    shouldShowQr &&
-                    storageTypeName !== '磁力链接' &&
-                    storageTypeName !== '其他链接'
-                  "
-                >
-                  <span
-                    >可使用
-                    <span class="text-primary-500">
-                      {{ storageTypeName }}
-                    </span>
-                    APP 扫码获取</span
-                  >
-                  <div
-                    v-if="resolvedQr"
-                    class="shrink-0 border border-color-300 rounded-lg"
-                  >
-                    <img
-                      :src="resolvedQr"
-                      alt="下载链接二维码"
-                      class="w-60 h-auto rounded-lg"
-                    />
-                  </div>
-                  <div
-                    v-else
-                    class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center shrink-0"
-                  >
-                    <QrCode class="w-10 h-10 text-zinc-600" />
-                  </div>
-                </template>
-                <p
-                  class="w-full font-medium text-center text-lg line-clamp-5"
-                  :class="{ truncate: shouldShowQr }"
-                >
-                  {{ title }}
-                </p>
-                <p class="text-center break-all">
-                  资源地址：<a
-                    :href="url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-primary-500"
-                    >{{ url }}</a
-                  >
-                </p>
-                <div class="w-full flex items-center justify-center gap-2">
-                  <UButton
-                    color="primary"
-                    variant="outline"
-                    block
-                    size="lg"
-                    @click="handleCopyUrl"
-                  >
-                    <template #leading>
-                      <Clipboard class="w-4 h-4" />
-                    </template>
-                    {{ message }}
-                  </UButton>
-                  <UButton
-                    color="primary"
-                    variant="solid"
-                    block
-                    size="lg"
-                    target="_blank"
-                    :href="url"
-                  >
-                    <template #leading>
-                      <ExternalLink class="w-4 h-4" />
-                    </template>
-                    打开链接
-                  </UButton>
-                </div>
-                <p class="text-xs text-gray-500 text-center">
-                  网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
-                  文件内容请自行辨别，如发现违规请通过<a
-                    href="/page/version"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-primary-500"
-                    >版权说明</a
-                  >联系我们删除。本站仅供学习交流，无任何收费行为。
-                </p>
-              </div>
-            </div>
+          </template>
+          <p
+            class="w-full font-medium text-center text-lg line-clamp-5"
+            :class="{ truncate: shouldShowQr }"
+          >
+            {{ title }}
+          </p>
+          <p class="text-center break-all">
+            资源地址：<a
+              :href="url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary-500"
+              >{{ url }}</a
+            >
+          </p>
+          <div class="w-full flex items-center justify-center gap-2">
+            <UButton
+              color="primary"
+              variant="outline"
+              block
+              size="lg"
+              @click="handleCopyUrl"
+            >
+              <template #leading>
+                <Clipboard class="size-4" />
+              </template>
+              {{ message }}
+            </UButton>
+            <UButton
+              color="primary"
+              variant="solid"
+              block
+              size="lg"
+              target="_blank"
+              :href="url"
+            >
+              <template #leading>
+                <ExternalLink class="size-4" />
+              </template>
+              打开链接
+            </UButton>
           </div>
+          <p class="text-xs text-muted text-center">
+            网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
+            文件内容请自行辨别，如发现违规请通过<a
+              href="/page/version"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary"
+              >版权说明</a
+            >联系我们删除。本站仅供学习交流，无任何收费行为。
+          </p>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+    </template>
+  </UModal>
 
   <!-- ============================================================ -->
   <!-- 内嵌模式：直接渲染内容（无遮罩/关闭按钮/标题栏）            -->
@@ -341,14 +303,14 @@ watch(
           <template v-if="shouldShowQr">
             <span
               >可使用
-              <span class="text-primary-500">
+              <span class="text-primary">
                 {{ storageTypeName }}
               </span>
               APP 扫码获取</span
             >
             <div
               v-if="resolvedQr"
-              class="shrink-0 border border-color-300 rounded-lg"
+              class="shrink-0 border border-muted rounded-lg"
             >
               <img
                 :src="resolvedQr"
@@ -358,9 +320,9 @@ watch(
             </div>
             <div
               v-else
-              class="w-28 h-28 bg-zinc-800 rounded-lg flex items-center justify-center shrink-0"
+              class="size-60 bg-muted rounded-lg flex items-center justify-center shrink-0"
             >
-              <QrCode class="w-10 h-10 text-zinc-600" />
+              <QrCode class="size-24 text-muted" />
             </div>
           </template>
           <p
@@ -406,13 +368,13 @@ watch(
             打开链接
           </UButton>
         </div>
-        <p class="text-xs text-gray-500 text-center">
+        <p class="text-xs text-muted text-center">
           网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
           文件内容请自行辨别，如发现违规请通过<a
             href="/page/version"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-primary-500"
+            class="text-primary"
             >版权说明</a
           >联系我们删除。本站仅供学习交流，无任何收费行为。
         </p>
@@ -420,25 +382,3 @@ watch(
     </div>
   </template>
 </template>
-
-<style scoped>
-.modal-leave-active {
-  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.modal-content {
-  will-change: opacity, transform;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: translateY(-8px);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.985) translateY(0);
-}
-</style>

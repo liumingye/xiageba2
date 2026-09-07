@@ -154,12 +154,12 @@ const expandedDrawerGroups = ref<Record<string, boolean>>({});
 /**
  * 桌面端菜单容器
  */
-const desktopNavRef = ref<HTMLElement | null>(null);
+const desktopNavRef = useTemplateRef("desktopNavRef");
 
 /**
  * 隐藏测量容器
  */
-const measureContainerRef = ref<HTMLElement | null>(null);
+const measureContainerRef = useTemplateRef("measureContainerRef");
 
 /**
  * 每个菜单的测量 DOM
@@ -169,7 +169,7 @@ const measureItemRefs = ref<HTMLElement[]>([]);
 /**
  * 「更多」按钮测量 DOM
  */
-const measureMoreRef = ref<HTMLElement | null>(null);
+const measureMoreRef = useTemplateRef("measureMoreRef");
 
 /**
  * 当前桌面端显示多少个菜单
@@ -687,7 +687,7 @@ watch(isDesktop, async () => {
 
 <template>
   <nav
-    class="bg-color-100 backdrop-blur-md border-b border-color-300 sticky top-0 z-40"
+    class="bg-default backdrop-blur-md border-b border-muted sticky top-0 z-40"
   >
     <div class="max-w-7xl mx-auto px-4 sm:px-6">
       <div class="flex items-center h-14 gap-2">
@@ -706,7 +706,7 @@ watch(isDesktop, async () => {
 
           <button
             type="button"
-            class="shrink-0 p-2 text-color-400 hover:text-color-300 hover:bg-color-300 rounded-lg transition-colors"
+            class="shrink-0 p-2 text-muted rounded-lg transition-colors"
             @click="mobileMenuOpen = !mobileMenuOpen"
             aria-label="Toggle Menu"
             :aria-expanded="mobileMenuOpen"
@@ -746,8 +746,8 @@ watch(isDesktop, async () => {
                 class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
                 :class="
                   activeDropdown === item.label || isGroupActive(item)
-                    ? 'text-white bg-primary-500'
-                    : 'text-color-400 hover:text-color-300 hover:bg-color-300'
+                    ? 'bg-primary text-inverted'
+                    : 'text-muted hover:text-highlighted hover:bg-muted'
                 "
                 @click="toggleDropdown(item.label)"
               >
@@ -779,7 +779,7 @@ watch(isDesktop, async () => {
               >
                 <div
                   v-if="activeDropdown === item.label"
-                  class="absolute left-0 top-full mt-1.5 w-44 bg-color-100 border border-color-300 rounded-xl shadow-2xl py-1.5 z-50 overflow-hidden"
+                  class="absolute left-0 top-full mt-1.5 w-44 bg-default border border-muted rounded-xl shadow-2xl py-1.5 z-50 overflow-hidden"
                 >
                   <button
                     v-for="child in item.children"
@@ -788,8 +788,8 @@ watch(isDesktop, async () => {
                     class="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-left transition-colors"
                     :class="
                       isPathActive(child.path)
-                        ? 'bg-primary-500 text-white'
-                        : 'hover:bg-color-300'
+                        ? 'bg-primary text-inverted'
+                        : 'hover:bg-muted'
                     "
                     @click="handleNavigate(child.path)"
                   >
@@ -813,8 +813,8 @@ watch(isDesktop, async () => {
               class="shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
               :class="
                 isPathActive(item.path)
-                  ? 'text-white bg-primary-500'
-                  : 'text-color-400 hover:text-color-300 hover:bg-color-300'
+                  ? 'bg-primary text-inverted'
+                  : 'text-muted hover:text-highlighted hover:bg-muted'
               "
               @click="handleNavigate(item.path)"
             >
@@ -835,9 +835,9 @@ watch(isDesktop, async () => {
               type="button"
               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
               :class="
-                activeInOverflow
-                  ? 'text-white bg-primary-500'
-                  : 'text-color-400 hover:text-color-300 hover:bg-color-300'
+                activeInOverflow || activeDropdown === '__more__'
+                  ? 'bg-primary text-inverted'
+                  : 'text-muted hover:text-highlighted hover:bg-muted'
               "
               @click="toggleMoreMenu()"
               :aria-expanded="activeDropdown === '__more__'"
@@ -1025,7 +1025,7 @@ watch(isDesktop, async () => {
     >
       <div
         v-if="mobileMenuOpen"
-        class="absolute left-0 right-0 md:hidden border-y border-color-300 bg-color-100 px-4 pt-2 pb-4 space-y-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto rounded-b-2xl"
+        class="absolute left-0 right-0 md:hidden border-y border-muted bg-default px-4 pt-2 pb-4 space-y-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto rounded-b-2xl"
       >
         <template v-for="item in navItems" :key="`mobile-${item.label}`">
           <!-- ==========================================
@@ -1038,8 +1038,8 @@ watch(isDesktop, async () => {
               class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
               :class="
                 isGroupActive(item)
-                  ? 'text-white bg-primary-500'
-                  : 'hover:bg-color-300'
+                  ? 'bg-primary text-inverted'
+                  : 'text-toned'
               "
               @click="toggleDrawerGroup(item.label)"
             >
@@ -1061,7 +1061,7 @@ watch(isDesktop, async () => {
 
             <div
               v-show="expandedDrawerGroups[item.label] || isGroupActive(item)"
-              class="pl-4 space-y-1 border-l-2 border-color-300 ml-3 my-1"
+              class="pl-4 space-y-1 border-l-2 border-muted ml-3 my-1"
             >
               <button
                 v-for="child in item.children"
@@ -1070,8 +1070,8 @@ watch(isDesktop, async () => {
                 class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors"
                 :class="
                   isPathActive(child.path)
-                    ? 'text-white bg-primary-500'
-                    : 'hover:bg-color-300'
+                    ? 'bg-primary text-inverted'
+                    : 'text-toned'
                 "
                 @click="handleNavigate(child.path)"
               >
@@ -1094,8 +1094,8 @@ watch(isDesktop, async () => {
             class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
             :class="
               isPathActive(item.path)
-                ? 'text-white bg-primary-500'
-                : 'hover:bg-color-300'
+                ? 'bg-primary text-inverted'
+                : 'text-toned'
             "
             @click="handleNavigate(item.path)"
           >
