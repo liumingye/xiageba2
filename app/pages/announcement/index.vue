@@ -204,7 +204,7 @@ watch(
           </div>
           <div
             v-if="item.content"
-            class="text-[0.875rem] text-color-300 mt-2 line-clamp-2"
+            class="text-[0.875rem] line-clamp-2"
           >
             <Markdown :value="item.content" :plugins="markdownPlugins" />
           </div>
@@ -301,7 +301,7 @@ watch(
           </div>
           <div
             v-if="item.content"
-            class="text-[0.875rem] text-color-300 mt-2 line-clamp-2"
+            class="text-[0.875rem] line-clamp-2"
           >
             <Markdown :value="item.content" :plugins="markdownPlugins" />
           </div>
@@ -317,3 +317,9 @@ watch(
     </template>
   </UTabs>
 </template>
+
+<style scoped>
+:deep(.comark-content) .my-5 {
+  margin-block: calc(var(--spacing) * 1) !important;
+}
+</style>

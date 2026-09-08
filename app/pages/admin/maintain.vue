@@ -12,6 +12,7 @@ import {
   Sparkles,
   Filter,
   MessageSquare,
+  Check,
 } from "@lucide/vue";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
@@ -548,7 +549,7 @@ const clearISRCache = async () => {
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div>重建音乐搜索向量</div>
-              <div class="text-sm text-color-400 mt-1">
+              <div class="text-sm text-muted mt-1">
                 使用 jieba 分词重新生成所有音乐的搜索向量，用于全文搜索
               </div>
             </div>
@@ -578,7 +579,7 @@ const clearISRCache = async () => {
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div>重建资源搜索向量</div>
-              <div class="text-sm text-color-400 mt-1">
+              <div class="text-sm text-muted mt-1">
                 使用 jieba 分词重新生成所有资源的搜索向量，用于全文搜索
               </div>
             </div>
@@ -621,7 +622,7 @@ const clearISRCache = async () => {
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div>清理全部缓存</div>
-              <div class="text-sm text-color-400 mt-1">
+              <div class="text-sm text-muted mt-1">
                 清空全部Nitro缓存，包括路由ISR缓存、页面缓存
               </div>
             </div>
@@ -677,7 +678,7 @@ const clearISRCache = async () => {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="redis-host"
+              <label class="block text-muted text-sm mb-2" for="redis-host"
                 >Host</label
               >
               <UInput
@@ -689,7 +690,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="redis-port"
+              <label class="block text-muted text-sm mb-2" for="redis-port"
                 >Port</label
               >
               <UInput
@@ -701,7 +702,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="redis-db"
+              <label class="block text-muted text-sm mb-2" for="redis-db"
                 >DB</label
               >
               <UInput
@@ -713,7 +714,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="redis-pass"
+              <label class="block text-muted text-sm mb-2" for="redis-pass"
                 >Password</label
               >
               <UInput
@@ -763,7 +764,7 @@ const clearISRCache = async () => {
 
           <div class="space-y-4">
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="aes-key"
+              <label class="block text-muted text-sm mb-2" for="aes-key"
                 >Key (base64)</label
               >
               <UInput
@@ -775,7 +776,7 @@ const clearISRCache = async () => {
               />
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="aes-iv"
+              <label class="block text-muted text-sm mb-2" for="aes-iv"
                 >IV (base64)</label
               >
               <UInput
@@ -824,7 +825,7 @@ const clearISRCache = async () => {
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="wsf-words">
+              <label class="block text-muted text-sm mb-2" for="wsf-words">
                 过滤关键词（英文逗号隔开）
               </label>
               <UTextarea
@@ -882,7 +883,7 @@ const clearISRCache = async () => {
               label="启用广告过滤"
             />
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="adf-words">
+              <label class="block text-muted text-sm mb-2" for="adf-words">
                 广告关键词（英文逗号隔开）
               </label>
               <UTextarea
@@ -940,7 +941,7 @@ const clearISRCache = async () => {
               label="启用 AI 搜索"
             />
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="ai-base"
+              <label class="block text-muted text-sm mb-2" for="ai-base"
                 >Base URL</label
               >
               <UInput
@@ -955,7 +956,7 @@ const clearISRCache = async () => {
               </p>
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="ai-key"
+              <label class="block text-muted text-sm mb-2" for="ai-key"
                 >API Key</label
               >
               <UInput
@@ -968,7 +969,7 @@ const clearISRCache = async () => {
               <p class="text-color-500 text-xs mt-2">模型服务商提供的密钥</p>
             </div>
             <div>
-              <label class="block text-color-400 text-sm mb-2" for="ai-model"
+              <label class="block text-muted text-sm mb-2" for="ai-model"
                 >模型名称</label
               >
               <UInput
@@ -1028,7 +1029,7 @@ const clearISRCache = async () => {
               <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label
-                    class="block text-color-400 text-sm mb-2"
+                    class="block text-muted text-sm mb-2"
                     :for="`hot-${index}-word`"
                     >搜索词</label
                   >
@@ -1042,7 +1043,7 @@ const clearISRCache = async () => {
                 </div>
                 <div>
                   <label
-                    class="block text-color-400 text-sm mb-2"
+                    class="block text-muted text-sm mb-2"
                     :for="`hot-${index}-type`"
                     >类型</label
                   >
@@ -1058,7 +1059,7 @@ const clearISRCache = async () => {
                 </div>
                 <div>
                   <label
-                    class="block text-color-400 text-sm mb-2"
+                    class="block text-muted text-sm mb-2"
                     :for="`hot-${index}-weight`"
                     >权重</label
                   >
@@ -1144,7 +1145,7 @@ const clearISRCache = async () => {
               <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label
-                    class="block text-color-400 text-sm mb-2"
+                    class="block text-muted text-sm mb-2"
                     :for="`pan-${index}-url`"
                     >接口地址</label
                   >
@@ -1158,7 +1159,7 @@ const clearISRCache = async () => {
                 </div>
                 <div>
                   <label
-                    class="block text-color-400 text-sm mb-2"
+                    class="block text-muted text-sm mb-2"
                     :for="`pan-${index}-pass`"
                     >密码</label
                   >
@@ -1239,7 +1240,7 @@ const clearISRCache = async () => {
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-color-400 text-sm mb-2" for="wx-appid"
+                <label class="block text-muted text-sm mb-2" for="wx-appid"
                   >AppID</label
                 >
                 <UInput
@@ -1251,7 +1252,7 @@ const clearISRCache = async () => {
                 />
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2" for="wx-secret"
+                <label class="block text-muted text-sm mb-2" for="wx-secret"
                   >AppSecret</label
                 >
                 <UInput
@@ -1263,7 +1264,7 @@ const clearISRCache = async () => {
                 />
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2" for="wx-token"
+                <label class="block text-muted text-sm mb-2" for="wx-token"
                   >Token</label
                 >
                 <UInput
@@ -1275,7 +1276,7 @@ const clearISRCache = async () => {
                 />
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2" for="wx-aeskey"
+                <label class="block text-muted text-sm mb-2" for="wx-aeskey"
                   >EncodingAESKey（可选）</label
                 >
                 <UInput
@@ -1292,13 +1293,13 @@ const clearISRCache = async () => {
           <!-- 功能配置 -->
           <div>
             <h4
-              class="text-sm font-medium text-color-300 pb-2 mb-4 border-b border-color-300"
+              class="text-sm font-medium text-muted pb-2 mb-4 border-b border-muted"
             >
               功能配置
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div
-                class="flex items-center justify-between p-3 bg-color-300 rounded-lg"
+                class="flex items-center justify-between p-3 bg-elevated rounded-lg"
               >
                 <div>
                   <div class="text-sm">启用机器人</div>
@@ -1321,7 +1322,7 @@ const clearISRCache = async () => {
                 </UButton>
               </div>
               <div
-                class="flex items-center justify-between p-3 bg-color-300 rounded-lg"
+                class="flex items-center justify-between p-3 bg-elevated rounded-lg"
               >
                 <div>
                   <div class="text-sm">自动回复</div>
@@ -1347,7 +1348,7 @@ const clearISRCache = async () => {
                 </UButton>
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2" for="wx-limit"
+                <label class="block text-muted text-sm mb-2" for="wx-limit"
                   >搜索结果限制</label
                 >
                 <UInput
@@ -1363,7 +1364,7 @@ const clearISRCache = async () => {
                 </p>
               </div>
               <div class="md:col-span-2">
-                <label class="block text-color-400 text-sm mb-2" for="wx-msg"
+                <label class="block text-muted text-sm mb-2" for="wx-msg"
                   >欢迎消息</label
                 >
                 <UTextarea
@@ -1380,13 +1381,13 @@ const clearISRCache = async () => {
           <!-- 服务器配置 -->
           <div>
             <h4
-              class="text-sm font-medium text-color-300 pb-2 mb-4 border-b border-color-300"
+              class="text-sm font-medium text-muted pb-2 mb-4 border-b border-muted"
             >
               服务器配置（微信公众平台填写）
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-color-400 text-sm mb-2"
+                <label class="block text-muted text-sm mb-2"
                   >URL（复制使用）</label
                 >
                 <UInput
@@ -1421,7 +1422,7 @@ const clearISRCache = async () => {
                 </p>
               </div>
               <div>
-                <label class="block text-color-400 text-sm mb-2"
+                <label class="block text-muted text-sm mb-2"
                   >Token（同上）</label
                 >
                 <UInput
@@ -1449,13 +1450,11 @@ const clearISRCache = async () => {
           <!-- 验证文件上传 -->
           <div>
             <h4
-              class="text-sm font-medium text-color-300 pb-2 mb-4 border-b border-color-300"
+              class="text-sm font-medium text-muted pb-2 mb-4 border-b border-muted"
             >
               微信公众号验证文件
             </h4>
-            <div
-              class="p-4 bg-color-300 border border-color-300 rounded-lg mb-4"
-            >
+            <div class="p-4 bg-elevated border border-muted rounded-lg mb-4">
               <p class="text-sm leading-relaxed">
                 微信公众平台在填写服务器 URL 时会要求上传一个
                 <code
@@ -1465,7 +1464,7 @@ const clearISRCache = async () => {
                 到网站根目录验证所有权。请按以下步骤操作：
               </p>
               <ol
-                class="mt-2 text-sm text-color-300 list-decimal list-inside space-y-1"
+                class="mt-2 text-sm text-muted list-decimal list-inside space-y-1"
               >
                 <li>在微信公众平台下载 MP_verify_*.txt 验证文件</li>
                 <li>点击下方「选择文件」上传 TXT 内容到数据库</li>
@@ -1498,7 +1497,7 @@ const clearISRCache = async () => {
                   @change="onPickWechatVerifyFile"
                 />
               </UButton>
-              <div class="text-sm text-color-400 min-w-0">
+              <div class="text-sm text-muted min-w-0">
                 <template v-if="wechatVerifyFile">
                   已选择：{{ wechatVerifyFile.name }}
                 </template>
@@ -1520,24 +1519,20 @@ const clearISRCache = async () => {
 
             <div
               v-if="wechatConfig.verifyFileName"
-              class="mt-4 p-3 bg-green-800 border border-green-800 text-white rounded-lg"
+              class="mt-4 p-4 bg-elevated border border-muted rounded-lg"
             >
               <div class="flex items-start gap-2">
-                <Check class="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                <Check class="w-4 h-4 shrink-0 mt-0.5" />
                 <div class="text-sm space-y-1 flex-1">
                   <div>验证文件已上传，可通过以下地址访问：</div>
                   <div class="flex items-center gap-2">
-                    <code
-                      class="px-2 py-1 rounded bg-green-700 font-mono text-xs break-all"
-                    >
+                    <code class="font-mono text-xs break-all">
                       {{ wechatOrigin }}/{{ wechatConfig.verifyFileName }}
                     </code>
                     <UButton
-                      variant="ghost"
                       square
                       size="sm"
                       icon="i-lucide-copy"
-                      class="shrink-0"
                       title="复制访问地址"
                       aria-label="复制访问地址"
                       @click="
@@ -1552,7 +1547,6 @@ const clearISRCache = async () => {
                       :href="`/${wechatConfig.verifyFileName}`"
                       target="_blank"
                       rel="noreferrer"
-                      variant="ghost"
                       square
                       size="sm"
                       icon="i-lucide-external-link"
@@ -1567,9 +1561,9 @@ const clearISRCache = async () => {
           </div>
 
           <!-- 注意事项 -->
-          <div class="p-4 bg-color-300 border border-color-300 rounded-lg">
-            <h5 class="text-sm font-medium text-color-300 mb-2">注意事项</h5>
-            <ul class="text-sm text-color-300 list-disc list-inside space-y-1">
+          <div class="p-4 bg-elevated border border-muted rounded-lg">
+            <h5 class="text-sm font-medium text-muted mb-2">注意事项</h5>
+            <ul class="text-sm list-disc list-inside space-y-1">
               <li>服务器必须支持 HTTPS（微信要求）且域名已备案</li>
               <li>
                 首次配置时，微信会发送 GET 请求校验签名，请先填写 Token 并保存

@@ -169,22 +169,24 @@ body {
 } */
 
 /** 滚动条 */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+@media screen and (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 
-::-webkit-scrollbar-corner,
-::-webkit-scrollbar-track {
-  @apply bg-muted/50
-}
+  ::-webkit-scrollbar-corner,
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/50;
+  }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-primary/50 rounded-md;
-}
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/40 rounded-md;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary;
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/80;
+  }
 }
 
 @layer components {

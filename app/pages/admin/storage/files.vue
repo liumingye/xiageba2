@@ -445,7 +445,7 @@ onMounted(async () => {
                 class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
               >
                 <UButton
-                  variant="ghost"
+                  variant="outline"
                   square
                   size="sm"
                   icon="i-lucide-copy"
@@ -454,7 +454,7 @@ onMounted(async () => {
                   @click="copyUrl(file)"
                 />
                 <UButton
-                  variant="ghost"
+                  variant="outline"
                   square
                   size="sm"
                   icon="i-lucide-pencil"
@@ -464,7 +464,7 @@ onMounted(async () => {
                   @click="startRename(file)"
                 />
                 <UButton
-                  variant="ghost"
+                  variant="outline"
                   square
                   size="sm"
                   icon="i-lucide-trash-2"

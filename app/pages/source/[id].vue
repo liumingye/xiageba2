@@ -265,10 +265,7 @@ onMounted(() => {
         </div>
       </template>
 
-      <div
-        class="text-color-300 wrap-break-word"
-        v-if="source.description"
-      >
+      <div class="text-color-300 wrap-break-word" v-if="source.description">
         <span class="font-bold text-lg">描述：</span>
         <Markdown :value="source.description" :plugins="safeMarkdownPlugins" />
       </div>
@@ -356,7 +353,7 @@ onMounted(() => {
             :to="`/source/${item.id}`"
             class="flex items-center gap-2 p-3 bg-elevated hover:bg-accented rounded-lg transition-colors"
           >
-            <UBadge>{{
+            <UBadge class="shrink-0">{{
               getStorageTypeFriendShortFromFilter(item.type)
             }}</UBadge>
             <span class="text-color-300 text-sm truncate">{{

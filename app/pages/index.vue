@@ -503,6 +503,9 @@ const getPic = (url: string) => {
             color="neutral"
             variant="subtle"
             size="lg"
+            :ui="{
+              base: 'rounded-xl',
+            }"
             @click="searchBarRef?.handleSearch(keyword)"
           >
             {{ keyword }}

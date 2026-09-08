@@ -18,15 +18,13 @@ onMounted(async () => {
 
 <template>
   <div
-    class="fixed bottom-4 right-4 hidden xl:block transition-opacity duration-300"
+    class="fixed bottom-4 left-[calc(100vw-190px)] max-xl:hidden transition-opacity duration-300"
     :class="isHovered ? 'opacity-100' : 'opacity-60'"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <div
-      class="bg-default backdrop-blur-sm rounded-lg p-3 border border-muted text-center"
-    >
-      <div class="w-36 h-36 mx-auto bg-white rounded-lg">
+    <div class="bg-default rounded-lg p-3 border border-muted text-center">
+      <div class="size-36 mx-auto bg-white rounded-lg">
         <img
           v-if="qrCodeUrl"
           :src="qrCodeUrl"

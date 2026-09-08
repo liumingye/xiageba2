@@ -22,6 +22,8 @@ const router = useRouter();
 const route = useRoute();
 const musicStore = useMusicStore();
 
+const inputRef = useTemplateRef("inputRef");
+
 const MAX_KEYWORD_LENGTH = 30;
 
 const searchQuery = ref(props.modelValue || "");
@@ -81,6 +83,7 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 const clearInput = () => {
   searchQuery.value = "";
+  inputRef.value?.inputRef?.focus();
 };
 
 const handleSuggestionSelect = (word: string) => {
@@ -101,6 +104,7 @@ defineExpose({
   <div class="flex items-center w-full">
     <div class="flex items-center relative flex-1 min-w-0">
       <UInput
+        ref="inputRef"
         v-model="searchQuery"
         :maxlength="MAX_KEYWORD_LENGTH"
         type="text"

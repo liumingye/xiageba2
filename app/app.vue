@@ -126,6 +126,11 @@ const disableBack = computed(() => {
           center: 'hidden md:flex',
           content: 'bottom-auto rounded-b-xl',
           body: 'p-2 sm:p-2',
+          toggle: `md:hidden transition-all shrink-0 me-0 ${
+            isSearchFocused
+              ? 'max-sm:max-w-0 max-sm:opacity-0 p-0'
+              : 'max-sm:max-w-19'
+          }`,
         }"
       >
         <template #left>
@@ -172,22 +177,22 @@ const disableBack = computed(() => {
 
         <template #right>
           <div
-            class="flex items-center justify-end gap-1 md:gap-2 flex-1 min-w-0 transition-all"
+            class="flex items-center gap-1 md:gap-2 flex-1 transition-all sm:max-w-md md:max-w-sm"
           >
-            <div class="min-w-0 flex-1 flex justify-end">
+            <div class="flex-1">
               <SearchBar
                 ref="searchBarRef"
                 v-if="showHeaderSearch"
                 :model-value="searchQuery"
-                class="w-full max-w-xs md:max-w-sm"
+                class="w-full"
               />
             </div>
             <div
               class="flex transition-[max-width,opacity] shrink-0"
               :class="[
                 isSearchFocused
-                  ? 'max-md:max-w-0 max-md:opacity-0'
-                  : 'max-md:max-w-19',
+                  ? 'max-sm:max-w-0 max-sm:opacity-0'
+                  : 'max-sm:max-w-19',
               ]"
             >
               <ClientOnly>
@@ -206,25 +211,6 @@ const disableBack = computed(() => {
               </ClientOnly>
             </div>
           </div>
-        </template>
-
-        <template #toggle="{ open, toggle }">
-          <UButton
-            size="sm"
-            variant="ghost"
-            color="neutral"
-            square
-            class="flex md:hidden transition-all shrink-0 text-toned hover:text-highlighted"
-            :class="[
-              isSearchFocused
-                ? 'max-md:max-w-0 max-md:opacity-0 -mx-2.5'
-                : 'max-md:max-w-19',
-            ]"
-            @click="toggle"
-          >
-            <X v-if="open" class="w-5 h-5" />
-            <Menu v-else class="w-5 h-5" />
-          </UButton>
         </template>
 
         <template #body>
