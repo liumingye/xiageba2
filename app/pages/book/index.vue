@@ -9,7 +9,7 @@ import {
   Filter,
 } from "@lucide/vue";
 import { useDebounceFn } from "@vueuse/core";
-import { load } from "cheerio";
+import type { SampleReadBook } from "@/components/SampleReadModal.vue";
 
 defineOptions({
   name: "BookIndexPage",
@@ -281,7 +281,7 @@ const novelCoverError = reactive<Record<string, boolean>>({});
 const showSampleReadModal = ref(false);
 const sampleReadBook = ref<NovelBook | null>(null);
 const showCodeModal = ref(false);
-const codeModalBook = ref<NovelBook | null>(null);
+const codeModalBook = ref<NovelBook | SampleReadBook | null>(null);
 
 const openSampleRead = (book: NovelBook) => {
   sampleReadBook.value = book;
@@ -294,7 +294,7 @@ const openGetCode = (book: NovelBook) => {
 };
 
 // 试读内容里点击"获取口令"时，先关闭试读再打开口令弹窗
-const onSampleReadGetCode = (book: NovelBook) => {
+const onSampleReadGetCode = (book: SampleReadBook) => {
   showSampleReadModal.value = false;
   codeModalBook.value = book;
   showCodeModal.value = true;
@@ -426,7 +426,7 @@ useSeoMeta({
       <template v-if="!isSearchMode">
         <div class="flex items-center gap-2 my-3">
           <Filter class="w-4 h-4 text-primary-400" />
-          <h2 class="text-color-500 text-sm">筛选条件</h2>
+          <h2 class="text-muted text-sm">筛选条件</h2>
         </div>
         <div class="flex flex-wrap items-center gap-2 mb-4">
           <USelect
@@ -466,7 +466,7 @@ useSeoMeta({
         </div>
       </template>
 
-      <h2 v-if="books.length > 0" class="text-color-500 text-sm mb-3">
+      <h2 v-if="books.length > 0" class="text-muted text-sm mb-3">
         <template v-if="isSearchMode">
           搜索"<span class="text-primary-400">{{ searchKeyword }}</span
           >"找到 {{ books.length }} 本小说
@@ -598,8 +598,6 @@ useSeoMeta({
       />
     </div>
   </main>
-
-  <Qrcode />
 
   <!-- 试读弹窗 -->
   <SampleReadModal

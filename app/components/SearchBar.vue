@@ -2,6 +2,7 @@
 import { useRouter, useRoute } from "vue-router";
 import { useMusicStore } from "~/stores/music";
 import { Search, X } from "@lucide/vue";
+import { input } from "#build/ui";
 
 const props = withDefaults(
   defineProps<{
@@ -70,6 +71,7 @@ const handleSearch = (keywords?: string) => {
       query: { type, q },
     });
   }
+  inputRef.value?.inputRef?.blur();
   isInputFocused.value = false;
   showSuggestions.value = false;
 };
@@ -101,71 +103,71 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex items-center w-full">
-    <div class="flex items-center relative flex-1 min-w-0">
-      <UInput
-        ref="inputRef"
-        v-model="searchQuery"
-        :maxlength="MAX_KEYWORD_LENGTH"
-        type="text"
-        :placeholder="placeholder"
-        class="w-full"
-        size="md"
-        :ui="{
-          root: 'w-full',
-          trailing: 'pe-1',
-        }"
-        @keydown="handleKeydown"
-        @focus="
-          () => {
-            isInputFocused = true;
-            showSuggestions = true;
-          }
-        "
-        @blur="
-          () => {
-            isInputFocused = false;
-            showSuggestions = false;
-          }
-        "
-        aria-label="搜索"
-      >
-        <template #trailing>
-          <div class="flex items-center gap-0.5">
-            <UButton
-              v-if="searchQuery"
-              color="neutral"
-              variant="ghost"
-              square
-              size="xs"
-              :ui="{
-                base: 'text-zinc-400 hover:text-zinc-600 dark:hover:text-white',
-              }"
-              :aria-label="'清除'"
-              @click="clearInput"
-            >
-              <X class="h-4 w-4" />
-            </UButton>
-            <UButton
-              color="neutral"
-              variant="ghost"
-              square
-              size="xs"
-              :ui="{ base: 'text-zinc-400 hover:text-primary-600' }"
-              :aria-label="'搜索'"
-              @click="handleSearch()"
-            >
-              <Search class="h-4.5 w-4.5" />
-            </UButton>
-          </div>
-        </template>
-      </UInput>
-      <SearchSuggestions
-        :query="searchQuery"
-        v-model:visible="showSuggestions"
-        @select="handleSuggestionSelect"
-        @close="handleSuggestionsClose"
-      />
-    </div>
+  <div class="flex items-center relative flex-1 min-w-0">
+    <UInput
+      ref="inputRef"
+      v-model="searchQuery"
+      :maxlength="MAX_KEYWORD_LENGTH"
+      type="text"
+      :placeholder="placeholder"
+      class="w-full"
+      size="md"
+      :ui="{
+        base: 'md:pe-15',
+        root: 'w-full',
+        trailing: 'pe-1',
+      }"
+      @keydown="handleKeydown"
+      @focus="
+        () => {
+          isInputFocused = true;
+          showSuggestions = true;
+        }
+      "
+      @blur="
+        () => {
+          isInputFocused = false;
+          showSuggestions = false;
+        }
+      "
+      aria-label="搜索"
+    >
+      <template #trailing>
+        <div class="flex items-center gap-0.5">
+          <UButton
+            v-if="searchQuery"
+            color="neutral"
+            variant="ghost"
+            square
+            size="xs"
+            :ui="{
+              base: 'text-muted hover:text-highlighted',
+            }"
+            :aria-label="'清除'"
+            @click="clearInput"
+          >
+            <X class="size-4" />
+          </UButton>
+          <UButton
+            class="max-md:hidden"
+            color="neutral"
+            variant="ghost"
+            square
+            size="xs"
+            :ui="{ base: 'text-muted hover:text-highlighted' }"
+            :aria-label="'搜索'"
+            @click="handleSearch()"
+          >
+            <Search class="size-4.5" />
+          </UButton>
+        </div>
+      </template>
+    </UInput>
+    <SearchSuggestions
+      :query="searchQuery"
+      v-model:visible="showSuggestions"
+      @select="handleSuggestionSelect"
+      @close="handleSuggestionsClose"
+    />
   </div>
 </template>

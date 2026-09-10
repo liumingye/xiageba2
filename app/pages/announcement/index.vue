@@ -40,7 +40,6 @@ const { data: announcementData, pending } = await useFetch<{
 });
 
 const announcements = computed(() => announcementData.value?.data || []);
-const total = computed(() => announcementData.value?.total || 0);
 const totalPages = computed(() => announcementData.value?.totalPages || 0);
 
 // getIconConfig 已统一抽取到 ~/utils/announcement
@@ -51,22 +50,6 @@ const switchTab = (tab: "ACTIVE" | "ARCHIVED") => {
   currentPage.value = 1;
   updateUrl();
 };
-
-const pageNumbers = computed<(number | string)[]>(() => {
-  const total = totalPages.value;
-  const current = currentPage.value;
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-  const pages: (number | string)[] = [1];
-  if (current > 3) pages.push("...");
-  const start = Math.max(2, current - 1);
-  const end = Math.min(total - 1, current + 1);
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
-});
 
 const onPageChange = (page: number) => {
   currentPage.value = page;
@@ -202,11 +185,12 @@ watch(
               </p>
             </div>
           </div>
-          <div
-            v-if="item.content"
-            class="text-[0.875rem] line-clamp-2"
-          >
-            <Markdown :value="item.content" :plugins="markdownPlugins" />
+          <div v-if="item.content" class="text-[0.875rem] line-clamp-2">
+            <Markdown
+              :value="item.content"
+              :plugins="markdownPlugins"
+              class="*:first:mt-0 *:last:mb-0"
+            />
           </div>
         </UPageCard>
       </div>
@@ -299,11 +283,12 @@ watch(
               </p>
             </div>
           </div>
-          <div
-            v-if="item.content"
-            class="text-[0.875rem] line-clamp-2"
-          >
-            <Markdown :value="item.content" :plugins="markdownPlugins" />
+          <div v-if="item.content" class="text-[0.875rem] line-clamp-2">
+            <Markdown
+              :value="item.content"
+              :plugins="markdownPlugins"
+              class="*:first:mt-0 *:last:mb-0"
+            />
           </div>
         </UPageCard>
       </div>
@@ -317,9 +302,3 @@ watch(
     </template>
   </UTabs>
 </template>
-
-<style scoped>
-:deep(.comark-content) .my-5 {
-  margin-block: calc(var(--spacing) * 1) !important;
-}
-</style>

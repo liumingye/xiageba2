@@ -2,26 +2,27 @@
 import { ref, onMounted } from "vue";
 
 const qrCodeUrl = ref("");
-const isHovered = ref(false);
+const route = useRoute();
+const qrcode = await import("qrcode");
 
-onMounted(async () => {
-  try {
-    const qrcode = await import("qrcode");
-    qrCodeUrl.value = await qrcode.toDataURL(window.location.href, {
-      margin: 2,
-    });
-  } catch {
-    // qrcode module load failed
-  }
+onMounted(() => {
+  watch(
+    () => route.path,
+    async () => {
+      qrCodeUrl.value = await qrcode.toDataURL(window.location.href, {
+        margin: 2,
+      });
+    },
+    {
+      immediate: true,
+    },
+  );
 });
 </script>
 
 <template>
   <div
-    class="fixed bottom-4 left-[calc(100vw-190px)] max-xl:hidden transition-opacity duration-300"
-    :class="isHovered ? 'opacity-100' : 'opacity-60'"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
+    class="fixed bottom-4 left-[calc(100vw-12rem)] max-2xl:hidden transition-opacity duration-300 opacity-60 hover:opacity-100"
   >
     <div class="bg-default rounded-lg p-3 border border-muted text-center">
       <div class="size-36 mx-auto bg-white rounded-lg">

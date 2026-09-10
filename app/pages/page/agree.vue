@@ -85,7 +85,11 @@ const content = `**最后更新日期：2026年1月1日**
 
   <article class="card">
     <div class="wrap-break-word leading-relaxed m-6">
-      <Markdown :value="content" :plugins="markdownPlugins" />
+      <Markdown
+        :value="content"
+        :plugins="markdownPlugins"
+        class="*:first:mt-0 *:last:mb-0"
+      />
     </div>
   </article>
 </template>

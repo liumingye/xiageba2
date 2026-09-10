@@ -217,7 +217,7 @@ export default defineNuxtConfig({
       title: "全盘搜 - 免费网盘资源搜索引擎",
       meta: [
         { charset: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { name: "viewport", content: "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" },
         { name: "og:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         { name: "twitter:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         {

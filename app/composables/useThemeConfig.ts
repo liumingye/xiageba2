@@ -1,4 +1,5 @@
-const STORAGE_KEY = "nuxt-ui-theme-config";
+import { reactive, watch, computed, readonly, ref, type Ref } from "vue";
+import { useStorage } from "@vueuse/core";
 
 export const primaryColors = [
   "black",
@@ -19,7 +20,7 @@ export const primaryColors = [
   "fuchsia",
   "pink",
   "rose",
-] as const;
+];
 
 export const neutralColors = [
   "slate",
@@ -31,31 +32,79 @@ export const neutralColors = [
   "mauve",
   "mist",
   "olive",
-] as const;
+];
 
-export const radiusValues = [0, 0.125, 0.25, 0.375, 0.5] as const;
-export const colorModes = ["light", "dark", "system"] as const;
+export const radiusValues = [0, 0.125, 0.25, 0.375, 0.5];
+export const colorModes = ["light", "dark", "system"];
+export const fontSizes = [15, 16, 17, 18, 20];
 
 export type PrimaryColor = (typeof primaryColors)[number];
 export type NeutralColor = (typeof neutralColors)[number];
 export type RadiusValue = (typeof radiusValues)[number];
 export type ColorModeValue = (typeof colorModes)[number];
+export type FontSizeValue = (typeof fontSizes)[number];
 
 export interface ThemeSettings {
   primary: PrimaryColor;
   neutral: NeutralColor;
   radius: RadiusValue;
   colorMode: ColorModeValue;
+  fontSize: FontSizeValue;
 }
 
 const defaults: ThemeSettings = {
   primary: "green",
   neutral: "zinc",
   radius: 0.25,
-  colorMode: "system",
+  colorMode: "dark",
+  fontSize: 16,
 };
 
 const settings = reactive<ThemeSettings>({ ...defaults });
+
+type StoredTheme = Partial<ThemeSettings> | null;
+let storedThemeRef: Ref<StoredTheme> | null = null;
+let isColorModeWatched = false;
+
+const jsonStorageSerializer = {
+  read: (value: string): StoredTheme => {
+    try {
+      return value ? (JSON.parse(value) as StoredTheme) : null;
+    } catch {
+      return null;
+    }
+  },
+  write: (value: StoredTheme): string => JSON.stringify(value),
+};
+
+function getStoredTheme() {
+  if (!storedThemeRef && import.meta.client) {
+    storedThemeRef = useStorage<StoredTheme>(
+      "nuxt-ui-theme-config",
+      null,
+      undefined,
+      {
+        serializer: jsonStorageSerializer,
+        onError: () => {},
+      },
+    );
+
+    watch(storedThemeRef, (stored) => {
+      if (!stored || typeof stored !== "object") return;
+      const changed = (Object.keys(stored) as (keyof ThemeSettings)[]).some(
+        (key) => stored[key] !== settings[key],
+      );
+      if (changed) applyThemeSettings(stored, false);
+    });
+  }
+  return storedThemeRef || ref(null);
+}
+
+// 直接操作 <html> style 避免创建额外的 <style> DOM 节点
+function applyRootFontSize() {
+  if (!import.meta.client) return;
+  document.documentElement.style.fontSize = `${settings.fontSize}px`;
+}
 
 function isPrimaryColor(v: string): v is PrimaryColor {
   return (primaryColors as readonly string[]).includes(v);
@@ -71,6 +120,10 @@ function isRadiusValue(v: number): v is RadiusValue {
 
 function isColorModeValue(v: string): v is ColorModeValue {
   return (colorModes as readonly string[]).includes(v);
+}
+
+function isFontSizeValue(v: number): v is FontSizeValue {
+  return (fontSizes as readonly number[]).includes(v);
 }
 
 function applyPrimaryOverride(colorMode: ReturnType<typeof useColorMode>) {
@@ -105,9 +158,10 @@ export function applyThemeSettings(
   if (patch.colorMode && isColorModeValue(patch.colorMode)) {
     settings.colorMode = patch.colorMode;
   }
+  if (typeof patch.fontSize === "number" && isFontSizeValue(patch.fontSize)) {
+    settings.fontSize = patch.fontSize;
+  }
 
-  // Primary color: "black" is not a valid Tailwind scale color in Nuxt UI,
-  // so we fall back to "neutral" and override --ui-primary manually.
   appConfig.ui.colors.primary =
     settings.primary === "black" ? "neutral" : settings.primary;
   appConfig.ui.colors.neutral = settings.neutral;
@@ -118,39 +172,47 @@ export function applyThemeSettings(
       "--ui-radius",
       `${settings.radius}rem`,
     );
+    applyRootFontSize();
   }
 
   applyPrimaryOverride(colorMode);
   colorMode.preference = settings.colorMode;
 
   if (persist && import.meta.client) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...settings }));
+    getStoredTheme().value = { ...settings };
   }
 }
 
 export function loadThemeSettings() {
   if (!import.meta.client) return;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as Partial<ThemeSettings>;
-    applyThemeSettings(parsed, false);
-  } catch {
-    // ignore corrupted storage
-  }
+  const stored = getStoredTheme().value;
+  if (!stored || typeof stored !== "object") return;
+  applyThemeSettings(stored, false);
 }
 
 export function resetThemeSettings() {
-  applyThemeSettings({ ...defaults }, true);
+  applyThemeSettings(
+    {
+      primary: defaults.primary,
+      neutral: defaults.neutral,
+      radius: defaults.radius,
+      fontSize: defaults.fontSize,
+    },
+    true,
+  );
 }
 
 export function useThemeConfig() {
   const colorMode = useColorMode();
 
-  watch(
-    () => colorMode.value,
-    () => applyPrimaryOverride(colorMode),
-  );
+  // 单例监听，防止在多个组件重复调用 useThemeConfig 时重复绑定 watch
+  if (import.meta.client && !isColorModeWatched) {
+    isColorModeWatched = true;
+    watch(
+      () => colorMode.value,
+      () => applyPrimaryOverride(colorMode),
+    );
+  }
 
   return {
     settings: readonly(settings),
@@ -158,8 +220,16 @@ export function useThemeConfig() {
     neutralColors,
     radiusValues,
     colorModes,
+    fontSizes,
     apply: applyThemeSettings,
     load: loadThemeSettings,
     reset: resetThemeSettings,
+    isDefaultTheme: computed(
+      () =>
+        settings.primary === defaults.primary &&
+        settings.neutral === defaults.neutral &&
+        settings.radius === defaults.radius &&
+        settings.fontSize === defaults.fontSize,
+    ),
   };
 }

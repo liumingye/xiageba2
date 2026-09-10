@@ -677,17 +677,16 @@ const importSources = async () => {
       </template>
       <template #footer>
         <div class="flex gap-4">
-          <UButton block color="neutral" variant="soft" @click="closeAddModal">
+          <UButton color="neutral" variant="soft" @click="closeAddModal">
             取消
           </UButton>
           <UButton
-            block
             color="primary"
             :loading="addSourceing"
             :disabled="addSourceing"
             @click="addSource"
           >
-            添加
+            {{ addSourceing ? "添加中..." : "添加" }}
           </UButton>
         </div>
       </template>
@@ -796,10 +795,17 @@ const importSources = async () => {
       </template>
       <template #footer>
         <div class="flex gap-4">
-          <UButton block color="neutral" variant="soft" @click="closeEditModal">
+          <UButton color="neutral" variant="soft" @click="closeEditModal">
             取消
           </UButton>
-          <UButton block color="primary" @click="saveEdit">保存</UButton>
+          <UButton
+            color="primary"
+            :loading="saveEditing"
+            :disabled="saveEditing"
+            @click="saveEdit"
+          >
+            {{ saveEditing ? "保存中..." : "保存" }}
+          </UButton>
         </div>
       </template>
     </UModal>
@@ -879,16 +885,10 @@ const importSources = async () => {
       </template>
       <template #footer>
         <div class="flex gap-4">
-          <UButton
-            block
-            color="neutral"
-            variant="soft"
-            @click="closeImportModal"
-          >
+          <UButton color="neutral" variant="soft" @click="closeImportModal">
             取消
           </UButton>
           <UButton
-            block
             color="primary"
             :loading="importing"
             :disabled="importing || !importFile"

@@ -506,8 +506,7 @@ async function transferBaidu(
       try {
         return await fn();
       } catch (err: any) {
-        const info =
-          typeof err?.info === "function" ? err.info() : undefined;
+        const info = typeof err?.info === "function" ? err.info() : undefined;
 
         // code 4: 请求超时，请稍后再试
 
@@ -752,11 +751,7 @@ export async function transferShareUrl(
         })
         .catch(() => {});
     }
-    return {
-      url: sourceUrl,
-      transferred: false,
-      error: e.message || "转存失败",
-    };
+    throw new Error(e.message || "转存失败");
   }
 
   // 异步落库

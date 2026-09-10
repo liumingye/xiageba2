@@ -162,7 +162,8 @@ defineExpose({
       <div class="mt-8 flex items-center justify-center">
         <div class="flex flex-1 items-center gap-1.5">
           <ClientOnly>
-            <UButton
+            <UTooltip
+              ignoreNonKeyboardFocus
               v-for="item in [
                 {
                   type: 'resource',
@@ -181,20 +182,23 @@ defineExpose({
                 },
               ]"
               :key="item.type"
-              color="neutral"
-              variant="soft"
-              :ui="{ base: 'rounded-full' }"
-              square
-              size="lg"
-              :active="searchType === item.type"
-              active-color="primary"
-              active-variant="solid"
-              :title="item.title"
-              :aria-label="item.title"
-              @click="searchType = item.type"
+              :text="item.title"
             >
-              <component :is="item.icon" class="w-5 h-5" />
-            </UButton>
+              <UButton
+                color="neutral"
+                variant="soft"
+                :ui="{ base: 'rounded-full' }"
+                square
+                size="lg"
+                :active="searchType === item.type"
+                active-color="primary"
+                active-variant="solid"
+                :aria-label="item.title"
+                @click="searchType = item.type"
+              >
+                <component :is="item.icon" class="w-5 h-5" />
+              </UButton>
+            </UTooltip>
             <template #fallback>
               <USkeleton
                 v-for="n in 3"
@@ -213,7 +217,7 @@ defineExpose({
             square
             size="lg"
             :ui="{ base: 'rounded-full' }"
-            :aria-label="'清除'"
+            aria-label="清除"
             @click="clearInput"
           >
             <X class="w-5 h-5" />
@@ -226,7 +230,7 @@ defineExpose({
             :ui="{
               base: 'rounded-full shadow-md shadow-primary-500/30 cursor-pointer',
             }"
-            :aria-label="'搜索'"
+            aria-label="搜索"
             @click.stop="handleSearch()"
           >
             <Search class="w-5 h-5" />

@@ -277,9 +277,9 @@ const handleCopyUrl = async () => {
     <!-- 加载 -->
     <div v-if="loading" class="text-center py-8">
       <div
-        class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+        class="size-10 border-4 border-primary-500/20 border-t-primary rounded-full animate-spin mx-auto mb-3"
       />
-      <p class="text-color-400 text-sm">
+      <p class="text-muted text-sm">
         {{ displayFunnyText || "加载中..." }}
         <br />请耐心等待，这可能需要几秒钟
       </p>

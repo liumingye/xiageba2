@@ -191,19 +191,19 @@ const closeModal = () => {
 
 <template>
   <div v-if="category" class="mb-6">
-    <h1 class="text-2xl font-bold mb-2 text-color-300">
+    <h1 class="text-2xl font-bold mb-2">
       {{ category.name }}
     </h1>
-    <p class="text-color-400 text-sm">共 {{ data?.total || 0 }} 个资源</p>
+    <p class="text-muted text-sm">共 {{ data?.total || 0 }} 个资源</p>
   </div>
 
   <div v-if="pending" class="text-center py-12" aria-busy="true">
     <Loader2 class="w-8 h-8 text-primary-400 animate-spin mx-auto" />
-    <p class="text-color-400 mt-3">加载中...</p>
+    <p class="text-muted mt-3">加载中...</p>
   </div>
 
   <div v-else-if="!items || items.length === 0" class="text-center py-12">
-    <p class="text-color-300">暂无资源</p>
+    <p class="text-muted">暂无资源</p>
   </div>
 
   <div v-else class="space-y-3">
@@ -223,8 +223,6 @@ const closeModal = () => {
     @change="goToPage"
   />
 
-  <Qrcode />
-
   <DownloadLinkPanel
     v-model:open="showModal"
     :title="modalTitle"
@@ -236,7 +234,7 @@ const closeModal = () => {
 
   <UModal v-model:open="showTreeModal">
     <template #title>
-      目录结构<span class="text-xs text-color-500"
+      目录结构<span class="text-xs text-muted"
         >（最多显示5层、150个文件）</span
       >
     </template>

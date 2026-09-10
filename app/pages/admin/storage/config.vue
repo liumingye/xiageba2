@@ -388,11 +388,10 @@ const deleteConfig = async (id: string) => {
 
       <template #footer>
         <div class="flex gap-4">
-          <UButton block color="neutral" variant="soft" @click="closeModal">
+          <UButton color="neutral" variant="soft" @click="closeModal">
             取消
           </UButton>
           <UButton
-            block
             color="primary"
             :loading="saving"
             :disabled="saving"

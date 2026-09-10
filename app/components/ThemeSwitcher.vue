@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Check, HelpCircle, Monitor, Moon, Palette, Sun } from "@lucide/vue";
-import type {
-  ColorModeValue,
-  NeutralColor,
-  PrimaryColor,
-  RadiusValue,
+import { Monitor, Moon, Palette, Sun } from "@lucide/vue";
+import {
+  type ColorModeValue,
+  type FontSizeValue,
+  type NeutralColor,
+  type PrimaryColor,
+  type RadiusValue,
 } from "~/composables/useThemeConfig";
 
 const {
@@ -13,7 +14,10 @@ const {
   neutralColors,
   radiusValues,
   colorModes,
+  fontSizes,
   apply,
+  reset,
+  isDefaultTheme,
 } = useThemeConfig();
 
 const colorModeIcons: Record<ColorModeValue, typeof Sun> = {
@@ -23,9 +27,17 @@ const colorModeIcons: Record<ColorModeValue, typeof Sun> = {
 };
 
 const colorModeLabels: Record<ColorModeValue, string> = {
-  light: "Light",
-  dark: "Dark",
-  system: "System",
+  light: "浅色",
+  dark: "深色",
+  system: "系统",
+};
+
+const fontSizeLabels: Record<FontSizeValue, string> = {
+  15: "小",
+  16: "默认",
+  17: "中",
+  18: "大",
+  20: "特大",
 };
 
 function selectPrimary(value: PrimaryColor) {
@@ -43,6 +55,22 @@ function selectRadius(value: RadiusValue) {
 function selectColorMode(value: ColorModeValue) {
   apply({ colorMode: value });
 }
+
+function selectFontSize(value: FontSizeValue) {
+  apply({ fontSize: value });
+}
+
+function pickRandom<T>(list: readonly T[]): T {
+  return list[Math.floor(Math.random() * list.length)]!;
+}
+
+function randomTheme() {
+  apply({
+    primary: pickRandom(primaryColors),
+    neutral: pickRandom(neutralColors),
+    radius: pickRandom(radiusValues),
+  });
+}
 </script>
 
 <template>
@@ -50,36 +78,50 @@ function selectColorMode(value: ColorModeValue) {
     modal
     :content="{
       side: 'bottom',
-      align: 'end',
       sideOffset: 8,
       collisionPadding: 8,
     }"
-    :ui="{ content: 'p-4 w-[320px] max-h-[70vh] overflow-y-auto' }"
+    :ui="{ content: 'p-4 max-h-[70vh] overflow-y-auto w-full' }"
   >
-    <UButton
-      color="neutral"
-      variant="ghost"
-      square
-      aria-label="主题设置"
-      title="主题设置"
-    >
-      <Palette class="h-5 w-5" />
-    </UButton>
+    <UTooltip ignoreNonKeyboardFocus text="主题设置">
+      <UButton color="neutral" variant="ghost" square aria-label="主题设置">
+        <Palette class="h-5 w-5" />
+      </UButton>
+    </UTooltip>
 
     <template #content="{ close }">
       <div class="space-y-6">
         <!-- Color Mode -->
         <section>
-          <div
-            class="flex items-center gap-1.5 mb-3 text-sm font-medium justify-between"
-          >
-            <span>主题模式</span>
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-lucide-x"
-              @click="close"
-            />
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium">主题模式</span>
+            <div class="flex items-center gap-1">
+              <UButton
+                v-if="!isDefaultTheme"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-rotate-ccw"
+                aria-label="恢复默认"
+                title="恢复默认"
+                @click="reset"
+              />
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-dices"
+                aria-label="随机主题"
+                title="随机主题"
+                @click="randomTheme"
+              />
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-x"
+                aria-label="关闭"
+                title="关闭"
+                @click="close"
+              />
+            </div>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <UButton
@@ -137,10 +179,6 @@ function selectColorMode(value: ColorModeValue) {
                 />
                 <span class="capitalize">{{ color }}</span>
               </span>
-              <Check
-                v-if="settings.primary === color"
-                class="w-3.5 h-3.5 ml-auto text-primary-500"
-              />
             </UButton>
           </div>
         </section>
@@ -174,10 +212,30 @@ function selectColorMode(value: ColorModeValue) {
                 />
                 <span class="capitalize">{{ color }}</span>
               </span>
-              <Check
-                v-if="settings.neutral === color"
-                class="w-3.5 h-3.5 ml-auto text-primary-500"
-              />
+            </UButton>
+          </div>
+        </section>
+
+        <!-- Font Size -->
+        <section>
+          <div class="flex items-center gap-1.5 mb-3 text-sm font-medium">
+            <span>文字大小</span>
+          </div>
+          <div class="grid grid-cols-5 gap-2">
+            <UButton
+              v-for="value in fontSizes"
+              :key="value"
+              type="button"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              block
+              :class="{
+                'ring-2 ring-primary-500': settings.fontSize === value,
+              }"
+              @click="selectFontSize(value)"
+            >
+              <span>{{ fontSizeLabels[value] }}</span>
             </UButton>
           </div>
         </section>

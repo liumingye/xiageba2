@@ -3,8 +3,63 @@
 
 @theme {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, Helvetica Neue, Helvetica, Arial,
-    PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
+}
+
+/* 恢复手势光标 */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@theme static {
+  --color-amber-400: oklch(82.8% 0.189 84.429);
+  --color-amber-500: oklch(76.9% 0.188 70.08);
+  --color-lime-400: oklch(84.1% 0.238 128.85);
+  --color-lime-500: oklch(76.8% 0.233 130.85);
+  --color-emerald-400: oklch(76.5% 0.177 163.223);
+  --color-emerald-500: oklch(69.6% 0.17 162.48);
+  --color-teal-400: oklch(77.7% 0.152 181.912);
+  --color-teal-500: oklch(70.4% 0.14 182.503);
+  --color-cyan-400: oklch(78.9% 0.154 211.53);
+  --color-cyan-500: oklch(71.5% 0.143 215.221);
+  --color-sky-400: oklch(74.6% 0.16 232.661);
+  --color-sky-500: oklch(68.5% 0.169 237.323);
+  --color-indigo-400: oklch(67.3% 0.182 276.935);
+  --color-indigo-500: oklch(58.5% 0.233 277.117);
+  --color-violet-400: oklch(70.2% 0.183 293.541);
+  --color-violet-500: oklch(60.6% 0.25 292.717);
+  --color-purple-400: oklch(71.4% 0.203 305.504);
+  --color-purple-500: oklch(62.7% 0.265 303.9);
+  --color-fuchsia-400: oklch(74% 0.238 322.16);
+  --color-fuchsia-500: oklch(66.7% 0.295 322.15);
+  --color-pink-400: oklch(71.8% 0.202 349.761);
+  --color-pink-500: oklch(65.6% 0.241 354.308);
+  --color-rose-400: oklch(71.2% 0.194 13.428);
+  --color-rose-500: oklch(64.5% 0.246 16.439);
+  --color-slate-400: oklch(70.4% 0.04 256.788);
+  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-neutral-400: var(--ui-color-neutral-400);
+  --color-neutral-500: var(--ui-color-neutral-500);
+  --color-stone-400: oklch(70.9% 0.01 56.259);
+  --color-stone-500: oklch(55.3% 0.013 58.071);
+  --color-mauve-400: oklch(71.1% 0.019 323.02);
+  --color-mauve-500: oklch(54.2% 0.034 322.5);
+  --color-olive-400: oklch(73.7% 0.021 106.9);
+  --color-olive-500: oklch(58% 0.031 107.3);
+  --color-mist-400: oklch(72.3% 0.014 214.4);
+  --color-mist-500: oklch(56% 0.021 213.5);
+  --color-taupe-400: oklch(71.4% 0.014 41.2);
+  --color-taupe-500: oklch(54.7% 0.021 43.1);
+  --color-gray-400: oklch(70.7% 0.022 261.325);
+  --color-gray-500: oklch(55.1% 0.027 264.364);
+  --color-orange-400: oklch(75% 0.183 55.934);
+  --color-orange-500: oklch(70.5% 0.213 47.604);
 }
 
 /** @Deprecated */
@@ -72,51 +127,7 @@
 
 :root {
   --ui-bg-accented: var(--ui-color-neutral-300);
-
   --ui-header-height: 56px;
-
-  --color-amber-400: oklch(82.8% 0.189 84.429);
-  --color-amber-500: oklch(76.9% 0.188 70.08);
-  --color-lime-400: oklch(84.1% 0.238 128.85);
-  --color-lime-500: oklch(76.8% 0.233 130.85);
-  --color-emerald-400: oklch(76.5% 0.177 163.223);
-  --color-emerald-500: oklch(69.6% 0.17 162.48);
-  --color-teal-400: oklch(77.7% 0.152 181.912);
-  --color-teal-500: oklch(70.4% 0.14 182.503);
-  --color-cyan-400: oklch(78.9% 0.154 211.53);
-  --color-cyan-500: oklch(71.5% 0.143 215.221);
-  --color-sky-400: oklch(74.6% 0.16 232.661);
-  --color-sky-500: oklch(68.5% 0.169 237.323);
-  --color-indigo-400: oklch(67.3% 0.182 276.935);
-  --color-indigo-500: oklch(58.5% 0.233 277.117);
-  --color-violet-400: oklch(70.2% 0.183 293.541);
-  --color-violet-500: oklch(60.6% 0.25 292.717);
-  --color-purple-400: oklch(71.4% 0.203 305.504);
-  --color-purple-500: oklch(62.7% 0.265 303.9);
-  --color-fuchsia-400: oklch(74% 0.238 322.16);
-  --color-fuchsia-500: oklch(66.7% 0.295 322.15);
-  --color-pink-400: oklch(71.8% 0.202 349.761);
-  --color-pink-500: oklch(65.6% 0.241 354.308);
-  --color-rose-400: oklch(71.2% 0.194 13.428);
-  --color-rose-500: oklch(64.5% 0.246 16.439);
-  --color-slate-400: oklch(70.4% 0.04 256.788);
-  --color-slate-500: oklch(55.4% 0.046 257.417);
-  --color-neutral-400: var(--ui-color-neutral-400);
-  --color-neutral-500: var(--ui-color-neutral-500);
-  --color-stone-400: oklch(70.9% 0.01 56.259);
-  --color-stone-500: oklch(55.3% 0.013 58.071);
-  --color-mauve-400: oklch(71.1% 0.019 323.02);
-  --color-mauve-500: oklch(54.2% 0.034 322.5);
-  --color-olive-400: oklch(73.7% 0.021 106.9);
-  --color-olive-500: oklch(58% 0.031 107.3);
-  --color-mist-400: oklch(72.3% 0.014 214.4);
-  --color-mist-500: oklch(56% 0.021 213.5);
-  --color-taupe-400: oklch(71.4% 0.014 41.2);
-  --color-taupe-500: oklch(54.7% 0.021 43.1);
-  --color-gray-400: oklch(70.7% 0.022 261.325);
-  --color-gray-500: oklch(55.1% 0.027 264.364);
-  --color-orange-400: oklch(75% 0.183 55.934);
-  --color-orange-500: oklch(70.5% 0.213 47.604);
 }
 
 .dark {

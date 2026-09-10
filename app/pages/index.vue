@@ -4,12 +4,8 @@ import {
   Music as MusicIcon,
   ArrowRight,
   TrashIcon,
-  FolderKanban,
   Folder,
-  Flame,
-  History,
   CircleCheck,
-  Search,
 } from "@lucide/vue";
 import SearchBarBig from "~/components/SearchBarBig.vue";
 import { useMounted, useResizeObserver } from "@vueuse/core";
@@ -372,15 +368,9 @@ const getPic = (url: string) => {
       <div class="max-md:hidden font-bold text-2xl md:text-3xl">
         找网盘资源，<span class="slogan">全盘搜</span>帮你搞定
       </div>
-      <div class="md:hidden flex items-center justify-center gap-3">
-        <div
-          class="w-12 h-12 bg-linear-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white"
-          aria-hidden="true"
-        >
-          <Search />
-        </div>
-        <h1 class="text-4xl font-bold">全盘搜</h1>
-      </div>
+      <h1 class="text-4xl font-bold md:hidden">
+        <span class="slogan">全盘搜</span>
+      </h1>
     </div>
     <SearchBarBig ref="searchBarRef" />
     <div class="text-sm text-muted justify-center gap-4 hidden md:flex">
@@ -447,7 +437,7 @@ const getPic = (url: string) => {
             </button>
             <span
               v-if="sectionOverflowing"
-              class="border-l border-color-300 h-4 mt-2"
+              class="border-l border-muted h-4 mt-2"
             ></span>
           </template>
           <button
@@ -566,13 +556,19 @@ const getPic = (url: string) => {
                 class="flex items-center gap-1 md:gap-1.5 min-w-0"
               >
                 <MusicIcon class="w-3 h-3 text-primary-400 shrink-0" />
-                <NuxtLink
-                  :to="`/music/${music.id}`"
-                  class="link"
-                  :title="music.title + ' - ' + music.artist"
+                <UTooltip
+                  ignoreNonKeyboardFocus
+                  disableHoverableContent
+                  :text="music.title + ' - ' + music.artist"
                 >
-                  {{ music.title }} - {{ music.artist }}
-                </NuxtLink>
+                  <NuxtLink
+                    :to="`/music/${music.id}`"
+                    class="link"
+                    :aria-label="music.title + ' - ' + music.artist"
+                  >
+                    {{ music.title }} - {{ music.artist }}
+                  </NuxtLink>
+                </UTooltip>
               </li>
             </ul>
           </UCard>
@@ -636,13 +632,19 @@ const getPic = (url: string) => {
                   v-if="item.type !== 'other'"
                   :class="`icon-${item.type} w-3 h-3`"
                 ></div>
-                <NuxtLink
-                  :to="`/source/${item.id}`"
-                  class="link"
-                  :title="item.title"
+                <UTooltip
+                  ignoreNonKeyboardFocus
+                  disableHoverableContent
+                  :text="item.title"
                 >
-                  {{ item.title }}
-                </NuxtLink>
+                  <NuxtLink
+                    :to="`/source/${item.id}`"
+                    class="link"
+                    :aria-label="item.title"
+                  >
+                    {{ item.title }}
+                  </NuxtLink>
+                </UTooltip>
               </li>
             </ul>
 
@@ -663,7 +665,7 @@ const getPic = (url: string) => {
         <div class="space-y-3 mb-4">
           <div class="flex items-center gap-3">
             <div
-              class="text-sm text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
+              class="text-sm text-muted whitespace-nowrap shrink-0 flex items-center h-8"
             >
               分类
             </div>
@@ -701,7 +703,7 @@ const getPic = (url: string) => {
             class="flex items-center gap-3"
           >
             <div
-              class="text-sm text-color-400 whitespace-nowrap shrink-0 flex items-center h-8"
+              class="text-sm text-muted whitespace-nowrap shrink-0 flex items-center h-8"
             >
               {{ filter.name }}
             </div>
@@ -755,7 +757,7 @@ const getPic = (url: string) => {
         </div>
 
         <div v-else-if="doubanList.length === 0" class="text-center py-12">
-          <p class="text-color-400">暂无豆瓣推荐数据</p>
+          <p class="text-muted">暂无豆瓣推荐数据</p>
         </div>
 
         <div
@@ -791,7 +793,7 @@ const getPic = (url: string) => {
               </div>
             </div>
             <div class="p-2 absolute bottom-0 left-0 right-0 text-white">
-              <h3 class="font-medium text-sm truncate">
+              <h3 class="font-medium text-sm truncate" :title="item.vod_name">
                 {{ item.vod_name }}
               </h3>
               <p
@@ -806,7 +808,7 @@ const getPic = (url: string) => {
 
         <div
           v-if="doubanLoading && doubanPage > 1"
-          class="text-center py-4 text-sm text-color-400"
+          class="text-center py-4 text-sm text-muted"
           aria-busy="true"
         >
           加载中...
@@ -816,14 +818,12 @@ const getPic = (url: string) => {
           v-if="doubanList.length > 0 && doubanPage < doubanPageCount"
           @infinite-load="loadMoreDouban"
         />
-        <div v-else class="text-center py-4 text-sm text-color-400">
+        <div v-else class="text-center py-4 text-sm text-muted">
           — 已经到底了 —
         </div>
       </template>
     </UTabs>
   </section>
-
-  <Qrcode />
 </template>
 
 <style scoped>

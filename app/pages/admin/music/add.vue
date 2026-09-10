@@ -82,7 +82,9 @@ const handleScrapeSelect = (data: any) => {
   showScrapeModal.value = false;
 };
 
+const addMusicing = ref(false);
 const handleSubmit = async () => {
+  if (addMusicing.value) return;
   if (!form.value.title.trim() || !form.value.artist.trim()) {
     error.value = "歌名和歌手不能为空";
     return;
@@ -92,6 +94,7 @@ const handleSubmit = async () => {
     (d) => d.quality.trim() && d.url.trim(),
   );
 
+  addMusicing.value = true;
   try {
     await post("/api/admin/music", {
       ...form.value,
@@ -100,6 +103,8 @@ const handleSubmit = async () => {
     router.push("/admin");
   } catch (err: any) {
     error.value = err?.response?.data?.message || "保存失败";
+  } finally {
+    addMusicing.value = false;
   }
 };
 </script>
@@ -141,8 +146,14 @@ const handleSubmit = async () => {
           刮削
         </UButton>
 
-        <UButton color="primary" icon="i-lucide-save" @click="handleSubmit">
-          保存
+        <UButton
+          color="primary"
+          icon="i-lucide-save"
+          :loading="addMusicing"
+          :disabled="addMusicing"
+          @click="handleSubmit"
+        >
+          {{ addMusicing ? "保存中..." : "保存" }}
         </UButton>
       </div>
 

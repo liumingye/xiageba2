@@ -398,8 +398,6 @@ useSeoMeta({
     </div>
   </main>
 
-  <Qrcode />
-
   <!-- 试读弹窗 -->
   <SampleReadModal
     v-model="showSampleReadModal"

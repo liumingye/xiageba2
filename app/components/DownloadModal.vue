@@ -1,16 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import {
-  useClipboard,
-  useTimeoutFn,
-  useMediaQuery,
-  useVModels,
-  useMounted,
-} from "@vueuse/core";
-import { Download, QrCode, Copy, Check } from "@lucide/vue";
+import { useClipboard, useTimeoutFn, useVModels } from "@vueuse/core";
+import { QrCode, Copy, Check } from "@lucide/vue";
 import type { Music, DownloadOption } from "~/stores/music";
 import FeedbackModal from "~/components/FeedbackModal.vue";
-import { extractPwd, isMobileOrTablet } from "~/utils";
+import { extractPwd } from "~/utils";
 
 const props = defineProps<{
   show: boolean;
@@ -27,15 +21,6 @@ const emit = defineEmits<{
 const showFeedbackModal = ref(false);
 const qrCodeUrl = ref("");
 
-const isMounted = useMounted();
-
-const isMobile = useMediaQuery("(max-width: 1366px)");
-// UA匹配 && 宽度1366px以下
-const isMobileTablet = computed(() => {
-  if (!isMounted.value) return false;
-  return isMobileOrTablet() && isMobile.value;
-});
-
 const { selectedDownload, music, show } = useVModels(props, emit, {
   passive: true,
 });
@@ -45,38 +30,12 @@ const selectedPwd = computed(() => {
   return extractPwd(selectedDownload.value.url);
 });
 
-const pwdList = computed(() => {
-  if (!props.music?.downloads) return [];
-  return props.music.downloads
-    .filter((d) => d.url && extractPwd(d.url))
-    .map((d) => ({
-      quality: d.quality,
-      pwd: extractPwd(d.url),
-      url: d.url,
-    }));
-});
-
 const { copy } = useClipboard();
-const copiedIndex = ref<number | null>(null);
 const copiedCode = ref(false);
-
-const resetCopiedIndex = useTimeoutFn(() => {
-  copiedIndex.value = null;
-}, 2000);
 
 const resetCopiedCode = useTimeoutFn(() => {
   copiedCode.value = false;
 }, 2000);
-
-const copyPwdByIndex = async (index: number, pwd: string) => {
-  try {
-    await copy(pwd);
-    copiedIndex.value = index;
-    resetCopiedIndex.start();
-  } catch {
-    // 复制失败静默处理
-  }
-};
 
 const cleanUrl = (url: string): string => {
   try {
@@ -119,11 +78,9 @@ watch(
       if (!selectedDownload.value && props.music.downloads[0]) {
         selectedDownload.value = props.music.downloads[0];
       }
-      // 非移动端时，默认生成二维码
-      if (!isMobileTablet.value) {
-        if (!selectedDownload.value?.url) return;
-        await generateQrCode(selectedDownload.value.url);
-      }
+      // 生成二维码
+      if (!selectedDownload.value?.url) return;
+      await generateQrCode(selectedDownload.value.url);
     } else {
       // qrCodeUrl.value = "";
     }
@@ -149,76 +106,7 @@ const openFeedbackModal = () => {
       <!-- 有下载链接 -->
       <div v-if="music?.downloads?.length" class="space-y-4">
         <p class="text-center">选择音质</p>
-
-        <!-- 手机或平板 -->
-        <div v-if="isMobileTablet" class="space-y-3">
-          <div class="flex justify-center gap-2">
-            <UButton
-              v-for="download in music.downloads"
-              :key="download.quality"
-              :to="download.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              color="primary"
-              variant="soft"
-              class="flex-1 h-24"
-              :label="download.quality"
-              @click="selectedDownload = download"
-              :ui="{
-                base: 'flex-col justify-center',
-              }"
-            >
-              <template #leading>
-                <Download class="w-5 h-5 text-primary-500" />
-              </template>
-            </UButton>
-          </div>
-
-          <div
-            v-if="pwdList.length"
-            class="space-y-2 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 p-3 text-sm"
-          >
-            <p class="text-center mb-2 text-zinc-500 dark:text-zinc-400">
-              提取码
-            </p>
-            <div
-              v-for="(item, index) in pwdList"
-              :key="index"
-              class="flex items-center justify-between gap-2"
-            >
-              <span class="shrink-0">{{ item.quality }}</span>
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="font-mono font-medium truncate">{{
-                  item.pwd
-                }}</span>
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  square
-                  size="xs"
-                  title="复制提取码"
-                  :ui="{
-                    base: 'text-zinc-400 hover:text-primary-600',
-                  }"
-                  @click="copyPwdByIndex(index, item.pwd)"
-                >
-                  <Check
-                    v-if="copiedIndex === index"
-                    class="h-4 w-4 text-green-500"
-                  />
-                  <Copy v-else class="h-4 w-4" />
-                </UButton>
-              </div>
-            </div>
-          </div>
-
-          <p class="text-center text-sm text-zinc-500 dark:text-zinc-400">
-            点击音质按钮开始下载
-          </p>
-        </div>
-
-        <!-- 桌面端 -->
-        <div v-else class="space-y-4">
+        <div class="space-y-4">
           <div class="flex flex-wrap gap-2 justify-center">
             <UButton
               v-for="download in music.downloads"
@@ -247,20 +135,18 @@ const openFeedbackModal = () => {
           </div>
 
           <div class="flex justify-center">
-            <div
-              class="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white p-4"
-            >
+            <div class="rounded-lg border border-muted bg-white p-4">
               <img
                 v-if="qrCodeUrl"
                 :src="qrCodeUrl"
                 alt="下载二维码"
-                class="w-44 h-44 sm:w-48 sm:h-48"
+                class="size-44 sm:size-48"
               />
               <div
                 v-else
-                class="w-44 h-44 sm:w-48 sm:h-48 flex items-center justify-center"
+                class="size-44 sm:size-48 flex items-center justify-center"
               >
-                <QrCode class="w-20 h-20 text-zinc-300 dark:text-zinc-600" />
+                <QrCode class="size-20 text-muted" />
               </div>
             </div>
           </div>
@@ -269,7 +155,7 @@ const openFeedbackModal = () => {
             v-if="selectedPwd"
             class="flex items-center justify-center gap-2 text-sm"
           >
-            <span class="text-zinc-500 dark:text-zinc-400">提取码：</span>
+            <span>提取码：</span>
             <span class="font-mono font-medium">{{ selectedPwd }}</span>
             <UButton
               color="neutral"
@@ -277,13 +163,10 @@ const openFeedbackModal = () => {
               square
               size="xs"
               title="复制提取码"
-              :ui="{
-                base: 'text-zinc-400 hover:text-primary-600',
-              }"
               @click="copyPwd"
             >
-              <Check v-if="copiedCode" class="h-4 w-4 text-green-500" />
-              <Copy v-else class="h-4 w-4" />
+              <Check v-if="copiedCode" class="size-4 text-green-500" />
+              <Copy v-else class="size-4" />
             </UButton>
           </div>
         </div>
@@ -299,7 +182,7 @@ const openFeedbackModal = () => {
             反馈问题
           </UButton>
           <UButton
-            v-if="!isMobileTablet && selectedDownload?.url"
+            v-if="selectedDownload?.url"
             color="neutral"
             class="opacity-50"
             variant="link"
@@ -312,16 +195,13 @@ const openFeedbackModal = () => {
       </div>
 
       <!-- 无下载链接 -->
-      <div v-else class="py-8 text-center text-sm text-zinc-500">
-        暂无下载链接
-      </div>
+      <div v-else class="py-8 text-center text-sm">暂无下载链接</div>
     </template>
   </UModal>
 
   <FeedbackModal
     v-if="music?.id"
-    :show="showFeedbackModal"
+    v-model:show="showFeedbackModal"
     :music-id="music.id"
-    @close="showFeedbackModal = false"
   />
 </template>

@@ -47,7 +47,7 @@ useSeoMeta({
     }"
   >
     <Megaphone class="w-12 h-12 mx-auto text-zinc-600 mb-3" />
-    <p class="text-color-300">公告不存在</p>
+    <p class="text-muted">公告不存在</p>
   </UCard>
 
   <UCard
@@ -88,11 +88,15 @@ useSeoMeta({
     <div>
       <div
         v-if="announcement.content"
-        class="text-sm text-color-300 wrap-break-word leading-relaxed"
+        class="text-sm text-muted wrap-break-word leading-relaxed"
       >
-        <Markdown :value="announcement.content" :plugins="markdownPlugins" />
+        <Markdown
+          :value="announcement.content"
+          :plugins="markdownPlugins"
+          class="*:first:mt-0 *:last:mb-0"
+        />
       </div>
-      <p v-else class="text-sm text-color-300">暂无内容</p>
+      <p v-else class="text-sm text-muted">暂无内容</p>
     </div>
   </UCard>
 </template>

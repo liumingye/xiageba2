@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  Info,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
-  Megaphone,
-  ChevronRight,
-  X,
-} from "@lucide/vue";
+import { Megaphone, ChevronRight, X } from "@lucide/vue";
 import { useIntervalFn, useLocalStorage } from "@vueuse/core";
 import type { Announcement } from "~/utils/announcement";
 
@@ -31,32 +23,39 @@ const dialogList = computed(() =>
   allAnnouncements.value.filter((a) => a.displayType === "DIALOG"),
 );
 
-const iconMap: Record<string, any> = {
-  INFO: Info,
-  WARN: AlertTriangle,
-  ERROR: AlertCircle,
-  SUCCESS: CheckCircle,
-};
-
-const iconColorMap: Record<string, string> = {
-  INFO: "text-blue-400",
-  WARN: "text-yellow-400",
-  ERROR: "text-red-400",
-  SUCCESS: "text-green-400",
-};
-
-const bannerBgMap: Record<string, string> = {
-  INFO: "bg-blue-900 border-blue-700 !text-white",
-  WARN: "bg-yellow-900 border-yellow-700 !text-white",
-  ERROR: "bg-red-900 border-red-700 !text-white",
-  SUCCESS: "bg-green-900 border-green-700 !text-white",
-};
-
-const dialogIconBgMap: Record<string, string> = {
-  INFO: "bg-blue-500/20 text-blue-400",
-  WARN: "bg-yellow-500/20 text-yellow-400",
-  ERROR: "bg-red-500/20 text-red-400",
-  SUCCESS: "bg-green-500/20 text-green-400",
+const map: Record<
+  "INFO" | "WARN" | "ERROR" | "SUCCESS",
+  {
+    color: string;
+    icon: string;
+    alert: "info" | "warning" | "error" | "success";
+    dialog: string;
+  }
+> = {
+  INFO: {
+    color: "text-blue-400",
+    icon: "i-lucide-info",
+    alert: "info",
+    dialog: "bg-blue-500/20 text-blue-400",
+  },
+  WARN: {
+    color: "text-yellow-400",
+    icon: "i-lucide-alert-triangle",
+    alert: "warning",
+    dialog: "bg-yellow-500/20 text-yellow-400",
+  },
+  ERROR: {
+    color: "text-red-400",
+    icon: "i-lucide-x-circle",
+    alert: "error",
+    dialog: "bg-red-500/20 text-red-400",
+  },
+  SUCCESS: {
+    color: "text-green-400",
+    icon: "i-lucide-check-circle",
+    alert: "success",
+    dialog: "bg-green-500/20 text-green-400",
+  },
 };
 
 const currentDialog = ref<Announcement | null>(null);
@@ -129,20 +128,18 @@ watch(normalList, () => {
 
 <template>
   <!-- 横幅公告 -->
-  <div v-if="bannerList.length > 0" class="mb-4 space-y-2">
+  <div v-if="bannerList.length > 0" class="mb-4">
     <NuxtLink
       v-for="item in bannerList"
       :key="item.id"
       :to="`/announcement/${item.id}`"
-      class="flex items-center gap-3 px-2 md:px-4 py-2.5 rounded-xl border transition hover:opacity-90"
-      :class="bannerBgMap[item.icon] || bannerBgMap.INFO"
     >
-      <component
-        :is="iconMap[item.icon] || Megaphone"
-        class="w-5 h-5 shrink-0"
-        :class="iconColorMap[item.icon]"
+      <UAlert
+        class="mb-2"
+        :title="item.title"
+        :icon="map[item.icon].icon"
+        :color="map[item.icon].alert"
       />
-      <span class="text-sm font-medium truncate">{{ item.title }}</span>
     </NuxtLink>
   </div>
 
@@ -163,15 +160,15 @@ watch(normalList, () => {
           :to="`/announcement/${normalList[scrollIndex]?.id}`"
           class="absolute inset-0 flex items-center text-sm text-toned hover:text-primary-500 transition-colors truncate"
         >
-          <component
-            :is="iconMap[normalList[scrollIndex]?.icon || 'INFO'] || Info"
-            class="w-3.5 h-3.5 shrink-0 mr-1.5"
-            :class="iconColorMap[normalList[scrollIndex]?.icon || 'INFO']"
+          <UIcon
+            :name="map[normalList[scrollIndex]?.icon || 'INFO'].icon"
+            class="size-3.5 shrink-0 mr-1.5"
+            :class="map[normalList[scrollIndex]?.icon || 'INFO'].color"
           />
           <span class="truncate">{{ normalList[scrollIndex]?.title }}</span>
           <span
             v-if="normalList[scrollIndex]"
-            class="text-toned text-sm ml-1 shrink-0"
+            class="text-muted text-sm ml-1 shrink-0"
           >
             <NuxtTime :datetime="normalList[scrollIndex]!.createdAt" relative />
           </span>
@@ -216,24 +213,21 @@ watch(normalList, () => {
             @click="closeDialog"
           ></div>
           <div
-            class="modal-content relative bg-color-100 rounded-2xl p-6 max-w-md w-full border border-color-300"
+            class="modal-content relative bg-default rounded-2xl p-6 max-w-md w-full border border-muted"
           >
             <button
-              class="absolute top-4 right-4 p-2 opacity-80 hover:opacity-100 hover:bg-color-300 rounded-lg transition-all"
+              class="absolute top-4 right-4 p-2 opacity-80 hover:opacity-100 hover:bg-muted rounded-lg transition-all"
               @click="closeDialog"
             >
-              <X class="w-5 h-5" />
+              <X class="size-5" />
             </button>
 
             <div class="flex items-start gap-4 mb-4">
               <div
-                class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                :class="dialogIconBgMap[currentDialog.icon]"
+                class="size-12 rounded-xl flex items-center justify-center shrink-0"
+                :class="map[currentDialog.icon].dialog"
               >
-                <component
-                  :is="iconMap[currentDialog.icon] || Megaphone"
-                  class="w-6 h-6"
-                />
+                <UIcon :name="map[currentDialog.icon].icon" class="size-6" />
               </div>
               <div class="flex-1 min-w-0">
                 <h3 class="text-lg font-medium">
@@ -246,26 +240,23 @@ watch(normalList, () => {
             </div>
 
             <div
-              class="text-sm text-color-300 whitespace-pre-wrap max-h-60 overflow-y-auto mb-6 leading-relaxed"
+              class="text-sm whitespace-pre-wrap max-h-60 overflow-y-auto mb-6 leading-relaxed"
             >
               {{ currentDialog.content || "暂无内容" }}
             </div>
 
             <div class="flex flex-col gap-3">
-              <NuxtLink
+              <UButton
+                block
                 :to="`/announcement/${currentDialog.id}`"
-                class="block text-center py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors text-sm"
                 @click="dismissDialogForever"
               >
                 查看详情
-              </NuxtLink>
+              </UButton>
               <div class="flex items-center justify-end">
-                <button
-                  class="text-xs text-color-300 hover:text-primary-500 transition-colors"
-                  @click="dismissDialogForever"
-                >
+                <UButton variant="link" @click="dismissDialogForever">
                   知道了，不再提醒
-                </button>
+                </UButton>
               </div>
             </div>
           </div>

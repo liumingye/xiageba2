@@ -185,7 +185,7 @@ defineExpose({ results, searching, error });
 
 <template>
   <div class="flex items-center gap-2 my-3">
-    <Globe class="w-4 h-4 text-primary-400" />
+    <Globe class="w-4 h-4 text-primary" />
     <h2 class="text-muted text-sm">全网搜</h2>
   </div>
   <template v-if="filteredResults.length !== 0 || searching">
@@ -214,7 +214,7 @@ defineExpose({ results, searching, error });
             >
               <div
                 v-if="item.type !== 'other'"
-                :class="`icon-${item.type} w-4 h-4 mr-1`"
+                :class="`icon-${item.type} size-4 mr-1`"
               ></div>
               {{ getStorageTypeFriendFromFilter(item.type) }}
             </div>
@@ -272,7 +272,7 @@ defineExpose({ results, searching, error });
     </template>
 
     <div v-if="searching" class="card p-6 text-center">
-      <Loader2 class="w-6 h-6 text-primary-400 animate-spin mx-auto mb-2" />
+      <Loader2 class="size-6 text-primary-400 animate-spin mx-auto mb-2" />
       <p class="text-zinc-400 text-sm">正在全网搜索中...</p>
     </div>
 
@@ -286,12 +286,12 @@ defineExpose({ results, searching, error });
   <template v-else>
     <div class="text-center py-20">
       <div
-        class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
+        class="size-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
         aria-hidden="true"
       >
         <CircleSlash />
       </div>
-      <p class="text-zinc-500">全网搜索暂无结果</p>
+      <p class="text-muted">全网搜索暂无结果</p>
     </div>
   </template>
 </template>

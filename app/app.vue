@@ -10,6 +10,7 @@ import {
 } from "@lucide/vue";
 import SearchBar from "~/components/SearchBar.vue";
 import type { NavigationMenuItem } from "@nuxt/ui";
+import { isMobileOrTablet } from "@/utils";
 
 const keepalive = {
   include: ["IndexPage", "SearchPage"], // 指定需要缓存的页面 name
@@ -107,10 +108,16 @@ const disableBack = computed(() => {
   const _path = route.path;
   return window.history.state.back === null;
 });
+
+const isMobile = isMobileOrTablet();
 </script>
 
 <template>
-  <UApp>
+  <UApp
+    :tooltip="{
+      delayDuration: 500,
+    }"
+  >
     <NuxtAnnouncer />
     <NuxtRouteAnnouncer />
     <NuxtLoadingIndicator :height="1" />
@@ -121,44 +128,50 @@ const disableBack = computed(() => {
         :ui="{
           left: 'lg:flex-0',
           right: 'flex-1',
-          container: 'px-2 sm:px-2 lg:px-2',
-          header: 'px-2 sm:px-2 lg:px-2',
+          container: 'px-2 sm:px-2 lg:px-2 gap-1.5',
+          header: 'px-2 sm:px-2 lg:px-2 gap-1.5',
           center: 'hidden md:flex',
           content: 'bottom-auto rounded-b-xl',
           body: 'p-2 sm:p-2',
-          toggle: `md:hidden transition-all shrink-0 me-0 ${
+          toggle: `md:hidden transition-[max-width,opacity,padding] shrink-0 me-0 duration-100 ${
             isSearchFocused
-              ? 'max-sm:max-w-0 max-sm:opacity-0 p-0'
+              ? 'max-sm:max-w-0 max-sm:opacity-0 max-sm:p-0'
               : 'max-sm:max-w-19'
           }`,
         }"
       >
         <template #left>
-          <UButton
-            to="/"
-            color="neutral"
-            variant="ghost"
-            square
-            aria-label="首页"
-            title="首页"
-            :active="route.path === '/'"
-            active-color="primary"
-            active-variant="soft"
-          >
-            <Home class="w-5 h-5" />
-          </UButton>
-          <ClientOnly>
+          <UTooltip ignoreNonKeyboardFocus text="首页">
             <UButton
+              to="/"
               color="neutral"
               variant="ghost"
               square
-              aria-label="返回"
-              title="返回"
-              :disabled="disableBack"
-              @click="$router.back()"
+              aria-label="首页"
+              :active="route.path === '/'"
+              active-color="primary"
+              active-variant="soft"
             >
-              <ArrowLeft class="size-5" />
+              <Home class="w-5 h-5" />
             </UButton>
+          </UTooltip>
+          <ClientOnly>
+            <UTooltip
+              ignoreNonKeyboardFocus
+              :disabled="disableBack"
+              text="返回"
+            >
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                aria-label="返回"
+                :disabled="disableBack"
+                @click="$router.back()"
+              >
+                <ArrowLeft class="size-5" />
+              </UButton>
+            </UTooltip>
             <template #fallback>
               <UButton
                 color="neutral"
@@ -176,9 +189,7 @@ const disableBack = computed(() => {
         <UNavigationMenu :items="menuItems" />
 
         <template #right>
-          <div
-            class="flex items-center gap-1 md:gap-2 flex-1 transition-all sm:max-w-md md:max-w-sm"
-          >
+          <div class="flex items-center gap-1 md:gap-2 flex-1 sm:max-w-md">
             <div class="flex-1">
               <SearchBar
                 ref="searchBarRef"
@@ -188,7 +199,7 @@ const disableBack = computed(() => {
               />
             </div>
             <div
-              class="flex transition-[max-width,opacity] shrink-0"
+              class="flex transition-[max-width,opacity] shrink-0 duration-100"
               :class="[
                 isSearchFocused
                   ? 'max-sm:max-w-0 max-sm:opacity-0'
@@ -264,6 +275,8 @@ const disableBack = computed(() => {
           </ULink>
         </div>
       </UFooter>
+
+      <Qrcode v-if="!isMobile" />
     </template>
 
     <NuxtLayout v-else>

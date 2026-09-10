@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { CheckCircle, MessageSquare, Send } from "@lucide/vue";
+import { CheckCircle, Send } from "@lucide/vue";
 import type { RadioGroupItem } from "@nuxt/ui";
+import { useVModels } from "@vueuse/core";
 
 const props = defineProps<{
   show: boolean;
@@ -9,14 +10,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "close"): void;
+  (e: "update:show", val: boolean): void;
 }>();
 
-const isOpen = computed({
-  get: () => props.show,
-  set: (val) => {
-    if (!val) emit("close");
-  },
+const { show } = useVModels(props, emit, {
+  passive: true,
 });
 
 const feedbackTypes = ref<RadioGroupItem[]>([
@@ -89,15 +87,11 @@ const handleSubmit = async () => {
     isSubmitting.value = false;
   }
 };
-
-const handleClose = () => {
-  emit("close");
-};
 </script>
 
 <template>
-  <UModal v-model:open="isOpen" title="问题反馈" @close="handleClose">
-    <template #body>
+  <UModal v-model:open="show" title="问题反馈">
+    <template #body="{ close }">
       <!-- 提交成功 -->
       <div v-if="submitted" class="text-center py-6">
         <div
@@ -107,7 +101,7 @@ const handleClose = () => {
         </div>
         <h3 class="text-lg font-medium mb-2">反馈已提交</h3>
         <p class="text-muted text-sm mb-6">感谢您的反馈，我们会尽快处理</p>
-        <UButton @click="handleClose"> 关闭 </UButton>
+        <UButton @click="close"> 关闭 </UButton>
       </div>
 
       <!-- 反馈表单 -->
@@ -160,7 +154,7 @@ const handleClose = () => {
         />
 
         <div class="flex justify-end gap-3 pt-1">
-          <UButton color="neutral" variant="soft" @click="handleClose">
+          <UButton color="neutral" variant="soft" @click="close">
             取消
           </UButton>
           <UButton
@@ -171,7 +165,7 @@ const handleClose = () => {
             @click="handleSubmit"
           >
             <template #leading>
-              <Send class="w-4 h-4" />
+              <Send class="size-4" />
             </template>
             {{ isSubmitting ? "提交中..." : "提交反馈" }}
           </UButton>

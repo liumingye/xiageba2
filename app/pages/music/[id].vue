@@ -244,15 +244,15 @@ const isMobileTablet = computed(() => {
         }"
       >
         <div class="flex flex-col sm:flex-row gap-6 items-center">
-          <div class="w-48 h-48 bg-zinc-700 rounded-xl" />
+          <div class="size-48 bg-accented rounded-xl" />
           <div class="flex-1 w-full space-y-3">
-            <div class="h-6 bg-zinc-700 rounded w-3/4 mx-auto sm:mx-0" />
-            <div class="h-4 bg-zinc-700 rounded w-1/2 mx-auto sm:mx-0" />
+            <div class="h-6 bg-accented rounded w-3/4 mx-auto sm:mx-0" />
+            <div class="h-4 bg-elevated rounded w-1/2 mx-auto sm:mx-0" />
             <div
               class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4"
             >
-              <div class="h-10 bg-zinc-700 rounded-lg w-28" />
-              <div class="h-10 bg-zinc-700 rounded-lg w-28" />
+              <div class="h-10 bg-accented rounded-lg w-28" />
+              <div class="h-10 bg-accented rounded-lg w-28" />
             </div>
           </div>
         </div>
@@ -263,9 +263,9 @@ const isMobileTablet = computed(() => {
           body: 'p-6 animate-pulse',
         }"
       >
-        <div class="h-5 bg-zinc-700 rounded w-1/4 mb-4" />
+        <div class="h-5 bg-elevated rounded w-1/4 mb-4" />
         <div class="space-y-2">
-          <div v-for="i in 5" :key="i" class="h-4 bg-zinc-700 rounded w-3/4" />
+          <div v-for="i in 5" :key="i" class="h-4 bg-accented rounded w-3/4" />
         </div>
       </UCard>
     </div>
@@ -287,12 +287,14 @@ const isMobileTablet = computed(() => {
           body: 'p-6',
         }"
       >
-        <div class="flex flex-col sm:flex-row gap-6 items-center">
+        <div
+          class="flex flex-col sm:flex-row gap-6 items-center sm:items-stretch"
+        >
           <div class="relative shrink-0">
             <img
               :src="music.cover || config.app.baseURL + 'img/cover.png'"
               :alt="music.title"
-              class="w-48 h-48 rounded-xl object-cover"
+              class="size-48 rounded-xl object-cover"
               loading="lazy"
               decoding="async"
               @error="
@@ -310,39 +312,56 @@ const isMobileTablet = computed(() => {
               @keydown.enter="togglePlay"
             >
               <div
-                class="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center text-white"
+                class="size-16 bg-primary-500 rounded-full flex items-center justify-center text-white"
               >
-                <Play v-if="!isPlaying" class="w-8 h-8 ml-1" />
-                <Pause v-else class="w-8 h-8" />
+                <Play v-if="!isPlaying" class="size-8 ml-1" />
+                <Pause v-else class="size-8" />
               </div>
             </div>
           </div>
 
           <div
-            class="flex-1 flex flex-col justify-center items-center sm:items-start text-center sm:text-left"
+            class="flex-1 flex flex-col gap-2 justify-center items-center sm:items-start text-center sm:text-left"
           >
-            <h1
-              class="text-2xl sm:text-3xl font-bold mb-2"
-              :title="music.title"
-            >
+            <h1 class="text-2xl sm:text-3xl font-bold" :title="music.title">
               {{ music.title }}
             </h1>
-            <p
-              class="text-muted mb-4"
+            <UButton
+              v-if="music.artist"
+              class="p-0"
+              variant="link"
+              color="neutral"
+              :to="`/search?q=${encodeURIComponent(music.artist)}`"
+              icon="i-lucide-circle-user-round"
+              :ui="{
+                leadingIcon: 'size-5',
+              }"
+              size="xl"
               itemprop="byArtist"
               :title="music.artist"
             >
-              <button
-                class="hover:text-primary-400 transition-colors"
-                @click="
-                  router.push(`/search?q=${encodeURIComponent(music.artist)}`)
-                "
-              >
-                {{ music.artist }}
-              </button>
-            </p>
+              {{ music.artist }}
+            </UButton>
+            <UButton
+              v-if="music.album"
+              class="p-0"
+              variant="link"
+              color="neutral"
+              :to="`/search?q=${encodeURIComponent(music.album)}`"
+              icon="i-lucide-disc"
+              :ui="{
+                leadingIcon: 'size-5',
+              }"
+              size="xl"
+              itemprop="inAlbum"
+              :title="music.album"
+            >
+              {{ music.album }}
+            </UButton>
 
-            <div class="flex flex-wrap gap-3 justify-center sm:justify-start">
+            <div
+              class="flex flex-wrap gap-3 justify-center sm:justify-start mt-auto"
+            >
               <UButton
                 v-if="music.downloads.length === 0"
                 icon="i-lucide-search"
@@ -398,23 +417,6 @@ const isMobileTablet = computed(() => {
       </UCard>
 
       <UCard
-        v-if="music.album"
-        :ui="{
-          body: 'p-4 md:p-6',
-        }"
-        itemscope
-        itemtype="https://schema.org/MusicAlbum"
-      >
-        <div
-          class="text-lg font-medium flex items-center gap-2 text-muted mb-4"
-        >
-          <Disc3 class="w-5 h-5" />
-          <span>所属专辑</span>
-        </div>
-        <p class="text-lg" itemprop="name">{{ music.album }}</p>
-      </UCard>
-
-      <UCard
         :ui="{
           body: 'p-4 md:p-6',
         }"
@@ -424,7 +426,7 @@ const isMobileTablet = computed(() => {
         <div
           class="text-lg font-medium flex items-center gap-2 text-muted mb-4"
         >
-          <MicVocal class="w-5 h-5" />
+          <MicVocal class="size-5" />
           <span>歌词</span>
         </div>
         <div
@@ -451,8 +453,6 @@ const isMobileTablet = computed(() => {
     </div>
   </main>
 
-  <Qrcode />
-
   <ClientOnly>
     <DownloadModal
       v-model:show="showDownloadModal"
@@ -460,10 +460,6 @@ const isMobileTablet = computed(() => {
       v-model:selectedDownload="selectedDownload"
     />
 
-    <FeedbackModal
-      :show="showFeedbackModal"
-      :music-id="music.id"
-      @close="showFeedbackModal = false"
-    />
+    <FeedbackModal v-model:show="showFeedbackModal" :music-id="music.id" />
   </ClientOnly>
 </template>

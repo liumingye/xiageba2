@@ -241,7 +241,7 @@ onMounted(() => {
     >
       <template #header>
         <div class="flex-1 min-w-0">
-          <h1 class="text-xl font-semibold mb-2 line-clamp-2 text-color-300">
+          <h1 class="text-xl font-semibold mb-2 line-clamp-2">
             {{ source.title }}
           </h1>
           <div class="flex items-center gap-3 text-sm text-gray-500">
@@ -265,13 +265,16 @@ onMounted(() => {
         </div>
       </template>
 
-      <div class="text-color-300 wrap-break-word" v-if="source.description">
-        <span class="font-bold text-lg">描述：</span>
-        <Markdown :value="source.description" :plugins="safeMarkdownPlugins" />
+      <div class="wrap-break-word" v-if="source.description">
+        <Markdown
+          :value="source.description"
+          :plugins="safeMarkdownPlugins"
+          class="*:first:mt-0 *:last:mb-0"
+        />
       </div>
 
       <section v-if="source.menu || fetchedMenu">
-        <div class="font-bold text-color-300 mb-3 text-lg">文件内容:</div>
+        <div class="font-bold mb-3">文件内容:</div>
         <pre
           class="bg-elevated p-2 rounded-sm text-xs border border-muted max-h-56 overflow-auto text-color-300"
           >{{ fetchedMenu || source.menu }}</pre
@@ -279,7 +282,7 @@ onMounted(() => {
       </section>
 
       <section v-else-if="!source.menu">
-        <div class="font-bold text-color-300 mb-3 text-lg">文件内容:</div>
+        <div class="font-bold mb-3">文件内容:</div>
         <div
           class="flex flex-col items-center justify-center gap-3 bg-elevated border border-muted rounded-sm p-6 text-center"
         >
@@ -356,9 +359,7 @@ onMounted(() => {
             <UBadge class="shrink-0">{{
               getStorageTypeFriendShortFromFilter(item.type)
             }}</UBadge>
-            <span class="text-color-300 text-sm truncate">{{
-              item.title
-            }}</span>
+            <span class="text-sm truncate">{{ item.title }}</span>
           </NuxtLink>
         </li>
       </ul>
@@ -405,6 +406,4 @@ onMounted(() => {
       返回上一页
     </button>
   </div>
-
-  <Qrcode />
 </template>

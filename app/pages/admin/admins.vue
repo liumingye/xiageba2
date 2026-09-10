@@ -267,10 +267,10 @@ const deleteAdmin = async (id: string) => {
 
       <template #footer>
         <div class="flex gap-4">
-          <UButton block color="neutral" variant="soft" @click="closeAddModal">
+          <UButton color="neutral" variant="soft" @click="closeAddModal">
             取消
           </UButton>
-          <UButton block color="primary" @click="addAdmin">添加</UButton>
+          <UButton color="primary" @click="addAdmin">添加</UButton>
         </div>
       </template>
     </UModal>
@@ -328,10 +328,10 @@ const deleteAdmin = async (id: string) => {
 
       <template #footer>
         <div class="flex gap-4">
-          <UButton block color="neutral" variant="soft" @click="closeEditModal">
+          <UButton color="neutral" variant="soft" @click="closeEditModal">
             取消
           </UButton>
-          <UButton block color="primary" @click="editAdmin">保存</UButton>
+          <UButton color="primary" @click="editAdmin">保存</UButton>
         </div>
       </template>
     </UModal>

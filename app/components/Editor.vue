@@ -331,7 +331,7 @@ const suggestionItems: EditorSuggestionMenuItem[] = [
         <UEditorToolbar
           :editor="editor"
           :items="toolbarItems"
-          class="flex flex-wrap gap-y-0.5 overflow-x-auto border-b border-color-300 px-2 py-1"
+          class="flex flex-wrap gap-y-0.5 overflow-x-auto border-b border-muted px-2 py-1"
         />
 
         <UEditorToolbar

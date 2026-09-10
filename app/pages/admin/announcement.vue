@@ -456,10 +456,10 @@ const deleteAnnouncement = async (id: string) => {
 
       <template #footer>
         <div class="flex gap-4">
-          <UButton block color="neutral" variant="soft" @click="closeAddModal">
+          <UButton color="neutral" variant="soft" @click="closeAddModal">
             取消
           </UButton>
-          <UButton block color="primary" @click="addAnnouncement">添加</UButton>
+          <UButton color="primary" @click="addAnnouncement">添加</UButton>
         </div>
       </template>
     </UModal>
@@ -561,10 +561,10 @@ const deleteAnnouncement = async (id: string) => {
 
       <template #footer>
         <div class="flex gap-4">
-          <UButton block color="neutral" variant="soft" @click="closeEditModal">
+          <UButton color="neutral" variant="soft" @click="closeEditModal">
             取消
           </UButton>
-          <UButton block color="primary" @click="saveEdit">保存</UButton>
+          <UButton color="primary" @click="saveEdit">保存</UButton>
         </div>
       </template>
     </UModal>

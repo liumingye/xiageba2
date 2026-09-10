@@ -638,7 +638,7 @@ watch(
           <template v-if="results.length === 0">
             <div class="text-center py-20">
               <div
-                class="w-20 h-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
+                class="size-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
                 aria-hidden="true"
               >
                 <CircleSlash />
@@ -653,7 +653,7 @@ watch(
         <template v-else>
           <template v-if="searchKeyword">
             <div class="flex items-center gap-2 my-3">
-              <Filter class="w-4 h-4 text-primary-400" />
+              <Filter class="size-4 text-primary" />
               <h2 class="text-muted text-sm">筛选条件</h2>
             </div>
 
@@ -738,7 +738,7 @@ watch(
             "
           >
             <div v-if="currentPage === 1" class="flex items-center gap-2 my-3">
-              <Folder class="w-4 h-4 text-primary-400" />
+              <Folder class="size-4 text-primary" />
               <h2 class="text-muted text-sm">本地资源</h2>
             </div>
             <template v-if="results.length > 0">
@@ -756,7 +756,7 @@ watch(
             <template v-else>
               <div class="text-center py-20">
                 <div
-                  class="w-20 h-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
+                  class="size-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
                   aria-hidden="true"
                 >
                   <CircleSlash />
@@ -787,7 +787,7 @@ watch(
 
       <div v-else class="text-center py-20">
         <div
-          class="w-20 h-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
+          class="size-20 bg-elevated rounded-full flex items-center justify-center mx-auto mb-4"
           aria-hidden="true"
         >
           <CircleSlash />
@@ -796,8 +796,6 @@ watch(
       </div>
     </template>
   </main>
-
-  <Qrcode v-if="!isAi" />
 
   <DownloadLinkPanel
     v-model:open="showModal"
@@ -819,7 +817,7 @@ watch(
       </h4>
       <div v-if="treeModalLoading" class="text-center py-8">
         <div
-          class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+          class="size-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
         />
         <p class="text-muted text-sm">{{ funnyText }}</p>
       </div>

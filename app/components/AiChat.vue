@@ -208,6 +208,7 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
                   :value="msg.content"
                   streaming
                   :plugins="safeMarkdownPlugins"
+                  class="*:first:mt-0 *:last:mb-0"
                 />
               </div>
               <!-- 有内容：渲染 markdown -->

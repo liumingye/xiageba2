@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, Key, LoaderCircle } from "@lucide/vue";
+import { useVModels } from "@vueuse/core";
 
 defineOptions({
   name: "SampleReadModal",
@@ -26,9 +27,8 @@ const emit = defineEmits<{
   (e: "get-code", book: SampleReadBook): void;
 }>();
 
-const visible = computed({
-  get: () => props.modelValue && !!props.book,
-  set: (v: boolean) => emit("update:modelValue", v),
+const { modelValue } = useVModels(props, emit, {
+  passive: true,
 });
 
 const sampleReadContentRef = useTemplateRef("sampleReadContentRef");
@@ -66,13 +66,6 @@ watch(
   },
 );
 
-const close = () => {
-  visible.value = false;
-  chapters.value = [];
-  currentIndex.value = 0;
-  error.value = "";
-};
-
 const scrollToTop = () => {
   nextTick(() => sampleReadContentRef.value?.scrollTo({ top: 0 }));
 };
@@ -98,10 +91,12 @@ const requestGetCode = () => {
 
 <template>
   <UModal
-    v-model:open="visible"
-    :title="book ? `${book.bookName} - 试读` : ''"
-    :ui="{ body: 'p-2 sm:p-4', content: 'max-w-2xl', wrapper: 'mr-8' }"
-    @close="close"
+    v-model:open="modelValue"
+    :title="book ? `${book.bookName} - 试读` : '试读'"
+    :ui="{
+      body: 'p-2 sm:p-4',
+      content: 'max-w-3xl',
+    }"
   >
     <template #body>
       <div class="flex flex-col min-h-0">
