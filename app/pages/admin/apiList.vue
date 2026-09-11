@@ -234,7 +234,7 @@ const testApi = async () => {
     });
     if (data.success) {
       toast.add({
-        title: "测试成功，搜索「凡人」找到 ${data.count} 条结果",
+        title: `测试成功，搜索「凡人」找到 ${data.count} 条结果`,
         icon: "i-lucide-check",
         color: "success",
       });

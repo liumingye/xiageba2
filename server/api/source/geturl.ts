@@ -751,7 +751,8 @@ export async function transferShareUrl(
         })
         .catch(() => {});
     }
-    throw new Error(e.message || "转存失败");
+
+    throw createError({ statusCode: 500, message: e.message || "转存失败" });
   }
 
   // 异步落库

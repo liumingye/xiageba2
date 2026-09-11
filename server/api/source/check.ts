@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     const { ids, urls } = body || {};
 
     // 获取要检测的链接
-    let links: [string, string][] = [];
+    let linksAndId: [string, string][] = [];
 
     if (ids && Array.isArray(ids) && ids.length > 0) {
       // 从数据库查询 URL
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
       });
       for (const s of sources) {
         if (s.url) {
-          links.push([s.url, s.id]);
+          linksAndId.push([s.url, s.id]);
         }
       }
     } else if (urls && Array.isArray(urls) && urls.length > 0) {
@@ -36,28 +36,28 @@ export default defineEventHandler(async (event) => {
       for (const u of urls) {
         const decrypted = await decryptUrl(u);
         if (decrypted) {
-          links.push([decrypted, u]);
+          linksAndId.push([decrypted, u]);
         }
       }
     }
 
-    if (links.length === 0) {
+    if (linksAndId.length === 0) {
       return { success: false, message: "没有有效的链接" };
     }
 
-    if (links.length > 20) {
+    if (linksAndId.length > 20) {
       return { success: false, message: "请求检测链接过多" };
     }
 
     // 提交检测请求，支持指定服务器索引
-    const result = await submitCheckRequest(links.map(([url]) => url));
+    const result = await submitCheckRequest(linksAndId.map(([url]) => url));
     if (!result) {
       return { success: false, message: "提交检测失败或未配置 PanCheck 服务" };
     }
 
     await setRedisCache(
       `pancheck:${result.idx}:${result.data.submission_id}`,
-      links,
+      linksAndId,
       SUBMISSION_CACHE_TTL,
     );
 
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
       success: true,
       submission_id: result.data.submission_id,
       server_index: result.idx,
-      count: links.length,
+      count: linksAndId.length,
     };
   }
 

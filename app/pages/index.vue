@@ -651,7 +651,7 @@ const getPic = (url: string) => {
             <UButton
               variant="link"
               :to="`/categorie/${cat.id}`"
-              class="justify-center mt-1 -mb-3 group"
+              class="justify-center mt-1 sm:-mb-3 group"
             >
               查看更多
               <ArrowRight
