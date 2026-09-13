@@ -85,7 +85,7 @@ function randomTheme() {
   >
     <UTooltip ignoreNonKeyboardFocus text="主题设置">
       <UButton color="neutral" variant="ghost" square aria-label="主题设置">
-        <Palette class="h-5 w-5" />
+        <Palette class="size-5" />
       </UButton>
     </UTooltip>
 
@@ -138,7 +138,7 @@ function randomTheme() {
               @click="selectColorMode(mode)"
             >
               <span class="flex items-center gap-2 flex-1">
-                <component :is="colorModeIcons[mode]" class="w-4 h-4" />
+                <component :is="colorModeIcons[mode]" class="size-4" />
                 <span>{{ colorModeLabels[mode] }}</span>
               </span>
             </UButton>
@@ -166,7 +166,7 @@ function randomTheme() {
             >
               <span class="flex items-center gap-2 flex-1">
                 <span
-                  class="w-3 h-3 rounded-full"
+                  class="size-3 rounded-full"
                   :class="[
                     color === 'black'
                       ? 'bg-black dark:bg-white'
@@ -204,7 +204,7 @@ function randomTheme() {
             >
               <span class="flex items-center gap-2 flex-1">
                 <span
-                  class="w-3 h-3 rounded-full bg-(--color-light) dark:bg-(--color-dark)"
+                  class="size-3 rounded-full bg-(--color-light) dark:bg-(--color-dark)"
                   :style="{
                     '--color-light': `var(--color-${color}-500)`,
                     '--color-dark': `var(--color-${color}-400)`,

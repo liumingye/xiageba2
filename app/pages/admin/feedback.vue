@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useIntervalFn } from "@vueuse/core";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { Loader2 } from "@lucide/vue";
@@ -100,101 +99,15 @@ const goToPage = (page: number) => {
 
 const checkResults = ref<Record<string, any>>({});
 const checkingId = ref<string | null>(null);
-const activePolls = ref<Record<string, string>>({});
-
-const { pause: pausePolling, resume: resumePolling } = useIntervalFn(
-  async () => {
-    for (const [musicId, submissionId] of Object.entries(activePolls.value)) {
-      await pollSubmission(musicId, submissionId);
-    }
-  },
-  3000,
-  { immediate: false },
-);
-
-const stopPolling = (musicId: string) => {
-  if (!(musicId in activePolls.value)) return;
-  delete activePolls.value[musicId];
-  if (Object.keys(activePolls.value).length === 0) {
-    pausePolling();
-  }
-};
-
-const pollSubmission = async (musicId: string, submissionId: string) => {
-  try {
-    const data = await get(
-      `/api/admin/music/check-links/submission/${submissionId}`,
-    );
-
-    const current = checkResults.value[musicId];
-    if (!current) return;
-
-    const downloads = current.downloads as Array<{
-      quality: string;
-      url: string;
-    }>;
-
-    // 规则：valid_links / pending_links 来自上游，
-    // invalid_links = 总链接 - valid - pending（前端始终自己算，不信任服务端）
-    const valid_links: string[] = Array.isArray(data.valid_links)
-      ? data.valid_links
-      : [];
-    const pending_links: string[] = Array.isArray(data.pending_links)
-      ? data.pending_links
-      : [];
-    const validSet = new Set(valid_links);
-    const pendingSet = new Set(pending_links);
-    const invalid_links = downloads
-      .map((d) => d.url)
-      .filter((u) => !validSet.has(u) && !pendingSet.has(u));
-
-    const resultWithDetails = downloads.map((d) => {
-      if (validSet.has(d.url)) return { ...d, status: "valid" };
-      if (pendingSet.has(d.url)) return { ...d, status: "pending" };
-      return { ...d, status: "invalid" };
-    });
-
-    checkResults.value[musicId] = {
-      valid_links,
-      invalid_links,
-      pending_links,
-      downloads: resultWithDetails,
-    };
-
-    // 没有 pending 下载或检测完成时停止轮询
-    if (pending_links.length === 0 || data.status === "checked") {
-      stopPolling(musicId);
-    }
-  } catch {
-    // 忽略轮询错误
-  }
-};
-
-const startPolling = (musicId: string, submissionId: string) => {
-  if (!(musicId in activePolls.value)) {
-    activePolls.value[musicId] = submissionId;
-    resumePolling();
-    // 立即触发首次轮询，不等待 3 秒间隔
-    pollSubmission(musicId, submissionId);
-  } else {
-    activePolls.value[musicId] = submissionId;
-  }
-};
 
 const checkLinks = async (musicId: string) => {
   if (checkingId.value) return;
 
   checkingId.value = musicId;
   try {
+    // PanCheck 同步返回检测结果，无需轮询
     const data = await post(`/api/admin/music/${musicId}/check-links`);
-
     checkResults.value[musicId] = data;
-
-    // 有 pending 下载且有 submission_id 时启动轮询
-    const hasPending = data.downloads?.some((d: any) => d.status === "pending");
-    if (hasPending && data.submission_id) {
-      startPolling(musicId, String(data.submission_id));
-    }
   } catch (e: any) {
     if (e?.response?.status === 401) return;
     const err = e?.response?.data;
@@ -203,11 +116,6 @@ const checkLinks = async (musicId: string) => {
     checkingId.value = null;
   }
 };
-
-onUnmounted(() => {
-  activePolls.value = {};
-  pausePolling();
-});
 
 const resolveFeedback = async (id: string) => {
   if (!confirm("确定要将此反馈标记为已完成吗？")) return;

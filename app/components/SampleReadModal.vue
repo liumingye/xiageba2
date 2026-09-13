@@ -112,7 +112,7 @@ const requestGetCode = () => {
             :disabled="currentIndex === 0"
             @click="prevChapter"
           >
-            <ChevronLeft class="w-4 h-4" />
+            <ChevronLeft class="size-4" />
             上一章
           </UButton>
           <span class="text-sm text-muted truncate max-w-[50%]">
@@ -126,7 +126,7 @@ const requestGetCode = () => {
             @click="nextChapter"
           >
             下一章
-            <ChevronRight class="w-4 h-4" />
+            <ChevronRight class="size-4" />
           </UButton>
         </div>
 
@@ -137,7 +137,7 @@ const requestGetCode = () => {
         >
           <div v-if="loading" class="text-center py-12">
             <LoaderCircle
-              class="w-10 h-10 animate-spin text-primary-500 mx-auto mb-3"
+              class="size-10 animate-spin text-primary-500 mx-auto mb-3"
             />
             <p class="text-muted text-sm">正在加载试读内容...</p>
           </div>
@@ -170,7 +170,7 @@ const requestGetCode = () => {
               @click="nextChapter"
             >
               下一章
-              <ChevronRight class="w-4 h-4" />
+              <ChevronRight class="size-4" />
             </UButton>
             <UButton
               color="primary"

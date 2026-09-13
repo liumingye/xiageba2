@@ -95,7 +95,7 @@ const handleSubmit = async () => {
       <!-- 提交成功 -->
       <div v-if="submitted" class="text-center py-6">
         <div
-          class="w-16 h-16 bg-primary text-inverted rounded-full flex items-center justify-center mx-auto mb-4"
+          class="size-16 bg-primary text-inverted rounded-full flex items-center justify-center mx-auto mb-4"
         >
           <CheckCircle class="size-8" />
         </div>

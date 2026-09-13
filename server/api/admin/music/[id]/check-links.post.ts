@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { prisma } from "#server/lib/prisma";
-import { getPanCheckServers } from "#server/lib/pan-check";
+import { resolveLinkStatus, submitCheckRequest } from "#server/lib/pan-check";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -34,62 +34,35 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const servers = await getPanCheckServers();
-  if (
-    servers.length === 0 ||
-    !servers[0] ||
-    !servers[0].url ||
-    !servers[0].password
-  ) {
+  // PanCheck 同步返回检测结果，无需异步任务与轮询
+  const result = await submitCheckRequest(links);
+  if (!result) {
     throw createError({
       statusCode: 500,
-      message: "未配置 PanCheck 服务",
+      message: "检测失败或未配置 PanCheck 服务",
     });
   }
 
-  const pancheckApi = servers[0].url;
-  if (!pancheckApi) {
-    throw createError({
-      statusCode: 500,
-      message: "网盘检测 API 未配置",
-    });
-  }
+  const valid_links: string[] = [];
+  const invalid_links: string[] = [];
+  const pending_links: string[] = [];
 
-  try {
-    const response = await fetch(
-      `${pancheckApi.replace(/\/$/, "")}/api/v1/links/check`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ links }),
-      },
-    );
+  const resultWithDetails = downloads.map((d) => {
+    // 以 link_results 中的详细信息为准判定状态
+    const status = resolveLinkStatus(d.url, result);
 
-    if (!response.ok) {
-      throw new Error(`检测服务返回 ${response.status}`);
-    }
+    if (status === "valid") valid_links.push(d.url);
+    else if (status === "invalid") invalid_links.push(d.url);
+    else pending_links.push(d.url);
 
-    const result = await response.json();
+    return { ...d, status };
+  });
 
-    const resultWithDetails = downloads.map((d) => ({
-      ...d,
-      status: result.invalid_links?.includes(d.url)
-        ? "invalid"
-        : result.valid_links?.includes(d.url)
-          ? "valid"
-          : "pending",
-    }));
-
-    return {
-      ...result,
-      downloads: resultWithDetails,
-    };
-  } catch (error: any) {
-    throw createError({
-      statusCode: 500,
-      message: `网盘检测失败: ${error.message || "未知错误"}`,
-    });
-  }
+  return {
+    ...result,
+    valid_links,
+    invalid_links,
+    pending_links,
+    downloads: resultWithDetails,
+  };
 });

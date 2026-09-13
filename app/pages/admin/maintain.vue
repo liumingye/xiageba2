@@ -59,12 +59,7 @@ const aesConfig = ref<AesConfig>({
 const savingAes = ref(false);
 const savedAes = ref(false);
 
-interface PanCheckServer {
-  url: string;
-  password: string;
-}
-
-const pancheckServers = ref<PanCheckServer[]>([]);
+const pancheckServers = ref<string[]>([]);
 const savingPancheck = ref(false);
 const savedPancheck = ref(false);
 
@@ -341,7 +336,7 @@ const savePancheckConfig = async () => {
 };
 
 const addPancheckServer = () => {
-  pancheckServers.value.push({ url: "", password: "" });
+  pancheckServers.value.push("");
 };
 
 const removePancheckServer = (index: number) => {
@@ -538,11 +533,7 @@ const clearISRCache = async () => {
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">搜索索引</h2>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div v-if="rebuildMsg" class="text-sm text-primary-400">
             {{ rebuildMsg }}
           </div>
@@ -614,11 +605,7 @@ const clearISRCache = async () => {
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-medium">Nitro 缓存</h2>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div>清理全部缓存</div>
@@ -657,11 +644,7 @@ const clearISRCache = async () => {
             {{ savedRedis ? "已保存" : "保存" }}
           </UButton>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-red-600 rounded-lg flex items-center justify-center"
@@ -743,11 +726,7 @@ const clearISRCache = async () => {
             {{ savedAes ? "已保存" : "保存" }}
           </UButton>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-yellow-600 rounded-lg flex items-center justify-center"
@@ -805,11 +784,7 @@ const clearISRCache = async () => {
             {{ savedWebSearchFilter ? "已保存" : "保存" }}
           </UButton>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-emerald-600 rounded-lg flex items-center justify-center"
@@ -857,11 +832,7 @@ const clearISRCache = async () => {
             {{ savedAdFilter ? "已保存" : "保存" }}
           </UButton>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-purple-600 rounded-lg flex items-center justify-center"
@@ -915,11 +886,7 @@ const clearISRCache = async () => {
             {{ savedAiSearch ? "已保存" : "保存" }}
           </UButton>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-cyan-600 rounded-lg flex items-center justify-center"
@@ -1001,11 +968,7 @@ const clearISRCache = async () => {
             {{ savedHotwords ? "已保存" : "保存" }}
           </UButton>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-orange-600 rounded-lg flex items-center justify-center"
@@ -1020,49 +983,51 @@ const clearISRCache = async () => {
             </div>
           </div>
 
-          <div class="space-y-4">
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-4"
+          >
             <div
               v-for="(hotword, index) in hotwords"
               :key="index"
-              class="flex items-center gap-3"
+              class="flex items-center gap-2"
             >
-              <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label
-                    class="block text-muted text-sm mb-2"
-                    :for="`hot-${index}-word`"
-                    >搜索词</label
-                  >
-                  <UInput
-                    :id="`hot-${index}-word`"
-                    v-model="hotword.word"
-                    type="text"
-                    placeholder="输入搜索词"
-                    class="w-full"
-                  />
-                </div>
-                <div>
-                  <label
-                    class="block text-muted text-sm mb-2"
-                    :for="`hot-${index}-type`"
-                    >类型</label
-                  >
-                  <USelect
-                    :id="`hot-${index}-type`"
-                    v-model="hotword.type"
-                    class="w-full"
-                    :items="[
-                      { label: '音乐', value: 'music' },
-                      { label: '资源', value: 'resource' },
-                    ]"
-                  />
-                </div>
-                <div>
-                  <label
-                    class="block text-muted text-sm mb-2"
-                    :for="`hot-${index}-weight`"
-                    >权重</label
-                  >
+              <div class="flex-1">
+                <label
+                  class="block text-muted text-sm mb-2"
+                  :for="`hot-${index}-word`"
+                  >搜索词</label
+                >
+                <UInput
+                  :id="`hot-${index}-word`"
+                  v-model="hotword.word"
+                  type="text"
+                  placeholder="输入搜索词"
+                  class="w-full"
+                />
+              </div>
+              <div class="w-20">
+                <label
+                  class="block text-muted text-sm mb-2"
+                  :for="`hot-${index}-type`"
+                  >类型</label
+                >
+                <USelect
+                  :id="`hot-${index}-type`"
+                  v-model="hotword.type"
+                  class="w-full"
+                  :items="[
+                    { label: '音乐', value: 'music' },
+                    { label: '资源', value: 'resource' },
+                  ]"
+                />
+              </div>
+              <div class="w-24">
+                <label
+                  class="block text-muted text-sm mb-2"
+                  :for="`hot-${index}-weight`"
+                  >权重</label
+                >
+                <div class="flex gap-2">
                   <UInput
                     :id="`hot-${index}-weight`"
                     v-model.number="hotword.weight"
@@ -1072,33 +1037,33 @@ const clearISRCache = async () => {
                     placeholder="1-999"
                     class="w-full"
                   />
+                  <UButton
+                    color="error"
+                    variant="ghost"
+                    square
+                    size="sm"
+                    icon="i-lucide-trash-2"
+                    aria-label="删除搜索词"
+                    @click="removeHotword(index)"
+                  />
                 </div>
               </div>
-              <UButton
-                color="error"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-trash-2"
-                class="mt-6 shrink-0"
-                aria-label="删除搜索词"
-                @click="removeHotword(index)"
-              />
             </div>
+          </div>
 
-            <UButton
-              color="neutral"
-              variant="soft"
-              icon="i-lucide-plus"
-              class="self-start"
-              @click="addHotword"
-            >
-              添加搜索词
-            </UButton>
+          <UButton
+            block
+            color="neutral"
+            variant="soft"
+            icon="i-lucide-plus"
+            class="self-start"
+            @click="addHotword"
+          >
+            添加搜索词
+          </UButton>
 
-            <div v-if="hotwords.length === 0" class="text-color-500 text-sm">
-              未配置热搜词，首页热门搜索区域将不显示
-            </div>
+          <div v-if="hotwords.length === 0" class="text-color-500 text-sm">
+            未配置热搜词，首页热门搜索区域将不显示
           </div>
         </UCard>
       </section>
@@ -1117,11 +1082,7 @@ const clearISRCache = async () => {
             {{ savedPancheck ? "已保存" : "保存" }}
           </UButton>
         </div>
-        <UCard
-          :ui="{
-            body: 'p-6 space-y-4',
-          }"
-        >
+        <UCard>
           <div class="flex items-center gap-3 mb-6">
             <div
               class="w-10 h-10 shrink-0 bg-blue-600 rounded-lg flex items-center justify-center"
@@ -1130,76 +1091,56 @@ const clearISRCache = async () => {
             </div>
             <div>
               <h3 class="font-medium">PanCheck 接口</h3>
-              <p class="text-color-500 text-sm">
-                配置网盘链接检测服务接口，格式：接口地址 + 密码
-              </p>
+              <p class="text-color-500 text-sm">配置网盘链接检测服务接口地址</p>
             </div>
           </div>
 
-          <div class="space-y-4">
-            <div
-              v-for="(server, index) in pancheckServers"
-              :key="index"
-              class="flex items-center gap-3"
-            >
-              <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label
-                    class="block text-muted text-sm mb-2"
-                    :for="`pan-${index}-url`"
-                    >接口地址</label
-                  >
-                  <UInput
-                    :id="`pan-${index}-url`"
-                    v-model="server.url"
-                    type="text"
-                    placeholder="http://localhost:6080"
-                    class="w-full"
-                  />
-                </div>
-                <div>
-                  <label
-                    class="block text-muted text-sm mb-2"
-                    :for="`pan-${index}-pass`"
-                    >密码</label
-                  >
-                  <UInput
-                    :id="`pan-${index}-pass`"
-                    v-model="server.password"
-                    type="text"
-                    placeholder="admin123"
-                    class="w-full"
-                  />
-                </div>
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4"
+          >
+            <div v-for="(_, index) in pancheckServers" :key="index">
+              <label
+                class="block text-muted text-sm mb-2"
+                :for="`pan-${index}-url`"
+                >接口地址</label
+              >
+              <div class="flex flex-1 gap-1">
+                <UInput
+                  :id="`pan-${index}-url`"
+                  v-model="pancheckServers[index]"
+                  type="text"
+                  placeholder="http://localhost:6080"
+                  class="w-full"
+                />
+                <UButton
+                  color="error"
+                  variant="ghost"
+                  square
+                  size="sm"
+                  icon="i-lucide-trash-2"
+                  aria-label="删除接口"
+                  @click="removePancheckServer(index)"
+                />
               </div>
-              <UButton
-                color="error"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-trash-2"
-                class="mt-6 shrink-0"
-                aria-label="删除接口"
-                @click="removePancheckServer(index)"
-              />
             </div>
+          </div>
 
-            <UButton
-              color="neutral"
-              variant="soft"
-              icon="i-lucide-plus"
-              class="self-start"
-              @click="addPancheckServer"
-            >
-              添加接口
-            </UButton>
+          <UButton
+            block
+            color="neutral"
+            variant="soft"
+            icon="i-lucide-plus"
+            class="self-start"
+            @click="addPancheckServer"
+          >
+            添加接口
+          </UButton>
 
-            <div
-              v-if="pancheckServers.length === 0"
-              class="text-color-500 text-sm"
-            >
-              未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
-            </div>
+          <div
+            v-if="pancheckServers.length === 0"
+            class="text-color-500 text-sm"
+          >
+            未配置 PanCheck 接口，搜索页将不会显示链接有效性检测
           </div>
         </UCard>
       </section>
@@ -1458,7 +1399,7 @@ const clearISRCache = async () => {
               <p class="text-sm leading-relaxed">
                 微信公众平台在填写服务器 URL 时会要求上传一个
                 <code
-                  class="px-1.5 py-0.5 rounded bg-color-400 font-mono text-xs"
+                  class="px-1.5 py-0.5 rounded bg-accented font-mono text-xs break-all"
                   >MP_verify_*.txt</code
                 >
                 到网站根目录验证所有权。请按以下步骤操作：
@@ -1471,7 +1412,7 @@ const clearISRCache = async () => {
                 <li>
                   上传成功后可通过
                   <code
-                    class="px-1.5 py-0.5 rounded bg-color-400 font-mono text-xs"
+                    class="px-1.5 py-0.5 rounded bg-accented font-mono text-xs break-all"
                     >域名/MP_verify_xxx.txt</code
                   >
                   直接访问
@@ -1517,47 +1458,25 @@ const clearISRCache = async () => {
               </UButton>
             </div>
 
-            <div
+            <UAlert
               v-if="wechatConfig.verifyFileName"
-              class="mt-4 p-4 bg-elevated border border-muted rounded-lg"
-            >
-              <div class="flex items-start gap-2">
-                <Check class="w-4 h-4 shrink-0 mt-0.5" />
-                <div class="text-sm space-y-1 flex-1">
-                  <div>验证文件已上传，可通过以下地址访问：</div>
-                  <div class="flex items-center gap-2">
-                    <code class="font-mono text-xs break-all">
-                      {{ wechatOrigin }}/{{ wechatConfig.verifyFileName }}
-                    </code>
-                    <UButton
-                      square
-                      size="sm"
-                      icon="i-lucide-copy"
-                      title="复制访问地址"
-                      aria-label="复制访问地址"
-                      @click="
-                        copyText(
-                          `${wechatOrigin}/${wechatConfig.verifyFileName}`,
-                          '访问地址',
-                        )
-                      "
-                    />
-                    <UButton
-                      as="a"
-                      :href="`/${wechatConfig.verifyFileName}`"
-                      target="_blank"
-                      rel="noreferrer"
-                      square
-                      size="sm"
-                      icon="i-lucide-external-link"
-                      class="shrink-0"
-                      title="新标签打开"
-                      aria-label="新标签打开"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+              class="mt-4"
+              title="验证文件已上传，可通过以下地址访问："
+              :description="`${wechatOrigin}/${wechatConfig.verifyFileName}`"
+              icon="i-lucide-check"
+              orientation="horizontal"
+              :actions="[
+                {
+                  label: '新标签打开',
+                  icon: 'i-lucide-external-link',
+                  target: '_blank',
+                  to: `${wechatOrigin}/${wechatConfig.verifyFileName}`,
+                },
+              ]"
+              :ui="{
+                description: 'break-all',
+              }"
+            />
           </div>
 
           <!-- 注意事项 -->

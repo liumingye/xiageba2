@@ -198,7 +198,7 @@ const closeModal = () => {
   </div>
 
   <div v-if="pending" class="text-center py-12" aria-busy="true">
-    <Loader2 class="w-8 h-8 text-primary-400 animate-spin mx-auto" />
+    <Loader2 class="size-8 text-primary-400 animate-spin mx-auto" />
     <p class="text-muted mt-3">加载中...</p>
   </div>
 
@@ -234,9 +234,7 @@ const closeModal = () => {
 
   <UModal v-model:open="showTreeModal">
     <template #title>
-      目录结构<span class="text-xs text-muted"
-        >（最多显示5层、150个文件）</span
-      >
+      目录结构<span class="text-xs text-muted">（最多显示5层、150个文件）</span>
     </template>
 
     <template #body>
@@ -245,7 +243,7 @@ const closeModal = () => {
       </h4>
       <div v-if="treeModalLoading" class="text-center py-8">
         <div
-          class="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
+          class="size-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-3"
         />
         <p class="text-muted text-sm">{{ funnyText }}</p>
       </div>
@@ -260,12 +258,3 @@ const closeModal = () => {
     </template>
   </UModal>
 </template>
-
-<style scoped>
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-</style>

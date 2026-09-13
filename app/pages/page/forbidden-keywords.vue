@@ -22,14 +22,14 @@ const { data, pending, error } = await useFetch<{
 
 <template>
   <h1 class="text-2xl font-bold flex items-center gap-2 mb-6">
-    <ShieldBan class="w-6 h-6 text-primary-400" />
+    <ShieldBan class="size-6 text-primary-400" />
     屏蔽词列表
   </h1>
 
   <article class="card p-6">
     <!-- 加载中 -->
     <div v-if="pending" class="flex items-center justify-center py-12">
-      <Loader2 class="w-5 h-5 animate-spin mr-2" />
+      <Loader2 class="size-5 animate-spin mr-2" />
       加载中...
     </div>
 

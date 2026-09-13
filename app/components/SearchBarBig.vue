@@ -196,7 +196,7 @@ defineExpose({
                 :aria-label="item.title"
                 @click="searchType = item.type"
               >
-                <component :is="item.icon" class="w-5 h-5" />
+                <component :is="item.icon" class="size-5" />
               </UButton>
             </UTooltip>
             <template #fallback>
@@ -220,7 +220,7 @@ defineExpose({
             aria-label="清除"
             @click="clearInput"
           >
-            <X class="w-5 h-5" />
+            <X class="size-5" />
           </UButton>
           <UButton
             color="primary"
@@ -233,7 +233,7 @@ defineExpose({
             aria-label="搜索"
             @click.stop="handleSearch()"
           >
-            <Search class="w-5 h-5" />
+            <Search class="size-5" />
           </UButton>
         </div>
       </div>

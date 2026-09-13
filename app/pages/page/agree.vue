@@ -79,7 +79,7 @@ const content = `**最后更新日期：2026年1月1日**
 
 <template>
   <h1 class="text-2xl font-bold flex items-center gap-2 mb-6">
-    <FileSignature class="w-6 h-6 text-primary-400" />
+    <FileSignature class="size-6 text-primary-400" />
     服务协议
   </h1>
 

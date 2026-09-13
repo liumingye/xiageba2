@@ -95,9 +95,9 @@ const copyCode = () => {
     <template #body>
       <div v-if="loading" class="text-center py-10">
         <LoaderCircle
-          class="w-9 h-9 animate-spin text-primary-500 mx-auto mb-3"
+          class="size-9 animate-spin text-primary-500 mx-auto mb-3"
         />
-        <p class="text-zinc-500 dark:text-zinc-400 text-sm">正在生成口令...</p>
+        <p class="text-muted text-sm">正在生成口令...</p>
       </div>
 
       <UAlert
@@ -111,7 +111,7 @@ const copyCode = () => {
 
       <div v-else-if="pcode" class="space-y-4">
         <div class="flex items-center justify-center gap-2">
-          <KeyRound class="w-4 h-4 text-primary-500" />
+          <KeyRound class="size-4 text-primary-500" />
           <p class="font-medium text-center text-lg truncate">
             {{ book?.bookName }}
           </p>
@@ -120,13 +120,13 @@ const copyCode = () => {
         <div
           class="bg-primary-500/10 border border-primary-500/30 rounded-xl p-5 text-center"
         >
-          <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-2">网盘口令</p>
+          <p class="text-xs text-muted mb-2">网盘口令</p>
           <p
             class="text-3xl font-mono font-bold text-primary-500 tracking-wider select-all break-all"
           >
             {{ pcode }}
           </p>
-          <p v-if="msg" class="text-xs text-zinc-400 mt-2">{{ msg }}</p>
+          <p v-if="msg" class="text-xs text-muted mt-2">{{ msg }}</p>
         </div>
 
         <UButton
@@ -137,12 +137,12 @@ const copyCode = () => {
           @click="copyCode"
         >
           <template #leading>
-            <Clipboard class="w-4 h-4" />
+            <Clipboard class="size-4" />
           </template>
           {{ message }}
         </UButton>
 
-        <p class="text-xs text-zinc-500 dark:text-zinc-400 text-center">
+        <p class="text-xs text-muted text-center">
           复制口令后，打开百度网盘APP即可阅读全本小说
         </p>
       </div>

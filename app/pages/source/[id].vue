@@ -246,11 +246,11 @@ onMounted(() => {
           </h1>
           <div class="flex items-center gap-3 text-sm text-gray-500">
             <span class="flex items-center gap-1">
-              <Link class="w-4 h-4" />
+              <Link class="size-4" />
               {{ getStorageTypeFriendFromFilter(source.type) }}
             </span>
             <span class="flex items-center gap-1">
-              <Clock class="w-4 h-4" />
+              <Clock class="size-4" />
               <NuxtTime
                 :datetime="source.createdAt"
                 year="numeric"
@@ -395,15 +395,10 @@ onMounted(() => {
     </UCard>
   </div>
 
-  <div v-else class="card p-8 text-center">
-    <FolderOpen class="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-    <h2 class="text-lg font-medium text-zinc-400 mb-2">资源不存在</h2>
-    <p class="text-sm text-zinc-500">该资源可能已被删除或不存在</p>
-    <button
-      class="mt-4 px-6 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
-      @click="goBack"
-    >
-      返回上一页
-    </button>
+  <div v-else class="card p-8 text-center space-y-4">
+    <FolderOpen class="size-16 text-toned mx-auto" />
+    <h2 class="text-lg font-medium text-toned">资源不存在</h2>
+    <p class="text-sm text-muted">该资源可能已被删除或不存在</p>
+    <UButton size="lg" @click="goBack"> 返回上一页 </UButton>
   </div>
 </template>

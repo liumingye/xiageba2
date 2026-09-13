@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
             }"
             @click="handleSelect(item.word)"
           >
-            <Search class="h-4 w-4 shrink-0 text-muted" />
+            <Search class="size-4 shrink-0 text-muted" />
             <span class="truncate">{{ item.word }}</span>
           </UButton>
         </div>

@@ -141,6 +141,18 @@ export default defineNuxtConfig({
               purpose: "any",
             },
             {
+              src: "/pwa/icon-maskable-48.png",
+              sizes: "48x48",
+              type: "image/png",
+              purpose: "maskable", // 可裁剪图标，适配安卓等系统的圆角或异形图标，确保核心图案不被切掉
+            },
+            {
+              src: "/pwa/icon-maskable-128.png",
+              sizes: "128x128",
+              type: "image/png",
+              purpose: "maskable", // 可裁剪图标，适配安卓等系统的圆角或异形图标，确保核心图案不被切掉
+            },
+            {
               src: "/pwa/icon-maskable-512.png",
               sizes: "512x512",
               type: "image/png",
@@ -217,7 +229,11 @@ export default defineNuxtConfig({
       title: "全盘搜 - 免费网盘资源搜索引擎",
       meta: [
         { charset: "utf-8" },
-        { name: "viewport", content: "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" },
+        {
+          name: "viewport",
+          content:
+            "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no",
+        },
         { name: "og:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         { name: "twitter:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         {

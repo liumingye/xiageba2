@@ -61,7 +61,7 @@ const emit = defineEmits<{
           >
             <div
               v-if="item.type !== 'other'"
-              :class="`icon-${item.type} w-4 h-4 mr-1`"
+              :class="`icon-${item.type} size-4 mr-1`"
             ></div>
             {{ getStorageTypeFriendFromFilter(item.type) }}
           </div>
@@ -76,19 +76,19 @@ const emit = defineEmits<{
               v-if="checkStatus === 'valid'"
               class="dark:bg-success-600/60 bg-success-800/80 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
-              <CheckCircle class="w-4 h-4 shrink-0 mr-1" />链接有效
+              <CheckCircle class="size-4 shrink-0 mr-1" />链接有效
             </div>
             <div
               v-else-if="checkStatus === 'invalid'"
               class="bg-error-800/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
-              <XCircle class="w-4 h-4 shrink-0 mr-1" />可能失效
+              <XCircle class="size-4 shrink-0 mr-1" />可能失效
             </div>
             <div
               v-else-if="checkStatus === 'checking'"
               class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
-              <Loader2 class="w-4 h-4 animate-spin shrink-0 mr-1" />正在检测
+              <Loader2 class="size-4 animate-spin shrink-0 mr-1" />正在检测
             </div>
           </ClientOnly>
         </div>
@@ -111,7 +111,7 @@ const emit = defineEmits<{
       class="flex justify-between items-center gap-2 border-t border-muted mt-3 pt-3"
     >
       <span class="text-xs text-muted flex items-center gap-1">
-        <Calendar class="w-3 h-3" />
+        <Calendar class="size-3" />
         <NuxtTime
           :datetime="item.createdAt"
           year="numeric"

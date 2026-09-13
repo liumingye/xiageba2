@@ -1,137 +1,72 @@
 import { prisma } from "#server/lib/prisma";
 import { decryptUrl } from "#server/lib/crypto";
-import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import {
+  resolveLinkStatus,
   submitCheckRequest,
-  getCheckResult,
-  getPanCheckServers,
+  type PanCheckLinkStatus,
 } from "#server/lib/pan-check";
 
-const SUBMISSION_CACHE_TTL = 600; // 10 分钟
-
 export default defineEventHandler(async (event) => {
-  const method = event.method;
-
-  // POST: 提交检测请求
-  if (method === "POST") {
-    const body = await readBody(event);
-    const { ids, urls } = body || {};
-
-    // 获取要检测的链接
-    let linksAndId: [string, string][] = [];
-
-    if (ids && Array.isArray(ids) && ids.length > 0) {
-      // 从数据库查询 URL
-      const sources = await prisma.source.findMany({
-        where: { id: { in: ids } },
-        select: { id: true, url: true },
-      });
-      for (const s of sources) {
-        if (s.url) {
-          linksAndId.push([s.url, s.id]);
-        }
-      }
-    } else if (urls && Array.isArray(urls) && urls.length > 0) {
-      // 解密 URL
-      for (const u of urls) {
-        const decrypted = await decryptUrl(u);
-        if (decrypted) {
-          linksAndId.push([decrypted, u]);
-        }
-      }
-    }
-
-    if (linksAndId.length === 0) {
-      return { success: false, message: "没有有效的链接" };
-    }
-
-    if (linksAndId.length > 20) {
-      return { success: false, message: "请求检测链接过多" };
-    }
-
-    // 提交检测请求，支持指定服务器索引
-    const result = await submitCheckRequest(linksAndId.map(([url]) => url));
-    if (!result) {
-      return { success: false, message: "提交检测失败或未配置 PanCheck 服务" };
-    }
-
-    await setRedisCache(
-      `pancheck:${result.idx}:${result.data.submission_id}`,
-      linksAndId,
-      SUBMISSION_CACHE_TTL,
-    );
-
-    return {
-      success: true,
-      submission_id: result.data.submission_id,
-      server_index: result.idx,
-      count: linksAndId.length,
-    };
+  if (event.method !== "POST") {
+    throw createError({ statusCode: 405, message: "不支持的请求方法" });
   }
 
-  // GET: 查询检测结果
-  if (method === "GET") {
-    const query = getQuery(event);
-    const submissionId = Number(query.submission_id);
-    const serverIndex = Number(query.server_index);
+  const body = await readBody(event);
+  const { ids, urls } = body || {};
 
-    if (!submissionId || isNaN(serverIndex)) {
-      return { success: false, message: "缺少 submission_id 或 server_index" };
-    }
+  // [待检测的真实网盘链接, 前端传入的原始标识（id 或加密后的 url）]
+  const linksAndKey: [string, string][] = [];
 
-    // 从缓存获取 submission 信息
-    let links = await getRedisCache<[string, string][]>(
-      `pancheck:${serverIndex}:${submissionId}`,
-    );
-
-    if (!links) {
-      return { success: false, message: "links 不存在" };
-    }
-
-    // 缓存丢失时，通过 server_index 从服务器列表重建
-    // if (!submission && serverIndex !== undefined && !isNaN(serverIndex)) {
-    const servers = await getPanCheckServers();
-    const server = servers[serverIndex];
-    if (!server) {
-      return { success: false, message: "未配置 PanCheck 服务" };
-    }
-
-    // 查询 PanCheck 结果
-    const result = await getCheckResult(
-      server.url,
-      submissionId,
-      server.password,
-    );
-    if (!result) {
-      return { success: false, message: "获取检测结果失败" };
-    }
-
-    // 将链接映射回 ID（缓存有 links/ids 时才能映射）
-    const validIds: string[] = [];
-    // const invalidIds: string[] = [];
-    const pendingIds: string[] = [];
-
-    if (links.length > 0) {
-      for (let i = 0; i < links.length; i++) {
-        // @ts-ignore
-        const [link, id] = links[i];
-        if (result.valid_links.includes(link)) {
-          validIds.push(id);
-        } else if (result.pending_links.includes(link)) {
-          pendingIds.push(id);
-        }
+  if (Array.isArray(ids) && ids.length > 0) {
+    // 从数据库查询 URL
+    const sources = await prisma.source.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, url: true },
+    });
+    for (const s of sources) {
+      if (s.url) {
+        linksAndKey.push([s.url, s.id]);
       }
     }
-
-    event.headers.set("cache-control", "no-cache");
-
-    return {
-      success: true,
-      validIds,
-      pendingIds,
-      total_duration: result.total_duration,
-    };
+  } else if (Array.isArray(urls) && urls.length > 0) {
+    // 解密 URL，原始加密串作为回填标识
+    for (const u of urls) {
+      const decrypted = await decryptUrl(u);
+      if (decrypted) {
+        linksAndKey.push([decrypted, u]);
+      }
+    }
   }
 
-  throw createError({ statusCode: 405, message: "不支持的请求方法" });
+  if (linksAndKey.length === 0) {
+    return { success: false, message: "没有有效的链接" };
+  }
+
+  if (linksAndKey.length > 20) {
+    return { success: false, message: "请求检测链接过多" };
+  }
+
+  // PanCheck 现在同步返回检测结果，无需异步任务与轮询
+  const result = await submitCheckRequest(linksAndKey.map(([url]) => url));
+  if (!result) {
+    return { success: false, message: "检测失败或未配置 PanCheck 服务" };
+  }
+
+  // 按原始标识回填检测状态，前端可直接按 id/url 取值
+  const statuses: Record<string, PanCheckLinkStatus> = {};
+  for (const [link, key] of linksAndKey) {
+    statuses[key] = resolveLinkStatus(link, result);
+  }
+
+  event.headers.set("cache-control", "no-cache");
+
+  return {
+    success: true,
+    statuses,
+    server_id: result.server_id,
+    // submission_id: result.submission_id,
+    // total_duration: result.total_duration,
+    // invalid_format_count: result.invalid_format_count,
+    // duplicate_count: result.duplicate_count,
+  };
 });

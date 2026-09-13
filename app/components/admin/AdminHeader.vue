@@ -17,9 +17,9 @@ const handleLogout = () => {
     <div class="flex items-center justify-between max-w-7xl mx-auto">
       <div class="flex items-center gap-3">
         <div
-          class="w-8 h-8 bg-linear-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
+          class="size-8 bg-linear-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
         >
-          <Music class="w-5 h-5 text-white" />
+          <Music class="size-5 text-white" />
         </div>
         <h1 class="text-xl font-bold">管理后台</h1>
       </div>

@@ -24,7 +24,7 @@ const sectionOverflowing = ref(true);
 // 首页宫格卡片统一使用 UCard，保持与原 .card 一致的观感
 const gridCardUi = {
   root: "bg-muted border border-muted rounded-xl overflow-hidden",
-  body: "flex flex-col p-2 md:p-4",
+  body: "flex flex-col px-2 sm:px-2 lg:px-3 py-4 sm:py-4",
 };
 
 const checkSectionOverflow = () => {
@@ -535,7 +535,7 @@ const getPic = (url: string) => {
       <template #category>
         <div
           v-if="hasCategory"
-          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-4"
         >
           <UCard v-if="hotMusic && hotMusic.length > 0" :ui="gridCardUi">
             <div class="flex items-center gap-2 mb-3">
@@ -630,7 +630,8 @@ const getPic = (url: string) => {
               >
                 <div
                   v-if="item.type !== 'other'"
-                  :class="`icon-${item.type} w-3 h-3`"
+                  class="size-3"
+                  :class="`icon-${item.type}`"
                 ></div>
                 <UTooltip
                   ignoreNonKeyboardFocus
@@ -651,7 +652,7 @@ const getPic = (url: string) => {
             <UButton
               variant="link"
               :to="`/categorie/${cat.id}`"
-              class="justify-center mt-1 sm:-mb-3 group"
+              class="justify-center mt-1 -mb-3 group"
             >
               查看更多
               <ArrowRight

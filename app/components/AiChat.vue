@@ -165,9 +165,9 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
       <div class="max-w-3xl mx-auto space-y-4">
         <div v-if="showWelcome && !aiLoading" class="text-center py-12">
           <div
-            class="w-16 h-16 bg-primary-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            class="size-16 bg-primary-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4"
           >
-            <Sparkles class="w-8 h-8 text-primary-400" />
+            <Sparkles class="size-8 text-primary-400" />
           </div>
           <h2 class="text-lg font-medium mb-2">AI 智能搜索</h2>
           <p class="text-sm text-gray-500 max-w-md mx-auto">
@@ -182,11 +182,11 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
           :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'"
         >
           <div
-            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            class="size-8 rounded-lg flex items-center justify-center shrink-0"
             :class="msg.role === 'user' ? 'bg-elevated' : 'bg-primary-600/20'"
           >
-            <User v-if="msg.role === 'user'" class="w-4 h-4" />
-            <Sparkles v-else class="w-4 h-4 text-primary-400" />
+            <User v-if="msg.role === 'user'" class="size-4" />
+            <Sparkles v-else class="size-4 text-primary-400" />
           </div>
 
           <div
@@ -221,9 +221,9 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
 
         <div v-if="aiError" class="flex gap-3 flex-row">
           <div
-            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary-500/20"
+            class="size-8 rounded-lg flex items-center justify-center shrink-0 bg-primary-500/20"
           >
-            <Sparkles class="w-4 h-4 text-primary-400" />
+            <Sparkles class="size-4 text-primary-400" />
           </div>
           <div
             class="bg-red-900/40 text-red-300 px-4 py-2.5 rounded-2xl rounded-tl-md text-sm"

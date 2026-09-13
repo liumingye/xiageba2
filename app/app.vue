@@ -152,7 +152,7 @@ const isMobile = isMobileOrTablet();
               active-color="primary"
               active-variant="soft"
             >
-              <Home class="w-5 h-5" />
+              <Home class="size-5" />
             </UButton>
           </UTooltip>
           <ClientOnly>
@@ -216,7 +216,7 @@ const isMobile = isMobileOrTablet();
                     disabled
                     aria-label="主题设置"
                   >
-                    <LoaderCircle class="w-5 h-5 animate-spin" />
+                    <LoaderCircle class="size-5 animate-spin" />
                   </UButton>
                 </template>
               </ClientOnly>

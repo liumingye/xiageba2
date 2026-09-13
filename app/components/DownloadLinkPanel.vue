@@ -230,44 +230,48 @@ const handleCopyUrl = async () => {
               >{{ url }}</a
             >
           </p>
-          <div class="w-full flex items-center justify-center gap-2">
-            <UButton
-              color="primary"
-              variant="outline"
-              block
-              size="lg"
-              @click="handleCopyUrl"
-            >
-              <template #leading>
-                <Clipboard class="size-4" />
-              </template>
-              {{ message }}
-            </UButton>
-            <UButton
-              color="primary"
-              variant="solid"
-              block
-              size="lg"
-              target="_blank"
-              :href="url"
-            >
-              <template #leading>
-                <ExternalLink class="size-4" />
-              </template>
-              打开链接
-            </UButton>
-          </div>
-          <p class="text-xs text-muted text-center">
-            网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
-            文件内容请自行辨别，如发现违规请通过<a
-              href="/page/version"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-primary"
-              >版权说明</a
-            >联系我们删除。本站仅供学习交流，无任何收费行为。
-          </p>
         </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="space-y-4">
+        <div class="w-full flex items-center justify-center gap-2">
+          <UButton
+            color="primary"
+            variant="outline"
+            block
+            size="lg"
+            @click="handleCopyUrl"
+          >
+            <template #leading>
+              <Clipboard class="size-4" />
+            </template>
+            {{ message }}
+          </UButton>
+          <UButton
+            color="primary"
+            variant="solid"
+            block
+            size="lg"
+            target="_blank"
+            :href="url"
+          >
+            <template #leading>
+              <ExternalLink class="size-4" />
+            </template>
+            打开链接
+          </UButton>
+        </div>
+        <p class="text-xs text-muted text-center">
+          网盘链接有效期为30分钟，请及时转存，失效后可重新获取。<br />
+          文件内容请自行辨别，如发现违规请通过<a
+            href="/page/version"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary"
+            >版权说明</a
+          >联系我们删除。本站仅供学习交流，无任何收费行为。
+        </p>
       </div>
     </template>
   </UModal>
@@ -346,7 +350,7 @@ const handleCopyUrl = async () => {
             @click="handleCopyUrl"
           >
             <template #leading>
-              <Clipboard class="w-4 h-4" />
+              <Clipboard class="size-4" />
             </template>
             {{ message }}
           </UButton>
@@ -359,7 +363,7 @@ const handleCopyUrl = async () => {
             :href="url"
           >
             <template #leading>
-              <ExternalLink class="w-4 h-4" />
+              <ExternalLink class="size-4" />
             </template>
             打开链接
           </UButton>

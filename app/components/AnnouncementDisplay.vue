@@ -149,7 +149,7 @@ watch(normalList, () => {
     class="mb-4 flex items-center gap-2 px-3 py-2.5 bg-muted rounded-xl border border-muted"
   >
     <div class="items-center gap-1.5 shrink-0 md:flex hidden">
-      <Megaphone class="w-4 h-4 text-primary" />
+      <Megaphone class="size-4 text-primary" />
       <span class="text-sm text-muted font-medium">公告</span>
     </div>
 
@@ -181,7 +181,7 @@ watch(normalList, () => {
       <button
         v-for="(_, i) in normalList"
         :key="i"
-        class="w-2 h-2 rounded-full transition-colors"
+        class="size-2 rounded-full transition-colors"
         :class="
           i === scrollIndex
             ? 'bg-primary-400'
@@ -196,7 +196,7 @@ watch(normalList, () => {
       class="flex items-center text-sm text-toned hover:text-primary-500 transition-colors shrink-0"
     >
       更多
-      <ChevronRight class="w-3 h-3" />
+      <ChevronRight class="size-3" />
     </NuxtLink>
   </div>
 

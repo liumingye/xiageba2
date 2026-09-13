@@ -567,26 +567,21 @@ useSeoMeta({
       </template>
 
       <template v-else>
-        <div class="text-center py-20">
+        <div class="text-center py-20 space-y-4">
           <div
-            class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
+            class="size-20 bg-elevated rounded-full flex items-center justify-center mx-auto"
             aria-hidden="true"
           >
-            <BookOpen class="w-8 h-8 text-zinc-600" />
+            <BookOpen class="size-8 text-toned" />
           </div>
-          <p class="text-zinc-500">
+          <p class="text-toned">
             {{
               isSearchMode
                 ? "服务器当前繁忙或未找到相关小说"
                 : "暂无小说，试试其他筛选条件"
             }}
           </p>
-          <button
-            class="mt-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-            @click="debounceRefresh()"
-          >
-            重试
-          </button>
+          <UButton size="lg" @click="debounceRefresh()">重试</UButton>
         </div>
       </template>
 
