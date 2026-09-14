@@ -19,6 +19,11 @@ export default defineAppConfig({
         wrapper: "mr-9", // 防止标题过长挡住关闭按钮
       },
     },
+    table: {
+      slots: {
+        td: "p-2 text-default",
+      },
+    },
     prose: {
       p: { base: "my-2 leading-6" },
       li: { base: "my-0.5 leading-6" },

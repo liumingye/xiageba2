@@ -21,7 +21,7 @@ const goToPage = (page: number) => {
     v-if="totalPages > 1"
     class="flex items-center justify-between gap-4 px-4 py-3"
   >
-    <div class="text-sm text-color-400 shrink-0">
+    <div class="text-sm text-muted shrink-0">
       共 {{ total }} {{ itemLabel || "条" }}
     </div>
     <UPagination

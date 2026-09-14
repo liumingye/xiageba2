@@ -276,7 +276,7 @@ onMounted(() => {
       <section v-if="source.menu || fetchedMenu">
         <div class="font-bold mb-3">文件内容:</div>
         <pre
-          class="bg-elevated p-2 rounded-sm text-xs border border-muted max-h-56 overflow-auto text-color-300"
+          class="bg-elevated p-2 rounded-sm text-xs border border-muted max-h-56 overflow-auto text-toned"
           >{{ fetchedMenu || source.menu }}</pre
         >
       </section>
@@ -293,7 +293,8 @@ onMounted(() => {
             size="lg"
             :disabled="fetchingMenu"
             @click="fetchMenu"
-            :icon="fetchingMenu ? 'i-lucide-loader-2' : 'i-lucide-folder'"
+            icon="i-lucide-folder"
+            :loading="fetchingMenu"
           >
             {{ fetchingMenu ? "获取中..." : "获取菜单" }}
           </UButton>
@@ -318,7 +319,7 @@ onMounted(() => {
               @click="fetchDirectUrl"
               class="h-12"
             >
-              {{ fetchingUrl ? "获取中..." : "获取下载链接" }}
+              获取下载链接
             </UButton>
             <p v-if="fetchError" class="text-xs text-red-400">
               {{ fetchError }}

@@ -366,6 +366,73 @@ const deleteSource = async (id: string) => {
   }
 };
 
+/** 从文本中提取并净化网盘链接 */
+function purifyUrl(input: string): string {
+  const text = input.trim();
+  if (!text) return "";
+
+  // 匹配已知网盘链接（查询参数只取到 # 之前，去掉 hash 片段）
+  const patterns = [
+    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s]*)?/i,
+    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s]*)?/i,
+    /https?:\/\/pan\.baidu\.com\/(?:s\/[a-zA-Z0-9-_]+|share\/init\?surl=[a-zA-Z0-9-_]+)(?:\?[^#\s]*)?/i,
+    /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s]*)?/i,
+  ];
+
+  let url: string | null = null;
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) {
+      url = m[0];
+      break;
+    }
+  }
+  if (!url) return text; // 未匹配到已知格式，返回原文
+
+  // 百度 share/init?surl=xxxx → /s/1xxxx
+  const initMatch = url.match(
+    /pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9-_]+)/i,
+  );
+  if (initMatch) {
+    const surl = initMatch[1];
+    const pwdMatch = url.match(/pwd=([a-zA-Z0-9]{4})/);
+    const pwd = pwdMatch ? pwdMatch[1] : "";
+    url = `https://pan.baidu.com/s/1${surl}${pwd ? `?pwd=${pwd}` : ""}`;
+  }
+
+  // 确保 https
+  if (!url.startsWith("https://")) {
+    url = url.replace(/^http:\/\//i, "https://");
+  }
+
+  return url;
+}
+
+/** 粘贴剪贴板内容并自动净化 */
+async function pasteAndPurify(target: "add" | "edit") {
+  try {
+    const raw = await navigator.clipboard.readText();
+    if (!raw) return;
+    const purified = purifyUrl(raw);
+    if (target === "add") {
+      newUrl.value = purified;
+    } else {
+      editUrl.value = purified;
+    }
+  } catch {
+    toast.add({ title: "无法读取剪贴板", color: "error" });
+  }
+}
+
+/** 净化当前输入框中的链接 */
+function purifyCurrent(target: "add" | "edit") {
+  if (target === "add") {
+    newUrl.value = purifyUrl(newUrl.value);
+  } else {
+    editUrl.value = purifyUrl(editUrl.value);
+  }
+}
+
 const openImportModal = () => {
   showImportModal.value = true;
   importCid.value = NO_CATEGORY;
@@ -645,9 +712,29 @@ const importSources = async () => {
             />
           </div>
           <div>
-            <label class="block text-color-400 text-sm mb-2" for="new-url"
-              >资源地址 *</label
-            >
+            <div class="flex gap-2 mb-2 items-center">
+              <label class="block text-color-400 text-sm flex-1" for="new-url"
+                >资源地址 *</label
+              >
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-clipboard"
+                @click="pasteAndPurify('add')"
+              >
+                粘贴
+              </UButton>
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-sparkles"
+                @click="purifyCurrent('add')"
+              >
+                净化
+              </UButton>
+            </div>
             <UInput
               id="new-url"
               v-model="newUrl"
@@ -740,9 +827,29 @@ const importSources = async () => {
             />
           </div>
           <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-url"
-              >资源地址 *</label
-            >
+            <div class="flex gap-2 mb-2 items-center">
+              <label class="block text-color-400 text-sm flex-1" for="edit-url"
+                >资源地址 *</label
+              >
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-clipboard"
+                @click="pasteAndPurify('edit')"
+              >
+                粘贴
+              </UButton>
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-sparkles"
+                @click="purifyCurrent('edit')"
+              >
+                净化
+              </UButton>
+            </div>
             <UInput
               id="edit-url"
               v-model="editUrl"
@@ -769,7 +876,7 @@ const importSources = async () => {
               <UButton
                 type="button"
                 size="sm"
-                color="primary"
+                color="neutral"
                 variant="soft"
                 icon="i-lucide-folder"
                 :loading="menuLoading"

@@ -221,29 +221,25 @@ const deleteCategory = async (id: number) => {
           :get-row-id="(row: Category) => String(row.id)"
         >
           <template #id-cell="{ row }">
-            <span
-              class="text-xs text-color-400 font-mono"
-              :title="String(row.original.id)"
-              >{{ row.original.id }}</span
-            >
+            <span :title="String(row.original.id)">{{ row.original.id }}</span>
           </template>
           <template #name-cell="{ row }">
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center"
+                class="size-8 bg-elevated rounded-lg flex items-center justify-center"
               >
                 <img
                   v-if="row.original.image"
                   :src="row.original.image"
-                  class="w-6 h-6"
+                  class="size-6"
                 />
-                <Tag v-else class="w-5 h-5 text-color-500" />
+                <Tag v-else class="size-5 text-muted" />
               </div>
-              <span>{{ row.original.name }}</span>
+              {{ row.original.name }}
             </div>
           </template>
           <template #sort-cell="{ row }">
-            <span class="text-color-300">{{ row.original.sort }}</span>
+            {{ row.original.sort }}
           </template>
           <template #isShow-cell="{ row }">
             <UBadge
@@ -278,7 +274,7 @@ const deleteCategory = async (id: number) => {
             </div>
           </template>
           <template #empty>
-            <p class="text-center text-color-500 py-12">暂无分类</p>
+            <p class="text-center text-muted py-12">暂无分类</p>
           </template>
         </UTable>
 
@@ -315,7 +311,7 @@ const deleteCategory = async (id: number) => {
         />
         <div class="space-y-4">
           <div>
-            <label class="block text-color-400 text-sm mb-2" for="add-cat-name"
+            <label class="block text-sm mb-2" for="add-cat-name"
               >分类名称 *</label
             >
             <UInput
@@ -323,10 +319,11 @@ const deleteCategory = async (id: number) => {
               v-model="newName"
               type="text"
               placeholder="请输入分类名称"
+              class="w-full"
             />
           </div>
           <div>
-            <label class="block text-color-400 text-sm mb-2" for="add-cat-image"
+            <label class="block text-sm mb-2" for="add-cat-image"
               >封面图片</label
             >
             <div class="flex gap-2">
@@ -348,20 +345,16 @@ const deleteCategory = async (id: number) => {
             </div>
           </div>
           <div>
-            <label class="block text-color-400 text-sm mb-2" for="add-cat-sort"
-              >排序</label
-            >
+            <label class="block text-sm mb-2" for="add-cat-sort">排序</label>
             <UInput
               id="add-cat-sort"
               v-model.number="newSort"
               type="number"
               placeholder="排序值，数字越小越靠前"
+              class="w-full"
             />
           </div>
-          <div class="flex items-center gap-2">
-            <UCheckbox v-model="newIsShow" />
-            <span class="text-color-300 text-sm">显示该分类</span>
-          </div>
+          <UCheckbox v-model="newIsShow" label="显示该分类" />
         </div>
       </template>
 
@@ -398,7 +391,7 @@ const deleteCategory = async (id: number) => {
         />
         <div class="space-y-4">
           <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-cat-name"
+            <label class="block text-sm mb-2" for="edit-cat-name"
               >分类名称 *</label
             >
             <UInput
@@ -406,12 +399,11 @@ const deleteCategory = async (id: number) => {
               v-model="editName"
               type="text"
               placeholder="请输入分类名称"
+              class="w-full"
             />
           </div>
           <div>
-            <label
-              class="block text-color-400 text-sm mb-2"
-              for="edit-cat-image"
+            <label class="block text-sm mb-2" for="edit-cat-image"
               >封面图片</label
             >
             <div class="flex gap-2">
@@ -433,20 +425,16 @@ const deleteCategory = async (id: number) => {
             </div>
           </div>
           <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-cat-sort"
-              >排序</label
-            >
+            <label class="block text-sm mb-2" for="edit-cat-sort">排序</label>
             <UInput
               id="edit-cat-sort"
               v-model.number="editSort"
               type="number"
               placeholder="排序值，数字越小越靠前"
+              class="w-full"
             />
           </div>
-          <div class="flex items-center gap-2">
-            <UCheckbox v-model="editIsShow" />
-            <span class="text-color-300 text-sm">显示该分类</span>
-          </div>
+          <UCheckbox v-model="editIsShow" label="显示该分类" />
         </div>
       </template>
 

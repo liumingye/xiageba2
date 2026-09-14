@@ -25,7 +25,7 @@ const rememberChecked = useStorage<boolean>("remember-me", false);
 const rememberedUsername = useStorage<string>("remembered-account", "");
 
 const inputUi = {
-  base: "h-16 rounded-2xl bg-transparent hover:bg-transparent focus:bg-transparent border border-transparent focus:border-white/15 focus-visible:outline-0 md:text-lg px-6",
+  base: "h-16 rounded-2xl bg-transparent hover:bg-transparent focus:bg-transparent border border-transparent focus:border-white/15 focus-visible:outline-0 md:text-lg px-6 placeholder:text-white/70",
 };
 
 const fields = computed<AuthFormField[]>(() => [
@@ -148,7 +148,7 @@ const handleSubmit = async (
             password:
               'mt-1 bg-inverted/6 hover:bg-inverted/10 focus:bg-inverted/10 rounded-2xl',
             body: 'auth-reveal data-reveal-order5',
-            footer: 'text-white/60 auth-reveal data-reveal-order7',
+            footer: 'text-white/70 auth-reveal data-reveal-order7',
             checkbox: 'items-center',
           }"
           @submit="handleSubmit"

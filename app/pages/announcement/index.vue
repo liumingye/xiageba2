@@ -78,7 +78,7 @@ watch(
 </script>
 
 <template>
-  <div class="flex items-center justify-between mb-6">
+  <div class="flex items-center mb-6">
     <h1 class="text-2xl font-bold flex items-center gap-2">
       <Megaphone class="w-6 h-6 text-primary-400" />
       公告列表

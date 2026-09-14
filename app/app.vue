@@ -275,7 +275,6 @@ const isMobile = isMobileOrTablet();
           </ULink>
         </div>
       </UFooter>
-
       <Qrcode v-if="!isMobile" />
     </template>
 

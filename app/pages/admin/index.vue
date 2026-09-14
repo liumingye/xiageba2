@@ -165,7 +165,7 @@ const goToPage = (page: number) => {
           class="w-full"
         >
           <template #leading>
-            <Search class="w-4 h-4 text-color-500" />
+            <Search class="w-4 h-4 text-muted" />
           </template>
         </UInput>
       </form>
@@ -182,31 +182,26 @@ const goToPage = (page: number) => {
         >
           <template #cover-cell="{ row }">
             <img
-              :src="
-                row.original.cover ||
-                config.app.baseURL + 'img/cover.png'
-              "
+              :src="row.original.cover || config.app.baseURL + 'img/cover.png'"
               :alt="row.original.title"
-              class="w-12 h-12 rounded object-cover"
+              class="min-w-10 max-w-10 rounded object-cover aspect-square"
             />
           </template>
           <template #title-cell="{ row }">
-            <span
-              class="block max-w-50 truncate"
-              :title="row.original.title"
-              >{{ row.original.title }}</span
-            >
+            <span class="block max-w-50 truncate" :title="row.original.title">{{
+              row.original.title
+            }}</span>
           </template>
           <template #artist-cell="{ row }">
             <span
-              class="block max-w-50 truncate text-color-400"
+              class="block max-w-50 truncate"
               :title="row.original.artist"
               >{{ row.original.artist }}</span
             >
           </template>
           <template #album-cell="{ row }">
             <span
-              class="block max-w-50 truncate text-color-400"
+              class="block max-w-50 truncate"
               :title="row.original.album || '-'"
               >{{ row.original.album || "-" }}</span
             >
@@ -238,9 +233,9 @@ const goToPage = (page: number) => {
           <template #empty>
             <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
               <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
-              <p class="text-color-500 text-sm mt-2">加载中...</p>
+              <p class="text-muted mt-2">加载中...</p>
             </div>
-            <p v-else class="text-center text-color-500 py-12">暂无音乐</p>
+            <p v-else class="text-center text-muted py-12">暂无音乐</p>
           </template>
         </UTable>
       </UCard>
