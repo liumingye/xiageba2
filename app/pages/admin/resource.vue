@@ -373,10 +373,10 @@ function purifyUrl(input: string): string {
 
   // 匹配已知网盘链接（查询参数只取到 # 之前，去掉 hash 片段）
   const patterns = [
-    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s]*)?/i,
-    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s]*)?/i,
-    /https?:\/\/pan\.baidu\.com\/(?:s\/[a-zA-Z0-9-_]+|share\/init\?surl=[a-zA-Z0-9-_]+)(?:\?[^#\s]*)?/i,
-    /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s]*)?/i,
+    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s"']*)?/i,
+    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s"']*)?/i,
+    /https?:\/\/pan\.baidu\.com\/(?:s\/[a-zA-Z0-9-_]+|share\/init\?surl=[a-zA-Z0-9-_]+)(?:\?[^#\s"']*)?/i,
+    /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s"']*)?/i,
   ];
 
   let url: string | null = null;

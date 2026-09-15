@@ -92,29 +92,24 @@ interface CategoryLatestItem {
 }
 
 interface CategoryWithLatest {
-  id: number;
-  name: string;
-  image: string;
-  sort: number;
-  latest: CategoryLatestItem[];
+  data: {
+    id: number;
+    name: string;
+    image: string;
+    sort: number;
+    latest: CategoryLatestItem[];
+  }[];
 }
 
-const { data: categoriesWithLatest } = await useAsyncData(
-  "home-categories",
-  async () => {
-    try {
-      const res = await $fetch<{ data: CategoryWithLatest[] }>(
-        "/api/category",
-        { query: { withLatest: "true" } },
-      );
-      return res.data || [];
-    } catch {
-      return [];
-    }
-  },
+const { data: categoriesWithLatest } = await useFetch<CategoryWithLatest>(
+  "/api/category",
   {
+    query: { withLatest: "true" },
+    method: "GET",
+    key: "home-categories",
     server: true,
-    default: () => [],
+    lazy: true,
+    default: () => ({ data: [] }),
   },
 );
 
@@ -559,7 +554,7 @@ const getPic = (url: string) => {
           </UCard>
 
           <UCard
-            v-for="cat in categoriesWithLatest"
+            v-for="cat in categoriesWithLatest.data"
             :key="cat.id"
             :ui="gridCardUi"
           >

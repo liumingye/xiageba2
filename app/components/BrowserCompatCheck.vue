@@ -7,11 +7,8 @@ const show = ref(false);
 const qrCodeUrl = ref("");
 
 onMounted(async () => {
-  // 检测是否支持 oklch
-  const supported =
-    typeof CSS !== "undefined" &&
-    typeof CSS.supports === "function" &&
-    CSS.supports("color", "oklch(0 0 0)");
+  // 检测是否支持 @layer 规则块
+  const supported = "CSSLayerBlockRule" in window;
 
   if (!supported) {
     isLocked.value = true;

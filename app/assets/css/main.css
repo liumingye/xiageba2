@@ -17,6 +17,34 @@
   }
 }
 
+@layer utilities {
+  /** ring 兼容低版本浏览器 chrome100 */
+  .ring:not(.ring-inset),
+  .ring-1:not(.ring-inset) {
+    --tw-ring-shadow: 0 0 0 calc(1px + var(--tw-ring-offset-width))
+      var(--tw-ring-color, currentcolor);
+  }
+  .ring.ring-inset,
+  .ring-1.ring-inset {
+    --tw-ring-shadow: inset 0 0 0 calc(1px + var(--tw-ring-offset-width))
+      var(--tw-ring-color, currentcolor);
+  }
+  .ring-2.ring-inset {
+    --tw-ring-shadow: inset 0 0 0 calc(2px + var(--tw-ring-offset-width))
+      var(--tw-ring-color, currentcolor);
+  }
+
+  /** modal 兼容低版本浏览器 chrome100 */
+  @supports (not (translate: 0)) {
+    .-translate-y-1\/2[role="dialog"][data-slot="content"],
+    .-translate-x-1\/2[role="dialog"][data-slot="content"] {
+      transform: translateY(var(--tw-translate-y))
+        translateX(var(--tw-translate-x));
+    }
+  }
+}
+/** end */
+
 @theme static {
   --color-amber-400: oklch(82.8% 0.189 84.429);
   --color-amber-500: oklch(76.9% 0.188 70.08);

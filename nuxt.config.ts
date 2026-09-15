@@ -366,12 +366,8 @@ export default defineNuxtConfig({
   },
   vite: {
     build: {
-      target: ["es2015"],
       cssCodeSplit: true, // 开启 CSS 代码拆分
       chunkSizeWarningLimit: 1000, // 调整 chunk 大小警告阈值
-    },
-    esbuild: {
-      target: ["es2015"],
     },
     optimizeDeps: {
       include: [

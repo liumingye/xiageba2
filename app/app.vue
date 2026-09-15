@@ -151,7 +151,8 @@ const isMobile = isMobileOrTablet();
               aria-label="首页"
               :active="route.path === '/'"
               active-color="primary"
-              active-variant="soft"
+              active-class="bg-elevated"
+              class="hover:bg-elevated"
             >
               <Home class="size-5" />
             </UButton>
