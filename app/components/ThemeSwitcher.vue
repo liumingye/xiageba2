@@ -7,6 +7,7 @@ import {
   type PrimaryColor,
   type RadiusValue,
 } from "~/composables/useThemeConfig";
+import { useCssSupports } from "@vueuse/core";
 
 const {
   settings,
@@ -71,6 +72,12 @@ function randomTheme() {
     radius: pickRandom(radiusValues),
   });
 }
+
+// 检查浏览器支持 oklch 颜色空间
+const { isSupported: supportsOklch } = useCssSupports(
+  "color",
+  "oklch(50% 0.2 30)",
+);
 </script>
 
 <template>
@@ -146,7 +153,7 @@ function randomTheme() {
         </section>
 
         <!-- Primary -->
-        <section>
+        <section v-if="supportsOklch">
           <div class="flex items-center gap-1.5 mb-3 text-sm font-medium">
             <span>主色调</span>
           </div>
@@ -184,7 +191,7 @@ function randomTheme() {
         </section>
 
         <!-- Neutral -->
-        <section>
+        <section v-if="supportsOklch">
           <div class="flex items-center gap-1.5 mb-3 text-sm font-medium">
             <span>中性灰色调</span>
           </div>

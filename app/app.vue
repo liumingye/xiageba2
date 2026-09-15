@@ -118,6 +118,7 @@ const isMobile = isMobileOrTablet();
       delayDuration: 500,
     }"
   >
+    <BrowserCompatCheck />
     <NuxtAnnouncer />
     <NuxtRouteAnnouncer />
     <NuxtLoadingIndicator :height="1" />

@@ -26,7 +26,9 @@
     "@pinia/nuxt": "^0.11.3",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@teages/nuxt-legacy": "^3.0.1",
     "@types/pg": "^8.20.0",
+    "@vitejs/plugin-legacy": "^8.2.3",
     "@vueuse/core": "^14.3.0",
     "axios": "^1.18.1",
     "cheerio": "^1.2.0",
@@ -48,12 +50,12 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
-    "@teages/nuxt-legacy": "^2.0.2",
     "@types/node": "^26.1.0",
     "@types/nodemailer": "^8.0.1",
     "@types/qrcode": "^1.5.5",
     "@vite-pwa/nuxt": "^1.1.1",
-    "@vitejs/plugin-legacy": "^7.2.1",
+    "autoprefixer": "^10.6.0",
+    "postcss-preset-env": "^11.5.3",
     "terser": "^5.48.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"

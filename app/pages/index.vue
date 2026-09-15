@@ -23,7 +23,7 @@ const sectionOverflowing = ref(true);
 
 // 首页宫格卡片统一使用 UCard，保持与原 .card 一致的观感
 const gridCardUi = {
-  root: "bg-muted border border-muted rounded-xl overflow-hidden",
+  root: "bg-muted border border-muted rounded-xl overflow-visible",
   body: "flex flex-col px-2 sm:px-2 lg:px-3 py-4 sm:py-4",
 };
 
@@ -466,17 +466,6 @@ const getPic = (url: string) => {
             }"
             @click="handleHotwordClick(hotword)"
           >
-            <span
-              v-if="index < 3"
-              class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium shrink-0 text-white"
-              :class="{
-                'bg-red-500': index === 0,
-                'bg-orange-500': index === 1,
-                'bg-teal-500': index === 2,
-              }"
-            >
-              {{ index + 1 }}
-            </span>
             {{ hotword.word }}
           </UButton>
         </div>
@@ -549,28 +538,24 @@ const getPic = (url: string) => {
               </div>
             </div>
 
-            <ul class="flex-1 space-y-1.5 min-w-0">
-              <li
+            <div class="space-y-1.5">
+              <div
                 v-for="music in hotMusic.slice(0, 11)"
                 :key="music.id"
-                class="flex items-center gap-1 md:gap-1.5 min-w-0"
+                class="item"
               >
-                <MusicIcon class="w-3 h-3 text-primary-400 shrink-0" />
-                <UTooltip
-                  ignoreNonKeyboardFocus
-                  disableHoverableContent
-                  :text="music.title + ' - ' + music.artist"
+                <NuxtLink
+                  :to="`/music/${music.id}`"
+                  :aria-label="music.title + ' - ' + music.artist"
+                  class="link"
                 >
-                  <NuxtLink
-                    :to="`/music/${music.id}`"
-                    class="link"
-                    :aria-label="music.title + ' - ' + music.artist"
+                  <MusicIcon class="w-3 h-3 text-primary-400 shrink-0" />
+                  <span class="title"
+                    >{{ music.title }} - {{ music.artist }}</span
                   >
-                    {{ music.title }} - {{ music.artist }}
-                  </NuxtLink>
-                </UTooltip>
-              </li>
-            </ul>
+                </NuxtLink>
+              </div>
+            </div>
           </UCard>
 
           <UCard
@@ -618,37 +603,30 @@ const getPic = (url: string) => {
               </div>
             </NuxtLink>
 
-            <ul class="flex-1 space-y-1.5 min-w-0 pb-3 border-b border-muted">
-              <li v-if="cat.latest.length === 0" class="text-sm text-muted">
+            <div class="space-y-1.5 pb-3 border-b border-muted">
+              <div v-if="cat.latest.length === 0" class="text-sm text-muted">
                 暂无资源
-              </li>
-              <li
+              </div>
+              <div
                 v-else
                 v-for="item in cat.latest.slice(0, 10)"
                 :key="item.id"
-                class="flex items-center gap-1 md:gap-1.5 min-w-0"
+                class="item"
               >
-                <div
-                  v-if="item.type !== 'other'"
-                  class="size-3"
-                  :class="`icon-${item.type}`"
-                ></div>
-                <UTooltip
-                  ignoreNonKeyboardFocus
-                  disableHoverableContent
-                  :text="item.title"
+                <NuxtLink
+                  :to="`/source/${item.id}`"
+                  :aria-label="item.title"
+                  class="link"
                 >
-                  <NuxtLink
-                    :to="`/source/${item.id}`"
-                    class="link"
-                    :aria-label="item.title"
-                  >
-                    {{ item.title }}
-                  </NuxtLink>
-                </UTooltip>
-              </li>
-            </ul>
-
+                  <div
+                    v-if="item.type !== 'other'"
+                    class="size-3"
+                    :class="`icon-${item.type}`"
+                  ></div>
+                  <span class="title">{{ item.title }}</span>
+                </NuxtLink>
+              </div>
+            </div>
             <UButton
               variant="link"
               :to="`/categorie/${cat.id}`"
@@ -860,7 +838,29 @@ const getPic = (url: string) => {
   padding-bottom: 5px;
 }
 
-.link {
-  @apply text-sm hover:text-primary truncate transition-colors;
+.item {
+  @apply flex items-center text-sm;
+  @media (hover: hover) and (min-width: 64rem) {
+    @apply relative h-5 -mx-1;
+  }
+
+  .link {
+    @apply min-w-0 flex items-center gap-1 md:gap-1.5;
+    @media (hover: hover) and (min-width: 64rem) {
+      @apply border border-transparent px-1 rounded-sm;
+    }
+  }
+
+  @media (hover: hover) and (min-width: 64rem) {
+    &:hover {
+      .link {
+        @apply absolute z-50 bg-default min-w-full border-muted text-primary;
+      }
+    }
+  }
+
+  .title {
+    @apply truncate;
+  }
 }
 </style>

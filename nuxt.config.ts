@@ -1,4 +1,3 @@
-import legacy from "@vitejs/plugin-legacy";
 import path from "path";
 
 // 1. 判断是否为开发环境
@@ -343,19 +342,37 @@ export default defineNuxtConfig({
       "*/5 * * * *": ["source:check_account"],
     },
   },
+  legacy: {
+    vite: {
+      targets: [
+        "Chrome >= 87",
+        "ChromeAndroid >= 87",
+        "Edge >= 87",
+        "Firefox >= 78",
+        "Safari >= 12",
+        "iOS >= 12",
+      ],
+      modernPolyfills: true,
+      renderLegacyChunks: true,
+    },
+  },
+  postcss: {
+    plugins: {
+      "postcss-preset-env": {
+        stage: 3,
+      },
+      autoprefixer: {},
+    },
+  },
   vite: {
     build: {
-      // target: ["es2015"], // 指定目标浏览器版本,
+      target: ["es2015"],
       cssCodeSplit: true, // 开启 CSS 代码拆分
       chunkSizeWarningLimit: 1000, // 调整 chunk 大小警告阈值
     },
-    plugins: [
-      legacy({
-        modernTargets: "last 3 years, not dead", // 兼容的浏览器版本
-        renderLegacyChunks: false,
-        modernPolyfills: true,
-      }) as any,
-    ],
+    esbuild: {
+      target: ["es2015"],
+    },
     optimizeDeps: {
       include: [
         "@lucide/vue",
