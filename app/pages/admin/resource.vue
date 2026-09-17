@@ -371,12 +371,35 @@ function purifyUrl(input: string): string {
   const text = input.trim();
   if (!text) return "";
 
-  // 只匹配网盘分享链接本体，不匹配 ? 后面的参数
+  // =========================
+  // 1. 百度 share/init
+  // =========================
+  const baiduInitMatch = text.match(
+    /https?:\/\/pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9_-]+)/i,
+  );
+
+  if (baiduInitMatch) {
+    const surl = baiduInitMatch[1];
+
+    // pwd 可以在 &pwd= 后面
+    const pwdMatch = text.match(/[?&]pwd=([a-zA-Z0-9]{4})/i);
+
+    const pwd = pwdMatch?.[1];
+
+    return `https://pan.baidu.com/s/1${surl}${pwd ? `?pwd=${pwd}` : ""}`;
+  }
+
+  // =========================
+  // 2. 普通网盘分享链接
+  // =========================
   const patterns = [
-    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9_-]+/i,
-    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9_-]+/i,
+    // 百度
     /https?:\/\/pan\.baidu\.com\/s\/[a-zA-Z0-9_-]+/i,
-    /https?:\/\/pan\.baidu\.com\/share\/init\?surl=[a-zA-Z0-9_-]+/i,
+    // 夸克
+    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9_-]+/i,
+    // UC
+    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9_-]+/i,
+    // 迅雷
     /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9_-]+/i,
   ];
 
@@ -391,37 +414,31 @@ function purifyUrl(input: string): string {
     }
   }
 
-  // 没有匹配到网盘链接
+  // 没有匹配到已知网盘链接
   if (!url) {
     return text;
   }
 
-  // 百度 share/init?surl=xxxx → /s/1xxxx
-  const initMatch = url.match(
-    /pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9_-]+)/i,
-  );
+  // =========================
+  // 3. 提取 pwd
+  // =========================
 
-  if (initMatch) {
-    url = `https://pan.baidu.com/s/1${initMatch[1]}`;
-  }
-
-  // 找到网盘链接之后，从整个文本中提取 pwd
-  //
-  // 支持：
-  // ?pwd=apsf
-  // ?pwd=apsf其他文本
-  // ?a=123&pwd=apsf&t=111
-  // ?pwd=apsf)
-  // ?pwd=apsf]
-  //
-  // 只取 pwd 后面的 4 个字母/数字
   const pwdMatch = text.match(/[?&]pwd=([a-zA-Z0-9]{4})/i);
 
-  if (pwdMatch) {
-    url += `?pwd=${pwdMatch[1]}`;
+  const pwd = pwdMatch?.[1];
+
+  // =========================
+  // 4. 重新拼接
+  // =========================
+
+  if (pwd) {
+    url += `?pwd=${pwd}`;
   }
 
-  // 统一使用 HTTPS
+  // =========================
+  // 5. 统一 HTTPS
+  // =========================
+
   url = url.replace(/^http:\/\//i, "https://");
 
   return url;
