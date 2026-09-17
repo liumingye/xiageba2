@@ -371,39 +371,58 @@ function purifyUrl(input: string): string {
   const text = input.trim();
   if (!text) return "";
 
-  // 匹配已知网盘链接（查询参数只取到 # 之前，去掉 hash 片段）
+  // 只匹配网盘分享链接本体，不匹配 ? 后面的参数
   const patterns = [
-    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s"']*)?/i,
-    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s"']*)?/i,
-    /https?:\/\/pan\.baidu\.com\/(?:s\/[a-zA-Z0-9-_]+|share\/init\?surl=[a-zA-Z0-9-_]+)(?:\?[^#\s"']*)?/i,
-    /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9-_]+(?:\?[^#\s"']*)?/i,
+    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9_-]+/i,
+    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9_-]+/i,
+    /https?:\/\/pan\.baidu\.com\/s\/[a-zA-Z0-9_-]+/i,
+    /https?:\/\/pan\.baidu\.com\/share\/init\?surl=[a-zA-Z0-9_-]+/i,
+    /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9_-]+/i,
   ];
 
   let url: string | null = null;
-  for (const p of patterns) {
-    const m = text.match(p);
-    if (m) {
-      url = m[0];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+
+    if (match) {
+      url = match[0];
       break;
     }
   }
-  if (!url) return text; // 未匹配到已知格式，返回原文
+
+  // 没有匹配到网盘链接
+  if (!url) {
+    return text;
+  }
 
   // 百度 share/init?surl=xxxx → /s/1xxxx
   const initMatch = url.match(
-    /pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9-_]+)/i,
+    /pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9_-]+)/i,
   );
+
   if (initMatch) {
-    const surl = initMatch[1];
-    const pwdMatch = url.match(/pwd=([a-zA-Z0-9]{4})/);
-    const pwd = pwdMatch ? pwdMatch[1] : "";
-    url = `https://pan.baidu.com/s/1${surl}${pwd ? `?pwd=${pwd}` : ""}`;
+    url = `https://pan.baidu.com/s/1${initMatch[1]}`;
   }
 
-  // 确保 https
-  if (!url.startsWith("https://")) {
-    url = url.replace(/^http:\/\//i, "https://");
+  // 找到网盘链接之后，从整个文本中提取 pwd
+  //
+  // 支持：
+  // ?pwd=apsf
+  // ?pwd=apsf其他文本
+  // ?a=123&pwd=apsf&t=111
+  // ?pwd=apsf)
+  // ?pwd=apsf]
+  //
+  // 只取 pwd 后面的 4 个字母/数字
+  const pwdMatch = text.match(/[?&]pwd=([a-zA-Z0-9]{4})/i);
+
+  if (pwdMatch) {
+    url += `?pwd=${pwdMatch[1]}`;
   }
+
+  // 统一使用 HTTPS
+  url = url.replace(/^http:\/\//i, "https://");
 
   return url;
 }
@@ -960,7 +979,7 @@ const importSources = async () => {
               id="import-file"
               type="file"
               accept=".xlsx"
-              class="cursor-pointer"
+              class="cursor-pointer w-full"
               @change="handleFileChange"
             />
             <p class="mt-2 text-color-500 text-xs">
