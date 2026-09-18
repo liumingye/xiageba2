@@ -116,7 +116,7 @@ export default defineCachedEventHandler(
       });
     }
 
-    // 1. 利用结巴分词获取干净的 tokens 数组
+    // 利用结巴分词获取干净的 tokens 数组
     const keywordTokens = prioritizeSearchTokens(cutForSearch(term));
 
     if (keywordTokens.length === 0) {
@@ -126,11 +126,10 @@ export default defineCachedEventHandler(
         page,
         pageSize,
         totalPages: 0,
-        tokens: keywordTokens,
+        tokens: [],
       };
     }
 
-    // 模糊搜索使用“核心词 AND 其他词任选其一”，避免宽泛 OR 查询全表评分。
     const keywordWebQuery = buildSearchWebQuery(keywordTokens, exact);
     const extensionTokens = getResourceFileExtensions(fileTypes);
     const tokens = [...keywordTokens, ...extensionTokens];

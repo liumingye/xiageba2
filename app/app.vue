@@ -46,7 +46,7 @@ const isAiSearch = computed(
   () => route.path === "/search" && route.query.type === "ai",
 );
 
-// 首页与小说页使用页内独立的大搜索框，头部不重复展示搜索框
+// 是否展示头部搜索框
 const showHeaderSearch = computed(
   () =>
     !isAdmin.value && !(route.path === "/" || route.path.startsWith("/book")),
@@ -127,10 +127,10 @@ const isMobile = isMobileOrTablet();
       <UHeader
         :style="{ '--ui-container': 'var(--container-4xl)' }"
         :ui="{
-          left: 'lg:flex-0',
-          right: 'flex-1',
-          container: 'px-2 sm:px-2 lg:px-2 gap-1.5',
-          header: 'px-2 sm:px-2 lg:px-2 gap-1.5',
+          left: 'lg:flex-0 gap-0.5 sm:gap-1.5',
+          right: 'flex-1 gap-0.5 sm:gap-1.5',
+          container: 'px-2 sm:px-2 lg:px-2 gap-0.5 sm:gap-1.5',
+          header: 'px-2 sm:px-2 lg:px-2 gap-0.5 sm:gap-1.5',
           center: 'hidden md:flex',
           content: 'bottom-auto rounded-b-xl',
           body: 'p-2 sm:p-2',

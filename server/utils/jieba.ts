@@ -3,11 +3,11 @@ import { dict } from "@node-rs/jieba/dict.js";
 import * as OpenCC from "opencc-js/core";
 import * as Locale from "opencc-js/preset";
 
-if (!Locale.from.twp || !Locale.to.cn) {
+if (!Locale.from.tw || !Locale.to.cn) {
   throw new Error("OpenCC locale files failed to load.");
 }
 
-const converter = OpenCC.ConverterFactory(Locale.from.twp, Locale.to.cn);
+const converter = OpenCC.ConverterFactory(Locale.from.tw, Locale.to.cn);
 const jieba = Jieba.withDict(dict);
 
 /**

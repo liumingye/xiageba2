@@ -86,10 +86,10 @@ const fetchSuggestions = async (keyword: string) => {
 watchDebounced(
   query,
   (newVal) => {
-    visible.value = true;
+    // visible.value = true;
     fetchSuggestions(newVal);
   },
-  { debounce: 200 },
+  { debounce: 150 },
 );
 
 const handleSelect = (word: string) => {

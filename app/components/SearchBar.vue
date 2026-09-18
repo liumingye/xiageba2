@@ -2,7 +2,6 @@
 import { useRouter, useRoute } from "vue-router";
 import { useMusicStore } from "~/stores/music";
 import { Search, X } from "@lucide/vue";
-import { input } from "#build/ui";
 
 const props = withDefaults(
   defineProps<{

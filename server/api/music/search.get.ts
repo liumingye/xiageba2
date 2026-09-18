@@ -39,9 +39,9 @@ export default defineCachedEventHandler(
       });
     }
 
-    // 1. 获取结巴分词的 tokens 数组
-    const tokens = cutForSearch(term);
-    if (tokens.length === 0) {
+    // 获取结巴分词的 tokens 数组
+    const keywordTokens = prioritizeSearchTokens(cutForSearch(term));
+    if (keywordTokens.length === 0) {
       return {
         data: [],
         total: 0,
@@ -52,10 +52,7 @@ export default defineCachedEventHandler(
       };
     }
 
-    // 2. 🔥 核心优化：构建符合 websearch_to_tsquery 语法的查询文本
-    // exact 模式（AND 精准匹配）：用纯空格连接 -> "周杰伦 1"
-    // 非 exact 模式（OR 模糊匹配）：用大写 OR 连接 -> "周杰伦 OR 1"
-    const formattedWebQuery = exact ? tokens.join(" ") : tokens.join(" OR ");
+    const formattedWebQuery = buildSearchWebQuery(keywordTokens, exact);
 
     // 最多筛选的候选集上限 (100 * 20 = 2000 条)
     const maxCandidates = MAX_PAGE * pageSize;
@@ -145,13 +142,15 @@ export default defineCachedEventHandler(
       pageSize,
       totalPages: Math.min(MAX_PAGE, Math.ceil(totalCount / pageSize)),
       // 清理掉分词中可能残留的双引号，防止前端高亮匹配时错乱
-      tokens: tokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
+      tokens: keywordTokens.map((v) => v.replace(/"/g, "")).filter(Boolean),
     };
   },
   {
     name: "api-music-search-v1",
-    maxAge: 30 * 60,
-    staleMaxAge: 120 * 60,
+    // maxAge: 30 * 60,
+    // staleMaxAge: 120 * 60,
+    maxAge: 1,
+    staleMaxAge: 1,
     swr: true,
     getKey: (event) => {
       const query = getQuery(event);
