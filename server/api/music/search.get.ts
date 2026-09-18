@@ -147,10 +147,8 @@ export default defineCachedEventHandler(
   },
   {
     name: "api-music-search-v1",
-    // maxAge: 30 * 60,
-    // staleMaxAge: 120 * 60,
-    maxAge: 1,
-    staleMaxAge: 1,
+    maxAge: 30 * 60,
+    staleMaxAge: 120 * 60,
     swr: true,
     getKey: (event) => {
       const query = getQuery(event);

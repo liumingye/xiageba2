@@ -36,6 +36,7 @@ const checkSectionOverflow = () => {
 useResizeObserver(sectionRef, checkSectionOverflow);
 
 const { data: hotMusic } = await useFetch<Music[]>("/api/music/recent", {
+  query: { pageSize: 11 },
   method: "GET",
   key: "home-music",
   server: true,
@@ -79,7 +80,8 @@ const activeHistoryTab = ref(hasHotwords.value ? "hot" : "history");
 
 const hasCategory = computed(
   () =>
-    (!!categoriesWithLatest.value && categoriesWithLatest.value.length > 0) ||
+    (!!categoriesWithLatest.value &&
+      categoriesWithLatest.value.data.length > 0) ||
     (!!hotMusic.value && hotMusic.value.length > 0),
 );
 const activeContentTab = ref<"category" | "douban">("category");
@@ -534,11 +536,7 @@ const getPic = (url: string) => {
             </div>
 
             <div class="space-y-1.5">
-              <div
-                v-for="music in hotMusic.slice(0, 11)"
-                :key="music.id"
-                class="item"
-              >
+              <div v-for="music in hotMusic" :key="music.id" class="item">
                 <NuxtLink
                   :to="`/music/${music.id}`"
                   :aria-label="music.title + ' - ' + music.artist"
@@ -604,7 +602,7 @@ const getPic = (url: string) => {
               </div>
               <div
                 v-else
-                v-for="item in cat.latest.slice(0, 10)"
+                v-for="item in cat.latest"
                 :key="item.id"
                 class="item"
               >
