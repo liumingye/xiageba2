@@ -19,7 +19,7 @@ const handleLogout = () => {
         <div
           class="size-8 bg-linear-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
         >
-          <Music class="size-5 text-white" />
+          <Music class="size-5 text-inverted" />
         </div>
         <h1 class="text-xl font-bold">管理后台</h1>
       </div>

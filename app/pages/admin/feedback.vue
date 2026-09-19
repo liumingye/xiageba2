@@ -201,270 +201,252 @@ const columns: TableColumn<any>[] = [
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <AdminHeader />
-
-    <AdminNav />
-
-    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
-      <div
-        class="flex sm:items-center sm:justify-between flex-col sm:flex-row mb-6 gap-3"
+  <div
+    class="flex sm:items-center sm:justify-between flex-col sm:flex-row mb-6 gap-3"
+  >
+    <h2 class="text-lg font-medium">用户反馈</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <UButton
+        size="sm"
+        :color="statusFilter === '' ? 'primary' : 'neutral'"
+        :variant="statusFilter === '' ? 'solid' : 'soft'"
+        @click="handleStatusFilter('')"
       >
-        <h2 class="text-lg font-medium">用户反馈</h2>
-        <div class="flex flex-wrap items-center gap-2">
+        全部
+      </UButton>
+      <UButton
+        size="sm"
+        :color="statusFilter === 'PENDING' ? 'warning' : 'neutral'"
+        :variant="statusFilter === 'PENDING' ? 'solid' : 'soft'"
+        @click="handleStatusFilter('PENDING')"
+      >
+        待处理
+      </UButton>
+      <UButton
+        size="sm"
+        :color="statusFilter === 'DONE' ? 'success' : 'neutral'"
+        :variant="statusFilter === 'DONE' ? 'solid' : 'soft'"
+        @click="handleStatusFilter('DONE')"
+      >
+        已完成
+      </UButton>
+      <UButton
+        color="error"
+        variant="soft"
+        size="sm"
+        icon="i-lucide-trash-2"
+        :loading="isClearing"
+        :disabled="isClearing"
+        @click="clearDoneFeedback"
+      >
+        {{ isClearing ? "清空中..." : "清空已完成" }}
+      </UButton>
+    </div>
+  </div>
+
+  <UCard
+    :ui="{
+      body: 'p-0 sm:p-0',
+    }"
+  >
+    <UTable
+      :data="isLoading ? [] : feedbacks"
+      :columns="columns"
+      :get-row-id="(row: any) => row.id"
+    >
+      <template #song-cell="{ row }">
+        <div class="flex items-center gap-2">
+          <span class="truncate max-w-50">{{ row.original.musicTitle }}</span>
+          <span class="text-color-500 text-sm truncate max-w-30">{{
+            row.original.musicArtist
+          }}</span>
           <UButton
+            as="a"
+            :href="`/music/${row.original.musicId}`"
+            target="_blank"
+            color="neutral"
+            variant="ghost"
+            square
             size="sm"
-            :color="statusFilter === '' ? 'primary' : 'neutral'"
-            :variant="statusFilter === '' ? 'solid' : 'soft'"
-            @click="handleStatusFilter('')"
-          >
-            全部
-          </UButton>
+            icon="i-lucide-external-link"
+            title="查看歌曲"
+            aria-label="查看歌曲"
+          />
+        </div>
+      </template>
+      <template #type-cell="{ row }">
+        <UBadge :color="typeBadgeColor(row.original.type)" variant="solid">
+          {{ typeLabel[row.original.type] || row.original.type }}
+        </UBadge>
+      </template>
+      <template #description-cell="{ row }">
+        <span
+          v-if="row.original.description"
+          class="block max-w-50 truncate text-sm text-color-400"
+          :title="row.original.description"
+          >{{ row.original.description }}</span
+        >
+        <span v-else class="text-sm text-zinc-600">-</span>
+      </template>
+      <template #status-cell="{ row }">
+        <UBadge
+          :color="row.original.status === 'DONE' ? 'success' : 'warning'"
+          variant="soft"
+        >
+          {{ row.original.status === "DONE" ? "已完成" : "待处理" }}
+        </UBadge>
+      </template>
+      <template #check-cell="{ row }">
+        <div class="flex items-center justify-center gap-1.5">
           <UButton
-            size="sm"
-            :color="statusFilter === 'PENDING' ? 'warning' : 'neutral'"
-            :variant="statusFilter === 'PENDING' ? 'solid' : 'soft'"
-            @click="handleStatusFilter('PENDING')"
-          >
-            待处理
-          </UButton>
-          <UButton
-            size="sm"
-            :color="statusFilter === 'DONE' ? 'success' : 'neutral'"
-            :variant="statusFilter === 'DONE' ? 'solid' : 'soft'"
-            @click="handleStatusFilter('DONE')"
-          >
-            已完成
-          </UButton>
-          <UButton
-            color="error"
+            v-if="
+              !checkResults[row.original.musicId] &&
+              checkingId !== row.original.musicId
+            "
+            color="neutral"
             variant="soft"
             size="sm"
-            icon="i-lucide-trash-2"
-            :loading="isClearing"
-            :disabled="isClearing"
-            @click="clearDoneFeedback"
+            icon="i-lucide-search"
+            @click="checkLinks(row.original.musicId)"
           >
-            {{ isClearing ? "清空中..." : "清空已完成" }}
+            检测
           </UButton>
-        </div>
-      </div>
-
-      <UCard
-        :ui="{
-          body: 'p-0 sm:p-0',
-        }"
-      >
-        <UTable
-          :data="isLoading ? [] : feedbacks"
-          :columns="columns"
-          :get-row-id="(row: any) => row.id"
-        >
-          <template #song-cell="{ row }">
-            <div class="flex items-center gap-2">
-              <span class="truncate max-w-50">{{
-                row.original.musicTitle
-              }}</span>
-              <span class="text-color-500 text-sm truncate max-w-30">{{
-                row.original.musicArtist
-              }}</span>
+          <UButton
+            v-else-if="checkingId === row.original.musicId"
+            color="neutral"
+            variant="soft"
+            size="sm"
+            loading
+            disabled
+          >
+            检测中
+          </UButton>
+          <template v-else>
+            <div
+              class="flex items-center gap-1.5"
+              :title="
+                checkResults[row.original.musicId]?.downloads
+                  ?.map(
+                    (d: any) =>
+                      `${d.quality}: ${d.status === 'valid' ? '有效' : d.status === 'invalid' ? '失效' : '待检测'}`,
+                  )
+                  .join('\n')
+              "
+            >
+              <UBadge
+                v-if="
+                  checkResults[row.original.musicId]?.valid_links?.length > 0
+                "
+                color="success"
+                variant="soft"
+              >
+                有效
+                {{ checkResults[row.original.musicId].valid_links.length }}
+              </UBadge>
+              <UBadge
+                v-if="
+                  checkResults[row.original.musicId]?.invalid_links?.length > 0
+                "
+                color="error"
+                variant="soft"
+              >
+                失效
+                {{ checkResults[row.original.musicId].invalid_links.length }}
+              </UBadge>
+              <UBadge
+                v-if="
+                  checkResults[row.original.musicId]?.pending_links?.length > 0
+                "
+                color="warning"
+                variant="soft"
+              >
+                待检测
+                {{ checkResults[row.original.musicId].pending_links.length }}
+              </UBadge>
               <UButton
-                as="a"
-                :href="`/music/${row.original.musicId}`"
-                target="_blank"
                 color="neutral"
                 variant="ghost"
                 square
-                size="sm"
-                icon="i-lucide-external-link"
-                title="查看歌曲"
-                aria-label="查看歌曲"
-              />
-            </div>
-          </template>
-          <template #type-cell="{ row }">
-            <UBadge :color="typeBadgeColor(row.original.type)" variant="solid">
-              {{ typeLabel[row.original.type] || row.original.type }}
-            </UBadge>
-          </template>
-          <template #description-cell="{ row }">
-            <span
-              v-if="row.original.description"
-              class="block max-w-50 truncate text-sm text-color-400"
-              :title="row.original.description"
-              >{{ row.original.description }}</span
-            >
-            <span v-else class="text-sm text-zinc-600">-</span>
-          </template>
-          <template #status-cell="{ row }">
-            <UBadge
-              :color="row.original.status === 'DONE' ? 'success' : 'warning'"
-              variant="soft"
-            >
-              {{ row.original.status === "DONE" ? "已完成" : "待处理" }}
-            </UBadge>
-          </template>
-          <template #check-cell="{ row }">
-            <div class="flex items-center justify-center gap-1.5">
-              <UButton
-                v-if="
-                  !checkResults[row.original.musicId] &&
-                  checkingId !== row.original.musicId
-                "
-                color="neutral"
-                variant="soft"
                 size="sm"
                 icon="i-lucide-search"
+                title="重新检测"
+                aria-label="重新检测"
                 @click="checkLinks(row.original.musicId)"
-              >
-                检测
-              </UButton>
-              <UButton
-                v-else-if="checkingId === row.original.musicId"
-                color="neutral"
-                variant="soft"
-                size="sm"
-                loading
-                disabled
-              >
-                检测中
-              </UButton>
-              <template v-else>
-                <div
-                  class="flex items-center gap-1.5"
-                  :title="
-                    checkResults[row.original.musicId]?.downloads
-                      ?.map(
-                        (d: any) =>
-                          `${d.quality}: ${d.status === 'valid' ? '有效' : d.status === 'invalid' ? '失效' : '待检测'}`,
-                      )
-                      .join('\n')
-                  "
-                >
-                  <UBadge
-                    v-if="
-                      checkResults[row.original.musicId]?.valid_links?.length > 0
-                    "
-                    color="success"
-                    variant="soft"
-                  >
-                    有效
-                    {{ checkResults[row.original.musicId].valid_links.length }}
-                  </UBadge>
-                  <UBadge
-                    v-if="
-                      checkResults[row.original.musicId]?.invalid_links?.length >
-                      0
-                    "
-                    color="error"
-                    variant="soft"
-                  >
-                    失效
-                    {{
-                      checkResults[row.original.musicId].invalid_links.length
-                    }}
-                  </UBadge>
-                  <UBadge
-                    v-if="
-                      checkResults[row.original.musicId]?.pending_links?.length >
-                      0
-                    "
-                    color="warning"
-                    variant="soft"
-                  >
-                    待检测
-                    {{
-                      checkResults[row.original.musicId].pending_links.length
-                    }}
-                  </UBadge>
-                  <UButton
-                    color="neutral"
-                    variant="ghost"
-                    square
-                    size="sm"
-                    icon="i-lucide-search"
-                    title="重新检测"
-                    aria-label="重新检测"
-                    @click="checkLinks(row.original.musicId)"
-                  />
-                </div>
-              </template>
-            </div>
-          </template>
-          <template #createdAt-cell="{ row }">
-            <span class="text-sm text-color-500">{{
-              new Date(row.original.createdAt).toLocaleString("zh-CN", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            }}</span>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <UButton
-                as="a"
-                :href="`/admin/music/edit/${row.original.musicId}`"
-                target="_blank"
-                color="neutral"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-pencil"
-                title="编辑音乐"
-                aria-label="编辑音乐"
-              />
-              <UButton
-                v-if="row.original.status === 'PENDING'"
-                color="success"
-                size="sm"
-                icon="i-lucide-check-circle"
-                @click="resolveFeedback(row.original.id)"
-              >
-                完成
-              </UButton>
-              <span v-else class="text-sm text-zinc-600">
-                {{ row.original.resolvedBy ? `by ${row.original.resolvedBy}` : "" }}
-                {{
-                  row.original.resolvedAt
-                    ? new Date(row.original.resolvedAt).toLocaleDateString(
-                        "zh-CN",
-                      )
-                    : ""
-                }}
-              </span>
-              <UButton
-                color="error"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-trash-2"
-                title="删除"
-                aria-label="删除"
-                @click="deleteFeedback(row.original.id)"
               />
             </div>
           </template>
-          <template #empty>
-            <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
-              <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
-              <p class="text-color-500 text-sm mt-2">加载中...</p>
-            </div>
-            <p v-else class="text-center text-color-500 py-12">暂无反馈</p>
-          </template>
-        </UTable>
-      </UCard>
+        </div>
+      </template>
+      <template #createdAt-cell="{ row }">
+        <span class="text-sm text-color-500">{{
+          new Date(row.original.createdAt).toLocaleString("zh-CN", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        }}</span>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="flex items-center justify-center gap-2">
+          <UButton
+            as="a"
+            :href="`/admin/music/edit/${row.original.musicId}`"
+            target="_blank"
+            color="neutral"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-pencil"
+            title="编辑音乐"
+            aria-label="编辑音乐"
+          />
+          <UButton
+            v-if="row.original.status === 'PENDING'"
+            color="success"
+            size="sm"
+            icon="i-lucide-check-circle"
+            @click="resolveFeedback(row.original.id)"
+          >
+            完成
+          </UButton>
+          <span v-else class="text-sm text-zinc-600">
+            {{ row.original.resolvedBy ? `by ${row.original.resolvedBy}` : "" }}
+            {{
+              row.original.resolvedAt
+                ? new Date(row.original.resolvedAt).toLocaleDateString("zh-CN")
+                : ""
+            }}
+          </span>
+          <UButton
+            color="error"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-trash-2"
+            title="删除"
+            aria-label="删除"
+            @click="deleteFeedback(row.original.id)"
+          />
+        </div>
+      </template>
+      <template #empty>
+        <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+          <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+          <p class="text-color-500 text-sm mt-2">加载中...</p>
+        </div>
+        <p v-else class="text-center text-color-500 py-12">暂无反馈</p>
+      </template>
+    </UTable>
+  </UCard>
 
-      <!-- 分页 -->
-      <AdminPagination
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :total="total"
-        item-label="条反馈"
-        @page-change="goToPage"
-      />
-    </main>
-  </div>
+  <!-- 分页 -->
+  <AdminPagination
+    :current-page="currentPage"
+    :total-pages="totalPages"
+    :total="total"
+    item-label="条反馈"
+    @page-change="goToPage"
+  />
 </template>

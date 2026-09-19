@@ -288,258 +288,251 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <AdminHeader />
-    <AdminNav />
-
-    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium">文件管理</h2>
-        <div class="flex items-center gap-3">
-          <UButton
-            color="neutral"
-            variant="soft"
-            icon="i-lucide-search"
-            @click="handleSearch"
-          >
-            搜索
-          </UButton>
-          <UButton color="primary" icon="i-lucide-upload" @click="toggleUpload">
-            上传
-          </UButton>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-3 mb-3 justify-end">
-        <USelect
-          v-model="selectedConfigId"
-          class="max-w-72"
-          placeholder="请选择存储配置"
-          :items="
-            configs.map((cfg) => ({
-              label: `${cfg.name} (${cfg.bucket})`,
-              value: cfg.id,
-            }))
-          "
-        />
-        <UInput
-          v-model="searchKeyword"
-          type="text"
-          placeholder="搜索文件名"
-          class="flex-1 max-w-md"
-          @keyup.enter="handleSearch"
-        />
-      </div>
-
-      <UCard
-        v-if="showUpload"
-        :ui="{
-          root: 'mb-4',
-          body: 'flex flex-wrap items-end gap-4',
-        }"
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-lg font-medium">文件管理</h2>
+    <div class="flex items-center gap-3">
+      <UButton
+        color="neutral"
+        variant="soft"
+        icon="i-lucide-search"
+        @click="handleSearch"
       >
-        <div class="flex-1 min-w-50">
-          <label class="block text-color-400 text-sm mb-2" for="file-upload"
-            >选择文件 *</label
-          >
-          <UInput
-            id="file-upload"
-            type="file"
-            accept="*"
-            class="cursor-pointer w-full"
-            @change="handleFileChange"
-          />
-        </div>
-        <div class="flex-1 min-w-50">
-          <label class="block text-color-400 text-sm mb-2" for="file-path"
-            >上传路径（可选）</label
-          >
-          <UInput
-            id="file-path"
-            v-model="uploadPath"
-            type="text"
-            placeholder="例如：music/2026/"
-            class="w-full"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <UButton
-            color="primary"
-            icon="i-lucide-upload"
-            :loading="isUploading"
-            :disabled="isUploading || !uploadFile"
-            @click="handleUpload"
-          >
-            {{ isUploading ? "上传中..." : "开始上传" }}
-          </UButton>
-          <UButton
-            color="neutral"
-            variant="ghost"
-            square
-            size="sm"
-            icon="i-lucide-x"
-            title="关闭"
-            aria-label="关闭"
-            @click="toggleUpload"
-          />
-        </div>
-      </UCard>
+        搜索
+      </UButton>
+      <UButton color="primary" icon="i-lucide-upload" @click="toggleUpload">
+        上传
+      </UButton>
+    </div>
+  </div>
 
-      <UCard
-        :ui="{
-          body: 'p-4',
-        }"
+  <div class="flex items-center gap-3 mb-3 justify-end">
+    <USelect
+      v-model="selectedConfigId"
+      class="max-w-72"
+      placeholder="请选择存储配置"
+      :items="
+        configs.map((cfg) => ({
+          label: `${cfg.name} (${cfg.bucket})`,
+          value: cfg.id,
+        }))
+      "
+    />
+    <UInput
+      v-model="searchKeyword"
+      type="text"
+      placeholder="搜索文件名"
+      class="flex-1 max-w-md"
+      @keyup.enter="handleSearch"
+    />
+  </div>
+
+  <UCard
+    v-if="showUpload"
+    :ui="{
+      root: 'mb-4',
+      body: 'flex flex-wrap items-end gap-4',
+    }"
+  >
+    <div class="flex-1 min-w-50">
+      <label class="block text-color-400 text-sm mb-2" for="file-upload"
+        >选择文件 *</label
       >
-        <!-- 加载中 -->
-        <div v-if="isLoading" class="py-16 text-center">
-          <Loader2 class="w-6 h-6 text-primary-500 animate-spin mx-auto" />
-          <p class="text-color-500 text-sm mt-2">加载中...</p>
-        </div>
+      <UInput
+        id="file-upload"
+        type="file"
+        accept="*"
+        class="cursor-pointer w-full"
+        @change="handleFileChange"
+      />
+    </div>
+    <div class="flex-1 min-w-50">
+      <label class="block text-color-400 text-sm mb-2" for="file-path"
+        >上传路径（可选）</label
+      >
+      <UInput
+        id="file-path"
+        v-model="uploadPath"
+        type="text"
+        placeholder="例如：music/2026/"
+        class="w-full"
+      />
+    </div>
+    <div class="flex items-center gap-2">
+      <UButton
+        color="primary"
+        icon="i-lucide-upload"
+        :loading="isUploading"
+        :disabled="isUploading || !uploadFile"
+        @click="handleUpload"
+      >
+        {{ isUploading ? "上传中..." : "开始上传" }}
+      </UButton>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        square
+        size="sm"
+        icon="i-lucide-x"
+        title="关闭"
+        aria-label="关闭"
+        @click="toggleUpload"
+      />
+    </div>
+  </UCard>
 
-        <!-- 未选择配置 -->
-        <div v-else-if="!selectedConfigId" class="py-16 text-center">
-          <HardDrive class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-          <p class="text-color-500">请选择存储配置</p>
-        </div>
+  <UCard
+    :ui="{
+      body: 'p-4',
+    }"
+  >
+    <!-- 加载中 -->
+    <div v-if="isLoading" class="py-16 text-center">
+      <Loader2 class="w-6 h-6 text-primary-500 animate-spin mx-auto" />
+      <p class="text-color-500 text-sm mt-2">加载中...</p>
+    </div>
 
-        <!-- 空状态 -->
-        <div v-else-if="files.length === 0" class="py-16 text-center">
-          <FileText class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-          <p class="text-color-500">暂无文件</p>
-        </div>
+    <!-- 未选择配置 -->
+    <div v-else-if="!selectedConfigId" class="py-16 text-center">
+      <HardDrive class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+      <p class="text-color-500">请选择存储配置</p>
+    </div>
 
-        <!-- Grid 文件列表 -->
+    <!-- 空状态 -->
+    <div v-else-if="files.length === 0" class="py-16 text-center">
+      <FileText class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+      <p class="text-color-500">暂无文件</p>
+    </div>
+
+    <!-- Grid 文件列表 -->
+    <div
+      v-else
+      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+    >
+      <div
+        v-for="file in files"
+        :key="file.key"
+        class="group bg-color-200 border border-color-300 rounded-xl overflow-hidden hover:border-color-500 transition-colors"
+      >
+        <!-- 预览区域 -->
         <div
-          v-else
-          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+          class="aspect-square flex items-center justify-center relative overflow-hidden"
         >
+          <img
+            v-if="isImage(file)"
+            :src="file.url"
+            :alt="file.name"
+            loading="lazy"
+            class="w-full h-full object-cover"
+            @error="($event.target as any).style.display = 'none'"
+          />
+          <FileAudio
+            v-else-if="isAudio(file)"
+            class="w-10 h-10 text-color-300"
+          />
+          <FileVideo
+            v-else-if="isVideo(file)"
+            class="w-10 h-10 text-color-300"
+          />
+          <File v-else class="w-10 h-10 text-color-300" />
+
+          <!-- 悬浮操作 -->
           <div
-            v-for="file in files"
-            :key="file.key"
-            class="group bg-color-200 border border-color-300 rounded-xl overflow-hidden hover:border-color-500 transition-colors"
+            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
           >
-            <!-- 预览区域 -->
-            <div
-              class="aspect-square flex items-center justify-center relative overflow-hidden"
-            >
-              <img
-                v-if="isImage(file)"
-                :src="file.url"
-                :alt="file.name"
-                loading="lazy"
-                class="w-full h-full object-cover"
-                @error="($event.target as any).style.display = 'none'"
-              />
-              <FileAudio
-                v-else-if="isAudio(file)"
-                class="w-10 h-10 text-color-300"
-              />
-              <FileVideo
-                v-else-if="isVideo(file)"
-                class="w-10 h-10 text-color-300"
-              />
-              <File v-else class="w-10 h-10 text-color-300" />
-
-              <!-- 悬浮操作 -->
-              <div
-                class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
-              >
-                <UButton
-                  variant="outline"
-                  square
-                  size="sm"
-                  icon="i-lucide-copy"
-                  title="复制链接"
-                  aria-label="复制链接"
-                  @click="copyUrl(file)"
-                />
-                <UButton
-                  variant="outline"
-                  square
-                  size="sm"
-                  icon="i-lucide-pencil"
-                  title="重命名"
-                  aria-label="重命名"
-                  :disabled="deletingKey === file.key"
-                  @click="startRename(file)"
-                />
-                <UButton
-                  variant="outline"
-                  square
-                  size="sm"
-                  icon="i-lucide-trash-2"
-                  :loading="deletingKey === file.key"
-                  :disabled="deletingKey === file.key"
-                  title="删除"
-                  aria-label="删除"
-                  @click="handleDelete(file)"
-                />
-              </div>
-            </div>
-
-            <!-- 文件信息 -->
-            <div class="p-2.5">
-              <!-- 重命名输入框 -->
-              <div
-                v-if="renameTarget?.key === file.key"
-                class="flex items-center gap-1"
-              >
-                <UInput
-                  v-model="renameValue"
-                  type="text"
-                  class="flex-1"
-                  @keyup.enter="confirmRename"
-                  @keyup.esc="cancelRename"
-                />
-                <UButton
-                  color="primary"
-                  variant="ghost"
-                  square
-                  size="sm"
-                  icon="i-lucide-check"
-                  :loading="isRenaming"
-                  :disabled="isRenaming"
-                  title="确认"
-                  aria-label="确认"
-                  @click="confirmRename"
-                />
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  square
-                  size="sm"
-                  icon="i-lucide-x"
-                  title="取消"
-                  aria-label="取消"
-                  @click="cancelRename"
-                />
-              </div>
-              <!-- 正常文件名 -->
-              <template v-else>
-                <p class="text-xs truncate" :title="file.name">
-                  {{ file.name }}
-                </p>
-                <div class="flex items-center justify-between mt-1">
-                  <span class="text-[10px] text-color-500">{{
-                    formatSize(file.size)
-                  }}</span>
-                  <span class="text-[10px] text-zinc-600">{{
-                    formatDate(file.lastModified).split(" ")[0]
-                  }}</span>
-                </div>
-              </template>
-            </div>
+            <UButton
+              variant="outline"
+              square
+              size="sm"
+              icon="i-lucide-copy"
+              title="复制链接"
+              aria-label="复制链接"
+              @click="copyUrl(file)"
+            />
+            <UButton
+              variant="outline"
+              square
+              size="sm"
+              icon="i-lucide-pencil"
+              title="重命名"
+              aria-label="重命名"
+              :disabled="deletingKey === file.key"
+              @click="startRename(file)"
+            />
+            <UButton
+              variant="outline"
+              square
+              size="sm"
+              icon="i-lucide-trash-2"
+              :loading="deletingKey === file.key"
+              :disabled="deletingKey === file.key"
+              title="删除"
+              aria-label="删除"
+              @click="handleDelete(file)"
+            />
           </div>
         </div>
 
-        <AdminPagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :total="total"
-          item-label="个文件"
-          @page-change="onPageChange"
-        />
-      </UCard>
-    </main>
-  </div>
+        <!-- 文件信息 -->
+        <div class="p-2.5">
+          <!-- 重命名输入框 -->
+          <div
+            v-if="renameTarget?.key === file.key"
+            class="flex items-center gap-1"
+          >
+            <UInput
+              v-model="renameValue"
+              type="text"
+              class="flex-1"
+              @keyup.enter="confirmRename"
+              @keyup.esc="cancelRename"
+            />
+            <UButton
+              color="primary"
+              variant="ghost"
+              square
+              size="sm"
+              icon="i-lucide-check"
+              :loading="isRenaming"
+              :disabled="isRenaming"
+              title="确认"
+              aria-label="确认"
+              @click="confirmRename"
+            />
+            <UButton
+              color="neutral"
+              variant="ghost"
+              square
+              size="sm"
+              icon="i-lucide-x"
+              title="取消"
+              aria-label="取消"
+              @click="cancelRename"
+            />
+          </div>
+          <!-- 正常文件名 -->
+          <template v-else>
+            <p class="text-xs truncate" :title="file.name">
+              {{ file.name }}
+            </p>
+            <div class="flex items-center justify-between mt-1">
+              <span class="text-[10px] text-color-500">{{
+                formatSize(file.size)
+              }}</span>
+              <span class="text-[10px] text-zinc-600">{{
+                formatDate(file.lastModified).split(" ")[0]
+              }}</span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <AdminPagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total="total"
+      item-label="个文件"
+      @page-change="onPageChange"
+    />
+  </UCard>
 </template>

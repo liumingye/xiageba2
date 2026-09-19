@@ -160,247 +160,232 @@ const deleteConfig = async (id: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <AdminHeader />
-    <AdminNav />
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-lg font-medium">存储配置</h2>
+    <UButton color="primary" icon="i-lucide-plus" @click="openAdd">
+      添加配置
+    </UButton>
+  </div>
 
-    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium">存储配置</h2>
-        <UButton color="primary" icon="i-lucide-plus" @click="openAdd">
-          添加配置
-        </UButton>
-      </div>
+  <UCard
+    :ui="{
+      body: 'p-0 sm:p-0',
+    }"
+  >
+    <UTable
+      :data="configs"
+      :columns="columns"
+      :get-row-id="(row: S3Config) => row.id"
+    >
+      <template #name-cell="{ row }">
+        <div class="flex items-center gap-2">
+          <HardDrive class="w-4 h-4 text-color-500 shrink-0" />
+          <span class="truncate" :title="row.original.name">{{
+            row.original.name
+          }}</span>
+        </div>
+      </template>
+      <template #bucket-cell="{ row }">
+        <span class="truncate text-color-300" :title="row.original.bucket">{{
+          row.original.bucket
+        }}</span>
+      </template>
+      <template #prefix-cell="{ row }">
+        <span class="truncate text-color-300" :title="row.original.prefix">{{
+          row.original.prefix || "-"
+        }}</span>
+      </template>
+      <template #endpoint-cell="{ row }">
+        <span class="truncate text-color-400" :title="row.original.endpoint">{{
+          row.original.endpoint || "-"
+        }}</span>
+      </template>
+      <template #region-cell="{ row }">
+        <span class="text-color-300">{{ row.original.region || "-" }}</span>
+      </template>
+      <template #accessKey-cell="{ row }">
+        <span class="truncate text-color-400" :title="row.original.accessKey">{{
+          row.original.accessKey
+        }}</span>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="flex items-center justify-center gap-2">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-pencil"
+            title="编辑"
+            aria-label="编辑"
+            @click="openEdit(row.original)"
+          />
+          <UButton
+            color="error"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-trash-2"
+            title="删除"
+            aria-label="删除"
+            @click="deleteConfig(row.original.id)"
+          />
+        </div>
+      </template>
+      <template #empty>
+        <p class="text-center text-color-500 py-12">暂无存储配置</p>
+      </template>
+    </UTable>
+  </UCard>
 
-      <UCard
-        :ui="{
-          body: 'p-0 sm:p-0',
-        }"
-      >
-        <UTable
-          :data="configs"
-          :columns="columns"
-          :get-row-id="(row: S3Config) => row.id"
-        >
-          <template #name-cell="{ row }">
-            <div class="flex items-center gap-2">
-              <HardDrive class="w-4 h-4 text-color-500 shrink-0" />
-              <span class="truncate" :title="row.original.name">{{
-                row.original.name
-              }}</span>
-            </div>
-          </template>
-          <template #bucket-cell="{ row }">
-            <span
-              class="truncate text-color-300"
-              :title="row.original.bucket"
-              >{{ row.original.bucket }}</span
-            >
-          </template>
-          <template #prefix-cell="{ row }">
-            <span
-              class="truncate text-color-300"
-              :title="row.original.prefix"
-              >{{ row.original.prefix || "-" }}</span
-            >
-          </template>
-          <template #endpoint-cell="{ row }">
-            <span
-              class="truncate text-color-400"
-              :title="row.original.endpoint"
-              >{{ row.original.endpoint || "-" }}</span
-            >
-          </template>
-          <template #region-cell="{ row }">
-            <span class="text-color-300">{{ row.original.region || "-" }}</span>
-          </template>
-          <template #accessKey-cell="{ row }">
-            <span
-              class="truncate text-color-400"
-              :title="row.original.accessKey"
-              >{{ row.original.accessKey }}</span
-            >
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex items-center justify-center gap-2">
+  <UModal
+    :open="showModal"
+    :title="isEdit ? '编辑存储配置' : '添加存储配置'"
+    :dismissible="false"
+    @update:open="
+      (v) => {
+        if (!v) closeModal();
+      }
+    "
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-name"
+            >配置名称 *</label
+          >
+          <UInput
+            id="cfg-name"
+            v-model="form.name"
+            type="text"
+            placeholder="请输入配置名称"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-bucket"
+            >存储桶 *</label
+          >
+          <UInput
+            id="cfg-bucket"
+            v-model="form.bucket"
+            type="text"
+            placeholder="请输入存储桶名称"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-baseurl"
+            >BaseURL</label
+          >
+          <UInput
+            id="cfg-baseurl"
+            v-model="form.baseUrl"
+            type="text"
+            placeholder="如 https://cdn.example.com"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-prefix"
+            >前缀</label
+          >
+          <UInput
+            id="cfg-prefix"
+            v-model="form.prefix"
+            type="text"
+            placeholder="对象 key 前缀"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-endpoint"
+            >端点</label
+          >
+          <UInput
+            id="cfg-endpoint"
+            v-model="form.endpoint"
+            type="text"
+            placeholder="S3 端点地址"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-region"
+            >可用区</label
+          >
+          <UInput
+            id="cfg-region"
+            v-model="form.region"
+            type="text"
+            placeholder="如 us-east-1"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-access"
+            >AccessKey *</label
+          >
+          <UInput
+            id="cfg-access"
+            v-model="form.accessKey"
+            type="text"
+            placeholder="请输入 AccessKey"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="cfg-secret"
+            >SecretKey *</label
+          >
+          <UInput
+            id="cfg-secret"
+            v-model="form.secretKey"
+            :type="showSecret ? 'text' : 'password'"
+            :placeholder="isEdit ? '•••••••• 表示不修改' : '请输入 SecretKey'"
+            class="w-full"
+          >
+            <template #trailing>
               <UButton
                 color="neutral"
                 variant="ghost"
                 square
                 size="sm"
-                icon="i-lucide-pencil"
-                title="编辑"
-                aria-label="编辑"
-                @click="openEdit(row.original)"
+                :icon="showSecret ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                :aria-label="showSecret ? '隐藏' : '显示'"
+                @click="showSecret = !showSecret"
               />
-              <UButton
-                color="error"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-trash-2"
-                title="删除"
-                aria-label="删除"
-                @click="deleteConfig(row.original.id)"
-              />
-            </div>
-          </template>
-          <template #empty>
-            <p class="text-center text-color-500 py-12">暂无存储配置</p>
-          </template>
-        </UTable>
-      </UCard>
-    </main>
-
-    <UModal
-      :open="showModal"
-      :title="isEdit ? '编辑存储配置' : '添加存储配置'"
-      :dismissible="false"
-      @update:open="
-        (v) => {
-          if (!v) closeModal();
-        }
-      "
-      :ui="{
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
-        />
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-name"
-              >配置名称 *</label
-            >
-            <UInput
-              id="cfg-name"
-              v-model="form.name"
-              type="text"
-              placeholder="请输入配置名称"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-bucket"
-              >存储桶 *</label
-            >
-            <UInput
-              id="cfg-bucket"
-              v-model="form.bucket"
-              type="text"
-              placeholder="请输入存储桶名称"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-baseurl"
-              >BaseURL</label
-            >
-            <UInput
-              id="cfg-baseurl"
-              v-model="form.baseUrl"
-              type="text"
-              placeholder="如 https://cdn.example.com"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-prefix"
-              >前缀</label
-            >
-            <UInput
-              id="cfg-prefix"
-              v-model="form.prefix"
-              type="text"
-              placeholder="对象 key 前缀"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-endpoint"
-              >端点</label
-            >
-            <UInput
-              id="cfg-endpoint"
-              v-model="form.endpoint"
-              type="text"
-              placeholder="S3 端点地址"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-region"
-              >可用区</label
-            >
-            <UInput
-              id="cfg-region"
-              v-model="form.region"
-              type="text"
-              placeholder="如 us-east-1"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-access"
-              >AccessKey *</label
-            >
-            <UInput
-              id="cfg-access"
-              v-model="form.accessKey"
-              type="text"
-              placeholder="请输入 AccessKey"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="cfg-secret"
-              >SecretKey *</label
-            >
-            <UInput
-              id="cfg-secret"
-              v-model="form.secretKey"
-              :type="showSecret ? 'text' : 'password'"
-              :placeholder="isEdit ? '•••••••• 表示不修改' : '请输入 SecretKey'"
-              class="w-full"
-            >
-              <template #trailing>
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  square
-                  size="sm"
-                  :icon="showSecret ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                  :aria-label="showSecret ? '隐藏' : '显示'"
-                  @click="showSecret = !showSecret"
-                />
-              </template>
-            </UInput>
-          </div>
+            </template>
+          </UInput>
         </div>
-      </template>
+      </div>
+    </template>
 
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeModal">
-            取消
-          </UButton>
-          <UButton
-            color="primary"
-            :loading="saving"
-            :disabled="saving"
-            @click="saveConfig"
-          >
-            {{ saving ? "保存中..." : "保存" }}
-          </UButton>
-        </div>
-      </template>
-    </UModal>
-  </div>
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeModal">
+          取消
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="saving"
+          :disabled="saving"
+          @click="saveConfig"
+        >
+          {{ saving ? "保存中..." : "保存" }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>

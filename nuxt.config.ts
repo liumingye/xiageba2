@@ -1,8 +1,5 @@
 import path from "path";
 
-// 1. 判断是否为开发环境
-const isDev = process.env.NODE_ENV === "development";
-
 export default defineNuxtConfig({
   compatibilityDate: "2026-06-01",
   devtools: {
@@ -281,7 +278,8 @@ export default defineNuxtConfig({
     inlineStyles: false,
   },
   routeRules: {
-    "/admin/**": { ssr: false },
+    "/admin/**": { ssr: false, appLayout: "admin" },
+    "/admin/login": { appLayout: false },
     "/": {
       ssr: true,
       isr: 300,
@@ -383,28 +381,24 @@ export default defineNuxtConfig({
       ],
     },
   },
-  alias: {
-    // 强制把代码里对该子包的引用，直接映射到它的 .mjs 文件上
-    // 请将下面的包名和路径替换为你项目里的真实物理路径
-    ...(isDev
-      ? {
-          "@netdisk-sdk/baidu-sdk": path.resolve(
-            __dirname,
-            "./packages/netdisk-sdk-js/packages/baidu-sdk/src",
-          ),
-          "@netdisk-sdk/quarkuc-sdk": path.resolve(
-            __dirname,
-            "./packages/netdisk-sdk-js/packages/quarkuc-sdk/src",
-          ),
-          "@netdisk-sdk/xunlei-sdk": path.resolve(
-            __dirname,
-            "./packages/netdisk-sdk-js/packages/xunlei-sdk/src",
-          ),
-          "@netdisk-sdk/utils": path.resolve(
-            __dirname,
-            "./packages/netdisk-sdk-js/packages/utils/src",
-          ),
-        }
-      : {}),
+  $development: {
+    alias: {
+      "@netdisk-sdk/baidu-sdk": path.resolve(
+        __dirname,
+        "./packages/netdisk-sdk-js/packages/baidu-sdk/src",
+      ),
+      "@netdisk-sdk/quarkuc-sdk": path.resolve(
+        __dirname,
+        "./packages/netdisk-sdk-js/packages/quarkuc-sdk/src",
+      ),
+      "@netdisk-sdk/xunlei-sdk": path.resolve(
+        __dirname,
+        "./packages/netdisk-sdk-js/packages/xunlei-sdk/src",
+      ),
+      "@netdisk-sdk/utils": path.resolve(
+        __dirname,
+        "./packages/netdisk-sdk-js/packages/utils/src",
+      ),
+    },
   },
 });

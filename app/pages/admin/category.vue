@@ -198,265 +198,256 @@ const deleteCategory = async (id: number) => {
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <AdminHeader />
-    <AdminNav />
-
-    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium">分类管理</h2>
-        <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
-          添加分类
-        </UButton>
-      </div>
-
-      <UCard
-        :ui="{
-          body: 'p-0 sm:p-0',
-        }"
-      >
-        <UTable
-          :data="categories"
-          :columns="columns"
-          :get-row-id="(row: Category) => String(row.id)"
-        >
-          <template #id-cell="{ row }">
-            <span :title="String(row.original.id)">{{ row.original.id }}</span>
-          </template>
-          <template #name-cell="{ row }">
-            <div class="flex items-center gap-3">
-              <div
-                class="size-8 bg-elevated rounded-lg flex items-center justify-center"
-              >
-                <img
-                  v-if="row.original.image"
-                  :src="row.original.image"
-                  class="size-6"
-                />
-                <Tag v-else class="size-5 text-muted" />
-              </div>
-              {{ row.original.name }}
-            </div>
-          </template>
-          <template #sort-cell="{ row }">
-            {{ row.original.sort }}
-          </template>
-          <template #isShow-cell="{ row }">
-            <UBadge
-              :color="row.original.isShow ? 'success' : 'neutral'"
-              variant="subtle"
-            >
-              {{ row.original.isShow ? "显示" : "隐藏" }}
-            </UBadge>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <UButton
-                color="neutral"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-pencil"
-                title="编辑"
-                aria-label="编辑"
-                @click="openEditModal(row.original)"
-              />
-              <UButton
-                color="error"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-trash-2"
-                title="删除"
-                aria-label="删除"
-                @click="deleteCategory(row.original.id)"
-              />
-            </div>
-          </template>
-          <template #empty>
-            <p class="text-center text-muted py-12">暂无分类</p>
-          </template>
-        </UTable>
-
-        <AdminPagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :total="total"
-          item-label="个分类"
-          @page-change="goToPage"
-        />
-      </UCard>
-    </main>
-
-    <UModal
-      :open="showAddModal"
-      title="添加分类"
-      :dismissible="false"
-      @update:open="
-        (v) => {
-          if (!v) closeAddModal();
-        }
-      "
-      :ui="{
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
-        />
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm mb-2" for="add-cat-name"
-              >分类名称 *</label
-            >
-            <UInput
-              id="add-cat-name"
-              v-model="newName"
-              type="text"
-              placeholder="请输入分类名称"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-sm mb-2" for="add-cat-image"
-              >封面图片</label
-            >
-            <div class="flex gap-2">
-              <UInput
-                id="add-cat-image"
-                v-model="newImage"
-                type="text"
-                placeholder="图片URL"
-                class="flex-1"
-              />
-              <UButton
-                color="neutral"
-                variant="soft"
-                icon="i-lucide-folder-open"
-                @click="showAddCoverPicker = true"
-              >
-                选择
-              </UButton>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm mb-2" for="add-cat-sort">排序</label>
-            <UInput
-              id="add-cat-sort"
-              v-model.number="newSort"
-              type="number"
-              placeholder="排序值，数字越小越靠前"
-              class="w-full"
-            />
-          </div>
-          <UCheckbox v-model="newIsShow" label="显示该分类" />
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeAddModal">
-            取消
-          </UButton>
-          <UButton color="primary" @click="addCategory">添加</UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal
-      :open="showEditModal"
-      title="编辑分类"
-      :dismissible="false"
-      @update:open="
-        (v) => {
-          if (!v) closeEditModal();
-        }
-      "
-      :ui="{
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
-        />
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm mb-2" for="edit-cat-name"
-              >分类名称 *</label
-            >
-            <UInput
-              id="edit-cat-name"
-              v-model="editName"
-              type="text"
-              placeholder="请输入分类名称"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-sm mb-2" for="edit-cat-image"
-              >封面图片</label
-            >
-            <div class="flex gap-2">
-              <UInput
-                id="edit-cat-image"
-                v-model="editImage"
-                type="text"
-                placeholder="图片URL"
-                class="flex-1"
-              />
-              <UButton
-                color="neutral"
-                variant="soft"
-                icon="i-lucide-folder-open"
-                @click="showEditCoverPicker = true"
-              >
-                选择
-              </UButton>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm mb-2" for="edit-cat-sort">排序</label>
-            <UInput
-              id="edit-cat-sort"
-              v-model.number="editSort"
-              type="number"
-              placeholder="排序值，数字越小越靠前"
-              class="w-full"
-            />
-          </div>
-          <UCheckbox v-model="editIsShow" label="显示该分类" />
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeEditModal">
-            取消
-          </UButton>
-          <UButton color="primary" @click="saveEdit">保存</UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <FilePickerModal
-      :show="showAddCoverPicker"
-      @close="showAddCoverPicker = false"
-      @select="handleAddCoverPicked"
-    />
-    <FilePickerModal
-      :show="showEditCoverPicker"
-      @close="showEditCoverPicker = false"
-      @select="handleEditCoverPicked"
-    />
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-lg font-medium">分类管理</h2>
+    <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
+      添加分类
+    </UButton>
   </div>
+
+  <UCard
+    :ui="{
+      body: 'p-0 sm:p-0',
+    }"
+  >
+    <UTable
+      :data="categories"
+      :columns="columns"
+      :get-row-id="(row: Category) => String(row.id)"
+    >
+      <template #id-cell="{ row }">
+        <span :title="String(row.original.id)">{{ row.original.id }}</span>
+      </template>
+      <template #name-cell="{ row }">
+        <div class="flex items-center gap-3">
+          <div
+            class="size-8 bg-elevated rounded-lg flex items-center justify-center"
+          >
+            <img
+              v-if="row.original.image"
+              :src="row.original.image"
+              class="size-6"
+            />
+            <Tag v-else class="size-5 text-muted" />
+          </div>
+          {{ row.original.name }}
+        </div>
+      </template>
+      <template #sort-cell="{ row }">
+        {{ row.original.sort }}
+      </template>
+      <template #isShow-cell="{ row }">
+        <UBadge
+          :color="row.original.isShow ? 'success' : 'neutral'"
+          variant="subtle"
+        >
+          {{ row.original.isShow ? "显示" : "隐藏" }}
+        </UBadge>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="flex items-center justify-center gap-2">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-pencil"
+            title="编辑"
+            aria-label="编辑"
+            @click="openEditModal(row.original)"
+          />
+          <UButton
+            color="error"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-trash-2"
+            title="删除"
+            aria-label="删除"
+            @click="deleteCategory(row.original.id)"
+          />
+        </div>
+      </template>
+      <template #empty>
+        <p class="text-center text-muted py-12">暂无分类</p>
+      </template>
+    </UTable>
+
+    <AdminPagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total="total"
+      item-label="个分类"
+      @page-change="goToPage"
+    />
+  </UCard>
+
+  <UModal
+    :open="showAddModal"
+    title="添加分类"
+    :dismissible="false"
+    @update:open="
+      (v) => {
+        if (!v) closeAddModal();
+      }
+    "
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm mb-2" for="add-cat-name"
+            >分类名称 *</label
+          >
+          <UInput
+            id="add-cat-name"
+            v-model="newName"
+            type="text"
+            placeholder="请输入分类名称"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm mb-2" for="add-cat-image">封面图片</label>
+          <div class="flex gap-2">
+            <UInput
+              id="add-cat-image"
+              v-model="newImage"
+              type="text"
+              placeholder="图片URL"
+              class="flex-1"
+            />
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-folder-open"
+              @click="showAddCoverPicker = true"
+            >
+              选择
+            </UButton>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm mb-2" for="add-cat-sort">排序</label>
+          <UInput
+            id="add-cat-sort"
+            v-model.number="newSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="w-full"
+          />
+        </div>
+        <UCheckbox v-model="newIsShow" label="显示该分类" />
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeAddModal">
+          取消
+        </UButton>
+        <UButton color="primary" @click="addCategory">添加</UButton>
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    :open="showEditModal"
+    title="编辑分类"
+    :dismissible="false"
+    @update:open="
+      (v) => {
+        if (!v) closeEditModal();
+      }
+    "
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm mb-2" for="edit-cat-name"
+            >分类名称 *</label
+          >
+          <UInput
+            id="edit-cat-name"
+            v-model="editName"
+            type="text"
+            placeholder="请输入分类名称"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm mb-2" for="edit-cat-image"
+            >封面图片</label
+          >
+          <div class="flex gap-2">
+            <UInput
+              id="edit-cat-image"
+              v-model="editImage"
+              type="text"
+              placeholder="图片URL"
+              class="flex-1"
+            />
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-folder-open"
+              @click="showEditCoverPicker = true"
+            >
+              选择
+            </UButton>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm mb-2" for="edit-cat-sort">排序</label>
+          <UInput
+            id="edit-cat-sort"
+            v-model.number="editSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="w-full"
+          />
+        </div>
+        <UCheckbox v-model="editIsShow" label="显示该分类" />
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeEditModal">
+          取消
+        </UButton>
+        <UButton color="primary" @click="saveEdit">保存</UButton>
+      </div>
+    </template>
+  </UModal>
+
+  <FilePickerModal
+    :show="showAddCoverPicker"
+    @close="showAddCoverPicker = false"
+    @select="handleAddCoverPicked"
+  />
+  <FilePickerModal
+    :show="showEditCoverPicker"
+    @close="showEditCoverPicker = false"
+    @select="handleEditCoverPicked"
+  />
 </template>

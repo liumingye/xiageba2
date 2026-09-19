@@ -53,6 +53,22 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
+    label: "音乐",
+    icon: Music,
+    children: [
+      {
+        label: "音乐管理",
+        path: "/admin",
+        icon: Database,
+      },
+      {
+        label: "用户反馈",
+        path: "/admin/feedback",
+        icon: MessageSquare,
+      },
+    ],
+  },
+  {
     label: "资源",
     icon: FolderOpen,
     children: [
@@ -93,16 +109,6 @@ const navItems: NavItem[] = [
         icon: HardDrive,
       },
     ],
-  },
-  {
-    label: "音乐管理",
-    path: "/admin",
-    icon: Music,
-  },
-  {
-    label: "反馈管理",
-    path: "/admin/feedback",
-    icon: MessageSquare,
   },
   {
     label: "公告管理",
@@ -1037,9 +1043,7 @@ watch(isDesktop, async () => {
               type="button"
               class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
               :class="
-                isGroupActive(item)
-                  ? 'bg-primary text-inverted'
-                  : 'text-toned'
+                isGroupActive(item) ? 'bg-primary text-inverted' : 'text-toned'
               "
               @click="toggleDrawerGroup(item.label)"
             >

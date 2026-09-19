@@ -235,338 +235,327 @@ const deleteAnnouncement = async (id: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <AdminHeader />
-    <AdminNav />
-
-    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-medium">公告管理</h2>
-        <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
-          添加公告
-        </UButton>
-      </div>
-
-      <UCard
-        :ui="{
-          body: 'p-0 sm:p-0',
-        }"
-      >
-        <UTable
-          :data="announcements"
-          :columns="columns"
-          :get-row-id="(row: Announcement) => row.id"
-          :loading="isLoading"
-        >
-          <template #title-cell="{ row }">
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center shrink-0"
-              >
-                <Megaphone class="w-5 h-5 text-color-500" />
-              </div>
-              <span class="truncate" :title="row.original.title">{{
-                row.original.title
-              }}</span>
-            </div>
-          </template>
-          <template #displayType-cell="{ row }">
-            <UBadge
-              :color="
-                row.original.displayType === 'BANNER'
-                  ? 'secondary'
-                  : row.original.displayType === 'DIALOG'
-                    ? 'warning'
-                    : 'info'
-              "
-              variant="soft"
-            >
-              {{ displayTypeLabel(row.original.displayType || "NORMAL") }}
-            </UBadge>
-          </template>
-          <template #icon-cell="{ row }">
-            <UBadge
-              :color="
-                row.original.icon === 'ERROR'
-                  ? 'error'
-                  : row.original.icon === 'WARN'
-                    ? 'warning'
-                    : row.original.icon === 'SUCCESS'
-                      ? 'success'
-                      : 'info'
-              "
-              variant="soft"
-            >
-              {{ iconLabel(row.original.icon) }}
-            </UBadge>
-          </template>
-          <template #status-cell="{ row }">
-            <UBadge
-              :color="row.original.status === 'ACTIVE' ? 'success' : 'neutral'"
-              variant="soft"
-            >
-              {{ statusLabel(row.original.status || "ACTIVE") }}
-            </UBadge>
-          </template>
-          <template #createdAt-cell="{ row }">
-            <span class="text-sm text-color-300">{{
-              formatDate(row.original.createdAt)
-            }}</span>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <UButton
-                color="neutral"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-pencil"
-                title="编辑"
-                aria-label="编辑"
-                @click="openEditModal(row.original)"
-              />
-              <UButton
-                v-if="row.original.status === 'ACTIVE'"
-                color="warning"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-archive"
-                title="归档"
-                aria-label="归档"
-                @click="archiveAnnouncement(row.original)"
-              />
-              <UButton
-                color="error"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-trash-2"
-                title="删除"
-                aria-label="删除"
-                @click="deleteAnnouncement(row.original.id)"
-              />
-            </div>
-          </template>
-          <template #empty>
-            <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
-              <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
-              <p class="text-muted text-sm mt-2">加载中...</p>
-            </div>
-            <p v-else class="text-center text-muted py-12">暂无公告</p>
-          </template>
-        </UTable>
-
-        <AdminPagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :total="total"
-          item-label="条公告"
-          @page-change="goToPage"
-        />
-      </UCard>
-    </main>
-
-    <UModal
-      :open="showAddModal"
-      title="添加公告"
-      :dismissible="false"
-      @update:open="
-        (v) => {
-          if (!v) closeAddModal();
-        }
-      "
-      :ui="{
-        content: 'max-w-2xl',
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
-        />
-        <div class="space-y-4">
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="ann-title"
-              >标题 *</label
-            >
-            <UInput
-              id="ann-title"
-              v-model="newTitle"
-              type="text"
-              placeholder="请输入公告标题"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2">内容</label>
-            <Editor v-model="newContent" />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="ann-dtype"
-              >显示方式</label
-            >
-            <USelect
-              id="ann-dtype"
-              v-model="newDisplayType"
-              value-key="value"
-              :items="[
-                { label: '正常', value: 'NORMAL' },
-                { label: '横幅', value: 'BANNER' },
-                { label: '对话框', value: 'DIALOG' },
-              ]"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="ann-icon"
-              >图标</label
-            >
-            <USelect
-              id="ann-icon"
-              v-model="newIcon"
-              value-key="value"
-              :items="[
-                { label: '信息', value: 'INFO' },
-                { label: '警告', value: 'WARN' },
-                { label: '错误', value: 'ERROR' },
-                { label: '成功', value: 'SUCCESS' },
-              ]"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="ann-sort"
-              >排序</label
-            >
-            <UInput
-              id="ann-sort"
-              v-model.number="newSort"
-              type="number"
-              placeholder="排序值，数字越小越靠前"
-              class="w-full"
-            />
-          </div>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeAddModal">
-            取消
-          </UButton>
-          <UButton color="primary" @click="addAnnouncement">添加</UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal
-      :open="showEditModal"
-      title="编辑公告"
-      :dismissible="false"
-      @update:open="
-        (v) => {
-          if (!v) closeEditModal();
-        }
-      "
-      :ui="{
-        content: 'max-w-2xl',
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
-        />
-        <div class="space-y-4">
-          <div>
-            <label
-              class="block text-color-400 text-sm mb-2"
-              for="edit-ann-title"
-              >标题 *</label
-            >
-            <UInput
-              id="edit-ann-title"
-              v-model="editTitle"
-              type="text"
-              placeholder="请输入公告标题"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2">内容</label>
-            <Editor v-model="editContent" />
-          </div>
-          <div>
-            <label
-              class="block text-color-400 text-sm mb-2"
-              for="edit-ann-dtype"
-              >显示方式</label
-            >
-            <USelect
-              id="edit-ann-dtype"
-              v-model="editDisplayType"
-              value-key="value"
-              :items="[
-                { label: '正常', value: 'NORMAL' },
-                { label: '横幅', value: 'BANNER' },
-                { label: '对话框', value: 'DIALOG' },
-              ]"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-ann-icon"
-              >图标</label
-            >
-            <USelect
-              id="edit-ann-icon"
-              v-model="editIcon"
-              value-key="value"
-              :items="[
-                { label: '信息', value: 'INFO' },
-                { label: '警告', value: 'WARN' },
-                { label: '错误', value: 'ERROR' },
-                { label: '成功', value: 'SUCCESS' },
-              ]"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-ann-sort"
-              >排序</label
-            >
-            <UInput
-              id="edit-ann-sort"
-              v-model.number="editSort"
-              type="number"
-              placeholder="排序值，数字越小越靠前"
-              class="w-full"
-            />
-          </div>
-          <div class="flex items-center gap-2">
-            <UCheckbox v-model="editArchived" />
-            <span class="text-color-300 text-sm">归档该公告</span>
-          </div>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeEditModal">
-            取消
-          </UButton>
-          <UButton color="primary" @click="saveEdit">保存</UButton>
-        </div>
-      </template>
-    </UModal>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-lg font-medium">公告管理</h2>
+    <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
+      添加公告
+    </UButton>
   </div>
+
+  <UCard
+    :ui="{
+      body: 'p-0 sm:p-0',
+    }"
+  >
+    <UTable
+      :data="announcements"
+      :columns="columns"
+      :get-row-id="(row: Announcement) => row.id"
+      :loading="isLoading"
+    >
+      <template #title-cell="{ row }">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center shrink-0"
+          >
+            <Megaphone class="w-5 h-5 text-color-500" />
+          </div>
+          <span class="truncate" :title="row.original.title">{{
+            row.original.title
+          }}</span>
+        </div>
+      </template>
+      <template #displayType-cell="{ row }">
+        <UBadge
+          :color="
+            row.original.displayType === 'BANNER'
+              ? 'secondary'
+              : row.original.displayType === 'DIALOG'
+                ? 'warning'
+                : 'info'
+          "
+          variant="soft"
+        >
+          {{ displayTypeLabel(row.original.displayType || "NORMAL") }}
+        </UBadge>
+      </template>
+      <template #icon-cell="{ row }">
+        <UBadge
+          :color="
+            row.original.icon === 'ERROR'
+              ? 'error'
+              : row.original.icon === 'WARN'
+                ? 'warning'
+                : row.original.icon === 'SUCCESS'
+                  ? 'success'
+                  : 'info'
+          "
+          variant="soft"
+        >
+          {{ iconLabel(row.original.icon) }}
+        </UBadge>
+      </template>
+      <template #status-cell="{ row }">
+        <UBadge
+          :color="row.original.status === 'ACTIVE' ? 'success' : 'neutral'"
+          variant="soft"
+        >
+          {{ statusLabel(row.original.status || "ACTIVE") }}
+        </UBadge>
+      </template>
+      <template #createdAt-cell="{ row }">
+        <span class="text-sm text-color-300">{{
+          formatDate(row.original.createdAt)
+        }}</span>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="flex items-center justify-center gap-2">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-pencil"
+            title="编辑"
+            aria-label="编辑"
+            @click="openEditModal(row.original)"
+          />
+          <UButton
+            v-if="row.original.status === 'ACTIVE'"
+            color="warning"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-archive"
+            title="归档"
+            aria-label="归档"
+            @click="archiveAnnouncement(row.original)"
+          />
+          <UButton
+            color="error"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-trash-2"
+            title="删除"
+            aria-label="删除"
+            @click="deleteAnnouncement(row.original.id)"
+          />
+        </div>
+      </template>
+      <template #empty>
+        <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+          <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+          <p class="text-muted text-sm mt-2">加载中...</p>
+        </div>
+        <p v-else class="text-center text-muted py-12">暂无公告</p>
+      </template>
+    </UTable>
+
+    <AdminPagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total="total"
+      item-label="条公告"
+      @page-change="goToPage"
+    />
+  </UCard>
+
+  <UModal
+    :open="showAddModal"
+    title="添加公告"
+    :dismissible="false"
+    @update:open="
+      (v) => {
+        if (!v) closeAddModal();
+      }
+    "
+    :ui="{
+      content: 'max-w-2xl',
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="ann-title"
+            >标题 *</label
+          >
+          <UInput
+            id="ann-title"
+            v-model="newTitle"
+            type="text"
+            placeholder="请输入公告标题"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">内容</label>
+          <Editor v-model="newContent" />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="ann-dtype"
+            >显示方式</label
+          >
+          <USelect
+            id="ann-dtype"
+            v-model="newDisplayType"
+            value-key="value"
+            :items="[
+              { label: '正常', value: 'NORMAL' },
+              { label: '横幅', value: 'BANNER' },
+              { label: '对话框', value: 'DIALOG' },
+            ]"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="ann-icon"
+            >图标</label
+          >
+          <USelect
+            id="ann-icon"
+            v-model="newIcon"
+            value-key="value"
+            :items="[
+              { label: '信息', value: 'INFO' },
+              { label: '警告', value: 'WARN' },
+              { label: '错误', value: 'ERROR' },
+              { label: '成功', value: 'SUCCESS' },
+            ]"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="ann-sort"
+            >排序</label
+          >
+          <UInput
+            id="ann-sort"
+            v-model.number="newSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="w-full"
+          />
+        </div>
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeAddModal">
+          取消
+        </UButton>
+        <UButton color="primary" @click="addAnnouncement">添加</UButton>
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    :open="showEditModal"
+    title="编辑公告"
+    :dismissible="false"
+    @update:open="
+      (v) => {
+        if (!v) closeEditModal();
+      }
+    "
+    :ui="{
+      content: 'max-w-2xl',
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="edit-ann-title"
+            >标题 *</label
+          >
+          <UInput
+            id="edit-ann-title"
+            v-model="editTitle"
+            type="text"
+            placeholder="请输入公告标题"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2">内容</label>
+          <Editor v-model="editContent" />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="edit-ann-dtype"
+            >显示方式</label
+          >
+          <USelect
+            id="edit-ann-dtype"
+            v-model="editDisplayType"
+            value-key="value"
+            :items="[
+              { label: '正常', value: 'NORMAL' },
+              { label: '横幅', value: 'BANNER' },
+              { label: '对话框', value: 'DIALOG' },
+            ]"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="edit-ann-icon"
+            >图标</label
+          >
+          <USelect
+            id="edit-ann-icon"
+            v-model="editIcon"
+            value-key="value"
+            :items="[
+              { label: '信息', value: 'INFO' },
+              { label: '警告', value: 'WARN' },
+              { label: '错误', value: 'ERROR' },
+              { label: '成功', value: 'SUCCESS' },
+            ]"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="edit-ann-sort"
+            >排序</label
+          >
+          <UInput
+            id="edit-ann-sort"
+            v-model.number="editSort"
+            type="number"
+            placeholder="排序值，数字越小越靠前"
+            class="w-full"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <UCheckbox v-model="editArchived" />
+          <span class="text-color-300 text-sm">归档该公告</span>
+        </div>
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeEditModal">
+          取消
+        </UButton>
+        <UButton color="primary" @click="saveEdit">保存</UButton>
+      </div>
+    </template>
+  </UModal>
 </template>

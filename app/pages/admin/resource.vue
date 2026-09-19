@@ -589,576 +589,561 @@ const importSources = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <AdminHeader />
-    <AdminNav />
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-lg font-medium">资源管理</h2>
+    <div class="flex items-center gap-3">
+      <UButton
+        color="neutral"
+        variant="soft"
+        icon="i-lucide-file-up"
+        @click="openImportModal"
+      >
+        导入
+      </UButton>
+      <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
+        添加资源
+      </UButton>
+    </div>
+  </div>
 
-    <main class="max-w-7xl mx-auto px-2 py-6 sm:px-6">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-medium">资源管理</h2>
-        <div class="flex items-center gap-3">
+  <div
+    class="flex flex-col sm:flex-row sm:justify-end max-sm:items-end gap-3 mb-3"
+  >
+    <UInput
+      v-model="keyword"
+      type="text"
+      placeholder="搜索资源名称或链接"
+      class="max-w-md w-full"
+      @keyup.enter="handleSearch"
+    />
+    <div class="flex items-center gap-3">
+      <USelect
+        v-model="filterCid"
+        class="min-w-30"
+        :items="[
+          { label: '全部分类', value: FILTER_ALL },
+          ...categories.map((cat) => ({
+            label: cat.name,
+            value: cat.id.toString(),
+          })),
+        ]"
+        @change="handleFilterChange"
+      />
+      <UDropdownMenu
+        :items="
+          table?.tableApi
+            ?.getAllColumns()
+            .filter((column) => column.getCanHide())
+            .map((column) => ({
+              label: column.id,
+              type: 'checkbox' as const,
+              checked: column.getIsVisible(),
+              onUpdateChecked(checked: boolean) {
+                table?.tableApi
+                  ?.getColumn(column.id)
+                  ?.toggleVisibility(!!checked);
+              },
+              onSelect(e: Event) {
+                e.preventDefault();
+              },
+            }))
+        "
+        :content="{ align: 'end' }"
+      >
+        <UButton
+          label="显示/隐藏列"
+          color="neutral"
+          variant="outline"
+          trailing-icon="i-lucide-chevron-down"
+        />
+      </UDropdownMenu>
+    </div>
+  </div>
+
+  <UCard
+    :ui="{
+      body: 'sm:p-0 p-0',
+    }"
+  >
+    <UTable
+      ref="table"
+      v-model:column-visibility="columnVisibility"
+      :data="sources"
+      :loading="isLoading"
+      :columns="columns"
+      :get-row-id="(row: Source) => row.id"
+    >
+      <template #id-cell="{ row }">
+        {{ row.original.id }}
+      </template>
+      <template #title-cell="{ row }">
+        {{ row.original.title }}
+      </template>
+      <template #category-cell="{ row }">
+        {{ categories.find((cat) => cat.id === row.original.cid)?.name || "-" }}
+      </template>
+      <template #url-cell="{ row }">
+        <a :href="row.original.url" target="_blank" :title="row.original.url">
+          {{ row.original.url }}
+        </a>
+      </template>
+      <template #createdAt-cell="{ row }">
+        {{ new Date(row.original.createdAt).toLocaleString("zh-CN") }}
+      </template>
+      <template #status-cell="{ row }">
+        <UButton
+          size="sm"
+          :color="row.original.status === 1 ? 'success' : 'neutral'"
+          variant="subtle"
+          :icon="
+            row.original.status === 1 ? 'i-lucide-check' : 'i-lucide-circle-off'
+          "
+          @click="toggleStatus(row.original)"
+        >
+          {{ row.original.status === 1 ? "启用" : "禁用" }}
+        </UButton>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="flex items-center justify-center gap-2">
           <UButton
             color="neutral"
-            variant="soft"
-            icon="i-lucide-file-up"
-            @click="openImportModal"
-          >
-            导入
-          </UButton>
-          <UButton color="primary" icon="i-lucide-plus" @click="openAddModal">
-            添加资源
-          </UButton>
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-pencil"
+            title="编辑"
+            aria-label="编辑"
+            @click="openEditModal(row.original)"
+          />
+          <UButton
+            color="error"
+            variant="ghost"
+            square
+            size="sm"
+            icon="i-lucide-trash-2"
+            title="删除"
+            aria-label="删除"
+            @click="deleteSource(row.original.id)"
+          />
         </div>
-      </div>
+      </template>
+      <template #empty>
+        <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+          <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+          <p class="text-muted text-sm mt-2">加载中...</p>
+        </div>
+        <p v-else class="text-center text-muted py-12">暂无资源</p>
+      </template>
+    </UTable>
 
-      <div
-        class="flex flex-col sm:flex-row sm:justify-end max-sm:items-end gap-3 mb-3"
-      >
-        <UInput
-          v-model="keyword"
-          type="text"
-          placeholder="搜索资源名称或链接"
-          class="max-w-md w-full"
-          @keyup.enter="handleSearch"
-        />
-        <div class="flex items-center gap-3">
+    <AdminPagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total="total"
+      item-label="个资源"
+      @page-change="goToPage"
+    />
+  </UCard>
+
+  <UModal
+    v-model:open="showAddModal"
+    title="添加资源"
+    :dismissible="false"
+    @close="closeAddModal"
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="new-cid"
+            >资源分类</label
+          >
           <USelect
-            v-model="filterCid"
-            class="min-w-30"
+            id="new-cid"
+            v-model="newCid"
+            class="w-full"
             :items="[
-              { label: '全部分类', value: FILTER_ALL },
+              { label: '无分类', value: NO_CATEGORY },
               ...categories.map((cat) => ({
                 label: cat.name,
                 value: cat.id.toString(),
               })),
             ]"
-            @change="handleFilterChange"
           />
-          <UDropdownMenu
-            :items="
-              table?.tableApi
-                ?.getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => ({
-                  label: column.id,
-                  type: 'checkbox' as const,
-                  checked: column.getIsVisible(),
-                  onUpdateChecked(checked: boolean) {
-                    table?.tableApi
-                      ?.getColumn(column.id)
-                      ?.toggleVisibility(!!checked);
-                  },
-                  onSelect(e: Event) {
-                    e.preventDefault();
-                  },
-                }))
-            "
-            :content="{ align: 'end' }"
-          >
-            <UButton
-              label="显示/隐藏列"
-              color="neutral"
-              variant="outline"
-              trailing-icon="i-lucide-chevron-down"
-            />
-          </UDropdownMenu>
         </div>
-      </div>
-
-      <UCard
-        :ui="{
-          body: 'sm:p-0 p-0',
-        }"
-      >
-        <UTable
-          ref="table"
-          v-model:column-visibility="columnVisibility"
-          :data="sources"
-          :loading="isLoading"
-          :columns="columns"
-          :get-row-id="(row: Source) => row.id"
-        >
-          <template #id-cell="{ row }">
-            {{ row.original.id }}
-          </template>
-          <template #title-cell="{ row }">
-            {{ row.original.title }}
-          </template>
-          <template #category-cell="{ row }">
-            {{
-              categories.find((cat) => cat.id === row.original.cid)?.name || "-"
-            }}
-          </template>
-          <template #url-cell="{ row }">
-            <a
-              :href="row.original.url"
-              target="_blank"
-              :title="row.original.url"
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="new-title"
+            >资源名称 *</label
+          >
+          <UInput
+            id="new-title"
+            v-model="newTitle"
+            type="text"
+            placeholder="请输入资源名称"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <div class="flex gap-2 mb-2 items-center">
+            <label class="block text-color-400 text-sm flex-1" for="new-url"
+              >资源地址 *</label
             >
-              {{ row.original.url }}
-            </a>
-          </template>
-          <template #createdAt-cell="{ row }">
-            {{ new Date(row.original.createdAt).toLocaleString("zh-CN") }}
-          </template>
-          <template #status-cell="{ row }">
             <UButton
               size="sm"
-              :color="row.original.status === 1 ? 'success' : 'neutral'"
-              variant="subtle"
-              :icon="
-                row.original.status === 1
-                  ? 'i-lucide-check'
-                  : 'i-lucide-circle-off'
-              "
-              @click="toggleStatus(row.original)"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-clipboard"
+              @click="pasteAndPurify('add')"
             >
-              {{ row.original.status === 1 ? "启用" : "禁用" }}
+              粘贴
             </UButton>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <UButton
-                color="neutral"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-pencil"
-                title="编辑"
-                aria-label="编辑"
-                @click="openEditModal(row.original)"
-              />
-              <UButton
-                color="error"
-                variant="ghost"
-                square
-                size="sm"
-                icon="i-lucide-trash-2"
-                title="删除"
-                aria-label="删除"
-                @click="deleteSource(row.original.id)"
-              />
-            </div>
-          </template>
-          <template #empty>
-            <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
-              <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
-              <p class="text-muted text-sm mt-2">加载中...</p>
-            </div>
-            <p v-else class="text-center text-muted py-12">暂无资源</p>
-          </template>
-        </UTable>
-
-        <AdminPagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :total="total"
-          item-label="个资源"
-          @page-change="goToPage"
-        />
-      </UCard>
-    </main>
-
-    <UModal
-      v-model:open="showAddModal"
-      title="添加资源"
-      :dismissible="false"
-      @close="closeAddModal"
-      :ui="{
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
-        />
-        <div class="space-y-4">
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="new-cid"
-              >资源分类</label
+            <UButton
+              size="sm"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-sparkles"
+              @click="purifyCurrent('add')"
             >
-            <USelect
-              id="new-cid"
-              v-model="newCid"
-              class="w-full"
-              :items="[
-                { label: '无分类', value: NO_CATEGORY },
-                ...categories.map((cat) => ({
-                  label: cat.name,
-                  value: cat.id.toString(),
-                })),
-              ]"
-            />
+              净化
+            </UButton>
           </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="new-title"
-              >资源名称 *</label
-            >
-            <UInput
-              id="new-title"
-              v-model="newTitle"
-              type="text"
-              placeholder="请输入资源名称"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <div class="flex gap-2 mb-2 items-center">
-              <label class="block text-color-400 text-sm flex-1" for="new-url"
-                >资源地址 *</label
-              >
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="soft"
-                icon="i-lucide-clipboard"
-                @click="pasteAndPurify('add')"
-              >
-                粘贴
-              </UButton>
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="soft"
-                icon="i-lucide-sparkles"
-                @click="purifyCurrent('add')"
-              >
-                净化
-              </UButton>
-            </div>
-            <UInput
-              id="new-url"
-              v-model="newUrl"
-              type="text"
-              placeholder="请输入网盘链接"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="new-desc"
-              >资源介绍</label
-            >
-            <UTextarea
-              id="new-desc"
-              v-model="newDescription"
-              :rows="3"
-              placeholder="资源说明，可选"
-              class="w-full"
-            />
-          </div>
-          <UCheckbox
-            id="newIsSelf"
-            v-model="newIsSelf"
-            label="是自己的资源，搜索结果靠前"
+          <UInput
+            id="new-url"
+            v-model="newUrl"
+            type="text"
+            placeholder="请输入网盘链接"
+            class="w-full"
           />
         </div>
-      </template>
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeAddModal">
-            取消
-          </UButton>
-          <UButton
-            color="primary"
-            :loading="addSourceing"
-            :disabled="addSourceing"
-            @click="addSource"
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="new-desc"
+            >资源介绍</label
           >
-            {{ addSourceing ? "添加中..." : "添加" }}
-          </UButton>
+          <UTextarea
+            id="new-desc"
+            v-model="newDescription"
+            :rows="3"
+            placeholder="资源说明，可选"
+            class="w-full"
+          />
         </div>
-      </template>
-    </UModal>
-
-    <UModal
-      v-model:open="showDuplicateModal"
-      title="资源地址已存在"
-      :dismissible="false"
-      :ui="{
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          color="warning"
-          variant="soft"
-          icon="i-lucide-triangle-alert"
-          title="输入的资源地址已存在于以下资源，请选择处理方式"
-          class="mb-4"
+        <UCheckbox
+          id="newIsSelf"
+          v-model="newIsSelf"
+          label="是自己的资源，搜索结果靠前"
         />
-        <div class="space-y-2 text-sm break-all">
-          <p>
-            <span class="text-color-500">资源 ID：</span>{{ duplicateInfo?.id }}
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeAddModal">
+          取消
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="addSourceing"
+          :disabled="addSourceing"
+          @click="addSource"
+        >
+          {{ addSourceing ? "添加中..." : "添加" }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="showDuplicateModal"
+    title="资源地址已存在"
+    :dismissible="false"
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        color="warning"
+        variant="soft"
+        icon="i-lucide-triangle-alert"
+        title="输入的资源地址已存在于以下资源，请选择处理方式"
+        class="mb-4"
+      />
+      <div class="space-y-2 text-sm break-all">
+        <p>
+          <span class="text-color-500">资源 ID：</span>{{ duplicateInfo?.id }}
+        </p>
+        <p>
+          <span class="text-color-500">资源名称：</span
+          >{{ duplicateInfo?.title }}
+        </p>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex gap-3">
+        <UButton
+          color="primary"
+          icon="i-lucide-refresh-cw"
+          :loading="duplicateSubmitting"
+          :disabled="duplicateSubmitting"
+          @click="resolveDuplicate({ updateExisting: true })"
+        >
+          更新资源信息
+        </UButton>
+        <UButton
+          color="error"
+          variant="soft"
+          icon="i-lucide-plus"
+          :loading="duplicateSubmitting"
+          :disabled="duplicateSubmitting"
+          @click="resolveDuplicate({ force: true })"
+        >
+          强制继续添加
+        </UButton>
+        <UButton
+          color="neutral"
+          variant="soft"
+          :disabled="duplicateSubmitting"
+          @click="closeDuplicateModal"
+        >
+          取消
+        </UButton>
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="showEditModal"
+    title="编辑资源"
+    :dismissible="false"
+    @close="closeEditModal"
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="edit-cid"
+            >资源分类 *</label
+          >
+          <USelect
+            id="edit-cid"
+            v-model="editCid"
+            class="w-full"
+            :items="[
+              { label: '无分类', value: NO_CATEGORY },
+              ...categories.map((cat) => ({
+                label: cat.name,
+                value: cat.id.toString(),
+              })),
+            ]"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="edit-title"
+            >资源名称 *</label
+          >
+          <UInput
+            id="edit-title"
+            v-model="editTitle"
+            type="text"
+            placeholder="请输入资源名称"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <div class="flex gap-2 mb-2 items-center">
+            <label class="block text-color-400 text-sm flex-1" for="edit-url"
+              >资源地址 *</label
+            >
+            <UButton
+              size="sm"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-clipboard"
+              @click="pasteAndPurify('edit')"
+            >
+              粘贴
+            </UButton>
+            <UButton
+              size="sm"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-sparkles"
+              @click="purifyCurrent('edit')"
+            >
+              净化
+            </UButton>
+          </div>
+          <UInput
+            id="edit-url"
+            v-model="editUrl"
+            type="text"
+            placeholder="请输入网盘链接"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="edit-desc"
+            >资源介绍</label
+          >
+          <UTextarea
+            id="edit-desc"
+            v-model="editDescription"
+            :rows="3"
+            placeholder="资源说明，可选"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-color-400 text-sm">目录</label>
+            <UButton
+              type="button"
+              size="sm"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-folder"
+              :loading="menuLoading"
+              :disabled="menuLoading"
+              @click="fetchMenu"
+            >
+              {{ menuLoading ? "获取中..." : "获取目录" }}
+            </UButton>
+          </div>
+          <UTextarea
+            v-model="editMenu"
+            :rows="5"
+            placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
+            class="font-mono text-xs w-full"
+          />
+        </div>
+        <UCheckbox
+          id="editIsSelf"
+          v-model="editIsSelf"
+          label="是自己的资源，搜索结果靠前"
+        />
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeEditModal">
+          取消
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="saveEditing"
+          :disabled="saveEditing"
+          @click="saveEdit"
+        >
+          {{ saveEditing ? "保存中..." : "保存" }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="showImportModal"
+    title="导入资源"
+    :dismissible="false"
+    @close="closeImportModal"
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-4"
+      />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="import-cid"
+            >资源分类</label
+          >
+          <USelect
+            id="import-cid"
+            v-model="importCid"
+            class="w-full"
+            :items="[
+              { label: '无分类', value: NO_CATEGORY },
+              ...categories.map((cat) => ({
+                label: cat.name,
+                value: cat.id.toString(),
+              })),
+            ]"
+          />
+        </div>
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="import-file"
+            >Excel 文件 *</label
+          >
+          <UInput
+            id="import-file"
+            type="file"
+            accept=".xlsx"
+            class="cursor-pointer w-full"
+            @change="handleFileChange"
+          />
+          <p class="mt-2 text-color-500 text-xs">
+            第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
           </p>
-          <p>
-            <span class="text-color-500">资源名称：</span
-            >{{ duplicateInfo?.title }}
-          </p>
         </div>
-      </template>
-      <template #footer>
-        <div class="flex gap-3">
-          <UButton
-            color="primary"
-            icon="i-lucide-refresh-cw"
-            :loading="duplicateSubmitting"
-            :disabled="duplicateSubmitting"
-            @click="resolveDuplicate({ updateExisting: true })"
-          >
-            更新资源信息
-          </UButton>
-          <UButton
-            color="error"
-            variant="soft"
-            icon="i-lucide-plus"
-            :loading="duplicateSubmitting"
-            :disabled="duplicateSubmitting"
-            @click="resolveDuplicate({ force: true })"
-          >
-            强制继续添加
-          </UButton>
-          <UButton
-            color="neutral"
-            variant="soft"
-            :disabled="duplicateSubmitting"
-            @click="closeDuplicateModal"
-          >
-            取消
-          </UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal
-      v-model:open="showEditModal"
-      title="编辑资源"
-      :dismissible="false"
-      @close="closeEditModal"
-      :ui="{
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
+        <UCheckbox
+          id="hasHeader"
+          v-model="importHasHeader"
+          label="第一行为表头，跳过不导入"
         />
-        <div class="space-y-4">
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-cid"
-              >资源分类 *</label
-            >
-            <USelect
-              id="edit-cid"
-              v-model="editCid"
-              class="w-full"
-              :items="[
-                { label: '无分类', value: NO_CATEGORY },
-                ...categories.map((cat) => ({
-                  label: cat.name,
-                  value: cat.id.toString(),
-                })),
-              ]"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-title"
-              >资源名称 *</label
-            >
-            <UInput
-              id="edit-title"
-              v-model="editTitle"
-              type="text"
-              placeholder="请输入资源名称"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <div class="flex gap-2 mb-2 items-center">
-              <label class="block text-color-400 text-sm flex-1" for="edit-url"
-                >资源地址 *</label
-              >
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="soft"
-                icon="i-lucide-clipboard"
-                @click="pasteAndPurify('edit')"
-              >
-                粘贴
-              </UButton>
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="soft"
-                icon="i-lucide-sparkles"
-                @click="purifyCurrent('edit')"
-              >
-                净化
-              </UButton>
-            </div>
-            <UInput
-              id="edit-url"
-              v-model="editUrl"
-              type="text"
-              placeholder="请输入网盘链接"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="edit-desc"
-              >资源介绍</label
-            >
-            <UTextarea
-              id="edit-desc"
-              v-model="editDescription"
-              :rows="3"
-              placeholder="资源说明，可选"
-              class="w-full"
-            />
-          </div>
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="block text-color-400 text-sm">目录</label>
-              <UButton
-                type="button"
-                size="sm"
-                color="neutral"
-                variant="soft"
-                icon="i-lucide-folder"
-                :loading="menuLoading"
-                :disabled="menuLoading"
-                @click="fetchMenu"
-              >
-                {{ menuLoading ? "获取中..." : "获取目录" }}
-              </UButton>
-            </div>
-            <UTextarea
-              v-model="editMenu"
-              :rows="5"
-              placeholder="点击右上角按钮获取网盘目录，也可手动编辑"
-              class="font-mono text-xs w-full"
-            />
-          </div>
-          <UCheckbox
-            id="editIsSelf"
-            v-model="editIsSelf"
-            label="是自己的资源，搜索结果靠前"
-          />
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeEditModal">
-            取消
-          </UButton>
-          <UButton
-            color="primary"
-            :loading="saveEditing"
-            :disabled="saveEditing"
-            @click="saveEdit"
-          >
-            {{ saveEditing ? "保存中..." : "保存" }}
-          </UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal
-      v-model:open="showImportModal"
-      title="导入资源"
-      :dismissible="false"
-      @close="closeImportModal"
-      :ui="{
-        footer: 'justify-end',
-      }"
-    >
-      <template #body>
-        <UAlert
-          v-if="error"
-          color="error"
-          variant="soft"
-          :title="error"
-          class="mb-4"
+        <UCheckbox
+          id="importIsSelf"
+          v-model="importIsSelf"
+          label="是自己的资源，搜索结果靠前"
         />
-        <div class="space-y-4">
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="import-cid"
-              >资源分类</label
-            >
-            <USelect
-              id="import-cid"
-              v-model="importCid"
-              class="w-full"
-              :items="[
-                { label: '无分类', value: NO_CATEGORY },
-                ...categories.map((cat) => ({
-                  label: cat.name,
-                  value: cat.id.toString(),
-                })),
-              ]"
-            />
-          </div>
-          <div>
-            <label class="block text-color-400 text-sm mb-2" for="import-file"
-              >Excel 文件 *</label
-            >
-            <UInput
-              id="import-file"
-              type="file"
-              accept=".xlsx"
-              class="cursor-pointer w-full"
-              @change="handleFileChange"
-            />
-            <p class="mt-2 text-color-500 text-xs">
-              第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
-            </p>
-          </div>
-          <UCheckbox
-            id="hasHeader"
-            v-model="importHasHeader"
-            label="第一行为表头，跳过不导入"
-          />
-          <UCheckbox
-            id="importIsSelf"
-            v-model="importIsSelf"
-            label="是自己的资源，搜索结果靠前"
-          />
-          <UAlert
-            v-if="importResult"
-            color="success"
-            variant="soft"
-            icon="i-lucide-check"
-          >
-            <template #title>导入完成</template>
-            共解析 {{ importResult.total }} 条，成功导入
-            {{ importResult.inserted }} 条，重复
-            {{ importResult.duplicate }} 条，失败 {{ importResult.failed }} 条。
-          </UAlert>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex gap-4">
-          <UButton color="neutral" variant="soft" @click="closeImportModal">
-            取消
-          </UButton>
-          <UButton
-            color="primary"
-            :loading="importing"
-            :disabled="importing || !importFile"
-            @click="importSources"
-          >
-            {{ importing ? "导入中..." : "开始导入" }}
-          </UButton>
-        </div>
-      </template>
-    </UModal>
-  </div>
+        <UAlert
+          v-if="importResult"
+          color="success"
+          variant="soft"
+          icon="i-lucide-check"
+        >
+          <template #title>导入完成</template>
+          共解析 {{ importResult.total }} 条，成功导入
+          {{ importResult.inserted }} 条，重复
+          {{ importResult.duplicate }} 条，失败 {{ importResult.failed }} 条。
+        </UAlert>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton color="neutral" variant="soft" @click="closeImportModal">
+          取消
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="importing"
+          :disabled="importing || !importFile"
+          @click="importSources"
+        >
+          {{ importing ? "导入中..." : "开始导入" }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>
