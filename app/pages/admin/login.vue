@@ -8,7 +8,12 @@ import { useStyleTag, useMounted, useStorage } from "@vueuse/core";
 
 const router = useRouter();
 const route = useRoute();
-const { login } = useAuth();
+const { login, isLoggedIn } = useAuth();
+
+// 已登录则跳转
+if (isLoggedIn.value) {
+  router.replace("/admin");
+}
 
 const error = ref("");
 const loading = ref(false);

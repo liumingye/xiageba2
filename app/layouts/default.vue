@@ -64,7 +64,7 @@ const extraLinks = [
   },
   { to: "https://xiageba.apifox.cn/", label: "API", external: true },
   { to: "/sitemap.xml", label: "网站地图" },
-  { to: "/admin", label: "管理员登录", external: true },
+  { to: "/admin/login", label: "管理员登录", external: true },
 ];
 
 const disableBack = computed(() => {
