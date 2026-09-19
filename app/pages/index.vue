@@ -819,8 +819,8 @@ const getPic = (url: string) => {
     #fff,
     #fff,
     #fff 20%,
-    #fff 70%,
-    hsla(0deg, 0%, 100%, 0.5) 80%,
+    #fff 50%,
+    hsla(0deg, 0%, 100%, 0.3) 80%,
     hsla(0deg, 0%, 100%, 0)
   );
 }

@@ -14,6 +14,12 @@ interface DownloadOption {
   sourceId?: string;
 }
 
+definePageMeta({
+  layout: {
+    name: false,
+  },
+});
+
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
 
