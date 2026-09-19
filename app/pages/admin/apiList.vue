@@ -65,9 +65,9 @@ const form = ref({
   type: "api" as "api" | "html" | "pansou",
   url: "",
   method: "GET",
-  headers: "{}",
-  fixed_params: "{}",
-  field_map: "{}",
+  headers: "",
+  fixed_params: "",
+  field_map: "",
   count: 10,
   html_item: "",
   html_title: "",
@@ -140,9 +140,9 @@ const resetForm = () => {
     type: "api",
     url: "",
     method: "GET",
-    headers: "{}",
-    fixed_params: "{}",
-    field_map: "{}",
+    headers: "",
+    fixed_params: "",
+    field_map: "",
     count: 10,
     html_item: "",
     html_title: "",
@@ -540,6 +540,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 v-model="form.headers"
                 :rows="3"
                 class="font-mono text-xs w-full"
+                placeholder="{}"
               />
             </div>
             <div>
@@ -551,6 +552,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 v-model="form.fixed_params"
                 :rows="4"
                 class="font-mono text-xs w-full"
+                placeholder="{}"
               />
             </div>
             <div>
@@ -562,6 +564,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
                 v-model="form.field_map"
                 :rows="5"
                 class="font-mono text-xs w-full"
+                placeholder='{"list_path":"data","fields":{"title":"title","url":"url"}}'
               />
             </div>
           </template>
