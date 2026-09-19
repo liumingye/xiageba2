@@ -273,6 +273,15 @@ const fetchMenu = async () => {
 };
 
 const addSourceing = ref(false);
+// 地址重复时的选择弹窗
+const showDuplicateModal = ref(false);
+const duplicateInfo = ref<{
+  id: string;
+  title: string;
+  cid?: number | null;
+} | null>(null);
+const duplicateSubmitting = ref(false);
+
 const addSource = async () => {
   if (addSourceing.value) return;
   if (!newTitle.value.trim()) {
@@ -298,11 +307,61 @@ const addSource = async () => {
     closeAddModal();
     await loadSources();
   } catch (e: any) {
+    const status = e?.response?.status;
     const err = e?.response?.data;
-    error.value = err?.message || "添加失败";
+    if (status === 409) {
+      // 地址重复，弹出选择窗口：强制添加 / 更新资源信息 / 取消
+      duplicateInfo.value = err?.data?.existing || err?.existing || null;
+      showDuplicateModal.value = true;
+      error.value = "";
+    } else {
+      error.value = err?.message || "添加失败";
+    }
   } finally {
     addSourceing.value = false;
   }
+};
+
+/** 地址重复后按用户选择重新提交 */
+const resolveDuplicate = async (opts: {
+  force?: boolean;
+  updateExisting?: boolean;
+}) => {
+  if (duplicateSubmitting.value) return;
+  duplicateSubmitting.value = true;
+
+  try {
+    const data = await post("/api/admin/source", {
+      cid: toApiCid(newCid.value),
+      title: newTitle.value,
+      url: newUrl.value,
+      description: newDescription.value,
+      menu: newMenu.value,
+      isSelf: newIsSelf.value,
+      ...opts,
+    });
+    if (data.success) {
+      closeDuplicateModal();
+      closeAddModal();
+      toast.add({
+        title: data.updated ? "已更新资源信息" : "资源添加成功",
+        icon: "i-lucide-check",
+        color: "success",
+      });
+      await loadSources();
+    }
+  } catch (e: any) {
+    const err = e?.response?.data;
+    closeDuplicateModal();
+    error.value = err?.message || "操作失败";
+  } finally {
+    duplicateSubmitting.value = false;
+  }
+};
+
+const closeDuplicateModal = () => {
+  showDuplicateModal.value = false;
+  duplicateInfo.value = null;
 };
 
 const saveEditing = ref(false);
@@ -810,6 +869,65 @@ const importSources = async () => {
             @click="addSource"
           >
             {{ addSourceing ? "添加中..." : "添加" }}
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="showDuplicateModal"
+      title="资源地址已存在"
+      :dismissible="false"
+      :ui="{
+        footer: 'justify-end',
+      }"
+    >
+      <template #body>
+        <UAlert
+          color="warning"
+          variant="soft"
+          icon="i-lucide-triangle-alert"
+          title="输入的资源地址已存在于以下资源，请选择处理方式"
+          class="mb-4"
+        />
+        <div class="space-y-2 text-sm break-all">
+          <p>
+            <span class="text-color-500">资源 ID：</span>{{ duplicateInfo?.id }}
+          </p>
+          <p>
+            <span class="text-color-500">资源名称：</span
+            >{{ duplicateInfo?.title }}
+          </p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex gap-3">
+          <UButton
+            color="primary"
+            icon="i-lucide-refresh-cw"
+            :loading="duplicateSubmitting"
+            :disabled="duplicateSubmitting"
+            @click="resolveDuplicate({ updateExisting: true })"
+          >
+            更新资源信息
+          </UButton>
+          <UButton
+            color="error"
+            variant="soft"
+            icon="i-lucide-plus"
+            :loading="duplicateSubmitting"
+            :disabled="duplicateSubmitting"
+            @click="resolveDuplicate({ force: true })"
+          >
+            强制继续添加
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="soft"
+            :disabled="duplicateSubmitting"
+            @click="closeDuplicateModal"
+          >
+            取消
           </UButton>
         </div>
       </template>

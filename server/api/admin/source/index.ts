@@ -12,6 +12,23 @@ import { TREE_MAX_LINE } from "#server/lib/const";
 // 实例化 pg 连接池（保持与 Prisma 数据库连接一致）
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 30 });
 
+/** 重建资源的 searchVector 全文索引 */
+const updateSearchVector = async (source: {
+  id: string;
+  title: string | null;
+  description: string | null;
+  menu: string | null;
+}) => {
+  const tokens = buildTokens(
+    source.title || "",
+    source.description || "",
+    truncateString(clearTreeSymbols(source.menu || ""), TREE_MAX_LINE),
+  );
+  if (tokens) {
+    await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
+  }
+};
+
 export default defineEventHandler(async (event) => {
   const method = event.method;
 
@@ -154,7 +171,8 @@ export default defineEventHandler(async (event) => {
 
   if (method === "POST") {
     const body = await readBody(event);
-    const { cid, title, url, description, menu, isSelf } = body;
+    const { cid, title, url, description, menu, isSelf, force, updateExisting } =
+      body;
 
     if (!title?.trim()) {
       throw createError({ statusCode: 400, message: "资源名称不能为空" });
@@ -165,15 +183,36 @@ export default defineEventHandler(async (event) => {
 
     const existing = await prisma.source.findFirst({
       where: { url: url.trim() },
-      select: { id: true, title: true },
+      select: { id: true, title: true, cid: true },
     });
-    if (existing) {
+    if (existing && !force && !updateExisting) {
+      // 地址重复：返回 409 并携带已有资源信息，由前端弹窗选择处理方式
       throw createError({
         statusCode: 409,
         message: `资源地址已存在（ID: ${existing.id}，名称: ${existing.title}）`,
+        data: { existing },
       });
     }
 
+    // 选择「更新资源信息」：用本次提交的内容覆盖已有资源（url 不变）
+    if (existing && updateExisting) {
+      const source = await prisma.source.update({
+        where: { id: existing.id },
+        data: {
+          cid: Number(cid) || null,
+          title: title.trim(),
+          description: description || "",
+          menu: menu || "",
+          isSelf: isSelf || false,
+        },
+      });
+
+      await updateSearchVector(source);
+
+      return { success: true, data: source, updated: true };
+    }
+
+    // 无重复，或选择「强制继续添加」
     const source = await prisma.source.create({
       data: {
         cid: Number(cid) || null,
@@ -186,14 +225,7 @@ export default defineEventHandler(async (event) => {
     });
 
     // jieba 分词后更新 searchVector
-    const tokens = buildTokens(
-      source.title || "",
-      source.description || "",
-      truncateString(clearTreeSymbols(source.menu || ""), TREE_MAX_LINE),
-    );
-    if (tokens) {
-      await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
-    }
+    await updateSearchVector(source);
 
     return { success: true, data: source };
   }
