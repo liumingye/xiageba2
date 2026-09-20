@@ -10,10 +10,7 @@ const router = useRouter();
 const categoryId = computed(() => Number(route.params.id));
 
 interface CategoryDetail {
-  id: number;
   name: string;
-  image: string;
-  sort: number;
 }
 
 interface CategoryListData {
@@ -42,7 +39,7 @@ const {
     })),
     server: true,
     default: () => ({
-      category: { id: 0, name: "", image: "", sort: 0 },
+      category: { id: 0, name: "", image: "" },
       data: [],
       total: 0,
       page: 1,

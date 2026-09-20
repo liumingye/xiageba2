@@ -68,7 +68,7 @@ const pageTitle = computed(() => {
   if (title.length === 0) {
     title.push("全盘搜 - 免费下载高品质音乐");
   }
-  return `${title.join(" - ")} - 全盘搜`;
+  return `${title.join(" - ")} - 音乐下载 - 全盘搜`;
 });
 
 const pageDescription = computed(() => {
@@ -164,7 +164,7 @@ const searchNetdisk = () => {
     .join(" ");
   router.push({
     path: "/search",
-    query: { type: "resource", q: keyword },
+    query: { type: "resource", q: keyword, exact: "true" },
   });
 };
 
@@ -331,7 +331,7 @@ const isMobileTablet = computed(() => {
               class="p-0"
               variant="link"
               color="neutral"
-              :to="`/search?q=${encodeURIComponent(music.artist)}`"
+              :to="`/search?q=${encodeURIComponent(music.artist)}&exact=true`"
               icon="i-lucide-circle-user-round"
               :ui="{
                 leadingIcon: 'size-5',
@@ -347,7 +347,7 @@ const isMobileTablet = computed(() => {
               class="p-0"
               variant="link"
               color="neutral"
-              :to="`/search?q=${encodeURIComponent(music.album)}`"
+              :to="`/search?q=${encodeURIComponent(music.album)}&exact=true`"
               icon="i-lucide-disc"
               :ui="{
                 leadingIcon: 'size-5',

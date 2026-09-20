@@ -399,11 +399,21 @@ useSeoMeta({
   twitterDescription: pageDescription,
 });
 
+const keywords = [
+  searchKeyword.value,
+  ...tokens.value,
+  "全盘搜",
+  "音乐下载",
+  "MP3下载",
+  "FLAC下载",
+  "网盘搜索",
+  "网盘下载",
+];
 useHead({
   meta: [
     {
       name: "keywords",
-      content: `${searchKeyword.value}, 音乐搜索, 全盘搜, MP3下载, FLAC下载, 网盘搜索, 网盘下载`,
+      content: keywords.join(","),
     },
   ],
   link: [
@@ -417,12 +427,15 @@ useHead({
 
 const switchType = (type: "music" | "resource" | "ai") => {
   if (type === searchType.value) return;
+  const arr = [`type=${type}`];
   const q = searchKeyword.value;
   if (q) {
-    router.push(`/search?type=${type}&q=${encodeURIComponent(q)}`);
-  } else {
-    router.push(`/search?type=${type}`);
+    arr.push(`q=${encodeURIComponent(q)}`);
   }
+  if (route.query.exact) {
+    arr.push(`exact=true`);
+  }
+  router.push(`/search?${arr.join("&")}`);
 };
 
 const goToPage = (page: number) => {

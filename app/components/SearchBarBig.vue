@@ -75,9 +75,9 @@ const handleSearch = (keywords?: string) => {
   emit("search", q);
 
   if (searchType.value === "music") {
-    router.push(`/search?type=music&q=${encodeURIComponent(q)}`);
+    router.push(`/search?type=music&q=${encodeURIComponent(q)}&exact=true`);
   } else if (searchType.value === "resource") {
-    router.push(`/search?type=resource&q=${encodeURIComponent(q)}`);
+    router.push(`/search?type=resource&q=${encodeURIComponent(q)}&exact=true`);
   } else if (searchType.value === "ai") {
     router.push(`/search?type=ai&q=${encodeURIComponent(q)}`);
   }

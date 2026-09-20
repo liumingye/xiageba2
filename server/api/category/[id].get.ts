@@ -27,10 +27,7 @@ export default defineCachedEventHandler(
     const skip = (page - 1) * pageSize;
 
     // cid=0 表示不按分类筛选，返回所有资源
-    const where =
-      cid === 0
-        ? { status: 1 }
-        : { cid, status: 1 };
+    const where = cid === 0 ? { status: 1 } : { cid, status: 1 };
 
     const getTotalCount = async () => {
       if (cid === 0) {
@@ -46,8 +43,11 @@ export default defineCachedEventHandler(
 
     const [category, sources, total] = await Promise.all([
       cid === 0
-        ? Promise.resolve({ id: 0, name: "最新资源", image: "", sort: 0 })
-        : prisma.category.findUnique({ where: { id: cid } }),
+        ? Promise.resolve({ name: "最新资源" })
+        : prisma.category.findUnique({
+            where: { id: cid },
+            select: { name: true },
+          }),
       prisma.source.findMany({
         where,
         orderBy: { createdAt: "desc" },

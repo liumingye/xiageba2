@@ -100,7 +100,7 @@ prisma/               # schema 与 migrations
   - `hasMatch(text)` — 子串匹配（包含即命中）
   - `hasFullMatch(text)` — 完整匹配（整词等于才命中）
   - 搜索场景用 `hasFullMatch`，避免误伤正常搜索（如"激情演唱会"不应被"激情"屏蔽）
-  - 屏蔽词列表通过 `autompton_websearch_filter_keywords` 导出，`websearch_filter_keywords_list` 保留原始数组供展示
+  - 屏蔽词列表通过 `automaton_websearch_filter_keywords` 导出，`websearch_filter_keywords_list` 保留原始数组供展示
 
 ### 前端
 

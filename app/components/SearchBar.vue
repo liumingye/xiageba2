@@ -67,7 +67,7 @@ const handleSearch = (keywords?: string) => {
   } else {
     router.push({
       path: "/search",
-      query: { type, q },
+      query: { type, q, exact: "true" },
     });
   }
   inputRef.value?.inputRef?.blur();

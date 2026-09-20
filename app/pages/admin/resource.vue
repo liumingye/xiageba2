@@ -587,9 +587,7 @@ const importSources = async () => {
       error.value = data.message || "导入失败";
     }
   } catch (e: any) {
-    if (e?.response?.status !== 401) {
-      error.value = "导入失败，请重试";
-    }
+    error.value = e?.response?.data?.message || "导入失败，请重试";
   } finally {
     importing.value = false;
   }
