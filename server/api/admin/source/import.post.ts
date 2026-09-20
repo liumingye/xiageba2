@@ -233,7 +233,7 @@ export default defineEventHandler(async (event) => {
         }
       },
       {
-        timeout: 30000, // 适当放宽事务超时时间到 30 秒，确保大批量写入安全完成
+        timeout: 60000, // 适当放宽事务超时时间到 60 秒，确保大批量写入安全完成
       },
     );
   } catch (err: any) {
