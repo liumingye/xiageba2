@@ -28,10 +28,16 @@ export default defineEventHandler(async (event) => {
   const isSelfField = formData
     .find((item) => item.name === "isSelf")
     ?.data.toString();
+  const strategyField = formData
+    .find((item) => item.name === "strategy")
+    ?.data.toString();
 
   const cid = Number(cidField) || null;
   const hasHeader = hasHeaderField === "true";
   const isSelf = isSelfField === "true";
+  // 重复资源处理策略：skip（跳过，默认） / update（更新原有资源信息）
+  const strategy: "skip" | "update" =
+    strategyField === "update" ? "update" : "skip";
 
   const mimeType = file.type || "";
   const filename = file.filename || "";
@@ -86,81 +92,144 @@ export default defineEventHandler(async (event) => {
   const targetUrls = rows.map((r) => r.url);
   const existingSources = await prisma.source.findMany({
     where: { url: { in: targetUrls } },
-    select: { url: true },
+    select: { id: true, url: true },
   });
   const existingUrls = new Set(existingSources.map((s) => s.url));
+  const existingIdByUrl = new Map(existingSources.map((s) => [s.url, s.id]));
 
-  // 筛选真正需要插入的目标集合
+  // 拆分：需要新增 vs 命中已存在
   const toInsert = rows.filter((r) => !existingUrls.has(r.url));
+  const toUpdate = rows.filter((r) => existingUrls.has(r.url));
   const duplicateCount = rows.length - toInsert.length;
 
-  if (toInsert.length === 0) {
+  if (toInsert.length === 0 && toUpdate.length === 0) {
     return {
       success: true,
       total: rows.length,
       inserted: 0,
+      updated: 0,
       duplicate: duplicateCount,
       failed: 0,
     };
   }
 
   let insertedCount = 0;
+  let updatedCount = 0;
+  let failedCount = 0;
 
   // 3. 🚀 开启原子事务，处理高性能批量入库与批量索引更新
   try {
     await prisma.$transaction(
       async (tx) => {
-        // Step A: 批量插入基础数据 (1 条 SQL 搞定)
-        const payload = toInsert.map((r) => ({
-          cid,
-          title: r.title,
-          url: r.url,
-          description: "",
-          menu: "",
-          isSelf,
-        }));
+        // ===== 新增部分 =====
+        if (toInsert.length > 0) {
+          // Step A: 批量插入基础数据 (1 条 SQL 搞定)
+          const payload = toInsert.map((r) => ({
+            cid,
+            title: r.title,
+            url: r.url,
+            description: "",
+            menu: "",
+            isSelf,
+          }));
 
-        await tx.source.createMany({
-          data: payload,
-          skipDuplicates: true, // 再次保障不因极极端并发冲突导致整批回滚
-        });
+          await tx.source.createMany({
+            data: payload,
+            skipDuplicates: true, // 再次保障不因极极端并发冲突导致整批回滚
+          });
 
-        // Step B: 查回刚刚插入的这批数据的 ID 和必要字段，用于分词构建
-        // （基于刚刚去重过的唯一 URL 集合查询，速度极快）
-        const insertedRecords = await tx.source.findMany({
-          where: { url: { in: toInsert.map((r) => r.url) } },
-          select: { id: true, title: true, description: true, menu: true },
-        });
+          // Step B: 查回刚刚插入的这批数据的 ID 和必要字段，用于分词构建
+          // （基于刚刚去重过的唯一 URL 集合查询，速度极快）
+          const insertedRecords = await tx.source.findMany({
+            where: { url: { in: toInsert.map((r) => r.url) } },
+            select: { id: true, title: true, description: true, menu: true },
+          });
 
-        insertedCount = insertedRecords.length;
+          insertedCount = insertedRecords.length;
+          failedCount += toInsert.length - insertedCount;
 
-        // Step C: 内存高吞吐分词，构建批量合并更新所需要的数组
-        const ids: string[] = [];
-        const tokenStrings: string[] = [];
+          // Step C: 内存高吞吐分词，构建批量合并更新所需要的数组
+          const ids: string[] = [];
+          const tokenStrings: string[] = [];
 
-        for (const rec of insertedRecords) {
-          const tokens = buildTokens(
-            rec.title || "",
-            rec.description || "",
-            clearTreeSymbols(rec.menu || ""),
-          );
-          // 如果切词有内容，则加入批量更新列表
-          if (tokens) {
-            ids.push(rec.id);
-            tokenStrings.push(tokens);
+          for (const rec of insertedRecords) {
+            const tokens = buildTokens(
+              rec.title || "",
+              rec.description || "",
+              clearTreeSymbols(rec.menu || ""),
+            );
+            // 如果切词有内容，则加入批量更新列表
+            if (tokens) {
+              ids.push(rec.id);
+              tokenStrings.push(tokens);
+            }
+          }
+
+          // Step D: ⚡ 核心提速优化：采用 UNNEST 将成百上千次的全文索引更新压缩为 1 条 SQL 批量提交
+          if (ids.length > 0) {
+            await tx.$executeRaw`
+            UPDATE "Source" as s
+            SET "searchVector" = to_tsvector('simple', t.tokens)
+            FROM (
+              SELECT unnest(${ids}::text[]) as id, unnest(${tokenStrings}::text[]) as tokens
+            ) as t
+            WHERE s.id = t.id;
+          `;
           }
         }
 
-        // Step D: ⚡ 核心提速优化：采用 UNNEST 将成百上千次的全文索引更新压缩为 1 条 SQL 批量提交
-        if (ids.length > 0) {
-          await tx.$executeRaw`
-          UPDATE "Source" as s
-          SET "searchVector" = to_tsvector('simple', t.tokens)
-          FROM (
-            SELECT unnest(${ids}::text[]) as id, unnest(${tokenStrings}::text[]) as tokens
-          ) as t
-          WHERE s.id = t.id;
-        `;
+        // ===== 更新部分（策略为 update 时执行） =====
+        if (strategy === "update" && toUpdate.length > 0) {
+          // Step E: 用 Excel 中的最新名称/分类/isSelf 覆盖已有资源，url 不变，
+          // description/menu 由表内没有字段，保持原值。
+          const updatedIds: string[] = [];
+          for (const row of toUpdate) {
+            const id = existingIdByUrl.get(row.url);
+            if (!id) continue;
+            await tx.source.update({
+              where: { id },
+              data: {
+                cid,
+                title: row.title,
+                isSelf,
+              },
+            });
+            updatedIds.push(id);
+          }
+          updatedCount = updatedIds.length;
+
+          // Step F: 重建被更新资源的 searchVector（标题变化必须重建）
+          if (updatedIds.length > 0) {
+            const updatedRecords = await tx.source.findMany({
+              where: { id: { in: updatedIds } },
+              select: { id: true, title: true, description: true, menu: true },
+            });
+
+            const ids: string[] = [];
+            const tokenStrings: string[] = [];
+            for (const rec of updatedRecords) {
+              const tokens = buildTokens(
+                rec.title || "",
+                rec.description || "",
+                clearTreeSymbols(rec.menu || ""),
+              );
+              if (tokens) {
+                ids.push(rec.id);
+                tokenStrings.push(tokens);
+              }
+            }
+
+            if (ids.length > 0) {
+              await tx.$executeRaw`
+              UPDATE "Source" as s
+              SET "searchVector" = to_tsvector('simple', t.tokens)
+              FROM (
+                SELECT unnest(${ids}::text[]) as id, unnest(${tokenStrings}::text[]) as tokens
+              ) as t
+              WHERE s.id = t.id;
+            `;
+            }
+          }
         }
       },
       {
@@ -179,7 +248,8 @@ export default defineEventHandler(async (event) => {
     success: true,
     total: rows.length,
     inserted: insertedCount,
+    updated: updatedCount,
     duplicate: duplicateCount,
-    failed: toInsert.length - insertedCount,
+    failed: failedCount,
   };
 });

@@ -101,11 +101,13 @@ const showImportModal = ref(false);
 const importCid = ref<string>(NO_CATEGORY);
 const importHasHeader = ref(true);
 const importIsSelf = ref(false);
+const importStrategy = ref<"skip" | "update">("skip");
 const importFile = ref<File | null>(null);
 const importing = ref(false);
 const importResult = ref<{
   total: number;
   inserted: number;
+  updated: number;
   duplicate: number;
   failed: number;
 } | null>(null);
@@ -533,6 +535,7 @@ const openImportModal = () => {
   importCid.value = NO_CATEGORY;
   importHasHeader.value = true;
   importIsSelf.value = false;
+  importStrategy.value = "skip";
   importFile.value = null;
   importResult.value = null;
   error.value = "";
@@ -564,13 +567,18 @@ const importSources = async () => {
     formData.append("cid", toApiCid(importCid.value));
     formData.append("hasHeader", String(importHasHeader.value));
     formData.append("isSelf", String(importIsSelf.value));
+    formData.append("strategy", importStrategy.value);
 
     const data = await post("/api/admin/source/import", formData);
 
     if (data.success) {
       importResult.value = data;
+      const part =
+        importStrategy.value === "update" && data.updated
+          ? `，更新 ${data.updated} 条`
+          : `，重复 ${data.duplicate} 条`;
       toast.add({
-        title: `导入完成：成功 ${data.inserted} 条，重复 ${data.duplicate} 条，失败 ${data.failed} 条`,
+        title: `导入完成：成功 ${data.inserted} 条${part}，失败 ${data.failed} 条`,
         icon: "i-lucide-check",
         color: "success",
       });
@@ -1117,6 +1125,25 @@ const importSources = async () => {
           v-model="importIsSelf"
           label="是自己的资源，搜索结果靠前"
         />
+        <div>
+          <label class="block text-color-400 text-sm mb-2" for="import-strategy"
+            >重复资源处理</label
+          >
+          <USelect
+            id="import-strategy"
+            v-model="importStrategy"
+            class="w-full"
+            :items="[
+              { label: '跳过添加（默认）', value: 'skip' },
+              { label: '更新资源信息', value: 'update' },
+            ]"
+          />
+          <p class="mt-2 text-color-500 text-xs">
+            当 Excel
+            中的地址已存在时，选择“跳过”则忽略该条；选择“更新”则会覆盖原有资源的名称、分类与
+            isSelf 标记。
+          </p>
+        </div>
         <UAlert
           v-if="importResult"
           color="success"
@@ -1125,8 +1152,12 @@ const importSources = async () => {
         >
           <template #title>导入完成</template>
           共解析 {{ importResult.total }} 条，成功导入
-          {{ importResult.inserted }} 条，重复
-          {{ importResult.duplicate }} 条，失败 {{ importResult.failed }} 条。
+          {{ importResult.inserted }} 条
+          <template v-if="importResult.updated">
+            ，更新 {{ importResult.updated }} 条
+          </template>
+          ，重复 {{ importResult.duplicate }} 条，失败
+          {{ importResult.failed }} 条。
         </UAlert>
       </div>
     </template>
