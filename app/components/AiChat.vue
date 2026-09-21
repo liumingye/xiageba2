@@ -8,7 +8,7 @@ import {
   onUnmounted,
   computed,
 } from "vue";
-import { Sparkles, User } from "@lucide/vue";
+import { Sparkles, User, ExternalLink } from "@lucide/vue";
 import { safeMarkdownPlugins } from "~/utils/comark";
 
 interface ChatMessage {
@@ -129,11 +129,21 @@ const sendMessage = async (message?: string) => {
   }
 };
 
+const inIframe = ref(false);
+
 onMounted(() => {
-  if (props.initialQuery) {
+  inIframe.value = !!(
+    window.frameElement && window.frameElement.tagName === "IFRAME"
+  );
+  // 在 iframe 中不发起 AI 请求（用户看不到结果，浪费配额）
+  if (props.initialQuery && !inIframe.value) {
     sendMessage(props.initialQuery);
   }
 });
+
+const openInNewWindow = () => {
+  window.open(window.location.href, "_blank", "noopener,noreferrer");
+};
 
 watch(
   () => props.initialQuery,
@@ -160,7 +170,33 @@ const showWelcome = computed(() => chatMessages.value.length === 0);
 </script>
 
 <template>
-  <div class="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-120px)]">
+  <div
+    v-if="inIframe"
+    class="flex flex-col items-center justify-center h-[50vh] px-4 text-center"
+  >
+    <div
+      class="size-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+    >
+      <Sparkles class="size-8 text-yellow-400" />
+    </div>
+    <h2 class="text-lg font-medium mb-2">不支持在 iframe 中使用 AI 搜索</h2>
+    <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">
+      为了更好的体验，请在独立窗口中使用 AI 搜索功能。
+    </p>
+    <button
+      type="button"
+      @click="openInNewWindow"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-inverted rounded-lg text-sm font-medium hover:opacity-90 transition"
+    >
+      <ExternalLink class="size-4" />
+      在新窗口打开
+    </button>
+  </div>
+
+  <div
+    v-else
+    class="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-120px)]"
+  >
     <div ref="chatContainer" class="flex-1 overflow-y-auto px-4 py-4">
       <div class="max-w-3xl mx-auto space-y-4">
         <div v-if="showWelcome && !aiLoading" class="text-center py-12">

@@ -1132,8 +1132,8 @@ const importSources = async () => {
             v-model="importStrategy"
             class="w-full"
             :items="[
-              { label: '跳过添加（默认）', value: 'skip' },
-              { label: '更新资源信息', value: 'update' },
+              { label: '跳过添加重复资源', value: 'skip' },
+              { label: '更新原有资源信息', value: 'update' },
             ]"
           />
           <p class="mt-2 text-color-500 text-xs">

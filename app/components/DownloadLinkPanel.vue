@@ -233,7 +233,7 @@ const handleCopyUrl = async () => {
         </div>
       </div>
     </template>
-    <template #footer>
+    <template v-if="!loading" #footer>
       <div class="space-y-4">
         <div class="w-full flex items-center justify-center gap-2">
           <UButton
