@@ -340,20 +340,6 @@ export default defineNuxtConfig({
       "*/5 * * * *": ["source:check_account"],
     },
   },
-  legacy: {
-    vite: {
-      targets: [
-        "Chrome >= 87",
-        "ChromeAndroid >= 87",
-        "Edge >= 87",
-        "Firefox >= 78",
-        "Safari >= 12",
-        "iOS >= 12",
-      ],
-      modernPolyfills: true,
-      renderLegacyChunks: true,
-    },
-  },
   postcss: {
     plugins: {
       "postcss-preset-env": {
@@ -379,6 +365,22 @@ export default defineNuxtConfig({
         "@nuxt/ui > prosemirror-view",
         "@nuxt/ui > prosemirror-gapcursor",
       ],
+    },
+  },
+  $production: {
+    legacy: {
+      vite: {
+        targets: [
+          "Chrome >= 87",
+          "ChromeAndroid >= 87",
+          "Edge >= 87",
+          "Firefox >= 78",
+          "Safari >= 12",
+          "iOS >= 12",
+        ],
+        modernPolyfills: true,
+        renderLegacyChunks: true,
+      },
     },
   },
   $development: {

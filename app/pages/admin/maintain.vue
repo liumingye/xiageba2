@@ -63,6 +63,55 @@ const pancheckServers = ref<string[]>([]);
 const savingPancheck = ref(false);
 const savedPancheck = ref(false);
 
+// 健康检测结果：索引对应 pancheckServers 下标
+interface PancheckHealthResult {
+  ok: boolean;
+  status: string;
+  message: string;
+  durationMs: number;
+}
+const checkingPancheckHealth = ref(false);
+const pancheckHealthResults = ref<PancheckHealthResult[]>([]);
+
+const checkPancheckHealth = async () => {
+  if (checkingPancheckHealth.value) return;
+
+  const servers = pancheckServers.value.map((s) => s.trim()).filter(Boolean);
+  if (!servers.length) {
+    toast.add({
+      title: "请先填写至少一个接口地址",
+      icon: "i-lucide-x",
+      color: "warning",
+    });
+    return;
+  }
+
+  checkingPancheckHealth.value = true;
+  pancheckHealthResults.value = [];
+
+  try {
+    const data = await post("/api/admin/config/pancheck/health", { servers });
+    if (data.success) {
+      pancheckHealthResults.value = data.results || [];
+      const okCount = (data.results || []).filter((r: PancheckHealthResult) => r.ok)
+        .length;
+      toast.add({
+        title: `健康检测完成：正常 ${okCount}/${servers.length} 个接口`,
+        icon: okCount === servers.length ? "i-lucide-check" : "i-lucide-x",
+        color: okCount === servers.length ? "success" : "warning",
+      });
+    }
+  } catch (e: any) {
+    toast.add({
+      title: e?.response?.data?.message || "健康检测失败",
+      icon: "i-lucide-x",
+      color: "error",
+    });
+  } finally {
+    checkingPancheckHealth.value = false;
+  }
+};
+
 interface HotWord {
   word: string;
   weight: number;
@@ -1062,15 +1111,27 @@ const clearISRCache = async () => {
   <section class="mb-8">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-medium">网盘检测配置</h2>
-      <UButton
-        color="primary"
-        :icon="savedPancheck ? 'i-lucide-check' : 'i-lucide-save'"
-        :loading="savingPancheck"
-        :disabled="savingPancheck || loading"
-        @click="savePancheckConfig"
-      >
-        {{ savedPancheck ? "已保存" : "保存" }}
-      </UButton>
+      <div class="flex items-center gap-2">
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-heart-pulse"
+          :loading="checkingPancheckHealth"
+          :disabled="checkingPancheckHealth || loading"
+          @click="checkPancheckHealth"
+        >
+          {{ checkingPancheckHealth ? "检测中..." : "健康检测" }}
+        </UButton>
+        <UButton
+          color="primary"
+          :icon="savedPancheck ? 'i-lucide-check' : 'i-lucide-save'"
+          :loading="savingPancheck"
+          :disabled="savingPancheck || loading"
+          @click="savePancheckConfig"
+        >
+          {{ savedPancheck ? "已保存" : "保存" }}
+        </UButton>
+      </div>
     </div>
     <UCard>
       <div class="flex items-center gap-3 mb-6">
@@ -1087,9 +1148,29 @@ const clearISRCache = async () => {
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
         <div v-for="(_, index) in pancheckServers" :key="index">
-          <label class="block text-muted text-sm mb-2" :for="`pan-${index}-url`"
-            >接口地址</label
-          >
+          <label class="flex items-center gap-1.5 text-muted text-sm mb-2" :for="`pan-${index}-url`"
+            >接口地址
+            <UIcon
+              v-if="checkingPancheckHealth"
+              name="i-lucide-loader-circle"
+              class="size-4 animate-spin text-muted"
+              title="检测中..."
+            />
+            <template v-else-if="pancheckHealthResults[index]">
+              <UIcon
+                v-if="pancheckHealthResults[index].ok"
+                name="i-lucide-circle-check"
+                class="size-4 text-green-500"
+                :title="`正常（${pancheckHealthResults[index].durationMs}ms）`"
+              />
+              <UIcon
+                v-else
+                name="i-lucide-circle-x"
+                class="size-4 text-red-500"
+                :title="`异常：${pancheckHealthResults[index].message || pancheckHealthResults[index].status}（${pancheckHealthResults[index].durationMs}ms）`"
+              />
+            </template>
+          </label>
           <div class="flex flex-1 gap-1">
             <UInput
               :id="`pan-${index}-url`"

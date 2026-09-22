@@ -141,7 +141,7 @@ defineExpose({
         autofocus
         :ui="{
           root: 'mt-1 w-full',
-          base: 'placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-lg p-0',
+          base: 'placeholder:text-zinc-400 dark:placeholder:text-zinc-600 text-lg p-0 rounded-none',
         }"
         @keydown="handleKeydown"
         @focus="

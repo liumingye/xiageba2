@@ -2,16 +2,10 @@
 import {
   CircleSlash,
   RotateCcw,
-  Music as MusicIcon,
-  FolderOpen,
   ArrowRight,
-  X,
   Folder,
   AlertTriangle,
   Filter,
-  Target,
-  RotateCcwSquare,
-  Sparkles,
 } from "@lucide/vue";
 import WebSearchResults from "~/components/WebSearchResults.vue";
 import type { WebSearchResult } from "~/components/WebSearchResults.vue";
@@ -196,7 +190,7 @@ const hasFilters = computed(() => {
     panFilter.value !== "all" ||
     sortFilter.value !== "default" ||
     fileTypeFilter.value.length > 0 ||
-    exactFilter.value
+    !exactFilter.value
   );
 });
 
@@ -235,7 +229,12 @@ const updateFilter = (key: string, value: string | string[] | boolean) => {
 const clearFilters = () => {
   router.push({
     path: "/search",
-    query: { type: searchType.value, q: searchKeyword.value, page: "1" },
+    query: {
+      type: searchType.value,
+      q: searchKeyword.value,
+      page: "1",
+      exact: "true",
+    },
   });
 };
 
