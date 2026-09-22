@@ -1169,6 +1169,20 @@ const clearISRCache = async () => {
                 class="size-4 text-red-500"
                 :title="`异常：${pancheckHealthResults[index].message || pancheckHealthResults[index].status}（${pancheckHealthResults[index].durationMs}ms）`"
               />
+              <span
+                class="text-xs"
+                :class="
+                  pancheckHealthResults[index].ok
+                    ? 'text-green-500'
+                    : 'text-red-500'
+                "
+              >
+                {{
+                  pancheckHealthResults[index].ok
+                    ? `${pancheckHealthResults[index].durationMs}ms`
+                    : `${pancheckHealthResults[index].message || pancheckHealthResults[index].status}（${pancheckHealthResults[index].durationMs}ms）`
+                }}
+              </span>
             </template>
           </label>
           <div class="flex flex-1 gap-1">
