@@ -274,11 +274,28 @@ onMounted(() => {
       </div>
 
       <section v-if="source.menu || fetchedMenu">
-        <div class="font-bold mb-3">文件内容:</div>
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-bold">文件内容:</div>
+          <UButton
+            v-if="source.menu"
+            size="xs"
+            color="neutral"
+            variant="soft"
+            icon="i-lucide-refresh-cw"
+            :loading="fetchingMenu"
+            :disabled="fetchingMenu"
+            @click="fetchMenu"
+          >
+            {{ fetchingMenu ? "获取中..." : "获取最新目录" }}
+          </UButton>
+        </div>
         <pre
           class="bg-elevated p-2 rounded-sm text-xs border border-muted max-h-56 overflow-auto text-toned"
           >{{ fetchedMenu || source.menu }}</pre
         >
+        <p v-if="menuError" class="text-xs text-red-400 mt-1">
+          {{ menuError }}
+        </p>
       </section>
 
       <section v-else-if="!source.menu">
