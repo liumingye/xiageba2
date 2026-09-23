@@ -93,8 +93,9 @@ const checkPancheckHealth = async () => {
     const data = await post("/api/admin/config/pancheck/health", { servers });
     if (data.success) {
       pancheckHealthResults.value = data.results || [];
-      const okCount = (data.results || []).filter((r: PancheckHealthResult) => r.ok)
-        .length;
+      const okCount = (data.results || []).filter(
+        (r: PancheckHealthResult) => r.ok,
+      ).length;
       toast.add({
         title: `健康检测完成：正常 ${okCount}/${servers.length} 个接口`,
         icon: okCount === servers.length ? "i-lucide-check" : "i-lucide-x",
@@ -390,6 +391,10 @@ const addPancheckServer = () => {
 
 const removePancheckServer = (index: number) => {
   pancheckServers.value.splice(index, 1);
+  // 同步删除对应下标的健康检测结果，避免结果错位
+  if (index < pancheckHealthResults.value.length) {
+    pancheckHealthResults.value.splice(index, 1);
+  }
 };
 
 const loadHotwordsConfig = async () => {
@@ -577,67 +582,69 @@ const clearISRCache = async () => {
       <h2 class="text-lg font-medium">搜索索引</h2>
     </div>
     <UCard>
-      <div v-if="rebuildMsg" class="text-sm text-primary-400">
-        {{ rebuildMsg }}
-      </div>
-      <div class="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div>重建音乐搜索向量</div>
-          <div class="text-sm text-muted mt-1">
-            使用 jieba 分词重新生成所有音乐的搜索向量，用于全文搜索
+      <div class="space-y-4">
+        <div v-if="rebuildMsg" class="text-sm text-primary-400">
+          {{ rebuildMsg }}
+        </div>
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div>重建音乐搜索向量</div>
+            <div class="text-sm text-muted mt-1">
+              使用 jieba 分词重新生成所有音乐的搜索向量，用于全文搜索
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-refresh-cw"
+              :loading="isRebuilding"
+              :disabled="isRebuilding"
+              @click="rebuildSearch(false, 'music')"
+            >
+              {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
+            </UButton>
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-refresh-cw"
+              :loading="isRebuilding"
+              :disabled="isRebuilding"
+              @click="rebuildSearch(true, 'music')"
+            >
+              {{ isRebuilding ? "重建中..." : "重建所有索引" }}
+            </UButton>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <UButton
-            color="neutral"
-            variant="soft"
-            icon="i-lucide-refresh-cw"
-            :loading="isRebuilding"
-            :disabled="isRebuilding"
-            @click="rebuildSearch(false, 'music')"
-          >
-            {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
-          </UButton>
-          <UButton
-            color="neutral"
-            variant="soft"
-            icon="i-lucide-refresh-cw"
-            :loading="isRebuilding"
-            :disabled="isRebuilding"
-            @click="rebuildSearch(true, 'music')"
-          >
-            {{ isRebuilding ? "重建中..." : "重建所有索引" }}
-          </UButton>
-        </div>
-      </div>
-      <div class="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div>重建资源搜索向量</div>
-          <div class="text-sm text-muted mt-1">
-            使用 jieba 分词重新生成所有资源的搜索向量，用于全文搜索
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div>重建资源搜索向量</div>
+            <div class="text-sm text-muted mt-1">
+              使用 jieba 分词重新生成所有资源的搜索向量，用于全文搜索
+            </div>
           </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <UButton
-            color="neutral"
-            variant="soft"
-            icon="i-lucide-refresh-cw"
-            :loading="isRebuilding"
-            :disabled="isRebuilding"
-            @click="rebuildSearch(false, 'source')"
-          >
-            {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
-          </UButton>
-          <UButton
-            color="neutral"
-            variant="soft"
-            icon="i-lucide-refresh-cw"
-            :loading="isRebuilding"
-            :disabled="isRebuilding"
-            @click="rebuildSearch(true, 'source')"
-          >
-            {{ isRebuilding ? "重建中..." : "重建所有索引" }}
-          </UButton>
+          <div class="flex items-center gap-2">
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-refresh-cw"
+              :loading="isRebuilding"
+              :disabled="isRebuilding"
+              @click="rebuildSearch(false, 'source')"
+            >
+              {{ isRebuilding ? "重建中..." : "重建未重建索引" }}
+            </UButton>
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-refresh-cw"
+              :loading="isRebuilding"
+              :disabled="isRebuilding"
+              @click="rebuildSearch(true, 'source')"
+            >
+              {{ isRebuilding ? "重建中..." : "重建所有索引" }}
+            </UButton>
+          </div>
         </div>
       </div>
     </UCard>
@@ -1148,7 +1155,9 @@ const clearISRCache = async () => {
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
         <div v-for="(_, index) in pancheckServers" :key="index">
-          <label class="flex items-center gap-1.5 text-muted text-sm mb-2" :for="`pan-${index}-url`"
+          <label
+            class="flex items-center gap-1.5 text-muted text-sm mb-2"
+            :for="`pan-${index}-url`"
             >接口地址
             <UIcon
               v-if="checkingPancheckHealth"
