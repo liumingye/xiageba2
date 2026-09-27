@@ -28,6 +28,12 @@ import {
   X,
   ChevronDown,
   MoreHorizontal,
+  Wrench,
+  KeyRound,
+  Filter,
+  Sparkles,
+  TrendingUp,
+  Link2,
 } from "@lucide/vue";
 
 /* =========================================================
@@ -122,8 +128,49 @@ const navItems: NavItem[] = [
   },
   {
     label: "系统配置",
-    path: "/admin/maintain",
     icon: Settings,
+    children: [
+      {
+        label: "系统维护",
+        path: "/admin/system/maintain",
+        icon: Wrench,
+      },
+      {
+        label: "Redis 配置",
+        path: "/admin/system/redis",
+        icon: Database,
+      },
+      {
+        label: "加密配置",
+        path: "/admin/system/aes",
+        icon: KeyRound,
+      },
+      {
+        label: "过滤配置",
+        path: "/admin/system/filter",
+        icon: Filter,
+      },
+      {
+        label: "AI 搜索",
+        path: "/admin/system/ai-search",
+        icon: Sparkles,
+      },
+      {
+        label: "热搜词",
+        path: "/admin/system/hotwords",
+        icon: TrendingUp,
+      },
+      {
+        label: "网盘检测",
+        path: "/admin/system/pancheck",
+        icon: Link2,
+      },
+      {
+        label: "微信公众号",
+        path: "/admin/system/wechat",
+        icon: MessageSquare,
+      },
+    ],
   },
 ];
 

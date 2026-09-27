@@ -115,8 +115,10 @@ const { data: categoriesWithLatest } = await useFetch<CategoryWithLatest>(
   },
 );
 
+const { siteTitle, siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
-  titleTemplate: "全盘搜 - 免费网盘资源搜索引擎",
+  titleTemplate: siteTitle,
   ogUrl: config.app.baseURL,
   ogImage: config.app.baseURL + "img/og-image.png",
 });
@@ -364,10 +366,11 @@ const getPic = (url: string) => {
   <header class="text-center mb-6">
     <div class="mb-6">
       <div class="max-md:hidden font-bold text-2xl md:text-3xl">
-        找网盘资源，<span class="slogan">全盘搜</span>帮你搞定
+        找网盘资源，<span class="slogan">{{ siteShortTitle }}</span
+        >帮你搞定
       </div>
       <h1 class="text-4xl font-bold md:hidden">
-        <span class="slogan">全盘搜</span>
+        <span class="slogan">{{ siteShortTitle }}</span>
       </h1>
     </div>
     <SearchBarBig ref="searchBarRef" />

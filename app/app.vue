@@ -21,8 +21,12 @@ if (import.meta.client && map[location.host]) {
   });
 }
 
+const { siteDescription, siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
-  titleTemplate: "%s - 全盘搜",
+  titleTemplate: () => `%s - ${siteShortTitle}`,
+  // description: () => siteDescription,
+  // ogDescription: () => siteDescription,
 });
 </script>
 
