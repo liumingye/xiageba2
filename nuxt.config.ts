@@ -59,15 +59,15 @@ export default defineNuxtConfig({
           },
           {
             path: "/api/source/geturl",
-            max: 10,
+            max: 15,
             duration: 30,
-            ban: 150,
+            ban: 120,
           },
           {
             path: "/api/source/tree",
-            max: 10,
+            max: 15,
             duration: 30,
-            ban: 150,
+            ban: 120,
           },
           {
             path: "/api/source/search",
@@ -218,6 +218,11 @@ export default defineNuxtConfig({
     },
   },
   css: ["~/assets/css/main.css"],
+  icon: {
+    clientBundle: {
+      scan: true,
+    },
+  },
   app: {
     baseURL: "/",
     head: {
@@ -359,6 +364,7 @@ export default defineNuxtConfig({
         "@vueuse/core",
         "pinia",
         "qrcode",
+        "axios",
         "@nuxt/ui > prosemirror-state",
         "@nuxt/ui > prosemirror-transform",
         "@nuxt/ui > prosemirror-model",
