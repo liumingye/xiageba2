@@ -23,6 +23,7 @@ import {
   getTodayGeturlCount,
   incrementTodayGeturlCount,
 } from "#server/lib/geturl-record";
+import type { H3Event } from "h3";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -379,6 +380,7 @@ export function parseShareUrl(url: string): ParsedShare {
  * ponytail: quark 与 uc 同 SDK 同流程，合并实现
  */
 async function transferQuarkUC(
+  event: H3Event<EventHandlerRequest>,
   account: PanAccount,
   pwdId: string,
   passcode: string,
@@ -431,8 +433,13 @@ async function transferQuarkUC(
   // 步骤5: 异步删除广告文件（后台执行，不阻塞分享创建）
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && saveAsTopFids.length > 0) {
-    deleteAdFiles(client.fsApi, saveAsTopFids, adFilterConfig, "quarkUC").catch(
-      (e) => console.error("异步删除广告文件失败", e),
+    event.waitUntil(
+      deleteAdFiles(
+        client.fsApi,
+        saveAsTopFids,
+        adFilterConfig,
+        "quarkUC",
+      ).catch((e) => console.error("异步删除广告文件失败", e)),
     );
   }
 
@@ -465,6 +472,7 @@ async function transferQuarkUC(
  * 百度网盘转存：解析分享 → 获取文件列表 → 转存到临时目录 → 创建新分享
  */
 async function transferBaidu(
+  event: H3Event<EventHandlerRequest>,
   account: PanAccount,
   _shareUrl: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
@@ -597,8 +605,10 @@ async function transferBaidu(
   // 异步删除广告文件（后台执行，不阻塞分享创建）
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && fids.length > 0) {
-    deleteAdFiles(client.fsOpenApi, fids, adFilterConfig, "baidu").catch((e) =>
-      console.error("异步删除广告文件失败", e),
+    event.waitUntil(
+      deleteAdFiles(client.fsOpenApi, fids, adFilterConfig, "baidu").catch(
+        (e) => console.error("异步删除广告文件失败", e),
+      ),
     );
   }
 
@@ -617,6 +627,7 @@ async function transferBaidu(
  * 迅雷网盘转存：获取分享详情 → 转存到临时目录 → 等待任务 → 创建新分享
  */
 async function transferXunlei(
+  event: H3Event<EventHandlerRequest>,
   account: PanAccount,
   shareId: string,
   passCode: string,
@@ -665,8 +676,10 @@ async function transferXunlei(
   // 异步删除广告文件（后台执行，不阻塞分享创建）
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && fileIds.length > 0) {
-    deleteAdFiles(client.fsApi, fileIds, adFilterConfig, "xunlei").catch((e) =>
-      console.error("异步删除广告文件失败", e),
+    event.waitUntil(
+      deleteAdFiles(client.fsApi, fileIds, adFilterConfig, "xunlei").catch(
+        (e) => console.error("异步删除广告文件失败", e),
+      ),
     );
   }
 
@@ -696,6 +709,7 @@ async function transferXunlei(
  * 输入原始分享链接，返回转存后的新分享链接（失败时返回原始链接）
  */
 export async function transferShareUrl(
+  event: H3Event<EventHandlerRequest>,
   sourceUrl: string,
   sourceId?: string,
 ): Promise<TransferShareUrlResult> {
@@ -727,15 +741,15 @@ export async function transferShareUrl(
 
   try {
     if (type === "quark" || type === "uc") {
-      const data = await transferQuarkUC(account, fid, passcode);
+      const data = await transferQuarkUC(event, account, fid, passcode);
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else if (type === "baidu") {
-      const data = await transferBaidu(account, sharePageUrl);
+      const data = await transferBaidu(event, account, sharePageUrl);
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else if (type === "xunlei") {
-      const data = await transferXunlei(account, fid, passcode);
+      const data = await transferXunlei(event, account, fid, passcode);
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else {
@@ -756,11 +770,13 @@ export async function transferShareUrl(
   }
 
   // 异步落库
-  prisma.sourceTemp
-    .create({
-      data: { url: shareUrl, fid: _fid, accountId: account.id },
-    })
-    .catch((err) => console.error("落库失败", err));
+  event.waitUntil(
+    prisma.sourceTemp
+      .create({
+        data: { url: shareUrl, fid: _fid, accountId: account.id },
+      })
+      .catch((err) => console.error("落库失败", err)),
+  );
 
   // 写入 Redis 缓存
   const cacheKey = sourceId
@@ -839,7 +855,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 构建核心转存处理链条
-  const transferPromise = transferShareUrl(sourceUrl, id);
+  const transferPromise = transferShareUrl(event, sourceUrl, id);
 
   // 将 Promise 送入全局互斥拦截器
   inflightRequests.set(cacheKey, transferPromise);
@@ -847,7 +863,7 @@ export default defineEventHandler(async (event) => {
   try {
     const result = await transferPromise;
     // 记录 IP 今日 geturl 次数（异步，不阻塞响应）
-    incrementTodayGeturlCount(clientIp, netdiskType);
+    event.waitUntil(incrementTodayGeturlCount(clientIp, netdiskType));
     return { url: result.url };
   } finally {
     inflightRequests.delete(cacheKey);
