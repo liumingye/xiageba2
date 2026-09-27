@@ -165,7 +165,6 @@ export default defineTask({
 
                   const cleanPath = path.replace(/\/$/, "");
                   if (
-                    path.includes("..") ||
                     path === "/" ||
                     cleanPath === tempDir ||
                     !cleanPath.startsWith(tempDir)
