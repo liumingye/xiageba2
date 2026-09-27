@@ -5,7 +5,7 @@ import { markdownPlugins } from "~/utils/comark";
 defineOptions({ name: "PrivacyPolicyPage" });
 
 useHead({
-  title: "隐私政策 - 全盘搜",
+  title: "隐私政策",
   meta: [
     {
       name: "description",

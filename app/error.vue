@@ -6,8 +6,7 @@ const props = defineProps<{
 }>();
 
 useSeoMeta({
-  titleTemplate: "%s | 全盘搜",
-  title: `${props.error?.status} - ${props.error?.statusText}`,
+  title: `${props.error?.status} - ${props.error?.statusText} - 全盘搜`,
 });
 </script>
 

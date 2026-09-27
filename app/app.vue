@@ -20,6 +20,10 @@ if (import.meta.client && map[location.host]) {
     },
   });
 }
+
+useSeoMeta({
+  titleTemplate: "%s - 全盘搜",
+});
 </script>
 
 <template>

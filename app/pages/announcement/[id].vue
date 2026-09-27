@@ -24,8 +24,8 @@ const isNotFound = computed(() => !announcement.value);
 
 useSeoMeta({
   title: announcement.value
-    ? `${announcement.value.title} - 公告 - 全盘搜`
-    : "公告不存在 - 全盘搜",
+    ? `${announcement.value.title} - 公告`
+    : "公告不存在",
   description: announcement.value
     ? announcement.value.content.slice(0, 150)
     : "公告不存在",

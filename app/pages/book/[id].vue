@@ -152,7 +152,7 @@ const pageTitle = computed(() => {
   const parts: string[] = [];
   if (name) parts.push(name);
   if (author) parts.push(author);
-  parts.push("小说详情 - 全盘搜");
+  parts.push("小说详情");
   return parts.join(" - ");
 });
 

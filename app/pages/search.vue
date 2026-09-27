@@ -365,16 +365,16 @@ const handleRetry = () => {
 const pageTitle = computed(() => {
   const q = searchKeyword.value;
   if (isAi.value) {
-    return q ? `${q} - AI 搜索 - 全盘搜` : "AI 搜索 - 全盘搜";
+    return q ? `${q} - AI 搜索` : "AI 搜索";
   }
   const label = isMusic.value ? "歌曲" : "资源";
   if (q && results.value.length > 0) {
-    return `"${q}" - 第${currentPage.value}页 - 搜索${label} - 全盘搜`;
+    return `"${q}" - 第${currentPage.value}页 - 搜索${label}`;
   }
   if (q) {
-    return `${q} - 搜索${label} - 全盘搜`;
+    return `${q} - 搜索${label}`;
   }
-  return `搜索${label} - 全盘搜`;
+  return `搜索${label}`;
 });
 
 const pageDescription = computed(() => {

@@ -70,8 +70,8 @@ const category = computed(() => data.value?.category);
 
 useSeoMeta({
   title: category.value?.name
-    ? `${category.value.name} - 全盘搜资源分类`
-    : "资源分类 - 全盘搜",
+    ? `${category.value.name} - 网盘资源分类`
+    : "网盘资源分类",
   description: category.value?.name
     ? `${category.value.name}分类下的网盘资源，免费下载。`
     : "全盘搜资源分类，各类网盘资源免费下载。",

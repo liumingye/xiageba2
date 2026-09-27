@@ -320,12 +320,12 @@ const getTag = (tags: string) => {
 useSeoMeta({
   title: () => {
     if (isSearchMode.value && books.value.length > 0) {
-      return `"${searchKeyword.value}" - 搜小说 - 全盘搜`;
+      return `"${searchKeyword.value}" - 搜小说`;
     }
-    if (isSearchMode.value) return `"${searchKeyword.value}" - 搜小说 - 全盘搜`;
+    if (isSearchMode.value) return `"${searchKeyword.value}" - 搜小说`;
     return books.value.length > 0
-      ? `搜小说 - 第${currentPage.value}页 - 全盘搜`
-      : "搜小说 - 全盘搜";
+      ? `搜小说 - 第${currentPage.value}页`
+      : "搜小说";
   },
   description:
     "全盘搜小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。",

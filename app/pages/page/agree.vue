@@ -5,7 +5,7 @@ import { markdownPlugins } from "~/utils/comark";
 defineOptions({ name: "AgreementPage" });
 
 useHead({
-  title: "服务协议 - 全盘搜",
+  title: "服务协议",
   meta: [
     {
       name: "description",

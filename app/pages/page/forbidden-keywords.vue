@@ -4,7 +4,7 @@ import { ShieldBan, Loader2 } from "@lucide/vue";
 defineOptions({ name: "ForbiddenKeywordsPage" });
 
 useHead({
-  title: "屏蔽词列表 - 全盘搜",
+  title: "屏蔽词列表",
   meta: [
     {
       name: "description",

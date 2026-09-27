@@ -116,6 +116,7 @@ const { data: categoriesWithLatest } = await useFetch<CategoryWithLatest>(
 );
 
 useSeoMeta({
+  titleTemplate: "全盘搜 - 免费网盘资源搜索引擎",
   ogUrl: config.app.baseURL,
   ogImage: config.app.baseURL + "img/og-image.png",
 });

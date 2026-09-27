@@ -68,7 +68,7 @@ const pageTitle = computed(() => {
   if (title.length === 0) {
     title.push("全盘搜 - 免费下载高品质音乐");
   }
-  return `${title.join(" - ")} - 音乐下载 - 全盘搜`;
+  return `${title.join(" - ")} - 音乐下载`;
 });
 
 const pageDescription = computed(() => {

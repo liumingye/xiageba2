@@ -5,7 +5,7 @@ import { markdownPlugins } from "~/utils/comark";
 defineOptions({ name: "VersionPage" });
 
 useHead({
-  title: "版权说明 - 全盘搜",
+  title: "版权说明",
   meta: [
     {
       name: "description",

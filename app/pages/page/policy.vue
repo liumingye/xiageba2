@@ -5,7 +5,7 @@ import { markdownPlugins } from "~/utils/comark";
 defineOptions({ name: "PolicyPage" });
 
 useHead({
-  title: "免责声明 - 全盘搜",
+  title: "免责声明",
   meta: [
     {
       name: "description",
