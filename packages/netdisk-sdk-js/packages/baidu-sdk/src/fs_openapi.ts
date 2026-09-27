@@ -24,8 +24,8 @@ export class BaiduFSOpenApi {
       return;
     }
 
-    const { body } = await superagent
-      .agent()
+    const agent = superagent.agent();
+    const { body } = await agent
       .get("https://openapi.baidu.com/oauth/2.0/token")
       .query({
         grant_type: "refresh_token",
@@ -33,8 +33,10 @@ export class BaiduFSOpenApi {
         client_id: clientId,
         client_secret: clientSecret,
       });
-
-    const expiresAt = Date.now() + (body.expires_in - 60) * 1000;
+    if (!body.access_token || !body.refresh_token || !body.expires_in) {
+      return;
+    }
+    const expiresAt = Date.now() + body.expires_in * 1000;
     this.client._onRefreshToken({
       accessToken: body.access_token,
       refreshToken: body.refresh_token,
@@ -44,7 +46,7 @@ export class BaiduFSOpenApi {
 
   async ensureToken(): Promise<void> {
     const { expiresAt } = this.client;
-    if (expiresAt && expiresAt > Date.now()) {
+    if (expiresAt && expiresAt > Date.now() + 300 * 1000) {
       return;
     }
     await this.refreshToken();

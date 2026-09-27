@@ -335,6 +335,7 @@ const getBaiduOauthToken = async () => {
     if (data.accessToken) {
       formData.value.accessToken = data.accessToken;
       formData.value.refreshToken = data.refreshToken || "";
+      formData.value.expiresAt = data.expiresAt || null;
       toast.add({
         title: "获取 Token 成功",
         icon: "i-lucide-check",
