@@ -10,6 +10,10 @@ import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 const toast = useToast();
 
+useSeoMeta({
+  title: "接口配置",
+});
+
 interface ApiItem {
   id: string;
   name: string;

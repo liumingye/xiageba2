@@ -8,6 +8,10 @@ import type { TableColumn } from "@nuxt/ui";
 import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 
+useSeoMeta({
+  title: "管理员管理",
+});
+
 interface Admin {
   id: string;
   username: string;

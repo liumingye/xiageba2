@@ -19,6 +19,10 @@ import AdminHeader from "~/components/admin/AdminHeader.vue";
 import { useClipboard } from "@vueuse/core";
 import { get, post } from "~/utils/request";
 
+useSeoMeta({
+  title: "系统配置",
+});
+
 const toast = useToast();
 const { copy: copyToClipboard } = useClipboard();
 

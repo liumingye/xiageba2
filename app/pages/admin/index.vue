@@ -10,6 +10,10 @@ import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import type { Music as MusicType } from "~/stores/music";
 
+useSeoMeta({
+  title: "音乐管理",
+});
+
 const config = useRuntimeConfig();
 const router = useRouter();
 const route = useRoute();

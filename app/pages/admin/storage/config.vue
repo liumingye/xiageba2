@@ -10,6 +10,10 @@ import { get, post, put, del } from "~/utils/request";
 
 defineOptions({ name: "StorageConfigPage" });
 
+useSeoMeta({
+  title: "存储配置",
+});
+
 interface S3Config {
   id: string;
   name: string;

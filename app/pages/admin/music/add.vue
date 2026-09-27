@@ -20,6 +20,10 @@ definePageMeta({
   },
 });
 
+useSeoMeta({
+  title: "添加音乐",
+});
+
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
 

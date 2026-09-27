@@ -18,6 +18,10 @@ import {
 
 defineOptions({ name: "StorageFilesPage" });
 
+useSeoMeta({
+  title: "文件管理",
+});
+
 interface StorageConfig {
   id: string;
   name: string;

@@ -9,6 +9,10 @@ import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 
+useSeoMeta({
+  title: "反馈管理",
+});
+
 const router = useRouter();
 const route = useRoute();
 const { isLoggedIn, username, checkLogin, initialized } = useAuth();

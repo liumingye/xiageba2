@@ -9,6 +9,10 @@ import AdminHeader from "~/components/admin/AdminHeader.vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { getPanTypeLabel } from "~/utils/pan";
 
+useSeoMeta({
+  title: "账号管理",
+});
+
 interface AccountListItem {
   id: number;
   type: string;

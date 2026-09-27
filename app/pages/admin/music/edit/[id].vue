@@ -20,6 +20,10 @@ definePageMeta({
   },
 });
 
+useSeoMeta({
+  title: "编辑音乐",
+});
+
 const router = useRouter();
 const route = useRoute();
 const { isLoggedIn, checkLogin, initialized } = useAuth();

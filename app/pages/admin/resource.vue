@@ -9,6 +9,10 @@ import AdminNav from "~/components/admin/AdminNav.vue";
 import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 
+useSeoMeta({
+  title: "资源管理",
+});
+
 interface Source {
   id: string;
   cid?: number;

@@ -10,6 +10,10 @@ import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { formatDate } from "~/utils/file";
 import type { Announcement } from "~/utils/announcement";
 
+useSeoMeta({
+  title: "公告管理",
+});
+
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
 

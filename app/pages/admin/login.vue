@@ -6,6 +6,10 @@ import { post } from "~/utils/request";
 import type { FormSubmitEvent, AuthFormField, FormError } from "@nuxt/ui";
 import { useStyleTag, useMounted, useStorage } from "@vueuse/core";
 
+useSeoMeta({
+  title: "管理后台系统",
+});
+
 const router = useRouter();
 const route = useRoute();
 const { login, isLoggedIn } = useAuth();

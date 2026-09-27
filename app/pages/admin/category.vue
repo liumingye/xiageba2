@@ -10,6 +10,10 @@ import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
 
+useSeoMeta({
+  title: "分类管理",
+});
+
 interface Category {
   id: number;
   name: string;
