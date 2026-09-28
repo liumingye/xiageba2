@@ -16,6 +16,6 @@
     "crypto-browserify": "^3.12.1",
     "parcel": "^2.16.4",
     "string_decoder": "^1.3.0",
-    "typescript": "^5.4.5"
+    "typescript": "^7.0.2"
   }
 }
