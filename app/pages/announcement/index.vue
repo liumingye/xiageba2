@@ -21,7 +21,7 @@ const activeTab = ref<"ACTIVE" | "ARCHIVED">(
 const currentPage = ref(Math.max(1, parseInt(route.query.page as string) || 1));
 const pageSize = 10;
 
-const { data: announcementData, pending } = await useFetch<{
+const { data: announcementData, pending } = await useLazyFetch<{
   data: Announcement[];
   total: number;
   page: number;

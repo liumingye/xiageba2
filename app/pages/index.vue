@@ -36,11 +36,10 @@ const checkSectionOverflow = () => {
 useResizeObserver(sectionRef, checkSectionOverflow);
 
 const { data: hotMusic } = await useFetch<Music[]>("/api/music/recent", {
-  query: { pageSize: 11 },
+  query: { pageSize: 14 },
   method: "GET",
   key: "home-music",
   server: true,
-  lazy: true,
   default: () => [],
 });
 
@@ -55,7 +54,6 @@ const { data: hotwordsData } = await useFetch<{ data: HotWord[] }>(
   {
     key: "home-hotwords",
     server: true,
-    lazy: true,
     default: () => ({ data: [] }),
   },
 );
@@ -110,7 +108,6 @@ const { data: categoriesWithLatest } = await useFetch<CategoryWithLatest>(
     method: "GET",
     key: "home-categories",
     server: true,
-    lazy: true,
     default: () => ({ data: [] }),
   },
 );

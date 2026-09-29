@@ -13,8 +13,13 @@ export class SimpleAC {
   private fullMatchSet: Set<string>;
 
   constructor(keywords: string[]) {
-    this.fullMatchSet = new Set(keywords.filter((k) => k.length > 0));
-    this.buildTrie(keywords);
+    const normalizedKeywords = keywords
+      .map((k) => k.trim().toLowerCase())
+      .filter(Boolean);
+
+    this.fullMatchSet = new Set(normalizedKeywords);
+
+    this.buildTrie(normalizedKeywords);
     this.buildFail();
   }
 
@@ -52,6 +57,8 @@ export class SimpleAC {
   }
 
   hasMatch(text: string): boolean {
+    if (!text) return false;
+    text = text.toLowerCase();
     let node = this.root;
     for (const ch of text) {
       while (node && !node.children.has(ch)) node = node.fail!;
@@ -66,20 +73,20 @@ export class SimpleAC {
    * 用于搜索关键词屏蔽（避免子串误伤，如"激情"作为电影名的一部分）
    */
   hasFullMatch(text: string): boolean {
+    if (!text) return false;
+    text = text.toLowerCase();
     return this.fullMatchSet.has(text);
   }
 }
 
 // 实例
 export let automaton_websearch_filter_keywords: SimpleAC | null = null;
+export let automaton_ad_filter: SimpleAC | null = null;
 // 配置屏蔽词列表（配置词），供前端展示
 export let websearch_filter_keywords_list: string[] = [];
 export const initAutomaton_websearch_filter_keywords = async () => {
   let filterKeywordsStr = await getConfigValue("websearch_filter_keywords");
-  const keywords = filterKeywordsStr
-    .split(",")
-    .map((k) => k.trim().toLowerCase())
-    .filter((k) => k.length > 0);
+  const keywords = filterKeywordsStr.split(",");
 
   const defaultKeywords = [
     "爱液",
@@ -457,3 +464,11 @@ export const initAutomaton_websearch_filter_keywords = async () => {
   websearch_filter_keywords_list = keywords;
 };
 initAutomaton_websearch_filter_keywords();
+
+export const initAutomaton_ad_filter = async () => {
+  const json = await getConfigValue("ad_filter");
+  const adFilter = JSON.parse(json);
+  const keywords = adFilter.enabled ? adFilter.keywords.split(",") : [];
+  automaton_ad_filter = new SimpleAC(keywords);
+};
+initAutomaton_ad_filter();

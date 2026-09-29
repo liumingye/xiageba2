@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  CheckCircle,
-  XCircle,
-  Loader2,
-  Folder,
-  Download,
-  Calendar,
-} from "@lucide/vue";
+import { CheckCircle, XCircle, Loader2, CalendarDays } from "@lucide/vue";
 import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 import { type CheckStatus } from "@/composables/usePanCheck";
 import { isWithinDays } from "@/utils";
@@ -42,76 +35,21 @@ const emit = defineEmits<{
       v-if="checkStatus === 'invalid'"
       class="absolute inset-0 bg-red-900/10 pointer-events-none"
     />
-    <div class="flex flex-col">
-      <div class="flex-1 min-w-0 flex gap-2 mb-2 flex-col">
-        <NuxtLink
-          :to="`/source/${item.id}`"
-          class="hover:text-primary-400 cursor-pointer flex items-center gap-2"
-        >
-          <span
-            class="min-w-0 break-all"
-            v-if="highlightHtml"
-            v-html="highlightHtml"
-          />
-          <template v-else>{{ item.title }}</template>
-        </NuxtLink>
-        <div class="flex gap-2">
-          <div
-            class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
-          >
-            <div
-              v-if="item.type !== 'other'"
-              :class="`icon-${item.type} size-4 mr-1`"
-            ></div>
-            {{ getStorageTypeFriendFromFilter(item.type) }}
-          </div>
-          <div
-            v-if="item.isSelf"
-            class="bg-linear-to-br from-amber-900 to-orange-500 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
-          >
-            独家精选
-          </div>
-          <ClientOnly>
-            <div
-              v-if="checkStatus === 'valid'"
-              class="dark:bg-success-600/60 bg-success-800/80 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
-            >
-              <CheckCircle class="size-4 shrink-0 mr-1" />链接有效
-            </div>
-            <div
-              v-else-if="checkStatus === 'invalid'"
-              class="bg-error-800/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
-            >
-              <XCircle class="size-4 shrink-0 mr-1" />可能失效
-            </div>
-            <div
-              v-else-if="checkStatus === 'checking'"
-              class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
-            >
-              <Loader2 class="size-4 animate-spin shrink-0 mr-1" />正在检测
-            </div>
-          </ClientOnly>
-        </div>
-      </div>
-      <template v-if="item.menu">
-        <div class="text-sm mb-2 text-muted font-bold">文件内容:</div>
-        <pre
-          v-if="highlightMenu"
-          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
-          v-html="highlightMenu"
-        ></pre>
-        <pre
-          v-else
-          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
-          >{{ item.menu }}</pre
-        >
-      </template>
-    </div>
-    <div
-      class="flex justify-between items-center gap-2 border-t border-muted mt-3 pt-3"
-    >
-      <span class="text-xs text-muted flex items-center gap-1">
-        <Calendar class="size-3" />
+    <div class="flex-1 min-w-0 flex gap-2 flex-col">
+      <NuxtLink
+        :to="`/source/${item.id}`"
+        class="hover:text-primary-400 cursor-pointer flex items-center gap-2"
+      >
+        <span
+          class="min-w-0 break-all"
+          v-if="highlightHtml"
+          v-html="highlightHtml"
+        />
+        <template v-else>{{ item.title }}</template>
+      </NuxtLink>
+
+      <span class="text-xs text-muted flex items-center gap-1 max-sm:hidden">
+        <CalendarDays class="size-3" />
         <NuxtTime
           :datetime="item.createdAt"
           year="numeric"
@@ -123,7 +61,70 @@ const emit = defineEmits<{
           :relative="isWithinDays(item.createdAt)"
         />
       </span>
-      <div class="flex items-center gap-2">
+      <div class="flex gap-2">
+        <div
+          class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
+        >
+          <div
+            v-if="item.type !== 'other'"
+            :class="`icon-${item.type} size-4 mr-1`"
+          ></div>
+          {{ getStorageTypeFriendFromFilter(item.type) }}
+        </div>
+        <div
+          v-if="item.isSelf"
+          class="bg-linear-to-br from-amber-900 to-orange-500 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+        >
+          独家精选
+        </div>
+        <ClientOnly>
+          <div
+            v-if="checkStatus === 'valid'"
+            class="dark:bg-success-600/60 bg-success-800/80 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+          >
+            <CheckCircle class="size-4 shrink-0 mr-1" />链接有效
+          </div>
+          <div
+            v-else-if="checkStatus === 'invalid'"
+            class="bg-error-800/90 text-white px-2 py-1 rounded-sm text-sm self-start flex items-center"
+          >
+            <XCircle class="size-4 shrink-0 mr-1" />可能失效
+          </div>
+          <div
+            v-else-if="checkStatus === 'checking'"
+            class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
+          >
+            <Loader2 class="size-4 animate-spin shrink-0 mr-1" />正在检测
+          </div>
+        </ClientOnly>
+      </div>
+      <template v-if="item.menu">
+        <pre
+          v-if="highlightMenu"
+          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
+          v-html="highlightMenu"
+        ></pre>
+        <pre
+          v-else
+          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
+          >{{ item.menu }}</pre
+        >
+      </template>
+      <USeparator
+        :ui="{
+          border: 'border-muted',
+        }"
+      />
+      <div class="flex items-center gap-2 max-sm:flex-row-reverse">
+        <UButton
+          variant="solid"
+          @click.stop="emit('openModal', item)"
+          icon="i-lucide-download"
+          :ui="{
+            leadingIcon: 'size-4',
+          }"
+          >获取链接</UButton
+        >
         <UButton
           v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
           variant="outline"
@@ -134,15 +135,21 @@ const emit = defineEmits<{
           }"
           >目录</UButton
         >
-        <UButton
-          variant="solid"
-          @click.stop="emit('openModal', item)"
-          icon="i-lucide-download"
-          :ui="{
-            leadingIcon: 'size-4',
-          }"
-          >获取链接</UButton
+        <span
+          class="text-xs text-muted flex items-center gap-1 sm:hidden mr-auto"
         >
+          <CalendarDays class="size-3" />
+          <NuxtTime
+            :datetime="item.createdAt"
+            year="numeric"
+            month="short"
+            day="numeric"
+            hour="numeric"
+            minute="numeric"
+            second="numeric"
+            :relative="isWithinDays(item.createdAt)"
+          />
+        </span>
       </div>
     </div>
   </article>

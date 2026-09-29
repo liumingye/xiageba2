@@ -235,33 +235,33 @@ export default defineNuxtConfig({
           content:
             "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no",
         },
-        { name: "og:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
-        { name: "twitter:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
+        {
+          name: "keywords",
+          content:
+            "全盘搜,网盘搜索,搜索引擎,公开网盘,资源搜索,百度网盘,夸克网盘,迅雷云盘,UC网盘,免费资源",
+        },
         {
           name: "description",
           content:
             "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
         },
+        { property: "og:site_name", content: "全盘搜" },
+        { property: "og:type", content: "website" },
+        { name: "og:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         {
           name: "og:description",
           content:
             "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
         },
+        { name: "twitter:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         {
           name: "twitter:description",
           content: "快捷便利的公开网盘搜索引擎，轻松找资源。",
         },
-        {
-          name: "keywords",
-          content:
-            "全盘搜, 网盘搜索, 搜索引擎, 公开网盘, 资源搜索, 百度网盘, 夸克网盘, 阿里云盘, 免费资源",
-        },
-        { name: "robots", content: "index, follow" },
+        { property: "twitter:card", content: "summary_large_image" },
+        { name: "robots", content: "index,follow" },
         { name: "theme-color", content: "#0f172a" },
         { name: "author", content: "全盘搜" },
-        { property: "og:site_name", content: "全盘搜" },
-        { property: "og:type", content: "website" },
-        { property: "twitter:card", content: "summary_large_image" },
       ],
       link: [
         { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -290,20 +290,20 @@ export default defineNuxtConfig({
       isr: 300,
       headers: {
         "Cache-Control":
-          "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
+          "public, max-age=60, s-maxage=300, stale-while-revalidate=300",
       },
     },
     "/music/**": {
       ssr: true,
-      isr: 60 * 60 * 24 * 30,
+      // isr: 60 * 60 * 24 * 30,
     },
     "/source/**": {
       ssr: true,
-      isr: 60 * 60 * 24 * 30,
+      // isr: 60 * 60 * 24 * 30,
     },
     "/search": {
       ssr: true,
-      isr: 60 * 60 * 1,
+      // isr: 60 * 60 * 1,
     },
     "/img/**": {
       static: true,
@@ -357,6 +357,8 @@ export default defineNuxtConfig({
     build: {
       cssCodeSplit: true, // 开启 CSS 代码拆分
       chunkSizeWarningLimit: 1000, // 调整 chunk 大小警告阈值
+      // 在 plugin-legacy 8.1+ 中支持 Chrome 80 以下浏览器所必需
+      minify: "terser",
     },
     optimizeDeps: {
       include: [

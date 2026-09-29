@@ -10,6 +10,8 @@ import SearchBar from "~/components/SearchBar.vue";
 import type { NavigationMenuItem } from "@nuxt/ui";
 import { isMobileOrTablet } from "@/utils";
 
+const { icpLicence } = await useSiteSeo();
+
 // ---------------- 全局壳（UHeader / UFooter）----------------
 
 const route = useRoute();
@@ -57,15 +59,18 @@ const legalLinks = [
 ];
 
 const extraLinks = [
-  {
-    to: "https://beian.miit.gov.cn",
-    label: "吉ICP备2026000231号",
-    external: true,
-  },
   { to: "https://xiageba.apifox.cn/", label: "API", external: true },
   { to: "/sitemap.xml", label: "网站地图" },
   { to: "/admin/login", label: "管理员登录", external: true },
 ];
+
+if (icpLicence) {
+  extraLinks.unshift({
+    to: "https://beian.miit.gov.cn",
+    label: icpLicence,
+    external: true,
+  });
+}
 
 const disableBack = computed(() => {
   // use _path as dependency to force computed update

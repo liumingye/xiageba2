@@ -3,7 +3,7 @@ import { Megaphone, ChevronRight, X } from "@lucide/vue";
 import { useIntervalFn, useLocalStorage } from "@vueuse/core";
 import type { Announcement } from "~/utils/announcement";
 
-const { data } = await useFetch<{ data: Announcement[] }>("/api/announcement", {
+const { data } = await useLazyFetch<{ data: Announcement[] }>("/api/announcement", {
   query: { pageSize: 10 },
   server: true,
   default: () => ({ data: [] }),

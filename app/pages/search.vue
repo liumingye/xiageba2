@@ -244,7 +244,7 @@ const {
   error: fetchError,
   refresh: retryFetch,
   status,
-} = await useFetch<PaginatedResponse>(
+} = await useLazyFetch<PaginatedResponse>(
   () => {
     // AI 模式不请求搜索 API
     if (isAi.value) return "";
@@ -267,7 +267,6 @@ const {
     key: () =>
       `search-${searchType.value}-${searchKeyword.value}-${currentPage.value}-${timeFilter.value}-${panFilter.value}-${sortFilter.value}-${fileTypeFilter.value.join(",")}-${exactFilter.value}`,
     server: true,
-    lazy: true,
     watch: [
       searchKeyword,
       currentPage,

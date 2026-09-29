@@ -44,11 +44,10 @@ const {
   pending: loading,
   error: fetchApiError,
   refresh: retryFetch,
-} = await useFetch<NovelDetail, ApiErrorResponse>(
+} = await useLazyFetch<NovelDetail, ApiErrorResponse>(
   () => `/api/novel/${bookId.value}`,
   {
     key: () => `novel-detail-${bookId.value}`,
-    lazy: true,
     server: true,
     default: () => ({
       bookId: bookId.value,

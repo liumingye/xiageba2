@@ -25,11 +25,13 @@ interface SiteSeoConfig {
   site_seo_title: string;
   site_seo_short_title: string;
   site_seo_description: string;
+  site_icp_licence: string;
 }
 const siteSeoConfig = ref<SiteSeoConfig>({
   site_seo_title: "",
   site_seo_short_title: "",
   site_seo_description: "",
+  site_icp_licence: "",
 });
 const savingSiteSeo = ref(false);
 const savedSiteSeo = ref(false);
@@ -275,8 +277,8 @@ onMounted(async () => {
         <div>
           <h3 class="font-medium">站点标题与描述</h3>
           <p class="text-color-500 text-sm">
-            标题用于首页 title，短标题用作内页 title
-            后缀，描述用于全站默认 meta description；留空使用默认值
+            标题用于首页 title，短标题用作内页 title 后缀，描述用于全站默认 meta
+            description；留空使用默认值
           </p>
         </div>
       </div>
@@ -325,6 +327,21 @@ onMounted(async () => {
           />
           <p class="text-color-500 text-xs mt-2">
             建议不超过 120 个字符，页面自身设置了描述时优先使用页面的
+          </p>
+        </div>
+        <div>
+          <label class="block text-muted text-sm mb-2" for="icp-licence">
+            ICP 备案号
+          </label>
+          <UInput
+            id="icp-licence"
+            v-model="siteSeoConfig.site_icp_licence"
+            type="text"
+            placeholder="如：粤ICP备2023000000号"
+            class="w-full"
+          />
+          <p class="text-color-500 text-xs mt-2">
+            建议使用 粤ICP备2023000000号 格式
           </p>
         </div>
       </div>

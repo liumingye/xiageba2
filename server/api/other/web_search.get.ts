@@ -11,7 +11,7 @@ const filterSearchResults = (
 ): WebSearchResult[] => {
   if (!automaton) return items;
   return items.filter((item) => {
-    const haystack = (item.title || "").toLowerCase();
+    const haystack = item.title || "";
     return !automaton.hasMatch(haystack);
   });
 };

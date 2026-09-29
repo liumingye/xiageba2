@@ -2,6 +2,7 @@ interface SiteSeoConfig {
   title: string;
   shortTitle: string;
   description: string;
+  icpLicence: string;
 }
 
 const DEFAULT_TITLE = "全盘搜 - 免费网盘资源搜索引擎";
@@ -9,7 +10,7 @@ const DEFAULT_SHORT_TITLE = "全盘搜";
 const DEFAULT_DESCRIPTION =
   "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类网盘资源的在线搜索、精准筛选服务。";
 
-const DATA_KEY = "site-seo";
+const DATA_KEY = "site-seo-data";
 
 /**
  * 站点 SEO 配置（后台「系统配置 → SEO 配置」）
@@ -25,6 +26,7 @@ export async function useSiteSeo() {
     siteTitle: DEFAULT_TITLE,
     siteShortTitle: DEFAULT_SHORT_TITLE,
     siteDescription: DEFAULT_DESCRIPTION,
+    icpLicence: "吉ICP备2026000231号",
   };
 
   const { data } = await useAsyncData(
@@ -35,20 +37,18 @@ export async function useSiteSeo() {
         title: DEFAULT_TITLE,
         shortTitle: DEFAULT_SHORT_TITLE,
         description: DEFAULT_DESCRIPTION,
+        icpLicence: "",
       }),
       dedupe: "defer",
-      // 永久复用：只要缓存中有值（含 SSR 注水）就直接返回，不再重新请求
-      getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key],
     },
   );
 
-  const siteTitle = (data.value?.title || "").trim() || DEFAULT_TITLE;
-
-  const siteShortTitle =
-    (data.value?.shortTitle || "").trim() || DEFAULT_SHORT_TITLE;
-
-  const siteDescription =
-    (data.value?.description || "").trim() || DEFAULT_DESCRIPTION;
-
-  return { siteTitle, siteShortTitle, siteDescription };
+  return {
+    siteTitle: (data.value?.title || "").trim() || DEFAULT_TITLE,
+    siteShortTitle:
+      (data.value?.shortTitle || "").trim() || DEFAULT_SHORT_TITLE,
+    siteDescription:
+      (data.value?.description || "").trim() || DEFAULT_DESCRIPTION,
+    icpLicence: data.value?.icpLicence || "",
+  };
 }

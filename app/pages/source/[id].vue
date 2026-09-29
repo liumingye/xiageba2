@@ -52,11 +52,10 @@ const {
   data: responseData,
   pending: loading,
   error: fetchApiError,
-} = await useFetch<SourceResponse, ApiErrorResponse>(
+} = await useLazyFetch<SourceResponse, ApiErrorResponse>(
   () => `/api/source/${sourceId.value}?similar=1`,
   {
     key: () => `source-${sourceId.value}`,
-    lazy: true,
     server: true,
     default: (): SourceResponse => ({
       data: {
@@ -99,16 +98,28 @@ const pageTitle = computed(() => {
 
 const pageDescription = computed(() => {
   if (source.value) {
-    return `${source.value.title} - ${source.value.description || "网盘资源分享"}`;
+    let description = source.value.description || "";
+    if (description.length > 100) {
+      description = description.slice(0, 100) + "...";
+    }
+    if (description) {
+      return description;
+    }
+    const formatDate = (date: string | Date) => {
+      const d = new Date(date);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+    return `全盘搜为您提供《${source.value.title}》的${getStorageTypeFriendFromFilter(source.value.type)}资源下载，创建日期：${formatDate(source.value.createdAt)}。`;
   }
   return "全盘搜网盘资源详情页";
 });
 
 const pageKeywords = computed(() => {
   if (source.value) {
-    return `${source.value.title}, 网盘资源, 夸克网盘, 百度网盘, 迅雷网盘, UC网盘`;
+    return `${source.value.title},网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷网盘,UC网盘`;
   }
-  return "全盘搜, 网盘资源, 夸克网盘, 百度网盘, 迅雷网盘, UC网盘";
+  return "全盘搜,网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷网盘,UC网盘";
 });
 
 const canonicalUrl = `/source/${sourceId.value}`;
@@ -354,7 +365,7 @@ onMounted(() => {
           />
         </div>
         <div v-else>
-          <p class="text-center text-error">该资源已被删除或不存在</p>
+          <p class="text-center text-error">该网盘资源已被删除</p>
         </div>
       </template>
     </UCard>
@@ -382,41 +393,47 @@ onMounted(() => {
         </li>
       </ul>
     </UCard>
-
-    <UCard
-      :ui="{
-        body: 'sm:p-6 p-3 flex gap-2',
-      }"
-    >
-      <UButton
-        icon="i-lucide-arrow-left"
-        block
-        :disabled="fetchingUrl"
-        @click="goBack"
-        class="h-12"
-      >
-        返回上一页
-      </UButton>
-
-      <ClientOnly>
-        <UButton
-          v-if="isShareSupported"
-          icon="i-lucide-share"
-          block
-          :disabled="fetchingUrl"
-          @click="shareUrl"
-          class="h-12"
-        >
-          分享本页
-        </UButton>
-      </ClientOnly>
-    </UCard>
   </div>
 
-  <div v-else class="card p-8 text-center space-y-4">
+  <UCard
+    v-else
+    :ui="{
+      body: 'space-y-4 text-center',
+    }"
+  >
     <FolderOpen class="size-16 text-toned mx-auto" />
     <h2 class="text-lg font-medium text-toned">资源不存在</h2>
     <p class="text-sm text-muted">该资源可能已被删除或不存在</p>
     <UButton size="lg" @click="goBack"> 返回上一页 </UButton>
-  </div>
+  </UCard>
+
+  <UCard
+    :ui="{
+      root: 'mt-6',
+      body: 'sm:p-6 p-3 flex gap-2',
+    }"
+  >
+    <UButton
+      icon="i-lucide-arrow-left"
+      block
+      :disabled="fetchingUrl"
+      @click="goBack"
+      class="h-12"
+    >
+      返回上一页
+    </UButton>
+
+    <ClientOnly>
+      <UButton
+        v-if="isShareSupported"
+        icon="i-lucide-share"
+        block
+        :disabled="fetchingUrl"
+        @click="shareUrl"
+        class="h-12"
+      >
+        分享本页
+      </UButton>
+    </ClientOnly>
+  </UCard>
 </template>

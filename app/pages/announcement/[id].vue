@@ -11,7 +11,7 @@ const route = useRoute();
 // 使用响应式 computed，保证 SPA 内 /announcement/A → /announcement/B 切换时 useFetch 会重新请求
 const announcementId = computed(() => route.params.id as string);
 
-const { data: responseData } = await useFetch<{
+const { data: responseData } = await useLazyFetch<{
   data: Announcement;
 }>(() => `/api/announcement/${announcementId.value}`, {
   key: () => `announcement-${announcementId.value}`,
@@ -23,12 +23,14 @@ const announcement = computed(() => responseData.value?.data || null);
 const isNotFound = computed(() => !announcement.value);
 
 useSeoMeta({
-  title: announcement.value
-    ? `${announcement.value.title} - 公告`
-    : "公告不存在",
-  description: announcement.value
-    ? announcement.value.content.slice(0, 150)
-    : "公告不存在",
+  title: computed(() =>
+    announcement.value ? `${announcement.value.title} - 公告` : "公告不存在",
+  ),
+  description: computed(() =>
+    announcement.value
+      ? announcement.value.content.slice(0, 150)
+      : "公告不存在",
+  ),
 });
 </script>
 

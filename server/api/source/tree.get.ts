@@ -12,12 +12,26 @@ import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
 import { TREE_MAX_LINE } from "#server/lib/const";
+import { automaton_ad_filter, SimpleAC } from "#server/lib/simpleAC";
 
 const MAX_DEPTH = 5;
 
 // 🔒 内存进程锁：阻断高并发的核心大闸
 // 确保同一时间，同一个资源文件树，全国只有一个 Worker 在调用网盘 SDK 跑递归，其余并发请求排队共享结果
 const treeInflightRequests = new Map<string, Promise<string>>();
+
+const filterAdResults = <T>(
+  items: T[],
+  fileNameKey: keyof T,
+  automaton: SimpleAC | null,
+): T[] => {
+  if (!automaton) return items;
+  return items.filter((item) => {
+    let haystack = item[fileNameKey] || "";
+    if (typeof haystack !== "string") return false;
+    return !automaton.hasMatch(haystack);
+  });
+};
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -52,10 +66,10 @@ export default defineEventHandler(async (event) => {
     : `tree:url:${Buffer.from(url).toString("base64").substring(0, 40)}`;
 
   // 🚀 一级防御：读取分布式高速缓存 Redis
-  const cached = await getRedisCache<string>(cacheKey);
-  if (cached !== null) {
-    return { tree: cached, success: true, cache: "redis" };
-  }
+  // const cached = await getRedisCache<string>(cacheKey);
+  // if (cached !== null) {
+  //   return { tree: cached, success: true, cache: "redis" };
+  // }
 
   // 🔒 二级防御：互斥单飞锁，阻断多层网盘递归请求对连接池的瞬间榨干
   if (treeInflightRequests.has(cacheKey)) {
@@ -196,8 +210,9 @@ async function walkQuarkUC(
 
   const items: IShareFile[] = [];
   let page = 1;
+  // 夸克api有限制pageSize最大100
   const pageSize = 100;
-  const maxPages = 1;
+  const maxPages = 2;
 
   while (page <= maxPages) {
     const res = await client.shareApi.detail(pwdId, stoken, {
@@ -208,7 +223,12 @@ async function walkQuarkUC(
     });
 
     if (res.list && res.list.length > 0) {
-      items.push(...res.list);
+      const filteredItems = filterAdResults(
+        res.list,
+        "file_name",
+        automaton_ad_filter,
+      );
+      items.push(...filteredItems);
     }
 
     if (!res.list || res.list.length < pageSize) break;
@@ -259,7 +279,7 @@ async function buildBaiduTree(shareUrl: string): Promise<string> {
       ...shareParam,
       dir: "/",
       page: 1,
-      num: 100,
+      num: 200,
       root: 1,
     });
   } catch (err) {
@@ -287,15 +307,15 @@ async function walkBaidu(
     ...shareParam,
     dir,
     page: 1,
-    num: 100,
+    num: 200,
     root: dir === "/" ? 1 : 0,
     sekey,
     order: "name",
     desc: 0,
   } as any);
 
-  const items: IBaiduFile[] = res.list || [];
-  items.sort((a, b) => {
+  const fileList: IBaiduFile[] = res.list || [];
+  fileList.sort((a, b) => {
     // 目录排在前面
     if (a.isdir && !b.isdir) return -1;
     if (!a.isdir && b.isdir) return 1;
@@ -305,6 +325,12 @@ async function walkBaidu(
       sensitivity: "base",
     });
   });
+
+  const items = filterAdResults(
+    fileList,
+    "server_filename",
+    automaton_ad_filter,
+  );
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -349,7 +375,7 @@ async function buildXunleiTree(shareUrl: string): Promise<string> {
     detail = await client.shareApi.getShare({
       shareId: parsed.fid,
       passCode: parsed.passcode,
-      limit: 100,
+      limit: 200,
     });
   } catch (e) {
     console.error("获取分享详情失败:", e);
@@ -384,6 +410,8 @@ async function walkXunlei(
 ): Promise<void> {
   if (depth >= MAX_DEPTH) return;
 
+  items = filterAdResults(items, "name", automaton_ad_filter);
+
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     if (!item) continue;
@@ -401,7 +429,7 @@ async function walkXunlei(
         shareId,
         passCodeToken,
         parentId: item.id,
-        limit: 100,
+        limit: 200,
       });
 
       if (res.files.length > 0) {

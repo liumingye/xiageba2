@@ -4,14 +4,14 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "PolicyPage" });
 
-useHead({
+useSeoMeta({
   title: "免责声明",
-  meta: [
-    {
-      name: "description",
-      content: "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
-    },
-  ],
+  description: "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
+  ogTitle: "免责声明",
+  ogDescription: "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
+  twitterTitle: "免责声明",
+  twitterDescription:
+    "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
 });
 
 const content = `**最后更新日期：2026年1月1日**

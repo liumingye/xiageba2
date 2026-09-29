@@ -3,21 +3,22 @@ import { ShieldBan, Loader2 } from "@lucide/vue";
 
 defineOptions({ name: "ForbiddenKeywordsPage" });
 
-useHead({
+useSeoMeta({
   title: "屏蔽词列表",
-  meta: [
-    {
-      name: "description",
-      content:
-        "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
-    },
-  ],
+  description:
+    "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
+  ogTitle: "屏蔽词列表",
+  ogDescription:
+    "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
+  twitterTitle: "屏蔽词列表",
+  twitterDescription:
+    "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
 });
 
-const { data, pending, error } = await useFetch<{
+const { data, pending, error } = await useLazyFetch<{
   data: string[];
   total: number;
-}>("/api/forbidden-keywords", { server: false });
+}>("/api/forbidden-keywords", { server: true });
 </script>
 
 <template>

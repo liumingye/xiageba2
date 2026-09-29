@@ -10,11 +10,13 @@ export default defineEventHandler(async () => {
     "site_seo_title",
     "site_seo_short_title",
     "site_seo_description",
+    "site_icp_licence",
   ]);
 
   return {
     title: values.site_seo_title || DEFAULT_TITLE,
     shortTitle: values.site_seo_short_title || DEFAULT_SHORT_TITLE,
     description: values.site_seo_description || DEFAULT_DESCRIPTION,
+    icpLicence: values.site_icp_licence || "",
   };
 });

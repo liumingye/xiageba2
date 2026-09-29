@@ -1,4 +1,7 @@
-import { prisma } from "#server/lib/prisma";
+import { getConfigValues, setConfigValues } from "#server/lib/configCache";
+import { initAutomaton_ad_filter } from "#server/lib/simpleAC";
+
+const CONFIG_KEY = "ad_filter";
 
 interface AdFilterConfig {
   enabled: boolean;
@@ -14,35 +17,34 @@ export default defineEventHandler(async (event) => {
   const method = event.method;
 
   if (method === "GET") {
-    const config = await prisma.config.findUnique({
-      where: { key: "ad_filter" },
-    });
-    let data: AdFilterConfig = { ...DEFAULT_CONFIG };
-    if (config?.value) {
-      try {
-        const parsed = JSON.parse(config.value);
-        data = { ...DEFAULT_CONFIG, ...parsed };
-      } catch {
-        data = { ...DEFAULT_CONFIG };
-      }
+    const result = await getConfigValues([CONFIG_KEY]);
+    if (!result[CONFIG_KEY]) {
+      return { data: DEFAULT_CONFIG };
     }
-    return { data };
+    return { data: JSON.parse(result[CONFIG_KEY]) };
   }
 
   if (method === "POST") {
     const body = await readBody(event);
-    const enabled = Boolean(body.enabled);
-    const keywords = (body.keywords || "").toString().trim();
 
-    const data: AdFilterConfig = { enabled, keywords };
+    const value: Record<string, string> = {};
+    for (const key of ["enabled", "keywords"]) {
+      if (body && body[key] !== undefined) {
+        value[key] = body[key] || "";
+      }
+    }
 
-    await prisma.config.upsert({
-      where: { key: "ad_filter" },
-      update: { value: JSON.stringify(data) },
-      create: { key: "ad_filter", value: JSON.stringify(data) },
-    });
+    const result = await setConfigValues([
+      {
+        key: CONFIG_KEY,
+        value: JSON.stringify(value),
+      },
+    ]);
 
-    return { success: true, data };
+    // 重新初始化自动机
+    await initAutomaton_ad_filter();
+
+    return result;
   }
 
   throw createError({ statusCode: 405, message: "不支持的请求方法" });

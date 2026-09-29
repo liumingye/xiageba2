@@ -199,15 +199,13 @@ defineExpose({ results, searching, error });
           v-if="getCheckStatus(item.url) === 'invalid'"
           class="absolute inset-0 bg-red-900/10 pointer-events-none"
         />
-        <div class="flex-1 min-w-0 flex gap-2 mb-2 flex-col">
-          <div class="flex items-center gap-2">
-            <span
-              v-if="props.highlightHtml"
-              class="min-w-0 break-all"
-              v-html="props.highlightHtml(item.title)"
-            ></span>
-            <span v-else class="min-w-0 break-all">{{ item.title }}</span>
-          </div>
+        <div class="flex-1 min-w-0 flex gap-2 flex-col">
+          <span
+            v-if="props.highlightHtml"
+            class="min-w-0 break-all"
+            v-html="props.highlightHtml(item.title)"
+          ></span>
+          <span v-else class="min-w-0 break-all">{{ item.title }}</span>
           <div class="flex gap-2">
             <div
               class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
@@ -239,32 +237,36 @@ defineExpose({ results, searching, error });
               </div>
             </ClientOnly>
           </div>
-        </div>
-        <div
-          class="flex justify-between items-center gap-2 border-t border-muted mt-3 pt-3"
-        >
-          <span class="text-xs text-muted flex items-center"
-            >来源: {{ item.source }}</span
-          >
-          <div class="flex items-center gap-2">
-            <UButton
-              v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
-              variant="outline"
-              @click.stop="emit('openTree', item)"
-              icon="i-lucide-folder"
-              :ui="{
-                leadingIcon: 'size-4',
-              }"
-              >目录</UButton
-            >
-            <UButton
-              variant="solid"
-              @click.stop="emit('openModal', item)"
-              icon="i-lucide-download"
-              :ui="{
-                leadingIcon: 'size-4',
-              }"
-              >获取链接</UButton
+
+          <USeparator
+            :ui="{
+              border: 'border-muted',
+            }"
+          />
+          <div class="flex justify-between items-center gap-2 max-sm:flex-row-reverse">
+            <div class="flex items-center gap-2 max-sm:flex-row-reverse">
+              <UButton
+                variant="solid"
+                @click.stop="emit('openModal', item)"
+                icon="i-lucide-download"
+                :ui="{
+                  leadingIcon: 'size-4',
+                }"
+                >获取链接</UButton
+              >
+              <UButton
+                v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
+                variant="outline"
+                @click.stop="emit('openTree', item)"
+                icon="i-lucide-folder"
+                :ui="{
+                  leadingIcon: 'size-4',
+                }"
+                >目录</UButton
+              >
+            </div>
+            <span class="text-xs text-muted flex items-center"
+              >来源: {{ item.source }}</span
             >
           </div>
         </div>

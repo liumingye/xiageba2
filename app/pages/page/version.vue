@@ -4,14 +4,14 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "VersionPage" });
 
-useHead({
+useSeoMeta({
   title: "版权说明",
-  meta: [
-    {
-      name: "description",
-      content: "全盘搜版权说明，本站不存储音频文件，所有内容版权归原作者所有。",
-    },
-  ],
+  description: "全盘搜版权说明，本站不存储音频文件，所有内容版权归作者所有。",
+  ogTitle: "版权说明",
+  ogDescription: "全盘搜版权说明，本站不存储音频文件，所有内容版权归作者所有。",
+  twitterTitle: "版权说明",
+  twitterDescription:
+    "全盘搜版权说明，本站不存储音频文件，所有内容版权归作者所有。",
 });
 
 const content = `**最后更新日期：2026年1月1日**

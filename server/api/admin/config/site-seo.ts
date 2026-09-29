@@ -4,6 +4,7 @@ const SEO_KEYS = [
   "site_seo_title",
   "site_seo_short_title",
   "site_seo_description",
+  "site_icp_licence",
 ];
 
 export default defineEventHandler(async (event) => {

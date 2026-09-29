@@ -3,7 +3,6 @@ import { Loader2 } from "@lucide/vue";
 import type { SourceItem } from "~/components/LocalResourceItem.vue";
 import type { ApiErrorResponse } from "~/utils/type";
 
-const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
 
@@ -26,7 +25,7 @@ const {
   data,
   pending,
   error: fetchApiError,
-} = await useFetch<CategoryListData, ApiErrorResponse>(
+} = await useLazyFetch<CategoryListData, ApiErrorResponse>(
   () => `/api/category/${categoryId.value}`,
   {
     // key 用函数形式，随 categoryId / page 变化生成不同缓存键，
@@ -68,20 +67,37 @@ const totalPages = computed(() => data.value?.totalPages || 0);
 const items = computed(() => data.value?.data || []);
 const category = computed(() => data.value?.category);
 
-useSeoMeta({
-  title: category.value?.name
+const pageTitle = computed(() =>
+  category.value?.name
     ? `${category.value.name} - 网盘资源分类`
     : "网盘资源分类",
-  description: category.value?.name
+);
+
+const pageDescription = computed(() =>
+  category.value?.name
     ? `${category.value.name}分类下的网盘资源，免费下载。`
     : "全盘搜资源分类，各类网盘资源免费下载。",
+);
+
+const canonicalUrl = `/categorie/${categoryId.value}`;
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  ogType: "article",
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogUrl: canonicalUrl,
+  twitterCard: "summary",
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
 });
 
 useHead({
   link: [
     {
       rel: "canonical",
-      href: config.app.baseURL + `categorie/${categoryId.value}`,
+      href: canonicalUrl,
     },
   ],
 });
@@ -187,16 +203,20 @@ const closeModal = () => {
 </script>
 
 <template>
-  <div v-if="category" class="mb-6">
+  <div v-if="!pending && category" class="mb-6">
     <h1 class="text-2xl font-bold mb-2">
       {{ category.name }}
     </h1>
     <p class="text-muted text-sm">共 {{ data?.total || 0 }} 个资源</p>
   </div>
 
-  <div v-if="pending" class="text-center py-12" aria-busy="true">
-    <Loader2 class="size-8 text-primary-400 animate-spin mx-auto" />
-    <p class="text-muted mt-3">加载中...</p>
+  <div v-if="pending" class="text-center space-y-3" aria-busy="true">
+    <USkeleton class="h-8 w-16" />
+    <USkeleton class="h-5 w-32" />
+    <div class="py-12 space-y-4">
+      <Loader2 class="size-8 text-primary-400 animate-spin mx-auto" />
+      <p class="text-muted">分类列表加载中...</p>
+    </div>
   </div>
 
   <div v-else-if="!items || items.length === 0" class="text-center py-12">

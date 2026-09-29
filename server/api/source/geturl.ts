@@ -24,6 +24,7 @@ import {
   incrementTodayGeturlCount,
 } from "#server/lib/geturl-record";
 import type { H3Event } from "h3";
+import { automaton_ad_filter } from "#server/lib/simpleAC";
 
 type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
 
@@ -183,11 +184,12 @@ async function listFilesBaidu(
 async function findAdFilesRecursive(
   fsApi: any,
   parentId: string,
-  keywords: string[],
   maxDepth: number,
   currentDepth: number,
   sdkType: PanSDKType,
 ): Promise<string[]> {
+  if (!automaton_ad_filter) return [];
+
   const result: string[] = [];
 
   let listFn: (
@@ -207,7 +209,7 @@ async function findAdFilesRecursive(
 
   for (const file of files) {
     const fileNameLower = file.name.toLowerCase();
-    const isAd = keywords.some((kw) => fileNameLower.includes(kw));
+    const isAd = automaton_ad_filter.hasMatch(fileNameLower);
 
     if (isAd) {
       result.push(file.id);
@@ -218,7 +220,6 @@ async function findAdFilesRecursive(
       const childAdFiles = await findAdFilesRecursive(
         fsApi,
         file.id,
-        keywords,
         maxDepth,
         currentDepth + 1,
         sdkType,
@@ -233,17 +234,9 @@ async function findAdFilesRecursive(
 async function deleteAdFiles(
   fsApi: any,
   topFids: string[],
-  config: AdFilterConfig,
   sdkType: PanSDKType,
 ): Promise<void> {
-  if (!config.enabled || !config.keywords.trim()) return;
-
-  const keywords = config.keywords
-    .split(",")
-    .map((k) => k.trim().toLowerCase())
-    .filter((k) => k.length > 0);
-
-  if (keywords.length === 0) return;
+  if (!automaton_ad_filter) return;
 
   const adFids: string[] = [];
 
@@ -266,7 +259,7 @@ async function deleteAdFiles(
 
       for (const file of files) {
         const fileNameLower = file.name.toLowerCase();
-        const isAd = keywords.some((kw) => fileNameLower.includes(kw));
+        const isAd = automaton_ad_filter.hasMatch(fileNameLower);
 
         if (isAd) {
           adFids.push(file.id);
@@ -277,7 +270,6 @@ async function deleteAdFiles(
           const childAdFiles = await findAdFilesRecursive(
             fsApi,
             file.id,
-            keywords,
             2,
             1,
             sdkType,
@@ -434,12 +426,9 @@ async function transferQuarkUC(
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && saveAsTopFids.length > 0) {
     event.waitUntil(
-      deleteAdFiles(
-        client.fsApi,
-        saveAsTopFids,
-        adFilterConfig,
-        "quarkUC",
-      ).catch((e) => console.error("异步删除广告文件失败", e)),
+      deleteAdFiles(client.fsApi, saveAsTopFids, "quarkUC").catch((e) =>
+        console.error("异步删除广告文件失败", e),
+      ),
     );
   }
 
@@ -606,8 +595,8 @@ async function transferBaidu(
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && fids.length > 0) {
     event.waitUntil(
-      deleteAdFiles(client.fsOpenApi, fids, adFilterConfig, "baidu").catch(
-        (e) => console.error("异步删除广告文件失败", e),
+      deleteAdFiles(client.fsOpenApi, fids, "baidu").catch((e) =>
+        console.error("异步删除广告文件失败", e),
       ),
     );
   }
@@ -677,8 +666,8 @@ async function transferXunlei(
   const adFilterConfig = await getAdFilterConfig();
   if (adFilterConfig.enabled && fileIds.length > 0) {
     event.waitUntil(
-      deleteAdFiles(client.fsApi, fileIds, adFilterConfig, "xunlei").catch(
-        (e) => console.error("异步删除广告文件失败", e),
+      deleteAdFiles(client.fsApi, fileIds, "xunlei").catch((e) =>
+        console.error("异步删除广告文件失败", e),
       ),
     );
   }

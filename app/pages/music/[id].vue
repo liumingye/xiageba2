@@ -19,11 +19,10 @@ const {
   data: music,
   pending: loading,
   error: fetchApiError,
-} = await useFetch<Music, ApiErrorResponse>(
+} = await useLazyFetch<Music, ApiErrorResponse>(
   () => `/api/music/${musicId.value}`,
   {
     key: () => `music-${musicId.value}`,
-    lazy: true,
     server: true,
     default: () => {
       return {
@@ -220,12 +219,11 @@ onMounted(() => {
   musicStore.searchType = "music";
 });
 
-const isMounted = useMounted();
-
-const isMobile = useMediaQuery("(max-width: 1366px)");
+const isMobile = useMediaQuery("(max-width: 1366px)", {
+  ssrWidth: 1920,
+});
 // UA匹配 && 宽度1366px以下
 const isMobileTablet = computed(() => {
-  if (!isMounted.value) return false;
   return isMobileOrTablet() && isMobile.value;
 });
 </script>
@@ -243,16 +241,17 @@ const isMobileTablet = computed(() => {
           body: 'p-6 animate-pulse',
         }"
       >
-        <div class="flex flex-col sm:flex-row gap-6 items-center">
+        <div class="flex max-sm:flex-col gap-6 items-center sm:items-stretch">
           <div class="size-48 bg-accented rounded-xl" />
-          <div class="flex-1 w-full space-y-3">
-            <div class="h-6 bg-accented rounded w-3/4 mx-auto sm:mx-0" />
-            <div class="h-4 bg-elevated rounded w-1/2 mx-auto sm:mx-0" />
-            <div
-              class="flex flex-wrap gap-3 justify-center sm:justify-start mt-4"
-            >
-              <div class="h-10 bg-accented rounded-lg w-28" />
-              <div class="h-10 bg-accented rounded-lg w-28" />
+          <div
+            class="flex-1 w-full flex flex-col gap-3 justify-center max-sm:items-center"
+          >
+            <div class="h-10 bg-accented rounded w-3/4" />
+            <div class="h-4 bg-elevated rounded w-1/2" />
+            <div class="h-4 bg-elevated rounded w-1/2" />
+            <div class="flex flex-wrap gap-3 max-sm:justify-center mt-auto">
+              <div class="h-10 bg-accented rounded-lg w-32" />
+              <div class="h-10 bg-accented rounded-lg w-32" />
             </div>
           </div>
         </div>
@@ -265,7 +264,7 @@ const isMobileTablet = computed(() => {
       >
         <div class="h-5 bg-elevated rounded w-1/4 mb-4" />
         <div class="space-y-2">
-          <div v-for="i in 5" :key="i" class="h-4 bg-accented rounded w-3/4" />
+          <div v-for="i in 3" :key="i" class="h-4 bg-accented rounded w-1/2" />
         </div>
       </UCard>
     </div>
@@ -287,9 +286,7 @@ const isMobileTablet = computed(() => {
           body: 'p-6',
         }"
       >
-        <div
-          class="flex flex-col sm:flex-row gap-6 items-center sm:items-stretch"
-        >
+        <div class="flex max-sm:flex-col gap-6 items-center sm:items-stretch">
           <div class="relative shrink-0">
             <img
               :src="music.cover || config.app.baseURL + 'img/cover.png'"
@@ -321,7 +318,7 @@ const isMobileTablet = computed(() => {
           </div>
 
           <div
-            class="flex-1 flex flex-col gap-2 justify-center items-center sm:items-start text-center sm:text-left"
+            class="flex-1 flex flex-col gap-2 justify-center max-sm:items-center"
           >
             <h1 class="text-2xl sm:text-3xl font-bold" :title="music.title">
               {{ music.title }}
@@ -359,9 +356,7 @@ const isMobileTablet = computed(() => {
               {{ music.album }}
             </UButton>
 
-            <div
-              class="flex flex-wrap gap-3 justify-center sm:justify-start mt-auto"
-            >
+            <div class="flex flex-wrap gap-3 max-sm:justify-center mt-auto">
               <UButton
                 v-if="music.downloads.length === 0"
                 icon="i-lucide-search"
@@ -387,9 +382,7 @@ const isMobileTablet = computed(() => {
                 @click="!isMobileTablet && openDownloadModal(download)"
               >
                 {{ download.quality }}
-                <template
-                  v-if="isMobileTablet && isMounted && extractPwd(download.url)"
-                >
+                <template v-if="isMobileTablet && extractPwd(download.url)">
                   (提取码: {{ extractPwd(download.url) }})
                 </template>
               </UButton>

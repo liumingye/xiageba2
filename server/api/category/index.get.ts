@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       const latest = await prisma.source.findMany({
         where: { cid: cat.id, status: 1 },
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: 13,
         select: { id: true, title: true, url: true, createdAt: true },
       });
 
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   const latestAll = await prisma.source.findMany({
     where: { status: 1 },
     orderBy: { createdAt: "desc" },
-    take: 10,
+    take: 13,
     select: { id: true, title: true, url: true, createdAt: true },
   });
   const latestAllItems = latestAll.map((item) => ({

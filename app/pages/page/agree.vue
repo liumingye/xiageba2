@@ -4,15 +4,16 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "AgreementPage" });
 
-useHead({
+useSeoMeta({
   title: "服务协议",
-  meta: [
-    {
-      name: "description",
-      content:
-        "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
-    },
-  ],
+  description:
+    "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
+  ogTitle: "服务协议",
+  ogDescription:
+    "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
+  twitterTitle: "服务协议",
+  twitterDescription:
+    "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
 });
 
 const content = `**最后更新日期：2026年1月1日**

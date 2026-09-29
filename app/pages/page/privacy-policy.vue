@@ -4,14 +4,14 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "PrivacyPolicyPage" });
 
-useHead({
+useSeoMeta({
   title: "隐私政策",
-  meta: [
-    {
-      name: "description",
-      content: "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
-    },
-  ],
+  description: "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
+  ogTitle: "隐私政策",
+  ogDescription: "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
+  twitterTitle: "隐私政策",
+  twitterDescription:
+    "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
 });
 
 const content = `**最后更新日期：2026年1月1日**

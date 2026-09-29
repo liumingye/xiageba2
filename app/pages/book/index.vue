@@ -148,7 +148,7 @@ const {
   pending: novelLoading,
   error: novelFetchError,
   refresh: novelRetryFetch,
-} = await useFetch<{ books: NovelBook[]; hasMore: boolean }>(
+} = await useLazyFetch<{ books: NovelBook[]; hasMore: boolean }>(
   () => {
     if (isSearchMode.value) return "";
     const params = new URLSearchParams({
@@ -165,7 +165,6 @@ const {
     key: () =>
       `novel-list-${currentPage.value}-${bookStatusFilter.value}-${novelCategoryFilter.value}`,
     server: true,
-    lazy: true,
     watch: [currentPage, bookStatusFilter, novelCategoryFilter, isSearchMode],
   },
 );
@@ -176,7 +175,7 @@ const {
   pending: searchLoading,
   error: searchFetchError,
   refresh: searchRetryFetch,
-} = await useFetch<{ books: NovelBook[]; isEnd: boolean }>(
+} = await useLazyFetch<{ books: NovelBook[]; isEnd: boolean }>(
   () => {
     if (!isSearchMode.value) return "";
     return "/api/novel/search";
@@ -186,7 +185,6 @@ const {
     body: () => ({ query: searchKeyword.value }),
     key: () => `novel-search-${searchKeyword.value}`,
     server: true,
-    lazy: true,
     watch: [searchKeyword],
   },
 );
