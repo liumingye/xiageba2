@@ -7,9 +7,10 @@ import {
   type PanCheckLinkStatus,
 } from "#server/lib/pan-check";
 
-// 有效链接状态缓存 24 小时
-const LINK_STATUS_CACHE_TTL = 60 * 60 * 24;
-const linkStatusCacheKey = (url: string) => `pancheck:status:${url}`;
+// 有效链接状态缓存 1 小时（key 为前端传入的原始标识：id 或加密后的 url）
+const LINK_STATUS_CACHE_TTL = 60 * 60;
+const idCacheKey = (id: string) => `pancheck:status:id:${id}`;
+const urlCacheKey = (url: string) => `pancheck:status:url:${url}`;
 
 export default defineEventHandler(async (event) => {
   if (event.method !== "POST") {
@@ -19,59 +20,74 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { ids, urls } = body || {};
 
-  // [待检测的真实网盘链接, 前端传入的原始标识（id 或加密后的 url）]
-  const linksAndKey: [string, string][] = [];
-
-  if (Array.isArray(ids) && ids.length > 0) {
-    // 从数据库查询 URL
-    const sources = await prisma.source.findMany({
-      where: { id: { in: ids } },
-      select: { id: true, url: true },
-    });
-    for (const s of sources) {
-      if (s.url) {
-        linksAndKey.push([s.url, s.id]);
-      }
-    }
-  } else if (Array.isArray(urls) && urls.length > 0) {
-    // 解密 URL，原始加密串作为回填标识
-    for (const u of urls) {
-      const decrypted = await decryptUrl(u);
-      if (decrypted) {
-        linksAndKey.push([decrypted, u]);
-      }
-    }
-  }
-
-  if (linksAndKey.length === 0) {
-    return { success: false, message: "没有有效的链接" };
-  }
-
-  if (linksAndKey.length > 20) {
-    return { success: false, message: "请求检测链接过多" };
-  }
-
   // 按原始标识回填检测状态，前端可直接按 id/url 取值
   const statuses: Record<string, PanCheckLinkStatus> = {};
 
-  // 先读 Redis 缓存：命中 valid 的链接无需再次提交检测
-  const pendingCheck: [string, string][] = [];
-  for (const [link, key] of linksAndKey) {
-    const cached = await getRedisCache<PanCheckLinkStatus>(
-      linkStatusCacheKey(link),
-    );
-    if (cached === "valid") {
-      statuses[key] = "valid";
-    } else {
-      pendingCheck.push([link, key]);
+  // 待检测的链接：[真实网盘链接, 前端传入的原始标识（id 或加密后的 url）, 缓存 key]
+  const pendingCheck: [string, string, string][] = [];
+
+  if (Array.isArray(ids) && ids.length > 0) {
+    // 先读 Redis 缓存：命中 valid 的 id 无需查库
+    const missedIds: string[] = [];
+    for (const id of ids) {
+      const cached = await getRedisCache<PanCheckLinkStatus>(idCacheKey(id));
+      if (cached === "valid") {
+        statuses[id] = "valid";
+      } else {
+        missedIds.push(id);
+      }
     }
+
+    if (missedIds.length > 0) {
+      // 从数据库查询 URL
+      const sources = await prisma.source.findMany({
+        where: { id: { in: missedIds } },
+        select: { id: true, url: true },
+      });
+      for (const s of sources) {
+        if (s.url) {
+          pendingCheck.push([s.url, s.id, idCacheKey(s.id)]);
+        }
+      }
+    }
+  } else if (Array.isArray(urls) && urls.length > 0) {
+    // 先读 Redis 缓存：命中 valid 的 url 无需解密
+    const missedUrls: string[] = [];
+    for (const u of urls) {
+      const cached = await getRedisCache<PanCheckLinkStatus>(urlCacheKey(u));
+      if (cached === "valid") {
+        statuses[u] = "valid";
+      } else {
+        missedUrls.push(u);
+      }
+    }
+
+    if (missedUrls.length > 0) {
+      // 解密 URL，原始加密串作为回填标识
+      for (const u of missedUrls) {
+        const decrypted = await decryptUrl(u);
+        if (decrypted) {
+          pendingCheck.push([decrypted, u, urlCacheKey(u)]);
+        }
+      }
+    }
+  }
+
+  if (Object.keys(statuses).length === 0 && pendingCheck.length === 0) {
+    return { success: false, message: "没有有效的链接" };
+  }
+
+  if (Object.keys(statuses).length + pendingCheck.length > 20) {
+    return { success: false, message: "请求检测链接过多" };
   }
 
   let serverId: number | undefined;
 
   if (pendingCheck.length > 0) {
     // PanCheck 现在同步返回检测结果，无需异步任务与轮询
-    const result = await submitCheckRequest(pendingCheck.map(([url]) => url));
+    const result = await submitCheckRequest(
+      pendingCheck.map(([url]) => url),
+    );
     if (!result) {
       // 缓存未命中的部分检测失败；若全部命中缓存则仍返回成功
       if (Object.keys(statuses).length === 0) {
@@ -86,18 +102,12 @@ export default defineEventHandler(async (event) => {
 
     serverId = result.server_id;
 
-    for (const [link, key] of pendingCheck) {
+    for (const [link, key, cacheKey] of pendingCheck) {
       const status = resolveLinkStatus(link, result);
       statuses[key] = status;
       // 仅缓存有效链接，失效链接不缓存以便下次重新检测
       if (status === "valid") {
-        event.waitUntil(
-          setRedisCache(
-            linkStatusCacheKey(link),
-            status,
-            LINK_STATUS_CACHE_TTL,
-          ),
-        );
+        await setRedisCache(cacheKey, status, LINK_STATUS_CACHE_TTL);
       }
     }
   }
