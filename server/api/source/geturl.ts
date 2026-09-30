@@ -803,9 +803,7 @@ export default defineEventHandler(async (event) => {
     sourceUrl = decryptedUrl;
   }
 
-  const cacheKey = id
-    ? `source:id:${id}`
-    : `source:url:${Buffer.from(sourceUrl).toString("base64").substring(0, 40)}`;
+  const cacheKey = id ? `source:id:${id}` : `source:url:${sourceUrl}`;
 
   // 🚀 一级防御：读取大并发下的分布式 Redis 缓存
   const redisCache = await getRedisCache<string>(cacheKey);
