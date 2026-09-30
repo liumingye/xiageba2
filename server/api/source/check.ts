@@ -7,8 +7,8 @@ import {
   type PanCheckLinkStatus,
 } from "#server/lib/pan-check";
 
-// 有效链接状态缓存 6 小时
-const LINK_STATUS_CACHE_TTL = 60 * 60 * 6;
+// 有效链接状态缓存 24 小时
+const LINK_STATUS_CACHE_TTL = 60 * 60 * 24;
 const linkStatusCacheKey = (url: string) => `pancheck:status:${url}`;
 
 export default defineEventHandler(async (event) => {
