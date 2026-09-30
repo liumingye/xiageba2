@@ -7,8 +7,8 @@ import {
   type PanCheckLinkStatus,
 } from "#server/lib/pan-check";
 
-// 有效链接状态缓存 1 小时（key 为前端传入的原始标识：id 或加密后的 url）
-const LINK_STATUS_CACHE_TTL = 60 * 60;
+// 有效链接状态缓存 24 小时（key 为前端传入的原始标识：id 或加密后的 url）
+const LINK_STATUS_CACHE_TTL = 60 * 60 * 24;
 const idCacheKey = (id: string) => `pancheck:status:id:${id}`;
 const urlCacheKey = (url: string) => `pancheck:status:url:${url}`;
 
@@ -85,9 +85,7 @@ export default defineEventHandler(async (event) => {
 
   if (pendingCheck.length > 0) {
     // PanCheck 现在同步返回检测结果，无需异步任务与轮询
-    const result = await submitCheckRequest(
-      pendingCheck.map(([url]) => url),
-    );
+    const result = await submitCheckRequest(pendingCheck.map(([url]) => url));
     if (!result) {
       // 缓存未命中的部分检测失败；若全部命中缓存则仍返回成功
       if (Object.keys(statuses).length === 0) {
