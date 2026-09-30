@@ -66,10 +66,10 @@ export default defineEventHandler(async (event) => {
     : `tree:url:${Buffer.from(url).toString("base64").substring(0, 40)}`;
 
   // 🚀 一级防御：读取分布式高速缓存 Redis
-  // const cached = await getRedisCache<string>(cacheKey);
-  // if (cached !== null) {
-  //   return { tree: cached, success: true, cache: "redis" };
-  // }
+  const cached = await getRedisCache<string>(cacheKey);
+  if (cached !== null) {
+    return { tree: cached, success: true, cache: "redis" };
+  }
 
   // 🔒 二级防御：互斥单飞锁，阻断多层网盘递归请求对连接池的瞬间榨干
   if (treeInflightRequests.has(cacheKey)) {
