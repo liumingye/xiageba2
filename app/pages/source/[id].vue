@@ -288,7 +288,7 @@ onMounted(() => {
         <div class="flex items-center justify-between mb-3">
           <div class="font-bold">文件内容:</div>
           <UButton
-            v-if="source.menu"
+            v-if="source.menu && source.status === 1"
             size="xs"
             color="neutral"
             variant="soft"
@@ -308,6 +308,8 @@ onMounted(() => {
           {{ menuError }}
         </p>
       </section>
+
+      <section v-else-if="source.status === 0">该网盘资源已被删除</section>
 
       <section v-else-if="!source.menu">
         <div class="font-bold mb-3">文件内容:</div>
