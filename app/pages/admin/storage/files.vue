@@ -3,8 +3,6 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { FileText, HardDrive, FileAudio, FileVideo, File } from "@lucide/vue";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { useClipboard } from "@vueuse/core";
 import { get, post, del, patch } from "~/utils/request";

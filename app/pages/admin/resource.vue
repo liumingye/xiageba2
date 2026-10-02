@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { Loader2 } from "@lucide/vue";
-import type { TableColumn } from "@nuxt/ui";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
+import type { ContextMenuItem, TableColumn, TableRow } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 
 useSeoMeta({
@@ -43,9 +41,21 @@ const toApiCid = (value: string) =>
   value && value !== NO_CATEGORY ? value : "";
 
 const columns: TableColumn<Source>[] = [
+  {
+    id: "select",
+    enableHiding: false,
+    meta: {
+      class: { th: "w-10", td: "w-10" },
+    },
+  },
   { id: "id", accessorKey: "id", header: "ID" },
   { id: "title", accessorKey: "title", header: "资源名称" },
-  { id: "category", accessorKey: "cid", header: "分类" },
+  {
+    id: "category",
+    accessorKey: "cid",
+    header: "分类",
+    meta: { class: { th: "min-w-15" } },
+  },
   { id: "url", accessorKey: "url", header: "地址" },
   { id: "createdAt", accessorKey: "createdAt", header: "入库时间" },
   {
@@ -81,6 +91,19 @@ const total = ref(0);
 const filterCid = ref<string>(FILTER_ALL);
 const keyword = ref("");
 const isLoading = ref(false);
+
+// ============ 批量操作 ============
+const rowSelection = ref<Record<string, boolean>>({});
+const selectedIds = computed(() =>
+  Object.keys(rowSelection.value).filter((key) => rowSelection.value[key]),
+);
+const batchOperating = ref(false);
+const showBatchCategoryModal = ref(false);
+const batchCid = ref<string>(NO_CATEGORY);
+
+const clearSelection = () => {
+  rowSelection.value = {};
+};
 
 const showAddModal = ref(false);
 const showEditModal = ref(false);
@@ -137,6 +160,8 @@ const loadSources = async () => {
     // ignore
   } finally {
     isLoading.value = false;
+    // 数据刷新后清除选择状态，避免残留已不存在的行
+    clearSelection();
   }
 };
 
@@ -431,6 +456,100 @@ const deleteSource = async (id: string) => {
   }
 };
 
+// ============ 批量操作 ============
+const batchUpdateStatus = async (status: number) => {
+  const ids = selectedIds.value;
+  if (!ids.length || batchOperating.value) return;
+
+  batchOperating.value = true;
+  try {
+    const data = await post("/api/admin/source/batch", {
+      action: "status",
+      ids,
+      status,
+    });
+    toast.add({
+      title:
+        status === 1
+          ? `已启用 ${data.count} 项资源`
+          : `已禁用 ${data.count} 项资源`,
+      icon: "i-lucide-check",
+      color: "success",
+    });
+    await loadSources();
+  } catch (e: any) {
+    toast.add({
+      title: e?.response?.data?.message || "批量操作失败",
+      color: "error",
+    });
+  } finally {
+    batchOperating.value = false;
+  }
+};
+
+const openBatchCategoryModal = () => {
+  if (!selectedIds.value.length) return;
+  batchCid.value = NO_CATEGORY;
+  showBatchCategoryModal.value = true;
+};
+
+const batchSetCategory = async () => {
+  const ids = selectedIds.value;
+  if (!ids.length || batchOperating.value) return;
+
+  batchOperating.value = true;
+  try {
+    const data = await post("/api/admin/source/batch", {
+      action: "category",
+      ids,
+      cid: toApiCid(batchCid.value),
+    });
+    toast.add({
+      title: `已更新 ${data.count} 项资源的分类`,
+      icon: "i-lucide-check",
+      color: "success",
+    });
+    showBatchCategoryModal.value = false;
+    await loadSources();
+  } catch (e: any) {
+    toast.add({
+      title: e?.response?.data?.message || "批量设置分类失败",
+      color: "error",
+    });
+  } finally {
+    batchOperating.value = false;
+  }
+};
+
+const batchDelete = async () => {
+  const ids = selectedIds.value;
+  if (!ids.length || batchOperating.value) return;
+  if (!confirm(`确定要删除选中的 ${ids.length} 项资源吗？删除后不可恢复。`)) {
+    return;
+  }
+
+  batchOperating.value = true;
+  try {
+    const data = await post("/api/admin/source/batch", {
+      action: "delete",
+      ids,
+    });
+    toast.add({
+      title: `已删除 ${data.count} 项资源`,
+      icon: "i-lucide-check",
+      color: "success",
+    });
+    await loadSources();
+  } catch (e: any) {
+    toast.add({
+      title: e?.response?.data?.message || "批量删除失败",
+      color: "error",
+    });
+  } finally {
+    batchOperating.value = false;
+  }
+};
+
 /** 从文本中提取并净化网盘链接 */
 function purifyUrl(input: string): string {
   const text = input.trim();
@@ -596,6 +715,100 @@ const importSources = async () => {
     importing.value = false;
   }
 };
+
+const items = ref<ContextMenuItem[]>([]);
+
+function getRowItems(row: TableRow<Source>): ContextMenuItem[] {
+  // 有选中项时追加批量操作菜单组
+  const batchItems: ContextMenuItem[] = selectedIds.value.length
+    ? [
+        [
+          {
+            type: "label",
+            label: `批量操作（已选 ${selectedIds.value.length} 项）`,
+          },
+          {
+            label: "批量启用",
+            icon: "i-lucide-circle-check",
+            onSelect() {
+              batchUpdateStatus(1);
+            },
+          },
+          {
+            label: "批量禁用",
+            icon: "i-lucide-circle-off",
+            onSelect() {
+              batchUpdateStatus(0);
+            },
+          },
+          {
+            label: "批量设置分类",
+            icon: "i-lucide-folder-pen",
+            onSelect() {
+              openBatchCategoryModal();
+            },
+          },
+          {
+            label: "批量删除",
+            color: "error",
+            icon: "i-lucide-trash-2",
+            onSelect() {
+              batchDelete();
+            },
+          },
+        ],
+      ]
+    : [];
+
+  return [
+    [
+      {
+        label: row.getIsSelected() ? "取消选中该行" : "选中该行",
+        icon: "i-lucide-square-check",
+        onSelect() {
+          row.toggleSelected(!row.getIsSelected());
+        },
+      },
+    ],
+    [
+      {
+        type: "label",
+        label: "操作",
+      },
+      {
+        label: "编辑资源",
+        icon: "i-lucide-edit",
+        onSelect() {
+          openEditModal(row.original);
+        },
+      },
+      {
+        label: "复制资源ID",
+        icon: "i-lucide-copy",
+        onSelect() {
+          navigator.clipboard.writeText(row.original.id);
+          toast.add({
+            title: `资源ID ${row.original.id} 已复制`,
+            color: "success",
+          });
+        },
+      },
+      {
+        label: "删除资源",
+        color: "error",
+        icon: "i-lucide-trash-2",
+        onSelect() {
+          deleteSource(row.original.id);
+        },
+      },
+    ],
+    ...batchItems,
+  ];
+}
+
+function onContextmenu(_e: Event, row: TableRow<Source>) {
+  items.value = getRowItems(row);
+}
 </script>
 
 <template>
@@ -675,78 +888,167 @@ const importSources = async () => {
       body: 'sm:p-0 p-0',
     }"
   >
-    <UTable
-      ref="table"
-      v-model:column-visibility="columnVisibility"
-      :data="sources"
-      :loading="isLoading"
-      :columns="columns"
-      :get-row-id="(row: Source) => row.id"
+    <UContextMenu :items="items">
+      <UTable
+        @hover="() => {}"
+        @contextmenu="onContextmenu"
+        ref="table"
+        v-model:column-visibility="columnVisibility"
+        v-model:row-selection="rowSelection"
+        :data="sources"
+        :loading="isLoading"
+        :columns="columns"
+        :get-row-id="(row: Source) => row.id"
+      >
+        <template #select-header="{ table }">
+          <UCheckbox
+            :model-value="
+              table.getIsSomePageRowsSelected()
+                ? 'indeterminate'
+                : table.getIsAllPageRowsSelected()
+            "
+            aria-label="全选"
+            @update:model-value="
+              (value: boolean | 'indeterminate') =>
+                table.toggleAllPageRowsSelected(!!value)
+            "
+          />
+        </template>
+        <template #select-cell="{ row }">
+          <UCheckbox
+            :model-value="row.getIsSelected()"
+            aria-label="选择该行"
+            @update:model-value="
+              (value: boolean | 'indeterminate') => row.toggleSelected(!!value)
+            "
+          />
+        </template>
+        <template #id-cell="{ row }">
+          {{ row.original.id }}
+        </template>
+        <template #title-cell="{ row }">
+          {{ row.original.title }}
+        </template>
+        <template #category-cell="{ row }">
+          {{
+            categories.find((cat) => cat.id === row.original.cid)?.name || "-"
+          }}
+        </template>
+        <template #url-cell="{ row }">
+          <a :href="row.original.url" target="_blank" :title="row.original.url">
+            {{ row.original.url }}
+          </a>
+        </template>
+        <template #createdAt-cell="{ row }">
+          {{ new Date(row.original.createdAt).toLocaleString("zh-CN") }}
+        </template>
+        <template #status-cell="{ row }">
+          <UButton
+            size="sm"
+            :color="row.original.status === 1 ? 'success' : 'neutral'"
+            variant="subtle"
+            :icon="
+              row.original.status === 1
+                ? 'i-lucide-check'
+                : 'i-lucide-circle-off'
+            "
+            @click="toggleStatus(row.original)"
+          >
+            {{ row.original.status === 1 ? "启用" : "禁用" }}
+          </UButton>
+        </template>
+        <template #actions-cell="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              square
+              size="sm"
+              icon="i-lucide-pencil"
+              title="编辑"
+              aria-label="编辑"
+              @click="openEditModal(row.original)"
+            />
+            <UButton
+              color="error"
+              variant="ghost"
+              square
+              size="sm"
+              icon="i-lucide-trash-2"
+              title="删除"
+              aria-label="删除"
+              @click="deleteSource(row.original.id)"
+            />
+          </div>
+        </template>
+        <template #empty>
+          <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+            <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+            <p class="text-muted text-sm mt-2">加载中...</p>
+          </div>
+          <p v-else class="text-center text-muted py-12">暂无资源</p>
+        </template>
+      </UTable>
+    </UContextMenu>
+
+    <div
+      v-if="selectedIds.length"
+      class="flex flex-wrap items-center gap-2 px-2 py-3 border-t border-default"
     >
-      <template #id-cell="{ row }">
-        {{ row.original.id }}
-      </template>
-      <template #title-cell="{ row }">
-        {{ row.original.title }}
-      </template>
-      <template #category-cell="{ row }">
-        {{ categories.find((cat) => cat.id === row.original.cid)?.name || "-" }}
-      </template>
-      <template #url-cell="{ row }">
-        <a :href="row.original.url" target="_blank" :title="row.original.url">
-          {{ row.original.url }}
-        </a>
-      </template>
-      <template #createdAt-cell="{ row }">
-        {{ new Date(row.original.createdAt).toLocaleString("zh-CN") }}
-      </template>
-      <template #status-cell="{ row }">
-        <UButton
-          size="sm"
-          :color="row.original.status === 1 ? 'success' : 'neutral'"
-          variant="subtle"
-          :icon="
-            row.original.status === 1 ? 'i-lucide-check' : 'i-lucide-circle-off'
-          "
-          @click="toggleStatus(row.original)"
-        >
-          {{ row.original.status === 1 ? "启用" : "禁用" }}
-        </UButton>
-      </template>
-      <template #actions-cell="{ row }">
-        <div class="flex items-center justify-center gap-2">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            square
-            size="sm"
-            icon="i-lucide-pencil"
-            title="编辑"
-            aria-label="编辑"
-            @click="openEditModal(row.original)"
-          />
-          <UButton
-            color="error"
-            variant="ghost"
-            square
-            size="sm"
-            icon="i-lucide-trash-2"
-            title="删除"
-            aria-label="删除"
-            @click="deleteSource(row.original.id)"
-          />
-        </div>
-      </template>
-      <template #empty>
-        <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
-          <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
-          <p class="text-muted text-sm mt-2">加载中...</p>
-        </div>
-        <p v-else class="text-center text-muted py-12">暂无资源</p>
-      </template>
-    </UTable>
+      <span class="text-sm text-muted">已选 {{ selectedIds.length }} 项</span>
+      <UButton
+        size="sm"
+        color="success"
+        variant="soft"
+        icon="i-lucide-circle-check"
+        :loading="batchOperating"
+        @click="batchUpdateStatus(1)"
+      >
+        批量启用
+      </UButton>
+      <UButton
+        size="sm"
+        color="neutral"
+        variant="soft"
+        icon="i-lucide-circle-off"
+        :loading="batchOperating"
+        @click="batchUpdateStatus(0)"
+      >
+        批量禁用
+      </UButton>
+      <UButton
+        size="sm"
+        color="primary"
+        variant="soft"
+        icon="i-lucide-folder-pen"
+        :loading="batchOperating"
+        @click="openBatchCategoryModal"
+      >
+        批量设置分类
+      </UButton>
+      <UButton
+        size="sm"
+        color="error"
+        variant="soft"
+        icon="i-lucide-trash-2"
+        :loading="batchOperating"
+        @click="batchDelete"
+      >
+        批量删除
+      </UButton>
+      <UButton
+        size="sm"
+        color="neutral"
+        variant="ghost"
+        :disabled="batchOperating"
+        @click="clearSelection"
+      >
+        取消选择
+      </UButton>
+    </div>
 
     <AdminPagination
+      class="border-t border-default"
       :current-page="currentPage"
       :total-pages="totalPages"
       :total="total"
@@ -1175,6 +1477,54 @@ const importSources = async () => {
           @click="importSources"
         >
           {{ importing ? "导入中..." : "开始导入" }}
+        </UButton>
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="showBatchCategoryModal"
+    title="批量设置分类"
+    :dismissible="false"
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <div class="space-y-4">
+        <p class="text-sm text-muted">
+          将为选中的 {{ selectedIds.length }} 项资源设置以下分类：
+        </p>
+        <USelect
+          v-model="batchCid"
+          class="w-full"
+          :items="[
+            { label: '无分类', value: NO_CATEGORY },
+            ...categories.map((cat) => ({
+              label: cat.name,
+              value: cat.id.toString(),
+            })),
+          ]"
+        />
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton
+          color="neutral"
+          variant="soft"
+          :disabled="batchOperating"
+          @click="showBatchCategoryModal = false"
+        >
+          取消
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="batchOperating"
+          :disabled="batchOperating"
+          @click="batchSetCategory"
+        >
+          {{ batchOperating ? "设置中..." : "确定" }}
         </UButton>
       </div>
     </template>

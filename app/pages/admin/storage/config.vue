@@ -4,8 +4,6 @@ import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { HardDrive } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import { get, post, put, del } from "~/utils/request";
 
 defineOptions({ name: "StorageConfigPage" });
@@ -177,6 +175,7 @@ const deleteConfig = async (id: string) => {
     }"
   >
     <UTable
+      @hover="() => {}"
       :data="configs"
       :columns="columns"
       :get-row-id="(row: S3Config) => row.id"

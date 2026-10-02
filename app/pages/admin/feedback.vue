@@ -5,8 +5,6 @@ import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 
 useSeoMeta({
@@ -254,6 +252,7 @@ const columns: TableColumn<any>[] = [
     }"
   >
     <UTable
+      @hover="() => {}"
       :data="isLoading ? [] : feedbacks"
       :columns="columns"
       :get-row-id="(row: any) => row.id"

@@ -5,8 +5,6 @@ import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { User, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 
 useSeoMeta({
   title: "管理员管理",
@@ -157,6 +155,7 @@ const deleteAdmin = async (id: string) => {
     }"
   >
     <UTable
+      @hover="() => {}"
       :data="admins"
       :columns="columns"
       :get-row-id="(row: Admin) => row.id"

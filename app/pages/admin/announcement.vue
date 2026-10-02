@@ -4,8 +4,6 @@ import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { Megaphone, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { formatDate } from "~/utils/file";
 import type { Announcement } from "~/utils/announcement";
@@ -252,6 +250,7 @@ const deleteAnnouncement = async (id: string) => {
     }"
   >
     <UTable
+      @hover="() => {}"
       :data="announcements"
       :columns="columns"
       :get-row-id="(row: Announcement) => row.id"

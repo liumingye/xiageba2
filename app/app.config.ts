@@ -21,7 +21,20 @@ export default defineAppConfig({
     },
     table: {
       slots: {
+        th: "px-2",
         td: "p-2 text-default",
+      },
+    },
+    contextMenu: {
+      slots: {
+        item: "items-center",
+      },
+      variants: {
+        size: {
+          md: {
+            itemLeadingIcon: "size-4",
+          },
+        },
       },
     },
     prose: {

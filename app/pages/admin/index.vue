@@ -5,8 +5,6 @@ import { useAuth } from "~/composables/useAuth";
 import { get, del } from "~/utils/request";
 import { Search, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import type { Music as MusicType } from "~/stores/music";
 
@@ -175,6 +173,7 @@ const goToPage = (page: number) => {
     }"
   >
     <UTable
+      @hover="() => {}"
       :data="isLoading ? [] : musics"
       :columns="columns"
       :get-row-id="(row: MusicType) => row.id"

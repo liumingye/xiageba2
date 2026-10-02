@@ -5,8 +5,6 @@ import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { Tag } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
 
@@ -215,6 +213,7 @@ const deleteCategory = async (id: number) => {
     }"
   >
     <UTable
+      @hover="() => {}"
       :data="categories"
       :columns="columns"
       :get-row-id="(row: Category) => String(row.id)"

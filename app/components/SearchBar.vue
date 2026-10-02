@@ -112,7 +112,7 @@ defineExpose({
       class="w-full"
       size="md"
       :ui="{
-        base: 'md:pe-15',
+        base: 'md:pe-15 text-sm',
         root: 'w-full',
         trailing: 'pe-1',
       }"

@@ -4,10 +4,8 @@ import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import type { TableColumn } from "@nuxt/ui";
-
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+
 const toast = useToast();
 
 useSeoMeta({
@@ -331,6 +329,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
     }"
   >
     <UTable
+      @hover="() => {}"
       :data="apis"
       :columns="columns"
       :get-row-id="(row: ApiItem) => row.id"

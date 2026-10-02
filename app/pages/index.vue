@@ -425,7 +425,10 @@ const getPic = (url: string) => {
         <div class="flex ml-auto">
           <template v-if="activeHistoryTab === 'history'">
             <button
-              v-if="activeHistoryTab === 'history'"
+              v-if="
+                activeHistoryTab === 'history' &&
+                musicStore.searchHistory.length > 0
+              "
               class="flex items-center gap-1 opacity-65 hover:opacity-90 transition-all px-2"
               @click="clearHistory"
               aria-label="清空搜索历史"
@@ -474,7 +477,14 @@ const getPic = (url: string) => {
           class="flex flex-wrap gap-2 transition-all duration-300"
           :class="sectionExpanded ? '' : 'max-h-50'"
         >
+          <div
+            v-if="musicStore.searchHistory.length === 0"
+            class="text-muted"
+          >
+            暂无搜索历史
+          </div>
           <UButton
+            v-else
             v-for="keyword in musicStore.searchHistory"
             :key="keyword"
             color="neutral"
