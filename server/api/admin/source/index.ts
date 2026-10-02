@@ -90,20 +90,20 @@ export default defineEventHandler(async (event) => {
 
         const dataSql = isUrl
           ? `
-            SELECT id, cid, title, url, description, menu, "isSelf", status, "createdAt", "updatedAt"
+            SELECT id, cid, title, url, description, menu, "isSelf", status, "createdAt"
             FROM "Source"
             ${whereClause}
-            ORDER BY "createdAt" DESC
+            ORDER BY "createdAt" DESC, id ASC
             LIMIT $${limitIndex} OFFSET $${offsetIndex};
           `
           : `
             WITH search_query AS (
               SELECT ${searchQueryExpression} AS value
             )
-            SELECT id, cid, title, url, description, menu, "isSelf", status, "createdAt", "updatedAt"
+            SELECT id, cid, title, url, description, menu, "isSelf", status, "createdAt"
             FROM "Source" CROSS JOIN search_query
             ${whereClause}
-            ORDER BY ts_rank("searchVector", search_query.value, 1) DESC, "createdAt" DESC
+            ORDER BY ts_rank("searchVector", search_query.value, 1) DESC, "createdAt" DESC, id ASC
             LIMIT $${limitIndex} OFFSET $${offsetIndex};
           `;
 
@@ -125,7 +125,10 @@ export default defineEventHandler(async (event) => {
         const [dataResult, countResult, categories] = await Promise.all([
           client.query(dataSql, dataParams),
           client.query(countSql, countParams),
-          prisma.category.findMany({ orderBy: { sort: "asc" } }),
+          prisma.category.findMany({
+            orderBy: { sort: "asc" },
+            select: { id: true, name: true },
+          }),
         ]);
 
         const sources = dataResult.rows;
@@ -151,12 +154,26 @@ export default defineEventHandler(async (event) => {
     const [sources, total, categories] = await Promise.all([
       prisma.source.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: "desc", id: "asc" },
         skip,
         take: pageSize,
+        select: {
+          id: true,
+          cid: true,
+          title: true,
+          url: true,
+          description: true,
+          menu: true,
+          isSelf: true,
+          status: true,
+          createdAt: true,
+        },
       }),
       prisma.source.count({ where }),
-      prisma.category.findMany({ orderBy: { sort: "asc" } }),
+      prisma.category.findMany({
+        orderBy: { sort: "asc" },
+        select: { id: true, name: true },
+      }),
     ]);
 
     return {
@@ -171,8 +188,16 @@ export default defineEventHandler(async (event) => {
 
   if (method === "POST") {
     const body = await readBody(event);
-    const { cid, title, url, description, menu, isSelf, force, updateExisting } =
-      body;
+    const {
+      cid,
+      title,
+      url,
+      description,
+      menu,
+      isSelf,
+      force,
+      updateExisting,
+    } = body;
 
     if (!title?.trim()) {
       throw createError({ statusCode: 400, message: "资源名称不能为空" });

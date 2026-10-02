@@ -20,15 +20,12 @@ interface Source {
   menu: string;
   status: number;
   isSelf: boolean;
-  categoryName: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 interface Category {
   id: number;
   name: string;
-  sort: number;
 }
 
 // USelect 不允许 value 为空字符串（空串用于清除选择显示 placeholder），
@@ -791,6 +788,16 @@ function getRowItems(row: TableRow<Source>): ContextMenuItem[] {
             title: `资源ID ${row.original.id} 已复制`,
             color: "success",
           });
+        },
+      },
+      {
+        label: row.original.status === 1 ? "禁用资源" : "启用资源",
+        icon:
+          row.original.status === 1
+            ? "i-lucide-circle-off"
+            : "i-lucide-circle-check",
+        onSelect() {
+          toggleStatus(row.original);
         },
       },
       {
