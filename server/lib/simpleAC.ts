@@ -461,13 +461,15 @@ export const initAutomaton_websearch_filter_keywords = async () => {
     ...defaultKeywords,
     ...keywords,
   ]);
-  websearch_filter_keywords_list = keywords;
+  websearch_filter_keywords_list = keywords
+    .map((k) => k.trim())
+    .filter(Boolean);
 };
 initAutomaton_websearch_filter_keywords();
 
 export const initAutomaton_ad_filter = async () => {
   const json = await getConfigValue("ad_filter");
-  const adFilter = JSON.parse(json);
+  const adFilter = JSON.parse(json || "{}");
   const keywords = adFilter.enabled ? adFilter.keywords.split(",") : [];
   automaton_ad_filter = new SimpleAC(keywords);
 };

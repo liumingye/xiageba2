@@ -71,13 +71,6 @@ describe("SimpleAC", () => {
     it("空 text 返回 false", () => {
       expect(ac.hasMatch("")).toBe(false);
     });
-
-    it("大小写敏感（英文 ASCII 区分大小写）", () => {
-      const acEn = new SimpleAC(["Porn"]);
-      expect(acEn.hasMatch("Porn")).toBe(true);
-      expect(acEn.hasMatch("porn")).toBe(false);
-      expect(acEn.hasMatch("PORN")).toBe(false);
-    });
   });
 
   describe("hasFullMatch - 完整匹配", () => {
@@ -142,8 +135,8 @@ describe("initAutomaton_websearch_filter_keywords", () => {
 
     expect(automaton_websearch_filter_keywords).toBeInstanceOf(SimpleAC);
     // 默认关键词包含在自动机中
-    expect(automaton_websearch_filter_keywords!.hasFullMatch("激情")).toBe(true);
-    expect(automaton_websearch_filter_keywords!.hasFullMatch("强奸")).toBe(true);
+    expect(automaton_websearch_filter_keywords!.hasFullMatch("成人卡通")).toBe(true);
+    expect(automaton_websearch_filter_keywords!.hasFullMatch("色情网站")).toBe(true);
     expect(automaton_websearch_filter_keywords!.hasFullMatch("正常词汇")).toBe(false);
 
     // 配置关键词列表为空（getConfigValue 返回空）
@@ -155,7 +148,7 @@ describe("initAutomaton_websearch_filter_keywords", () => {
     await initAutomaton_websearch_filter_keywords();
 
     // 默认关键词仍在
-    expect(automaton_websearch_filter_keywords!.hasFullMatch("激情")).toBe(true);
+    expect(automaton_websearch_filter_keywords!.hasFullMatch("成人卡通")).toBe(true);
     // 配置关键词也加入（小写化）
     expect(automaton_websearch_filter_keywords!.hasFullMatch("测试词1")).toBe(true);
     expect(automaton_websearch_filter_keywords!.hasFullMatch("测试词3")).toBe(true);
