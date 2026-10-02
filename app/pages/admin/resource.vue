@@ -927,6 +927,11 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
           {{ row.original.id }}
         </template>
         <template #title-cell="{ row }">
+          <UIcon
+            v-if="row.original.isSelf"
+            name="i-lucide-user-star"
+            class="size-3 text-primary"
+          />
           {{ row.original.title }}
         </template>
         <template #category-cell="{ row }">
