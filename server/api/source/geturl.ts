@@ -10,7 +10,11 @@ import type {
   ITransferShareResult,
   ICreateShareResult,
 } from "@netdisk-sdk/baidu-sdk";
-import { QuarkUCFSApi, QuarkUCClient } from "@netdisk-sdk/quarkUC-sdk";
+import {
+  QuarkUCFSApi,
+  QuarkUCClient,
+  ISaveTaskStateResult,
+} from "@netdisk-sdk/quarkUC-sdk";
 import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { getClientByAccount } from "#server/lib/pan-instance";
@@ -376,6 +380,7 @@ async function transferQuarkUC(
   account: PanAccount,
   pwdId: string,
   passcode: string,
+  sourceId?: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
   const tempDirId = account.tempDir || "";
   const client = (await getClientByAccount(account)) as QuarkUCClient;
@@ -433,8 +438,31 @@ async function transferQuarkUC(
   }
 
   // 步骤6: 等待分享完成
-  const share_task_data = await shareApi.saveTask(shareResult.task_id, true);
-  if (!share_task_data.share_id) {
+  let share_task_data: ISaveTaskStateResult | null = null;
+  try {
+    share_task_data = await shareApi.saveTask(shareResult.task_id, true);
+  } catch (err: any) {
+    const info = typeof err?.info === "function" ? err.info() : undefined;
+    // 选中的文件违规，不支持分享
+    if (info && (info.code === 41005 || info.code === 41026)) {
+      if (sourceId) {
+        // 禁用资源
+        event.waitUntil(
+          prisma.source.update({
+            where: { id: sourceId },
+            data: {
+              status: 0,
+            },
+          }),
+        );
+        // 删除网盘内容
+        event.waitUntil(client.fsApi.delete(saveAsTopFids));
+      }
+      throw createError({ statusCode: 500, message: "文件违规，不支持分享" });
+    }
+  }
+
+  if (!share_task_data || !share_task_data.share_id) {
     throw createError({ statusCode: 500, message: "分享后未获取到分享ID" });
   }
 
@@ -730,7 +758,13 @@ export async function transferShareUrl(
 
   try {
     if (type === "quark" || type === "uc") {
-      const data = await transferQuarkUC(event, account, fid, passcode);
+      const data = await transferQuarkUC(
+        event,
+        account,
+        fid,
+        passcode,
+        sourceId,
+      );
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else if (type === "baidu") {
