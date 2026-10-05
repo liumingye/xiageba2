@@ -50,7 +50,7 @@ export default defineCachedEventHandler(
     };
   },
   {
-    name: "api-novel-list-v1",
+    name: "api-novel-list",
     maxAge: 60 * 60,
     staleMaxAge: 360 * 60,
     swr: true,
@@ -58,7 +58,7 @@ export default defineCachedEventHandler(
       const query = getQuery(event);
       return [query.page, query.limit, query.book_status, query.category]
         .map((value) => encodeURIComponent(String(value ?? "")))
-        .join(":");
+        .join("_");
     },
   },
 );

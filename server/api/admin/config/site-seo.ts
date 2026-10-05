@@ -1,4 +1,5 @@
 import { getConfigValues, setConfigValues } from "#server/lib/configCache";
+import { clearCacheNitroHandlers } from "#server/utils/cache";
 
 const SEO_KEYS = [
   "site_seo_title",
@@ -26,6 +27,9 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await setConfigValues(configs);
+
+    // 清理缓存
+    await clearCacheNitroHandlers("site-seo-data");
 
     return result;
   }

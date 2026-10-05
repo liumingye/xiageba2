@@ -99,7 +99,7 @@ export default defineCachedEventHandler(
       const query = getQuery(event);
       return [id, query.page, query.pageSize]
         .map((value) => encodeURIComponent(String(value ?? "")))
-        .join(":");
+        .join("_");
     },
   },
 );

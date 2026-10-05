@@ -60,7 +60,7 @@ export default defineCachedEventHandler(
     };
   },
   {
-    name: "api-novel-detail-v1",
+    name: "api-novel-detail",
     maxAge: 60 * 60,
     staleMaxAge: 360 * 60,
     swr: true,

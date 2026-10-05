@@ -298,7 +298,7 @@ export default defineCachedEventHandler(
     };
   },
   {
-    name: "api-source-search-v1",
+    name: "api-source-search",
     maxAge: 30 * 60,
     staleMaxAge: 120 * 60,
     swr: true,
@@ -317,7 +317,7 @@ export default defineCachedEventHandler(
           : query.type,
       ]
         .map((value) => encodeURIComponent(String(value ?? "")))
-        .join(":");
+        .join("_");
     },
   },
 );

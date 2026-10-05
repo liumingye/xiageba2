@@ -146,7 +146,7 @@ export default defineCachedEventHandler(
     };
   },
   {
-    name: "api-music-search-v1",
+    name: "api-music-search",
     maxAge: 30 * 60,
     staleMaxAge: 120 * 60,
     swr: true,
@@ -154,7 +154,7 @@ export default defineCachedEventHandler(
       const query = getQuery(event);
       return [query.q, query.page, query.pageSize, query.exact]
         .map((value) => encodeURIComponent(String(value ?? "")))
-        .join(":");
+        .join("_");
     },
   },
 );
