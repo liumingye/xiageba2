@@ -114,7 +114,7 @@ const startWebSearch = () => {
 
       if (msg.type === "result" && msg.data) {
         results.value.push(msg.data);
-        if (msg.data.type === "magnet") return;
+        if (msg.data.type === "magnet" || msg.data.type === "guangya") return;
         // 数据进入缓冲区
         queuePanCheck(msg.data.url);
       } else if (msg.type === "done") {
@@ -243,7 +243,9 @@ defineExpose({ results, searching, error });
               border: 'border-muted',
             }"
           />
-          <div class="flex justify-between items-center gap-2 max-sm:flex-row-reverse">
+          <div
+            class="flex justify-between items-center gap-2 max-sm:flex-row-reverse"
+          >
             <div class="flex items-center gap-2 max-sm:flex-row-reverse">
               <UButton
                 variant="solid"
@@ -255,7 +257,11 @@ defineExpose({ results, searching, error });
                 >获取链接</UButton
               >
               <UButton
-                v-if="['quark', 'baidu', 'uc', 'xunlei'].includes(item.type)"
+                v-if="
+                  ['quark', 'baidu', 'uc', 'xunlei', 'guangya'].includes(
+                    item.type,
+                  )
+                "
                 variant="outline"
                 @click.stop="emit('openTree', item)"
                 icon="i-lucide-folder"

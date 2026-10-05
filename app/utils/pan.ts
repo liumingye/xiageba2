@@ -9,7 +9,7 @@ export const PAN_TYPE_LABELS: Record<string, string> = {
   baidu: "百度网盘",
   uc: "UC 网盘",
   xunlei: "迅雷云盘",
-  guangya: "光鸭网盘",
+  guangya: "光鸭云盘",
 };
 
 /** 获取网盘类型的中文标签，未知类型回退为原始类型名 */

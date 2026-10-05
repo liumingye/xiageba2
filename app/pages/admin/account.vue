@@ -594,7 +594,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya"];
               { label: '百度网盘', value: 'baidu' },
               { label: 'UC 网盘', value: 'uc' },
               { label: '迅雷云盘', value: 'xunlei' },
-              { label: '光鸭网盘', value: 'guangya' },
+              { label: '光鸭云盘', value: 'guangya' },
             ]"
             :disabled="formIsEdit"
             class="w-full"

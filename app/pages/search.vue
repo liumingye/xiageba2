@@ -168,7 +168,8 @@ const panOptions = [
   { value: "all", label: "所有网盘" },
   { value: "quark", label: "夸克网盘" },
   { value: "baidu", label: "百度网盘" },
-  { value: "xunlei", label: "迅雷网盘" },
+  { value: "xunlei", label: "迅雷云盘" },
+  { value: "guangya", label: "光鸭云盘" },
   { value: "uc", label: "UC网盘" },
   { value: "ali", label: "阿里网盘" },
   { value: "189", label: "天翼网盘" },
@@ -456,7 +457,7 @@ watch(
       stopPanCheck();
       if (!isMusic.value && results.value.length > 0) {
         const ids = (results.value as SourceItem[])
-          .filter((item) => item.type !== "magnet")
+          .filter((item) => item.type !== "magnet" && item.type !== "guangya")
           .map((item) => item.id);
         submitPanCheck(ids);
       }
@@ -743,9 +744,15 @@ watch(
 
           <template
             v-if="
-              ['all', 'quark', 'baidu', 'uc', 'xunlei', 'ali'].includes(
-                panFilter,
-              )
+              [
+                'all',
+                'quark',
+                'baidu',
+                'uc',
+                'xunlei',
+                'ali',
+                'guangya',
+              ].includes(panFilter)
             "
           >
             <div v-if="currentPage === 1" class="flex items-center gap-2 my-3">

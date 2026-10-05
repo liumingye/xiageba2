@@ -16,6 +16,8 @@ import {
   ISaveTaskStateResult,
 } from "@netdisk-sdk/quarkUC-sdk";
 import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { GuangyaClient, parseGuangyaShareURL } from "@netdisk-sdk/guangya-sdk";
+import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
@@ -30,7 +32,7 @@ import {
 import type { H3Event } from "h3";
 import { automaton_ad_filter } from "#server/lib/simpleAC";
 
-type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "unknown";
+type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "guangya" | "unknown";
 
 interface AdFilterConfig {
   enabled: boolean;
@@ -53,7 +55,7 @@ async function getAdFilterConfig(): Promise<AdFilterConfig> {
   }
 }
 
-type PanSDKType = "quarkUC" | "xunlei" | "baidu";
+type PanSDKType = "quarkUC" | "xunlei" | "baidu" | "guangya";
 
 interface PanFile {
   id: string;
@@ -194,6 +196,19 @@ async function listFilesBaidu(
   return result;
 }
 
+async function listFilesGuangya(
+  fsApi: InstanceType<typeof GuangyaClient>["fsApi"],
+  parentId: string,
+  _isTop: boolean,
+): Promise<PanFile[]> {
+  const files = await listGuangyaDir(fsApi, parentId);
+  return files.map((f) => ({
+    id: f.fid,
+    name: f.fileName,
+    isDir: f.isDir,
+  }));
+}
+
 async function findAdFilesRecursive(
   fsApi: any,
   parentId: string,
@@ -214,6 +229,8 @@ async function findAdFilesRecursive(
     listFn = listFilesQuarkUC;
   } else if (sdkType === "xunlei") {
     listFn = listFilesXunlei;
+  } else if (sdkType === "guangya") {
+    listFn = listFilesGuangya;
   } else {
     listFn = listFilesBaidu;
   }
@@ -262,6 +279,8 @@ async function deleteAdFiles(
     listFn = listFilesQuarkUC;
   } else if (sdkType === "xunlei") {
     listFn = listFilesXunlei;
+  } else if (sdkType === "guangya") {
+    listFn = listFilesGuangya;
   } else {
     listFn = listFilesBaidu;
   }
@@ -336,6 +355,8 @@ const ALLOWED_HOSTS = new Set([
   "drive.uc.cn",
   "fast.uc.cn",
   "pan.xunlei.com",
+  "www.guangyapan.com",
+  "guangyapan.com",
 ]);
 
 /**
@@ -343,27 +364,29 @@ const ALLOWED_HOSTS = new Set([
  */
 export function parseShareUrl(url: string): ParsedShare {
   const extractPwd = (u: string) => {
-    const m = u.match(/(?:pwd=|password=|:|：|码)([a-zA-Z0-9]{4})/); // 严格限制提取码字符集，防正则穿透
+    const m = u.match(
+      /(?:pwd=|password=|code=|passcode=|:|：|码)([a-zA-Z0-9]{4})/i,
+    ); // 严格限制提取码字符集，防正则穿透
     return m && m[1] ? m[1] : "";
   };
 
   // 夸克: https://pan.quark.cn/s/xxxx?pwd=yyyy
-  let match = url.match(/pan\.quark\.cn\/s\/([a-zA-Z0-9-_]+)/);
+  let match = url.match(/pan\.quark\.cn\/s\/([a-zA-Z0-9-_]+)/i);
   if (match && match[1])
     return { type: "quark", fid: match[1], passcode: extractPwd(url), url };
 
   // UC: https://drive.uc.cn/s/xxxx?pwd=yyyy
-  match = url.match(/(?:drive|fast)\.uc\.cn\/s\/([a-zA-Z0-9-_]+)/);
+  match = url.match(/(?:drive|fast)\.uc\.cn\/s\/([a-zA-Z0-9-_]+)/i);
   if (match && match[1])
     return { type: "uc", fid: match[1], passcode: extractPwd(url), url };
 
   // 百度: https://pan.baidu.com/s/xxxx?pwd=yyyy
-  match = url.match(/pan\.baidu\.com\/s\/([a-zA-Z0-9-_]+)/);
+  match = url.match(/pan\.baidu\.com\/s\/([a-zA-Z0-9-_]+)/i);
   if (match && match[1])
     return { type: "baidu", fid: match[1], passcode: extractPwd(url), url };
 
   // 百度: 	https://pan.baidu.com/share/init?surl=xxxx?pwd=yyyy
-  match = url.match(/pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9-_]+)/);
+  match = url.match(/pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9-_]+)/i);
   if (match && match[1])
     return {
       type: "baidu",
@@ -373,9 +396,21 @@ export function parseShareUrl(url: string): ParsedShare {
     };
 
   // 迅雷: https://pan.xunlei.com/s/xxxx?pwd=yyyy
-  match = url.match(/pan\.xunlei\.com\/s\/([a-zA-Z0-9-_]+)/);
+  match = url.match(/pan\.xunlei\.com\/s\/([a-zA-Z0-9-_]+)/i);
   if (match && match[1])
     return { type: "xunlei", fid: match[1], passcode: extractPwd(url), url };
+
+  // 光鸭: https://www.guangyapan.com/s/xxxx?code=yyyy 等多种格式
+  if (url.includes("guangyapan.com")) {
+    const parsed = parseGuangyaShareURL(url);
+    if (parsed.shareId)
+      return {
+        type: "guangya",
+        fid: parsed.shareId,
+        passcode: parsed.passcode,
+        url,
+      };
+  }
 
   return { type: "unknown", fid: "", passcode: "", url };
 }
@@ -685,7 +720,7 @@ async function transferBaidu(
 }
 
 /**
- * 迅雷网盘转存：获取分享详情 → 转存到临时目录 → 等待任务 → 创建新分享
+ * 迅雷云盘转存：获取分享详情 → 转存到临时目录 → 等待任务 → 创建新分享
  */
 async function transferXunlei(
   event: H3Event<EventHandlerRequest>,
@@ -782,12 +817,189 @@ async function transferXunlei(
 }
 
 /**
+ * 列出光鸭个人盘目录下所有文件（分页聚合）
+ */
+async function listGuangyaDir(
+  fsApi: InstanceType<typeof GuangyaClient>["fsApi"],
+  parentId: string,
+): Promise<IGuangyaFile[]> {
+  const result: IGuangyaFile[] = [];
+  let page = 0;
+  const pageSize = 100;
+
+  while (true) {
+    const data = await fsApi.listFiles({ parentId, page, pageSize });
+    if (!data?.list || data.list.length === 0) break;
+    result.push(...data.list);
+    if (data.list.length < pageSize) break;
+    if (page >= 5) break; // 最多 5 页
+    page++;
+  }
+  return result;
+}
+
+/**
+ * 列出光鸭分享下所有文件（分页聚合，page 从 1 起）
+ */
+async function listGuangyaShareFiles(
+  shareApi: InstanceType<typeof GuangyaClient>["shareApi"],
+  accessToken: string,
+): Promise<IGuangyaFile[]> {
+  const result: IGuangyaFile[] = [];
+  let page = 1;
+  const pageSize = 100;
+
+  while (true) {
+    const data = await shareApi.shareFilesList({
+      accessToken,
+      parentId: "",
+      page,
+      pageSize,
+    });
+    if (!data?.list || data.list.length === 0) break;
+    result.push(...data.list);
+    if (data.list.length < pageSize) break;
+    if (page >= 19) break;
+    page++;
+  }
+  return result;
+}
+
+/**
+ * 光鸭云盘转存：获取访问令牌 → 列出分享文件 → 转存到专用目录 →
+ * 前后快照 diff 得到新文件 → 创建新分享
+ *
+ * 注意：光鸭转存接口不返回新 fid，靠固定专用目录前后文件名 diff 对齐。
+ */
+async function transferGuangya(
+  event: H3Event<EventHandlerRequest>,
+  account: PanAccount,
+  shareId: string,
+  passcode: string,
+  sourceId?: string,
+): Promise<{ shareUrl: string; fids: string[] }> {
+  const tempDirId = account.tempDir || "";
+  const client = (await getClientByAccount(account)) as GuangyaClient;
+  const shareApi = client.shareApi;
+  const fsApi = client.fsApi;
+
+  // 步骤1: 校验分享是否存在
+  const summary = await shareApi.shareSummary(shareId);
+  if (!summary.exists) {
+    if (sourceId) {
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({ statusCode: 404, message: "分享不存在或已失效" });
+  }
+
+  // 步骤2: 获取分享访问令牌
+  let accessToken = "";
+  try {
+    const tokenResult = await shareApi.shareAccessToken(shareId, passcode);
+    accessToken = tokenResult.accessToken;
+  } catch (err: any) {
+    if (sourceId) {
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({
+      statusCode: 404,
+      message: "获取分享访问令牌失败：" + (err?.message || "未知错误"),
+    });
+  }
+
+  if (!accessToken) {
+    throw createError({ statusCode: 500, message: "分享访问令牌为空" });
+  }
+
+  // 步骤3: 列出分享文件
+  const shareFiles = await listGuangyaShareFiles(shareApi, accessToken);
+  if (shareFiles.length === 0) {
+    throw createError({ statusCode: 404, message: "分享内容为空" });
+  }
+  const fileIds = shareFiles.map((f) => f.fid);
+
+  // 步骤4: 转存前快照（按文件名去重）
+  const beforeFiles = await listGuangyaDir(fsApi, tempDirId);
+  const beforeNames = new Set(beforeFiles.map((f) => f.fileName));
+
+  // 步骤5: 转存分享到专用目录
+  const restoreResult = await shareApi.restoreShare({
+    accessToken,
+    fileIds,
+    parentId: tempDirId,
+  });
+
+  // 步骤6: 等待转存任务完成（有 taskId 时轮询）
+  if (restoreResult.taskId) {
+    try {
+      await shareApi.waitTask(restoreResult.taskId);
+    } catch (err: any) {
+      throw createError({
+        statusCode: 500,
+        message: "转存任务失败：" + (err?.message || "未知错误"),
+      });
+    }
+  }
+
+  // 步骤7: 转存后快照 + diff（按文件名对齐，找出新增文件）
+  let newFiles: IGuangyaFile[] = [];
+  for (let retry = 0; retry < 15; retry++) {
+    const afterFiles = await listGuangyaDir(fsApi, tempDirId);
+    newFiles = afterFiles.filter((f) => !beforeNames.has(f.fileName));
+    if (newFiles.length > 0) break;
+    // 转存可能有延迟，等待后重试
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  if (newFiles.length === 0) {
+    throw createError({ statusCode: 500, message: "转存后未找到新增文件" });
+  }
+
+  const newFids = newFiles.map((f) => f.fid);
+
+  // 异步删除广告文件（后台执行，不阻塞分享创建）
+  const adFilterConfig = await getAdFilterConfig();
+  if (adFilterConfig.enabled && newFids.length > 0) {
+    event.waitUntil(
+      deleteAdFiles(fsApi, newFids, "guangya").catch((e) =>
+        console.error("异步删除广告文件失败", e),
+      ),
+    );
+  }
+
+  // 步骤8: 创建新分享
+  const title = shareFiles[0]?.fileName || "资源分享";
+  const shareResult = await shareApi.createShare({
+    fileIds: newFids,
+    title,
+  });
+
+  if (!shareResult.shareUrl) {
+    throw createError({ statusCode: 500, message: "创建分享失败" });
+  }
+
+  const shareUrl = shareResult.shareUrl;
+
+  return { shareUrl, fids: newFids };
+}
+
+function normalizeURL(rawURL: string): string {
+  let normalized = rawURL.trim();
+  normalized = normalized.replace(/？/g, "?").replace(/＆/g, "&");
+  normalized = normalized.split(/\s+/).join("");
+  return normalized;
+}
+
+/**
  * 核心转存逻辑（可复用，供 wechat 等其他模块调用）
  * 输入原始分享链接，返回转存后的新分享链接（失败时返回原始链接）
  */
 export async function transferShareUrl(
   event: H3Event<EventHandlerRequest>,
   sourceUrl: string,
+  type: NetdiskType,
+  fid: string,
+  passcode: string,
   sourceId?: string,
 ): Promise<TransferShareUrlResult> {
   // 白名单清洗
@@ -799,9 +1011,6 @@ export async function transferShareUrl(
   } catch {
     return { url: sourceUrl, transferred: false, error: "链接格式无效" };
   }
-
-  const parsedShare = parseShareUrl(sourceUrl);
-  const { type, fid, passcode, url: sharePageUrl } = parsedShare;
 
   if (type === "unknown" || !fid) {
     return { url: sourceUrl, transferred: false };
@@ -828,11 +1037,21 @@ export async function transferShareUrl(
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else if (type === "baidu") {
-      const data = await transferBaidu(event, account, sharePageUrl, sourceId);
+      const data = await transferBaidu(event, account, sourceUrl, sourceId);
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else if (type === "xunlei") {
       const data = await transferXunlei(
+        event,
+        account,
+        fid,
+        passcode,
+        sourceId,
+      );
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
+    } else if (type === "guangya") {
+      const data = await transferGuangya(
         event,
         account,
         fid,
@@ -900,7 +1119,7 @@ export default defineEventHandler(async (event) => {
     const decryptedUrl = await decryptUrl(inputUrl);
     if (!decryptedUrl)
       throw createError({ statusCode: 400, message: "链接解密失败" });
-    sourceUrl = decryptedUrl;
+    sourceUrl = normalizeURL(decryptedUrl);
   }
 
   const cacheKey = id ? `source:id:${id}` : `source:url:${sourceUrl}`;
@@ -936,22 +1155,28 @@ export default defineEventHandler(async (event) => {
     if (source.isSelf) {
       return { url: source.url };
     }
-    sourceUrl = source.url;
+    sourceUrl = normalizeURL(source.url);
   }
 
   if (!sourceUrl) throw createError({ statusCode: 400, message: "链接为空" });
 
-  // 🛡️ IP 今日 geturl 记录限流：超过上限不再转存，直接返回原始链接
-  const parsedShare = parseShareUrl(sourceUrl);
-  const netdiskType = parsedShare.type;
+  const { type, fid, passcode } = parseShareUrl(sourceUrl);
 
-  const todayCount = await getTodayGeturlCount(clientIp, netdiskType);
+  // 🛡️ IP 今日 geturl 记录限流：超过上限不再转存，直接返回原始链接
+  const todayCount = await getTodayGeturlCount(clientIp, type);
   if (todayCount >= GETURL_DAILY_LIMIT) {
     return { url: sourceUrl };
   }
 
   // 构建核心转存处理链条
-  const transferPromise = transferShareUrl(event, sourceUrl, id);
+  const transferPromise = transferShareUrl(
+    event,
+    sourceUrl,
+    type,
+    fid,
+    passcode,
+    id,
+  );
 
   // 将 Promise 送入全局互斥拦截器
   inflightRequests.set(cacheKey, transferPromise);
@@ -959,7 +1184,7 @@ export default defineEventHandler(async (event) => {
   try {
     const result = await transferPromise;
     // 记录 IP 今日 geturl 次数（异步，不阻塞响应）
-    event.waitUntil(incrementTodayGeturlCount(clientIp, netdiskType));
+    event.waitUntil(incrementTodayGeturlCount(clientIp, type));
     return { url: result.url };
   } finally {
     inflightRequests.delete(cacheKey);

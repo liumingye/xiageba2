@@ -6,7 +6,13 @@ import {
   GUANGYA_TASK_POLL_MAX,
 } from "./const";
 import { isGuangyaSuccess, extractGuangyaMessage, ApiError } from "./errors";
-import { parseGuangyaFile, extractItems, clean, firstNonNil, normalizeParentId } from "./fs_api";
+import {
+  parseGuangyaFile,
+  extractItems,
+  clean,
+  firstNonNil,
+  normalizeParentId,
+} from "./fs_api";
 import {
   IGuangyaCreateShareParam,
   IGuangyaCreateShareResult,
@@ -22,19 +28,25 @@ import {
 } from "./types";
 
 /** 辅助：失败时抛出带响应片段的错误 */
-const raiseApiError = (payload: Record<string, any>, fallback: string): never => {
+const raiseApiError = (
+  payload: Record<string, any>,
+  fallback: string,
+): never => {
   const msg = extractGuangyaMessage(payload) || fallback;
   const snippet = JSON.stringify(payload).slice(0, 500);
   throw ApiError.create(`${msg}; body=${snippet}`);
 };
 
 /** 构建创建分享请求载荷（抓包原样） */
-const buildSharePayload = (fileIds: string[], title: string): Record<string, any> => ({
+const buildSharePayload = (
+  fileIds: string[],
+  title: string,
+): Record<string, any> => ({
   fileIds,
   title,
   validateDuration: 0,
-  shareType: 1,
-  autoFillCode: true,
+  shareType: 0, // 0: 无提取码 1: 随机生成 2: 自定义提取码
+  autoFillCode: true, // 是否自动填充提取码
   trafficLimit: "0",
   maxRestoreCount: 0,
   downloadType: 1,
@@ -56,7 +68,8 @@ const extractShareAccessToken = (payload: Record<string, any>): string => {
 /** 从响应提取任务/对象 ID */
 const extractTaskId = (payload: Record<string, any>): string => {
   const scopes: Record<string, any>[] = [];
-  const data = payload.data && typeof payload.data === "object" ? payload.data : null;
+  const data =
+    payload.data && typeof payload.data === "object" ? payload.data : null;
   if (data) scopes.push(data);
   scopes.push(payload);
   for (const scope of scopes) {
@@ -67,8 +80,11 @@ const extractTaskId = (payload: Record<string, any>): string => {
 };
 
 /** 任务状态判定 */
-const parseTaskStatus = (payload: Record<string, any>): IGuangyaTaskStatusResult => {
-  const data = payload.data && typeof payload.data === "object" ? payload.data : payload;
+const parseTaskStatus = (
+  payload: Record<string, any>,
+): IGuangyaTaskStatusResult => {
+  const data =
+    payload.data && typeof payload.data === "object" ? payload.data : payload;
   let statusVal: any = undefined;
   for (const k of ["status", "taskStatus", "state"]) {
     if (data[k] !== undefined && data[k] !== null) {
@@ -78,7 +94,11 @@ const parseTaskStatus = (payload: Record<string, any>): IGuangyaTaskStatusResult
   }
   let done = false;
   let failed = false;
-  if (statusVal !== undefined && statusVal !== null && String(statusVal).trim() !== "") {
+  if (
+    statusVal !== undefined &&
+    statusVal !== null &&
+    String(statusVal).trim() !== ""
+  ) {
     const status = String(statusVal).trim().toLowerCase();
     switch (status) {
       case "2":
@@ -100,10 +120,19 @@ const parseTaskStatus = (payload: Record<string, any>): IGuangyaTaskStatusResult
     }
   } else {
     const msg = extractGuangyaMessage(payload).toLowerCase();
-    if (msg.includes("完成") || msg.includes("成功") || msg.includes("finished") || msg.includes("success")) {
+    if (
+      msg.includes("完成") ||
+      msg.includes("成功") ||
+      msg.includes("finished") ||
+      msg.includes("success")
+    ) {
       done = true;
     }
-    if (msg.includes("失败") || msg.includes("error") || msg.includes("failed")) {
+    if (
+      msg.includes("失败") ||
+      msg.includes("error") ||
+      msg.includes("failed")
+    ) {
       failed = true;
     }
   }
@@ -139,7 +168,10 @@ export class GuangyaShareApi {
   /**
    * 提取码换分享访问令牌（匿名）
    */
-  async shareAccessToken(shareId: string, code = ""): Promise<IGuangyaShareAccessTokenResult> {
+  async shareAccessToken(
+    shareId: string,
+    code = "",
+  ): Promise<IGuangyaShareAccessTokenResult> {
     const payload = await this.client.postJSONAnonymous<Record<string, any>>(
       `${GUANGYA_API_USER_RES}/get_share_access_token`,
       { shareId, code },
@@ -151,7 +183,9 @@ export class GuangyaShareApi {
   /**
    * 分享文件列表（匿名，分页从 1 起）
    */
-  async shareFilesList(param: IGuangyaShareFilesListParam): Promise<IGuangyaShareFilesListResult> {
+  async shareFilesList(
+    param: IGuangyaShareFilesListParam,
+  ): Promise<IGuangyaShareFilesListResult> {
     const { accessToken, parentId = "", page = 1, pageSize = 50 } = param;
     const payload = await this.client.postJSONAnonymous<Record<string, any>>(
       `${GUANGYA_API_USER_RES}/get_share_page_files_list`,
@@ -177,7 +211,9 @@ export class GuangyaShareApi {
   /**
    * 转存分享到自己盘（不返回新 fid，靠目录 diff）
    */
-  async restoreShare(param: IGuangyaRestoreParam): Promise<IGuangyaRestoreResult> {
+  async restoreShare(
+    param: IGuangyaRestoreParam,
+  ): Promise<IGuangyaRestoreResult> {
     const { accessToken, fileIds, parentId } = param;
     const payload = await this.client.postJSON<Record<string, any>>(
       `${GUANGYA_API_USER_RES}/restore_share`,
@@ -215,7 +251,9 @@ export class GuangyaShareApi {
         throw ApiError.create(status.message || "guangya task failed");
       }
       if (status.done) return status;
-      await new Promise((resolve) => setTimeout(resolve, GUANGYA_TASK_POLL_INTERVAL));
+      await new Promise((resolve) =>
+        setTimeout(resolve, GUANGYA_TASK_POLL_INTERVAL),
+      );
     }
     throw ApiError.create("guangya task timed out");
   }
@@ -223,7 +261,9 @@ export class GuangyaShareApi {
   /**
    * 创建分享
    */
-  async createShare(param: IGuangyaCreateShareParam): Promise<IGuangyaCreateShareResult> {
+  async createShare(
+    param: IGuangyaCreateShareParam,
+  ): Promise<IGuangyaCreateShareResult> {
     const { fileIds, title = "资源分享" } = param;
     const payload = await this.client.postJSON<Record<string, any>>(
       `${GUANGYA_API_USER_RES_V2}/share_file`,
@@ -232,10 +272,13 @@ export class GuangyaShareApi {
     if (!isGuangyaSuccess(payload)) {
       raiseApiError(payload, "guangya create share failed");
     }
-    const data = payload.data && typeof payload.data === "object" ? payload.data : {};
+    const data =
+      payload.data && typeof payload.data === "object" ? payload.data : {};
     const shareUrl = clean(data["shareUrl"]);
     if (!shareUrl) {
-      throw ApiError.create("guangya create share success but missing shareUrl");
+      throw ApiError.create(
+        "guangya create share success but missing shareUrl",
+      );
     }
     const code = clean(data["code"]);
     return { shareUrl, code: code || undefined, raw: payload };
@@ -254,16 +297,14 @@ export const isGuangyaURL = (rawURL: string): boolean => {
  * 提取码优先级：URL 查询参数(code/pwd/passcode/accessCode)。
  * 注意：分享标识大小写敏感，禁止对 URL 整体 ToLower。
  */
-export const parseGuangyaShareURL = (rawURL: string): IGuangyaParsedShareURL => {
-  let normalized = rawURL.trim();
-  normalized = normalized.replace(/？/g, "?").replace(/＆/g, "&");
-  normalized = normalized.split(/\s+/).join("");
-
+export const parseGuangyaShareURL = (
+  rawURL: string,
+): IGuangyaParsedShareURL => {
   let shareId = "";
   let passcode = "";
 
   try {
-    const url = new URL(normalized);
+    const url = new URL(rawURL);
     const params = url.searchParams;
 
     const getCI = (...keys: string[]): string => {
@@ -302,14 +343,21 @@ export const parseGuangyaShareURL = (rawURL: string): IGuangyaParsedShareURL => 
   } catch {
     // URL 解析失败，尝试正则提取
     // 提取码
-    const passcodeMatch = normalized.match(/[?&](?:code|pwd|passcode|accessCode)=([^&#]+)/i);
+    const passcodeMatch = rawURL.match(
+      /[?&](?:code|pwd|passcode|accessCode)=([^&#]+)/i,
+    );
     if (passcodeMatch) passcode = decodeURIComponent(passcodeMatch[1]);
     // 路径中的分享ID
-    const pathMatch = normalized.match(/\/(?:s|share|link|download)\/([^/?#]+)/i);
+    const pathMatch = rawURL.match(/\/(?:s|share|link|download)\/([^/?#]+)/i);
     if (pathMatch) shareId = pathMatch[1];
   }
 
   return { shareId, passcode };
 };
 
-export { extractTaskId, parseTaskStatus, extractShareAccessToken, buildSharePayload };
+export {
+  extractTaskId,
+  parseTaskStatus,
+  extractShareAccessToken,
+  buildSharePayload,
+};

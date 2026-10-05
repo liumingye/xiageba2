@@ -10,8 +10,8 @@ const TYPE_LABELS: Record<string, string> = {
   quark: "夸克网盘",
   baidu: "百度网盘",
   uc: "UC网盘",
-  xunlei: "迅雷网盘",
-  guangya: "光鸭网盘",
+  xunlei: "迅雷云盘",
+  guangya: "光鸭云盘",
 };
 
 export default defineTask({

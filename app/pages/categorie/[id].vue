@@ -119,7 +119,7 @@ watch(
     if (import.meta.client) {
       stopPanCheck();
       const ids = (data.value.data as SourceItem[])
-        .filter((item) => item.type !== "magnet")
+        .filter((item) => item.type !== "magnet" && item.type !== "guangya")
         .map((item) => item.id);
       submitPanCheck(ids);
     }

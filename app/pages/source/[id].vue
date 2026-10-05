@@ -117,9 +117,9 @@ const pageDescription = computed(() => {
 
 const pageKeywords = computed(() => {
   if (source.value) {
-    return `${source.value.title},网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷网盘,UC网盘`;
+    return `${source.value.title},网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷云盘,UC网盘`;
   }
-  return "全盘搜,网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷网盘,UC网盘";
+  return "全盘搜,网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷云盘,UC网盘";
 });
 
 const canonicalUrl = `/source/${sourceId.value}`;

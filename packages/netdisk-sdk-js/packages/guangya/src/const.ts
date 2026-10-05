@@ -12,9 +12,6 @@ export const GUANGYA_CLIENT_ID = "aMe-8VSlkrbQXpUR";
 export const GUANGYA_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36";
 
-/** 转存固定专用目录名 */
-export const GUANGYA_TRANSFER_DIR_NAME = "urldb";
-
 /** 转存任务轮询上限 */
 export const GUANGYA_TASK_POLL_MAX = 20;
 /** 转存任务轮询间隔（ms） */

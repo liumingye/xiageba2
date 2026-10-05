@@ -72,7 +72,7 @@ async function getXunleiName(client: XunleiClient): Promise<string> {
  */
 async function getGuangyaName(client: GuangyaClient): Promise<string> {
   const res = await client.fsApi.userInfo();
-  const name = res.nickname || res.phone || "";
+  const name = res.nickname || res.phone || "光鸭云盘用户";
   if (!name) throw new Error("未获取到昵称");
   return String(name);
 }

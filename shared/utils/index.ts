@@ -4,6 +4,7 @@ export type PanFilter =
   | "baidu"
   | "xunlei"
   | "uc"
+  | "guangya"
   | "ali"
   | "189"
   | "139"
@@ -16,8 +17,9 @@ export type PanFilter =
 export type PanFilterFriend =
   | "夸克网盘"
   | "百度网盘"
-  | "迅雷网盘"
+  | "迅雷云盘"
   | "UC网盘"
+  | "光鸭云盘"
   | "阿里云盘"
   | "天翼云盘"
   | "移动云盘"
@@ -32,6 +34,7 @@ export type PanFilterFriendShort =
   | "百度"
   | "迅雷"
   | "UC"
+  | "光鸭"
   | "阿里"
   | "天翼"
   | "移动"
@@ -48,6 +51,8 @@ const STORAGE_HOST_MAP: Record<string, PanFilter> = {
   "pan.xunlei.com": "xunlei",
   "fast.uc.cn": "uc",
   "drive.uc.cn": "uc",
+  "guangyapan.com": "guangya",
+  "www.guangyapan.com": "guangya",
   "alipan.com": "ali",
   "aliyundrive.com": "ali",
   "cloud.189.cn": "189",
@@ -94,8 +99,9 @@ export const getStorageType = (url: string): PanFilter => {
 const map: Partial<Record<PanFilter, PanFilterFriend>> = {
   quark: "夸克网盘",
   baidu: "百度网盘",
-  xunlei: "迅雷网盘",
+  xunlei: "迅雷云盘",
   uc: "UC网盘",
+  guangya: "光鸭云盘",
   ali: "阿里云盘",
   189: "天翼云盘",
   139: "移动云盘",
@@ -112,6 +118,7 @@ const mapShort: Partial<Record<PanFilter, PanFilterFriendShort>> = {
   baidu: "百度",
   xunlei: "迅雷",
   uc: "UC",
+  guangya: "光鸭",
   ali: "阿里",
   189: "天翼",
   139: "移动",

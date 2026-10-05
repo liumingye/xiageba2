@@ -55,13 +55,13 @@ export default defineEventHandler(async (event) => {
     if (type === "xunlei" && !refreshToken) {
       throw createError({
         statusCode: 400,
-        message: "迅雷网盘必须填写 Refresh Token",
+        message: "迅雷云盘必须填写 Refresh Token",
       });
     }
     if (type === "guangya" && !refreshToken) {
       throw createError({
         statusCode: 400,
-        message: "光鸭网盘必须填写 Refresh Token",
+        message: "光鸭云盘必须填写 Refresh Token",
       });
     }
     if (type === "baidu" && !cookie) {

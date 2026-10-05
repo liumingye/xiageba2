@@ -9,6 +9,8 @@ import type { IShareFile } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
 import type { IShareParam, IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
+import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
 import { TREE_MAX_LINE } from "#server/lib/const";
@@ -123,6 +125,8 @@ export default defineEventHandler(async (event) => {
       generatedTree = await buildBaiduTree(url);
     } else if (parsed.type === "xunlei") {
       generatedTree = await buildXunleiTree(url);
+    } else if (parsed.type === "guangya") {
+      generatedTree = await buildGuangyaTree(parsed.fid, parsed.passcode);
     } else {
       throw createError({ statusCode: 400, message: "不支持的该网盘类型" });
     }
@@ -444,6 +448,105 @@ async function walkXunlei(
           lines,
         );
       }
+    }
+  }
+}
+
+async function buildGuangyaTree(
+  shareId: string,
+  passcode: string,
+): Promise<string> {
+  const account = await getRandomAccountByType("guangya");
+  if (!account) {
+    throw createError({ statusCode: 500, message: "没有可用的网盘账号" });
+  }
+  const client = (await getClientByAccount(account)) as GuangyaClient;
+
+  // 获取分享访问令牌
+  let accessToken = "";
+  try {
+    const tokenRes = await client.shareApi.shareAccessToken(shareId, passcode);
+    accessToken = tokenRes.accessToken;
+  } catch (e: any) {
+    throw createError({
+      statusCode: 404,
+      message: `获取分享令牌失败: ${e.message || "未知错误"}`,
+    });
+  }
+
+  if (!accessToken) {
+    throw createError({ statusCode: 404, message: "获取分享令牌失败" });
+  }
+
+  const lines: string[] = [];
+  await walkGuangya(client, accessToken, "", "", 0, lines);
+  return lines.join("\n");
+}
+
+async function walkGuangya(
+  client: GuangyaClient,
+  accessToken: string,
+  parentId: string,
+  prefix: string,
+  depth: number,
+  lines: string[],
+): Promise<void> {
+  if (depth >= MAX_DEPTH) return;
+
+  const items: IGuangyaFile[] = [];
+  let page = 1;
+  const pageSize = 100;
+  const maxPages = 2;
+
+  while (page <= maxPages) {
+    const res = await client.shareApi.shareFilesList({
+      accessToken,
+      parentId,
+      page,
+      pageSize,
+    });
+
+    if (res.list && res.list.length > 0) {
+      items.push(...res.list);
+    }
+
+    if (!res.list || res.list.length < pageSize) break;
+    page++;
+  }
+
+  // 目录排前面，同类型按文件名排序
+  items.sort((a, b) => {
+    if (a.isDir && !b.isDir) return -1;
+    if (!a.isDir && b.isDir) return 1;
+    return a.fileName.localeCompare(b.fileName, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
+
+  const filtered = filterAdResults(items, "fileName", automaton_ad_filter);
+
+  for (let i = 0; i < filtered.length; i++) {
+    const item = filtered[i];
+    if (!item) continue;
+    const isLast = i === filtered.length - 1;
+    const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
+    lines.push(`${prefix}${connector}${item.fileName}`);
+
+    if (lines.length >= TREE_MAX_LINE + 5) {
+      break;
+    }
+
+    if (item.isDir) {
+      const extension = depth === 0 ? "" : isLast ? "  " : "│  ";
+      await walkGuangya(
+        client,
+        accessToken,
+        item.fid,
+        prefix + extension,
+        depth + 1,
+        lines,
+      );
     }
   }
 }

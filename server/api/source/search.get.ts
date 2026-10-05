@@ -37,6 +37,7 @@ export const PAN_HOST_MAP: Partial<Record<PanFilter, string[]>> = {
   xunlei: ["pan.xunlei.com"],
   uc: ["fast.uc.cn", "drive.uc.cn"],
   ali: ["www.alipan.com", "www.aliyundrive.com"],
+  guangya: ["www.guangyapan.com", "guangyapan.com"],
 };
 
 export default defineCachedEventHandler(
