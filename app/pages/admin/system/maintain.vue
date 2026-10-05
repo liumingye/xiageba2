@@ -254,7 +254,7 @@ onMounted(async () => {
   </section>
 
   <!-- 站点 SEO 配置（暂时隐藏） -->
-  <section class="mb-8 hidden">
+  <section class="mb-8">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-medium">SEO 配置</h2>
       <UButton
