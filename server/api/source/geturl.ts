@@ -61,6 +61,15 @@ interface PanFile {
   isDir: boolean;
 }
 
+const disableSource = async (sourceId: string) => {
+  await prisma.source.update({
+    where: { id: sourceId },
+    data: {
+      status: 0,
+    },
+  });
+};
+
 async function listFilesQuarkUC(
   fsApi: QuarkUCFSApi,
   pdirFid: string,
@@ -411,9 +420,20 @@ async function transferQuarkUC(
   }
 
   // 步骤3: 等待转存完成
-  let taskResult = await shareApi.saveTask(saveResult.task_id, true);
-  if (taskResult.status === 0) {
-    throw createError({ statusCode: 500, message: "转存任务未完成" });
+  let taskResult: ISaveTaskStateResult | null = null;
+  try {
+    taskResult = await shareApi.saveTask(saveResult.task_id, true);
+  } catch (err: any) {
+    const info = typeof err?.info === "function" ? err.info() : undefined;
+    //code: 41009 分享文件已删除
+    if (sourceId && info && info.code === 41009) {
+      // 禁用资源
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({ statusCode: 500, message: `获取失败：${err.message}` });
+  }
+  if (!taskResult || taskResult.status === 0) {
+    throw createError({ statusCode: 500, message: "获取失败：转存任务未完成" });
   }
 
   const saveAsTopFids =
@@ -424,7 +444,10 @@ async function transferQuarkUC(
   // 步骤4: 创建分享
   const shareResult = await shareApi.share(saveAsTopFids, token.title);
   if (!shareResult.task_id) {
-    throw createError({ statusCode: 500, message: "创建分享任务失败" });
+    throw createError({
+      statusCode: 500,
+      message: "获取失败：创建分享任务失败",
+    });
   }
 
   // 步骤5: 异步删除广告文件（后台执行，不阻塞分享创建）
@@ -447,29 +470,31 @@ async function transferQuarkUC(
     if (info && (info.code === 41005 || info.code === 41026)) {
       if (sourceId) {
         // 禁用资源
-        event.waitUntil(
-          prisma.source.update({
-            where: { id: sourceId },
-            data: {
-              status: 0,
-            },
-          }),
-        );
+        event.waitUntil(disableSource(sourceId));
         // 删除网盘内容
         event.waitUntil(client.fsApi.delete(saveAsTopFids));
       }
-      throw createError({ statusCode: 500, message: "文件违规，不支持分享" });
+      throw createError({
+        statusCode: 500,
+        message: "禁止分享：文件违规，不支持分享",
+      });
     }
   }
 
   if (!share_task_data || !share_task_data.share_id) {
-    throw createError({ statusCode: 500, message: "分享后未获取到分享ID" });
+    throw createError({
+      statusCode: 500,
+      message: "获取失败：分享后未获取到分享ID",
+    });
   }
 
   // 步骤7: 获取分享密码
   const password_data = await shareApi.sharePassword(share_task_data.share_id);
   if (!password_data.share_url) {
-    throw createError({ statusCode: 500, message: "获取分享密码失败" });
+    throw createError({
+      statusCode: 500,
+      message: "获取失败：获取分享密码失败",
+    });
   }
 
   let shareUrl = password_data.share_url;
@@ -857,7 +882,8 @@ export default defineEventHandler(async (event) => {
 
   if (id) {
     const source = await prisma.source.findUnique({ where: { id } });
-    if (!source) throw createError({ statusCode: 404, message: "资源不存在" });
+    if (!source || source.status === 0)
+      throw createError({ statusCode: 404, message: "资源不存在或已被删除" });
     if (source.isSelf) {
       return { url: source.url };
     }
