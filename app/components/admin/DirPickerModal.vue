@@ -11,7 +11,7 @@ interface DirItem {
 
 const props = defineProps<{
   show: boolean;
-  type: "quark" | "baidu" | "uc" | "xunlei";
+  type: "quark" | "baidu" | "uc" | "xunlei" | "guangya";
   accountId?: number;
   cookie?: string;
   refreshToken?: string;

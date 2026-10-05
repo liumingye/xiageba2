@@ -1,6 +1,7 @@
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
 import { updateRefreshTokenByAccountId } from "#server/utils/source";
 import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
 import type { PanAccount } from "#server/lib/accountCache";
@@ -9,7 +10,7 @@ import type { PanAccount } from "#server/lib/accountCache";
 const CLIENT_EXPIRE_HOURS = 0.5;
 const CLIENT_EXPIRE_MS = CLIENT_EXPIRE_HOURS * 60 * 60 * 1000;
 
-export type PanClient = QuarkUCClient | BaiduClient | XunleiClient;
+export type PanClient = QuarkUCClient | BaiduClient | XunleiClient | GuangyaClient;
 
 interface CachedClient {
   client: PanClient;
@@ -124,6 +125,29 @@ export async function getClientByAccount(
       break;
     }
 
+    case "guangya": {
+      if (!account.refreshToken) {
+        throw createError({
+          statusCode: 500,
+          message: `账号 ${account.id} 未配置 Refresh Token，请先在账号管理中配置`,
+        });
+      }
+      // device_id 复用 cookie 字段持久化，缺省时自动生成
+      client = new GuangyaClient({
+        refreshToken: account.refreshToken,
+        accessToken: account.accessToken || undefined,
+        deviceId: account.cookie || undefined,
+        expiresAt: account.expiresAt ? account.expiresAt.getTime() : undefined,
+        onRefreshToken: (info) =>
+          updateRefreshTokenByAccountId(account.id, {
+            refreshToken: info.refreshToken || "",
+            accessToken: info.accessToken,
+            expiresAt: info.expiresAt || Date.now(),
+          }),
+      });
+      break;
+    }
+
     default:
       throw createError({
         statusCode: 500,
@@ -196,6 +220,20 @@ export async function createTempClient(params: {
         });
       }
       return new XunleiClient({
+        refreshToken,
+        accessToken: accessToken || undefined,
+        expiresAt: expiresAt ? expiresAt.getTime() : undefined,
+      });
+    }
+
+    case "guangya": {
+      if (!refreshToken) {
+        throw createError({
+          statusCode: 400,
+          message: "请先填写 Refresh Token",
+        });
+      }
+      return new GuangyaClient({
         refreshToken,
         accessToken: accessToken || undefined,
         expiresAt: expiresAt ? expiresAt.getTime() : undefined,

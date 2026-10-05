@@ -3,7 +3,7 @@ import { clearAccountCache } from "#server/lib/accountCache";
 import { cleanClient } from "#server/lib/pan-instance";
 import { getAccountNameByCredentials } from "#server/lib/pan-info";
 
-const VALID_TYPES = ["quark", "baidu", "uc", "xunlei"];
+const VALID_TYPES = ["quark", "baidu", "uc", "xunlei", "guangya"];
 
 export default defineEventHandler(async (event) => {
   const method = event.method;

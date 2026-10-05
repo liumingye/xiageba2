@@ -4,6 +4,7 @@ import type { PanClient } from "#server/lib/pan-instance";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
+import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
 
 interface DirItem {
   id: string;
@@ -36,13 +37,29 @@ async function listDirs(client: PanClient): Promise<DirItem[]> {
   }
 
   // XunleiClient
-  const res = await client.fsApi.listFiles({
-    parentId: "",
-    limit: 100,
-  });
-  return (res.list || [])
-    .filter((f) => f.is_dir)
-    .map((f) => ({ id: f.id, name: f.name }));
+  if (client instanceof XunleiClient) {
+    const res = await client.fsApi.listFiles({
+      parentId: "",
+      limit: 100,
+    });
+    return (res.list || [])
+      .filter((f) => f.is_dir)
+      .map((f) => ({ id: f.id, name: f.name }));
+  }
+
+  // GuangyaClient
+  if (client instanceof GuangyaClient) {
+    const res = await client.fsApi.listFiles({
+      parentId: "",
+      page: 0,
+      pageSize: 100,
+    });
+    return (res.list || [])
+      .filter((f) => f.isDir)
+      .map((f) => ({ id: f.fid, name: f.fileName }));
+  }
+
+  return [];
 }
 
 export default defineEventHandler(async (event) => {

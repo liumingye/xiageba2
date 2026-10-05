@@ -2,7 +2,7 @@ import { prisma } from "#server/lib/prisma";
 import { clearAccountCache } from "#server/lib/accountCache";
 import { getAccountNameByCredentials } from "#server/lib/pan-info";
 
-const VALID_TYPES = ["quark", "baidu", "uc", "xunlei"];
+const VALID_TYPES = ["quark", "baidu", "uc", "xunlei", "guangya"];
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
@@ -56,6 +56,12 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 400,
         message: "迅雷网盘必须填写 Refresh Token",
+      });
+    }
+    if (type === "guangya" && !refreshToken) {
+      throw createError({
+        statusCode: 400,
+        message: "光鸭网盘必须填写 Refresh Token",
       });
     }
     if (type === "baidu" && !cookie) {

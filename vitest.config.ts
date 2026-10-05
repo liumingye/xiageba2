@@ -36,6 +36,10 @@ export default defineConfig({
         root,
         "packages/netdisk-sdk-js/packages/xunlei-sdk/src",
       ),
+      "@netdisk-sdk/guangya-sdk": path.resolve(
+        root,
+        "packages/netdisk-sdk-js/packages/guangya-sdk/src",
+      ),
       "@netdisk-sdk/utils": path.resolve(
         root,
         "packages/netdisk-sdk-js/packages/utils/src",

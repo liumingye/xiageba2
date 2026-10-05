@@ -1,7 +1,7 @@
 {
-  "name": "@netdisk-sdk/xunlei-sdk",
+  "name": "@netdisk-sdk/guangya-sdk",
   "version": "0.1.0",
-  "description": "xunlei netdisk sdk",
+  "description": "guangya netdisk sdk",
   "source": "src/index.ts",
   "main": "dist/main.cjs",
   "module": "dist/module.mjs",
@@ -11,7 +11,7 @@
     "watch": "parcel watch",
     "build": "parcel build"
   },
-  "homepage": "https://github.com/liumingye/xiageba2/tree/main/packages/netdisk-sdk-js/packages/xunlei-sdk",
+  "homepage": "https://github.com/liumingye/xiageba2/tree/main/packages/netdisk-sdk-js/packages/guangya",
   "repository": {
     "type": "git",
     "url": "https://github.com/liumingye/xiageba2"

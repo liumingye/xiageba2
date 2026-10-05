@@ -397,6 +397,10 @@ export default defineNuxtConfig({
         __dirname,
         "./packages/netdisk-sdk-js/packages/baidu-sdk/src",
       ),
+      "@netdisk-sdk/guangya-sdk": path.resolve(
+        __dirname,
+        "./packages/netdisk-sdk-js/packages/guangya/src",
+      ),
       "@netdisk-sdk/quarkuc-sdk": path.resolve(
         __dirname,
         "./packages/netdisk-sdk-js/packages/quarkuc-sdk/src",

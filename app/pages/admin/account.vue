@@ -4,8 +4,6 @@ import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { Loader2, KeyRound, UserCog } from "@lucide/vue";
-import AdminNav from "~/components/admin/AdminNav.vue";
-import AdminHeader from "~/components/admin/AdminHeader.vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { getPanTypeLabel } from "~/utils/pan";
 
@@ -29,7 +27,7 @@ interface AccountListItem {
 
 interface AccountFormData {
   id?: number;
-  type: "quark" | "baidu" | "uc" | "xunlei";
+  type: "quark" | "baidu" | "uc" | "xunlei" | "guangya";
   cookie: string;
   refreshToken: string;
   accessToken: string;
@@ -159,6 +157,15 @@ const saveForm = async () => {
     });
     return;
   }
+  if (f.type === "guangya" && !f.refreshToken) {
+    toast.add({
+      title: "请填写 Refresh Token",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
+    return;
+  }
 
   formSaving.value = true;
   try {
@@ -279,7 +286,7 @@ const openDirPicker = () => {
         });
         return;
       }
-    } else if (t === "xunlei") {
+    } else if (t === "xunlei" || t === "guangya") {
       if (!formData.value.refreshToken) {
         toast.add({
           title: "请先填写 Refresh Token",
@@ -390,7 +397,7 @@ const groupedAccounts = computed(() => {
   return groups;
 });
 
-const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
+const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya"];
 </script>
 
 <template>
@@ -510,7 +517,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
 
           <div class="space-y-1.5 text-xs">
             <div
-              v-if="type !== 'xunlei'"
+              v-if="type !== 'xunlei' && type !== 'guangya'"
               class="flex items-center gap-2 text-color-500"
             >
               <span class="w-16 shrink-0">Cookie</span>
@@ -521,7 +528,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               </span>
             </div>
             <div
-              v-if="type === 'baidu' || type === 'xunlei'"
+              v-if="type === 'baidu' || type === 'xunlei' || type === 'guangya'"
               class="flex items-center gap-2 text-color-500"
             >
               <span class="w-16 shrink-0">Token</span>
@@ -587,6 +594,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
               { label: '百度网盘', value: 'baidu' },
               { label: 'UC 网盘', value: 'uc' },
               { label: '迅雷云盘', value: 'xunlei' },
+              { label: '光鸭网盘', value: 'guangya' },
             ]"
             :disabled="formIsEdit"
             class="w-full"
@@ -594,7 +602,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
         </div>
 
         <!-- Cookie -->
-        <div v-if="formData.type !== 'xunlei'">
+        <div v-if="formData.type !== 'xunlei' && formData.type !== 'guangya'">
           <label class="block text-color-400 text-sm mb-2" for="form-cookie"
             >Cookie</label
           >
@@ -648,7 +656,13 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei"];
         </div>
 
         <!-- Refresh Token -->
-        <div v-if="formData.type === 'baidu' || formData.type === 'xunlei'">
+        <div
+          v-if="
+            formData.type === 'baidu' ||
+            formData.type === 'xunlei' ||
+            formData.type === 'guangya'
+          "
+        >
           <label class="block text-color-400 text-sm mb-2" for="form-refresh"
             >Refresh Token</label
           >
