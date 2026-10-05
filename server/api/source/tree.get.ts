@@ -85,11 +85,12 @@ export default defineEventHandler(async (event) => {
         title: true,
         description: true,
         menu: true,
+        status: true,
       },
       where: { id },
     });
-    if (!source) {
-      throw createError({ statusCode: 404, message: "资源不存在" });
+    if (!source || source.status === 0) {
+      throw createError({ statusCode: 404, message: "资源不存在或已被删除" });
     }
     url = source.url;
     sourceTitle = source.title || "";

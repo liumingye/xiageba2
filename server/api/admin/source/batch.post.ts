@@ -4,10 +4,6 @@ import { prisma } from "#server/lib/prisma";
 const BATCH_MAX = 1000;
 
 export default defineEventHandler(async (event) => {
-  if (event.method !== "POST") {
-    throw createError({ statusCode: 405, message: "不支持的请求方法" });
-  }
-
   const body = await readBody(event);
   const { action, ids, status, cid } = body;
 

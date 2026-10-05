@@ -191,68 +191,101 @@ export default defineEventHandler(async (event) => {
     const {
       cid,
       title,
-      url,
+      urls,
       description,
       menu,
       isSelf,
       force,
       updateExisting,
+      skipDuplicates,
     } = body;
 
     if (!title?.trim()) {
       throw createError({ statusCode: 400, message: "资源名称不能为空" });
     }
-    if (!url?.trim()) {
+
+    // urls 地址数组（批量添加，自动去重）
+    const rawList: string[] = Array.isArray(urls)
+      ? urls.map((u: unknown) => String(u ?? "").trim())
+      : [];
+    const urlList = [...new Set(rawList.filter(Boolean))];
+
+    if (urlList.length === 0) {
       throw createError({ statusCode: 400, message: "资源地址不能为空" });
     }
 
-    const existing = await prisma.source.findFirst({
-      where: { url: url.trim() },
-      select: { id: true, title: true, cid: true },
+    const baseData = {
+      cid: Number(cid) || null,
+      title: title.trim(),
+      description: description || "",
+      menu: menu || "",
+      isSelf: isSelf || false,
+    };
+
+    // 先整体检测重复，有重复且未选择处理方式时返回 409，由前端弹窗选择
+    const existingList = await prisma.source.findMany({
+      where: { url: { in: urlList } },
+      select: { id: true, title: true, url: true },
     });
-    if (existing && !force && !updateExisting) {
-      // 地址重复：返回 409 并携带已有资源信息，由前端弹窗选择处理方式
+    const existingMap = new Map(existingList.map((item) => [item.url, item]));
+
+    // skipDuplicates：跳过重复地址，仅添加不重复的
+    if (
+      existingList.length > 0 &&
+      !force &&
+      !updateExisting &&
+      !skipDuplicates
+    ) {
       throw createError({
         statusCode: 409,
-        message: `资源地址已存在（ID: ${existing.id}，名称: ${existing.title}）`,
-        data: { existing },
+        message: `${existingList.length} 个资源地址已存在`,
+        data: { duplicates: existingList },
       });
     }
 
-    // 选择「更新资源信息」：用本次提交的内容覆盖已有资源（url 不变）
-    if (existing && updateExisting) {
-      const source = await prisma.source.update({
-        where: { id: existing.id },
-        data: {
-          cid: Number(cid) || null,
-          title: title.trim(),
-          description: description || "",
-          menu: menu || "",
-          isSelf: isSelf || false,
-        },
-      });
+    const result = {
+      inserted: 0,
+      updated: 0,
+      duplicate: 0,
+      failed: 0,
+    };
 
-      await updateSearchVector(source);
+    for (const itemUrl of urlList) {
+      try {
+        const existing = existingMap.get(itemUrl);
 
-      return { success: true, data: source, updated: true };
+        if (existing) {
+          if (updateExisting) {
+            const source = await prisma.source.update({
+              where: { id: existing.id },
+              data: baseData,
+            });
+            await updateSearchVector(source);
+            result.updated++;
+          } else if (force) {
+            // 强制添加：即使地址重复也插入新记录
+            const source = await prisma.source.create({
+              data: { ...baseData, url: itemUrl },
+            });
+            await updateSearchVector(source);
+            result.inserted++;
+          } else {
+            result.duplicate++;
+          }
+          continue;
+        }
+
+        const source = await prisma.source.create({
+          data: { ...baseData, url: itemUrl },
+        });
+        await updateSearchVector(source);
+        result.inserted++;
+      } catch {
+        result.failed++;
+      }
     }
 
-    // 无重复，或选择「强制继续添加」
-    const source = await prisma.source.create({
-      data: {
-        cid: Number(cid) || null,
-        title: title.trim(),
-        url: url.trim(),
-        description: description || "",
-        menu: menu || "",
-        isSelf: isSelf || false,
-      },
-    });
-
-    // jieba 分词后更新 searchVector
-    await updateSearchVector(source);
-
-    return { success: true, data: source };
+    return { success: true, ...result };
   }
 
   throw createError({ statusCode: 405, message: "不支持的请求方法" });

@@ -106,7 +106,15 @@ const showAddModal = ref(false);
 const showEditModal = ref(false);
 const newCid = ref<string>(NO_CATEGORY);
 const newTitle = ref("");
-const newUrl = ref("");
+// 添加弹窗：多个资源地址输入框，默认 3 个
+const newUrls = ref<string[]>(["", "", ""]);
+const addUrlInput = () => {
+  newUrls.value.push("");
+};
+const removeUrlInput = (index: number) => {
+  if (newUrls.value.length <= 1) return;
+  newUrls.value.splice(index, 1);
+};
 const newDescription = ref("");
 const newMenu = ref("");
 const newIsSelf = ref(false);
@@ -212,20 +220,7 @@ const goToPage = (page: number) => {
   loadSources();
 };
 
-const handleSearch = () => {
-  currentPage.value = 1;
-  const query: Record<string, string> = { page: "1" };
-  const cid = cidParam(filterCid.value);
-  if (cid) {
-    query.cid = cid;
-  }
-  if (keyword.value.trim()) {
-    query.q = keyword.value.trim();
-  }
-  router.push({ query });
-  loadSources();
-};
-
+/** 搜索/筛选变更：重置页码并同步 URL 查询参数后加载列表 */
 const handleFilterChange = () => {
   currentPage.value = 1;
   const query: Record<string, string> = { page: "1" };
@@ -243,7 +238,7 @@ const handleFilterChange = () => {
 const openAddModal = () => {
   showAddModal.value = true;
   newTitle.value = "";
-  newUrl.value = "";
+  newUrls.value = ["", "", ""];
   newDescription.value = "";
   newMenu.value = "";
   newIsSelf.value = false;
@@ -303,11 +298,7 @@ const fetchMenu = async () => {
 const addSourceing = ref(false);
 // 地址重复时的选择弹窗
 const showDuplicateModal = ref(false);
-const duplicateInfo = ref<{
-  id: string;
-  title: string;
-  cid?: number | null;
-} | null>(null);
+const duplicateList = ref<{ id: string; title: string; url: string }[]>([]);
 const duplicateSubmitting = ref(false);
 
 const addSource = async () => {
@@ -316,7 +307,8 @@ const addSource = async () => {
     error.value = "资源名称不能为空";
     return;
   }
-  if (!newUrl.value.trim()) {
+  const urls = parseNewUrls();
+  if (!urls.length) {
     error.value = "资源地址不能为空";
     return;
   }
@@ -324,22 +316,30 @@ const addSource = async () => {
   addSourceing.value = true;
 
   try {
-    await post("/api/admin/source", {
+    const data = await post("/api/admin/source", {
       cid: toApiCid(newCid.value),
       title: newTitle.value,
-      url: newUrl.value,
+      urls,
       description: newDescription.value,
       menu: newMenu.value,
       isSelf: newIsSelf.value,
     });
+    if (urls.length > 1) {
+      // 多地址批量添加：后端逐条处理并返回统计
+      toast.add({
+        title: `添加完成：成功 ${data.inserted} 条，更新 ${data.updated} 条，重复 ${data.duplicate} 条，失败 ${data.failed} 条`,
+        icon: "i-lucide-check",
+        color: "success",
+      });
+    }
     closeAddModal();
     await loadSources();
   } catch (e: any) {
     const status = e?.response?.status;
     const err = e?.response?.data;
     if (status === 409) {
-      // 地址重复，弹出选择窗口：强制添加 / 更新资源信息 / 取消
-      duplicateInfo.value = err?.data?.existing || err?.existing || null;
+      // 地址重复，弹出选择窗口：更新 / 强制添加 / 跳过重复 / 取消
+      duplicateList.value = err?.data?.duplicates || [];
       showDuplicateModal.value = true;
       error.value = "";
     } else {
@@ -354,15 +354,18 @@ const addSource = async () => {
 const resolveDuplicate = async (opts: {
   force?: boolean;
   updateExisting?: boolean;
+  skipDuplicates?: boolean;
 }) => {
   if (duplicateSubmitting.value) return;
   duplicateSubmitting.value = true;
+
+  const urls = parseNewUrls();
 
   try {
     const data = await post("/api/admin/source", {
       cid: toApiCid(newCid.value),
       title: newTitle.value,
-      url: newUrl.value,
+      urls,
       description: newDescription.value,
       menu: newMenu.value,
       isSelf: newIsSelf.value,
@@ -371,11 +374,26 @@ const resolveDuplicate = async (opts: {
     if (data.success) {
       closeDuplicateModal();
       closeAddModal();
-      toast.add({
-        title: data.updated ? "已更新资源信息" : "资源添加成功",
-        icon: "i-lucide-check",
-        color: "success",
-      });
+      if (urls.length > 1) {
+        // 多地址批量处理：显示统计
+        toast.add({
+          title: `处理完成：成功 ${data.inserted} 条，更新 ${data.updated} 条，重复 ${data.duplicate} 条，失败 ${data.failed} 条`,
+          icon: "i-lucide-check",
+          color: "success",
+        });
+      } else if (opts.skipDuplicates) {
+        toast.add({
+          title: "已跳过重复地址，未添加新资源",
+          icon: "i-lucide-check",
+          color: "success",
+        });
+      } else {
+        toast.add({
+          title: data.updated ? "已更新资源信息" : "资源添加成功",
+          icon: "i-lucide-check",
+          color: "success",
+        });
+      }
       await loadSources();
     }
   } catch (e: any) {
@@ -389,7 +407,7 @@ const resolveDuplicate = async (opts: {
 
 const closeDuplicateModal = () => {
   showDuplicateModal.value = false;
-  duplicateInfo.value = null;
+  duplicateList.value = [];
 };
 
 const saveEditing = ref(false);
@@ -427,13 +445,9 @@ const saveEdit = async () => {
 
 const toggleStatus = async (item: Source) => {
   const newStatus = item.status === 1 ? 0 : 1;
-  const id = item.id;
-  if (!id) {
-    throw createError({ statusCode: 400, message: "缺少资源ID" });
-  }
 
   try {
-    await put(`/api/admin/source/${id}`, {
+    await put(`/api/admin/source/${item.id}`, {
       status: newStatus,
     });
     await loadSources();
@@ -625,29 +639,42 @@ function purifyUrl(input: string): string {
   return url;
 }
 
-/** 粘贴剪贴板内容并自动净化 */
-async function pasteAndPurify(target: "add" | "edit") {
+/** 解析添加弹窗中多个输入框的地址，返回去重后的地址数组 */
+function parseNewUrls(): string[] {
+  return [...new Set(newUrls.value.map((url) => url.trim()).filter(Boolean))];
+}
+
+/** 粘贴剪贴板内容到添加弹窗指定输入框并自动净化 */
+async function pasteAndPurifyAt(index: number) {
   try {
     const raw = await navigator.clipboard.readText();
     if (!raw) return;
-    const purified = purifyUrl(raw);
-    if (target === "add") {
-      newUrl.value = purified;
-    } else {
-      editUrl.value = purified;
-    }
+    newUrls.value[index] = purifyUrl(raw);
   } catch {
     toast.add({ title: "无法读取剪贴板", color: "error" });
   }
 }
 
-/** 净化当前输入框中的链接 */
-function purifyCurrent(target: "add" | "edit") {
-  if (target === "add") {
-    newUrl.value = purifyUrl(newUrl.value);
-  } else {
-    editUrl.value = purifyUrl(editUrl.value);
+/** 净化添加弹窗指定输入框中的链接 */
+function purifyCurrentAt(index: number) {
+  if (!newUrls.value[index]) return;
+  newUrls.value[index] = purifyUrl(newUrls.value[index]);
+}
+
+/** 粘贴剪贴板内容到编辑弹窗并自动净化 */
+async function pasteAndPurifyEdit() {
+  try {
+    const raw = await navigator.clipboard.readText();
+    if (!raw) return;
+    editUrl.value = purifyUrl(raw);
+  } catch {
+    toast.add({ title: "无法读取剪贴板", color: "error" });
   }
+}
+
+/** 净化编辑弹窗输入框中的链接 */
+function purifyCurrentEdit() {
+  editUrl.value = purifyUrl(editUrl.value);
 }
 
 const openImportModal = () => {
@@ -844,7 +871,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
       type="text"
       placeholder="搜索资源名称或链接"
       class="max-w-md w-full"
-      @keyup.enter="handleSearch"
+      @keyup.enter="handleFilterChange"
     />
     <div class="flex items-center gap-3">
       <USelect
@@ -1118,35 +1145,68 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
         </div>
         <div>
           <div class="flex gap-2 mb-2 items-center">
-            <label class="block text-color-400 text-sm flex-1" for="new-url"
+            <label class="block text-color-400 text-sm flex-1"
               >资源地址 *</label
             >
             <UButton
               size="sm"
               color="neutral"
               variant="soft"
-              icon="i-lucide-clipboard"
-              @click="pasteAndPurify('add')"
+              icon="i-lucide-plus"
+              @click="addUrlInput"
             >
-              粘贴
-            </UButton>
-            <UButton
-              size="sm"
-              color="neutral"
-              variant="soft"
-              icon="i-lucide-sparkles"
-              @click="purifyCurrent('add')"
-            >
-              净化
+              添加地址
             </UButton>
           </div>
-          <UInput
-            id="new-url"
-            v-model="newUrl"
-            type="text"
-            placeholder="请输入网盘链接"
-            class="w-full"
-          />
+          <div class="space-y-2 sm:space-y-1">
+            <div
+              v-for="(_, index) in newUrls"
+              :key="index"
+              class="flex flex-col sm:flex-row gap-2 sm:gap-1 sm:items-center"
+            >
+              <UInput
+                v-model="newUrls[index]"
+                type="text"
+                :placeholder="`网盘链接 ${index + 1}`"
+                class="w-full sm:flex-1"
+                size="sm"
+              />
+              <div class="flex gap-2 sm:gap-1">
+                <UButton
+                  size="sm"
+                  color="neutral"
+                  variant="soft"
+                  icon="i-lucide-clipboard"
+                  class="flex-1 sm:flex-none justify-center"
+                  :aria-label="`粘贴地址 ${index + 1}`"
+                  @click="pasteAndPurifyAt(index)"
+                >
+                  粘贴
+                </UButton>
+                <UButton
+                  size="sm"
+                  color="neutral"
+                  variant="soft"
+                  icon="i-lucide-sparkles"
+                  class="flex-1 sm:flex-none justify-center"
+                  :aria-label="`净化地址 ${index + 1}`"
+                  @click="purifyCurrentAt(index)"
+                >
+                  净化
+                </UButton>
+                <UButton
+                  v-if="newUrls.length > 1"
+                  size="sm"
+                  color="error"
+                  variant="soft"
+                  square
+                  icon="i-lucide-x"
+                  :aria-label="`删除地址 ${index + 1}`"
+                  @click="removeUrlInput(index)"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2" for="new-desc"
@@ -1197,21 +1257,29 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
         color="warning"
         variant="soft"
         icon="i-lucide-triangle-alert"
-        title="输入的资源地址已存在于以下资源，请选择处理方式"
+        :title="
+          duplicateList.length > 1
+            ? `输入的资源地址中有 ${duplicateList.length} 个已存在，请选择处理方式`
+            : '输入的资源地址已存在于以下资源，请选择处理方式'
+        "
         class="mb-4"
       />
-      <div class="space-y-2 text-sm break-all">
-        <p>
-          <span class="text-color-500">资源 ID：</span>{{ duplicateInfo?.id }}
-        </p>
-        <p>
-          <span class="text-color-500">资源名称：</span
-          >{{ duplicateInfo?.title }}
-        </p>
+      <div class="space-y-3 text-sm break-all max-h-60 overflow-y-auto">
+        <div
+          v-for="dup in duplicateList"
+          :key="dup.id"
+          class="border-b border-default pb-2 last:border-b-0 last:pb-0"
+        >
+          <p><span class="text-color-500">资源 ID：</span>{{ dup.id }}</p>
+          <p><span class="text-color-500">资源名称：</span>{{ dup.title }}</p>
+          <p class="text-xs">
+            <span class="text-color-500">资源地址：</span>{{ dup.url }}
+          </p>
+        </div>
       </div>
     </template>
     <template #footer>
-      <div class="flex gap-3">
+      <div class="flex flex-wrap justify-end gap-3">
         <UButton
           color="primary"
           icon="i-lucide-refresh-cw"
@@ -1230,6 +1298,16 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
           @click="resolveDuplicate({ force: true })"
         >
           强制继续添加
+        </UButton>
+        <UButton
+          color="primary"
+          variant="soft"
+          icon="i-lucide-skip-forward"
+          :loading="duplicateSubmitting"
+          :disabled="duplicateSubmitting"
+          @click="resolveDuplicate({ skipDuplicates: true })"
+        >
+          跳过重复
         </UButton>
         <UButton
           color="neutral"
@@ -1300,7 +1378,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
               color="neutral"
               variant="soft"
               icon="i-lucide-clipboard"
-              @click="pasteAndPurify('edit')"
+              @click="pasteAndPurifyEdit"
             >
               粘贴
             </UButton>
@@ -1309,7 +1387,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
               color="neutral"
               variant="soft"
               icon="i-lucide-sparkles"
-              @click="purifyCurrent('edit')"
+              @click="purifyCurrentEdit"
             >
               净化
             </UButton>

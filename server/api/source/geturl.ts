@@ -922,7 +922,15 @@ export default defineEventHandler(async (event) => {
   }
 
   if (id) {
-    const source = await prisma.source.findUnique({ where: { id } });
+    const source = await prisma.source.findUnique({
+      select: {
+        id: true,
+        url: true,
+        status: true,
+        isSelf: true,
+      },
+      where: { id },
+    });
     if (!source || source.status === 0)
       throw createError({ statusCode: 404, message: "文件不存在或已被删除" });
     if (source.isSelf) {
