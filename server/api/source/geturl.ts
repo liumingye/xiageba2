@@ -391,6 +391,13 @@ async function transferQuarkUC(
   passcode: string,
   sourceId?: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
+  // `41010` | 违规内容 | 文件涉及违规内容
+  // `41012` | 分享已取消 | 好友已取消了分享
+  // `41008` | 未提供提取码 | 当前分享链接需要提取码，请填写提取码。
+  // `41007` | 提取码错误 | 提取码错误，请检查后再试。
+  // `41009` | 分享文件已删除
+  // `41005` | 选中的文件违规，不支持分享
+  // `41026` | 选中的文件违规，不支持分享
   const tempDirId = account.tempDir || "";
   const client = (await getClientByAccount(account)) as QuarkUCClient;
   const shareApi = client.shareApi;
@@ -404,9 +411,14 @@ async function transferQuarkUC(
     | undefined;
   try {
     token = await shareApi.token(pwdId, passcode);
-  } catch (e: any) {
+  } catch (err: any) {
     // 处理分享不存在的情况
-    throw createError({ statusCode: 404, message: e.message });
+    const info = typeof err?.info === "function" ? err.info() : undefined;
+    if (sourceId && info && [41012, 41010, 41007, 41008].includes(info.code)) {
+      // 禁用资源
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({ statusCode: 404, message: err.message });
   }
 
   if (!token?.stoken) {
@@ -425,8 +437,7 @@ async function transferQuarkUC(
     taskResult = await shareApi.saveTask(saveResult.task_id, true);
   } catch (err: any) {
     const info = typeof err?.info === "function" ? err.info() : undefined;
-    //code: 41009 分享文件已删除
-    if (sourceId && info && info.code === 41009) {
+    if (sourceId && info && [41009].includes(info.code)) {
       // 禁用资源
       event.waitUntil(disableSource(sourceId));
     }
@@ -467,7 +478,7 @@ async function transferQuarkUC(
   } catch (err: any) {
     const info = typeof err?.info === "function" ? err.info() : undefined;
     // 选中的文件违规，不支持分享
-    if (info && (info.code === 41005 || info.code === 41026)) {
+    if (info && [41005, 41026].includes(info.code)) {
       if (sourceId) {
         // 禁用资源
         event.waitUntil(disableSource(sourceId));
@@ -517,6 +528,7 @@ async function transferBaidu(
   event: H3Event<EventHandlerRequest>,
   account: PanAccount,
   _shareUrl: string,
+  sourceId?: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
   let tempDir = account.tempDir || "/";
 
@@ -536,12 +548,19 @@ async function transferBaidu(
       num: 1000,
       root: 1,
     });
-  } catch (err) {
-    throw createError({ statusCode: 404, message: "分享已过期" });
+  } catch (err: any) {
+    // errtype: 1 | 啊哦，你来晚了，分享的文件已经被取消了，下次要早点哟。
+    // errtype: 3 | 此链接分享内容可能因为涉及侵权、色情、反动、低俗等信息，无法访问！
+    const info = typeof err?.info === "function" ? err.info() : undefined;
+    if (sourceId && info && [1, 3].includes(info.code)) {
+      // 禁用资源
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({ statusCode: 404, message: "文件违规或分享已过期" });
   }
 
   if (!shareInfo.list || shareInfo.list.length === 0) {
-    throw createError({ statusCode: 404, message: "分享内容为空" });
+    throw createError({ statusCode: 404, message: "文件不存在或已被删除" });
   }
 
   const fsids = shareInfo.list.map((f: { fs_id: any }) => f.fs_id);
@@ -673,7 +692,12 @@ async function transferXunlei(
   account: PanAccount,
   shareId: string,
   passCode: string,
+  sourceId?: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
+  // share_status: SENSITIVE_RESOURCE | 分享包含敏感资源
+  // share_status: EXPIRED | 分享已过期
+  // share_status: DELETED | 分享已删除
+  // share_status: PROHIBITED | 分享已被禁止
   const tempDirId = account.tempDir || "";
 
   const client = (await getClientByAccount(account)) as XunleiClient;
@@ -681,8 +705,19 @@ async function transferXunlei(
   let detail: any;
   try {
     detail = await client.shareApi.getShare({ shareId, passCode });
-  } catch (e) {
-    throw createError({ statusCode: 404, message: "分享已过期" });
+  } catch (err: any) {
+    const info = typeof err?.info === "function" ? err.info() : undefined;
+    if (
+      sourceId &&
+      info &&
+      ["SENSITIVE_RESOURCE", "EXPIRED", "DELETED", "PROHIBITED"].includes(
+        info.share_status,
+      )
+    ) {
+      // 禁用资源
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({ statusCode: 404, message: "文件违规或分享已过期" });
   }
 
   if (detail.files.length === 0) {
@@ -793,11 +828,17 @@ export async function transferShareUrl(
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else if (type === "baidu") {
-      const data = await transferBaidu(event, account, sharePageUrl);
+      const data = await transferBaidu(event, account, sharePageUrl, sourceId);
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else if (type === "xunlei") {
-      const data = await transferXunlei(event, account, fid, passcode);
+      const data = await transferXunlei(
+        event,
+        account,
+        fid,
+        passcode,
+        sourceId,
+      );
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
     } else {
@@ -883,7 +924,7 @@ export default defineEventHandler(async (event) => {
   if (id) {
     const source = await prisma.source.findUnique({ where: { id } });
     if (!source || source.status === 0)
-      throw createError({ statusCode: 404, message: "资源不存在或已被删除" });
+      throw createError({ statusCode: 404, message: "文件不存在或已被删除" });
     if (source.isSelf) {
       return { url: source.url };
     }
