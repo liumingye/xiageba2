@@ -40,6 +40,10 @@ export default defineConfig({
         root,
         "packages/netdisk-sdk-js/packages/guangya-sdk/src",
       ),
+      "@netdisk-sdk/c139-sdk": path.resolve(
+        root,
+        "packages/netdisk-sdk-js/packages/c139-sdk/src",
+      ),
       "@netdisk-sdk/utils": path.resolve(
         root,
         "packages/netdisk-sdk-js/packages/utils/src",

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
+import { purifyUrl } from "~/utils/purifyUrl";
 import { Loader2 } from "@lucide/vue";
 import type { ContextMenuItem, TableColumn, TableRow } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -561,84 +562,6 @@ const batchDelete = async () => {
   }
 };
 
-/** 从文本中提取并净化网盘链接 */
-function purifyUrl(input: string): string {
-  const text = input.trim();
-  if (!text) return "";
-
-  // =========================
-  // 1. 百度 share/init
-  // =========================
-  const baiduInitMatch = text.match(
-    /https?:\/\/pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9_-]+)/i,
-  );
-
-  if (baiduInitMatch) {
-    const surl = baiduInitMatch[1];
-
-    // pwd 可以在 &pwd= 后面
-    const pwdMatch = text.match(/[?&]pwd=([a-zA-Z0-9]{4})/i);
-
-    const pwd = pwdMatch?.[1];
-
-    return `https://pan.baidu.com/s/1${surl}${pwd ? `?pwd=${pwd}` : ""}`;
-  }
-
-  // =========================
-  // 2. 普通网盘分享链接
-  // =========================
-  const patterns = [
-    // 百度
-    /https?:\/\/pan\.baidu\.com\/s\/[a-zA-Z0-9_-]+/i,
-    // 夸克
-    /https?:\/\/pan\.quark\.cn\/s\/[a-zA-Z0-9_-]+/i,
-    // UC
-    /https?:\/\/(?:drive|fast)\.uc\.cn\/s\/[a-zA-Z0-9_-]+/i,
-    // 迅雷
-    /https?:\/\/pan\.xunlei\.com\/s\/[a-zA-Z0-9_-]+/i,
-  ];
-
-  let url: string | null = null;
-
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-
-    if (match) {
-      url = match[0];
-      break;
-    }
-  }
-
-  // 没有匹配到已知网盘链接
-  if (!url) {
-    return text;
-  }
-
-  // =========================
-  // 3. 提取 pwd
-  // =========================
-
-  const pwdMatch = text.match(/[?&]pwd=([a-zA-Z0-9]{4})/i);
-
-  const pwd = pwdMatch?.[1];
-
-  // =========================
-  // 4. 重新拼接
-  // =========================
-
-  if (pwd) {
-    url += `?pwd=${pwd}`;
-  }
-
-  // =========================
-  // 5. 统一 HTTPS
-  // =========================
-
-  url = url.replace(/^http:\/\//i, "https://");
-
-  return url;
-}
-
 /** 解析添加弹窗中多个输入框的地址，返回去重后的地址数组 */
 function parseNewUrls(): string[] {
   return [...new Set(newUrls.value.map((url) => url.trim()).filter(Boolean))];
@@ -1180,6 +1103,9 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
                   class="flex-1 sm:flex-none justify-center"
                   :aria-label="`粘贴地址 ${index + 1}`"
                   @click="pasteAndPurifyAt(index)"
+                  :ui="{
+                    leadingIcon: 'sm:hidden',
+                  }"
                 >
                   粘贴
                 </UButton>
@@ -1191,6 +1117,9 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
                   class="flex-1 sm:flex-none justify-center"
                   :aria-label="`净化地址 ${index + 1}`"
                   @click="purifyCurrentAt(index)"
+                  :ui="{
+                    leadingIcon: 'sm:hidden',
+                  }"
                 >
                   净化
                 </UButton>

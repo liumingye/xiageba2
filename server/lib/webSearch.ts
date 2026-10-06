@@ -226,6 +226,7 @@ const extractPanUrl = (text: string) => {
     /https?:\/\/cloud\.189\.cn\/(?:t\/|web\/share\?code=)[?&=a-zA-Z0-9_-]+/gi,
     /https?:\/\/(?:cai)?yun\.139\.com\/(?:shareweb\/#\/)?w\/i\/[?&=a-zA-Z0-9_-]+/gi,
     /https?:\/\/115(?:cdn)?\.com\/s\/[a-zA-Z0-9_-]+(?:\?(?:password|pwd)=[a-zA-Z0-9]{4})?/gi,
+    /https?:\/\/(?:www\.)?guangyapan\.com\/s\/[?&=a-zA-Z0-9_-]+/gi,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
