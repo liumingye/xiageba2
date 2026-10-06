@@ -96,40 +96,6 @@ export class C139ShareApi {
   }
 
   /**
-   * 获取分享标题
-   */
-  async getOutLinkTitle(linkId: string): Promise<string | null> {
-    const req = { linkID: linkId, isPasswd: 1, account: "" };
-    const resp = await this.client.sharePost(
-      C139_SHARE_GENERAL_URL,
-      JSON.stringify({ getOutLinkGeneralReq: req }),
-      false,
-    );
-    if (!isC139Success(resp)) return null;
-    const data = (resp.data || {}).getOutLinkGeneralResp || {};
-    const array = data.outLinkGeneral || [];
-    if (!array.length) return null;
-    return (array[0] || {}).lkName || null;
-  }
-
-  /**
-   * 获取分享提取码
-   */
-  async getOutLinkPassword(linkId: string): Promise<string | null> {
-    const req = { linkID: linkId, isPasswd: 1, account: "" };
-    const resp = await this.client.sharePost(
-      C139_SHARE_GENERAL_URL,
-      JSON.stringify({ getOutLinkGeneralReq: req }),
-      false,
-    );
-    if (!isC139Success(resp)) return null;
-    const data = (resp.data || {}).getOutLinkGeneralResp || {};
-    const array = data.outLinkGeneral || [];
-    if (!array.length) return null;
-    return (array[0] || {}).passwd || null;
-  }
-
-  /**
    * 列出分享文件
    * @param param.pcaId 父目录 ID，根目录为 "root"
    */
@@ -172,37 +138,6 @@ export class C139ShareApi {
     return { list, raw: resp };
   }
 
-  /**
-   * 获取分享文件下载链接
-   */
-  async getShareDownloadLink(
-    param: IC139ShareDownloadParam,
-  ): Promise<IC139DownloadLink | null> {
-    const { coId, linkId } = param;
-    const account = this.client.getAccount() || "";
-    const authorization = this.client.getAuthorization();
-    const reqV3 = {
-      account,
-      linkID: linkId,
-      coIDLst: { item: [coId] },
-      commonAccountInfo: { account, accountType: 1 },
-    };
-    const resp = await this.client.sharePost(
-      C139_SHARE_LINK_URL,
-      JSON.stringify({ dlFromOutLinkReqV3: reqV3 }),
-      true,
-    );
-    if (!isC139Success(resp)) {
-      raiseApiError(resp, "c139 get share download link failed");
-    }
-    const data = resp.data || {};
-    const url = data.redrUrl || "";
-    if (!url) return null;
-    const fileName = data.fileName || data.coName || coId;
-    const size = Number(data.coSize || data.size || 0);
-    return { fid: coId, fileName, downloadUrl: url, size };
-  }
-
   // ===================== 转存 =====================
 
   /**
@@ -234,7 +169,7 @@ export class C139ShareApi {
     const resp = await this.client.sharePost(
       C139_TRANSFER_CREATE_URL,
       JSON.stringify(req),
-      true,
+      false,
     );
     if (!isC139Success(resp)) {
       raiseApiError(resp, "c139 create transfer task failed");
@@ -257,7 +192,7 @@ export class C139ShareApi {
     const resp = await this.client.sharePost(
       C139_TRANSFER_QUERY_URL,
       JSON.stringify(req),
-      true,
+      false,
     );
     if (!isC139Success(resp)) {
       raiseApiError(resp, "c139 query transfer task failed");

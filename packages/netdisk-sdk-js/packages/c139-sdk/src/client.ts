@@ -177,7 +177,6 @@ export class C139Client {
   private authorization: string | null;
   private account: string | null;
   private readonly aesKey: Buffer;
-  aesDecrypt: typeof aesDecrypt;
 
   shareApi: C139ShareApi;
   fsApi: C139FSApi;
@@ -205,7 +204,6 @@ export class C139Client {
 
     this.shareApi = new C139ShareApi(this);
     this.fsApi = new C139FSApi(this);
-    this.aesDecrypt = aesDecrypt;
   }
 
   /** 获取当前 authorization */
