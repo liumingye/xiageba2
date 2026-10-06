@@ -83,64 +83,25 @@ const extractTaskId = (payload: Record<string, any>): string => {
 const parseTaskStatus = (
   payload: Record<string, any>,
 ): IGuangyaTaskStatusResult => {
-  const data =
-    payload.data && typeof payload.data === "object" ? payload.data : payload;
-  let statusVal: any = undefined;
-  for (const k of ["status", "taskStatus", "state"]) {
-    if (data[k] !== undefined && data[k] !== null) {
-      statusVal = data[k];
-      break;
-    }
-  }
+  const data = payload.data;
+  const statusVal: number = data.status;
   let done = false;
   let failed = false;
-  if (
-    statusVal !== undefined &&
-    statusVal !== null &&
-    String(statusVal).trim() !== ""
-  ) {
-    const status = String(statusVal).trim().toLowerCase();
-    switch (status) {
-      case "2":
-      case "3":
-      case "4":
-      case "done":
-      case "success":
-      case "completed":
-      case "finish":
-      case "finished":
-        done = true;
-        break;
-      case "5":
-      case "-1":
-      case "failed":
-      case "error":
-        failed = true;
-        break;
-    }
-  } else {
-    const msg = extractGuangyaMessage(payload).toLowerCase();
-    if (
-      msg.includes("完成") ||
-      msg.includes("成功") ||
-      msg.includes("finished") ||
-      msg.includes("success")
-    ) {
+
+  switch (statusVal) {
+    case 2:
       done = true;
-    }
-    if (
-      msg.includes("失败") ||
-      msg.includes("error") ||
-      msg.includes("failed")
-    ) {
+      break;
+    case 3:
       failed = true;
-    }
+      break;
   }
+
   return {
     status: statusVal,
     done,
     failed,
-    message: extractGuangyaMessage(payload),
+    message: payload.msg,
     raw: payload,
   };
 };
@@ -289,7 +250,16 @@ export class GuangyaShareApi {
 
 /** 判断是否光鸭链接（guangyapan.com 子串匹配） */
 export const isGuangyaURL = (rawURL: string): boolean => {
-  return rawURL.trim().toLowerCase().includes("guangyapan.com");
+  try {
+    const trimmed = rawURL.trim();
+    const urlObj = new URL(trimmed);
+    const host = urlObj.hostname.toLowerCase();
+    // 精确匹配主域名，支持子域名如 xxx.guangyapan.com
+    return host === "guangyapan.com" || host.endsWith(".guangyapan.com");
+  } catch {
+    // 不是合法URL直接返回false
+    return false;
+  }
 };
 
 /**

@@ -13,7 +13,7 @@ export const GUANGYA_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36";
 
 /** 转存任务轮询上限 */
-export const GUANGYA_TASK_POLL_MAX = 20;
+export const GUANGYA_TASK_POLL_MAX = 30;
 /** 转存任务轮询间隔（ms） */
 export const GUANGYA_TASK_POLL_INTERVAL = 1000;
 /** 转存后目录 diff 对齐重试次数 */

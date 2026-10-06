@@ -69,7 +69,7 @@ export interface IGuangyaRestoreResult {
 }
 
 export interface IGuangyaTaskStatusResult {
-  /** 原始状态值 */
+  /** 原始状态值 0 待开始 / 1 进行中 / 2 完成 / 3 失败 */
   status?: string | number;
   /** 是否已完成 */
   done: boolean;

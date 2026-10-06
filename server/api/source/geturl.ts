@@ -16,9 +16,17 @@ import {
   ISaveTaskStateResult,
 } from "@netdisk-sdk/quarkUC-sdk";
 import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import { GuangyaClient, parseGuangyaShareURL } from "@netdisk-sdk/guangya-sdk";
+import {
+  GuangyaClient,
+  parseGuangyaShareURL,
+  isGuangyaURL,
+} from "@netdisk-sdk/guangya-sdk";
 import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
-import { C139Client, parseC139ShareURL } from "@netdisk-sdk/c139-sdk";
+import {
+  C139Client,
+  parseC139ShareURL,
+  isC139URL,
+} from "@netdisk-sdk/c139-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
@@ -411,7 +419,7 @@ export function parseShareUrl(url: string): ParsedShare {
     return { type: "xunlei", fid: match[1], passcode: extractPwd(url), url };
 
   // 光鸭: https://www.guangyapan.com/s/xxxx?code=yyyy 等多种格式
-  if (url.includes("guangyapan.com")) {
+  if (isGuangyaURL(url)) {
     const parsed = parseGuangyaShareURL(url);
     if (parsed.shareId)
       return {
@@ -423,7 +431,7 @@ export function parseShareUrl(url: string): ParsedShare {
   }
 
   // 中国移动云盘: 	https://yun.139.com/shareweb/#/w/i/2ygBjP7ptdnpr&agyn
-  if (url.includes("yun.139.com")) {
+  if (isC139URL(url)) {
     const parsed = parseC139ShareURL(url);
     if (parsed.linkId)
       return {

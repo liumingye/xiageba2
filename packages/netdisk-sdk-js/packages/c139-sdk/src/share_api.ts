@@ -23,7 +23,16 @@ import {
 
 /** 判断是否 139 网盘链接 */
 export const isC139URL = (rawURL: string): boolean => {
-  return rawURL.trim().toLowerCase().includes("yun.139.com");
+  try {
+    const trimmed = rawURL.trim();
+    const urlObj = new URL(trimmed);
+    const host = urlObj.hostname.toLowerCase();
+    // 精确匹配主域名，支持caiyun.139.com
+    return host === "yun.139.com" || host.endsWith("yun.139.com");
+  } catch {
+    // 不是合法URL直接返回false
+    return false;
+  }
 };
 
 /**
