@@ -53,6 +53,8 @@ watch(
   { immediate: true },
 );
 
+const { siteShortTitle } = await useSiteSeo();
+
 const pageTitle = computed(() => {
   let title = [];
   if (music.value.title) {
@@ -65,7 +67,7 @@ const pageTitle = computed(() => {
     title.push(`《${music.value.album}》`);
   }
   if (title.length === 0) {
-    title.push("全盘搜 - 免费下载高品质音乐");
+    title.push(`${siteShortTitle} - 免费下载高品质音乐`);
   }
   return `${title.join(" - ")} - 音乐下载`;
 });
@@ -74,18 +76,18 @@ const pageDescription = computed(() => {
   if (music.value) {
     const parts = [music.value.title, music.value.artist];
     if (music.value.album) parts.push(music.value.album);
-    return `${parts.join(" - ")} - 在全盘搜免费下载高品质MP3与FLAC音乐，支持在线试听。`;
+    return `${parts.join(" - ")} - 在${siteShortTitle}免费下载高品质MP3与FLAC音乐，支持在线试听。`;
   }
-  return "全盘搜，提供高品质MP3与FLAC音乐免费下载，支持在线试听、搜索与歌词展示。";
+  return `${siteShortTitle}，提供高品质MP3与FLAC音乐免费下载，支持在线试听、搜索与歌词展示。`;
 });
 
 const pageKeywords = computed(() => {
   if (music.value) {
     const parts = [music.value.title, music.value.artist];
     if (music.value.album) parts.push(music.value.album);
-    return `${parts.join(", ")}, 音乐下载, FLAC, MP3, 无损音乐, 全盘搜`;
+    return `${parts.join(", ")}, 音乐下载, FLAC, MP3, 无损音乐, ${siteShortTitle}`;
   }
-  return "全盘搜, 音乐下载, FLAC, MP3, 无损音乐, 在线试听, 歌词";
+  return `${siteShortTitle}, 音乐下载, FLAC, MP3, 无损音乐, 在线试听, 歌词`;
 });
 
 const formattedLyrics = computed(() => {

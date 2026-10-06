@@ -155,9 +155,11 @@ const pageTitle = computed(() => {
   return parts.join(" - ");
 });
 
+const { siteShortTitle } = await useSiteSeo();
+
 const pageDescription = computed(() => {
   const d = detail.value;
-  if (!d?.bookName) return "全盘搜小说详情";
+  if (!d?.bookName) return `${siteShortTitle}小说详情`;
   const desc = (d.description || "").replace(/\s+/g, " ").slice(0, 140);
   return `${d.bookName}（${d.author} 著）${desc}`;
 });

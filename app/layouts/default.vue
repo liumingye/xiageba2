@@ -80,6 +80,8 @@ const disableBack = computed(() => {
 });
 
 const isMobile = isMobileOrTablet();
+
+const { siteShortTitle } = await useSiteSeo();
 </script>
 
 <template>
@@ -210,7 +212,7 @@ const isMobile = isMobileOrTablet();
       center: 'flex-col',
     }"
   >
-    <p>&copy; 2015-{{ year }} 全盘搜 - 公开网盘资源搜索引擎</p>
+    <p>&copy; 2015-{{ year }} {{siteShortTitle}} - 公开网盘资源搜索引擎</p>
 
     <div class="flex items-center justify-center gap-x-2 flex-wrap mt-2">
       <ULink v-for="item in legalLinks" :key="item.to" :to="item.to">

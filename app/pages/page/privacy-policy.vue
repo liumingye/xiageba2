@@ -4,19 +4,21 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "PrivacyPolicyPage" });
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
   title: "隐私政策",
-  description: "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
+  description: `${siteShortTitle}隐私政策，说明本站如何收集、使用和保护用户的个人信息。`,
   ogTitle: "隐私政策",
-  ogDescription: "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
+  ogDescription: `${siteShortTitle}隐私政策，说明本站如何收集、使用和保护用户的个人信息。`,
   twitterTitle: "隐私政策",
   twitterDescription:
-    "全盘搜隐私政策，说明本站如何收集、使用和保护用户的个人信息。",
+    `${siteShortTitle}隐私政策，说明本站如何收集、使用和保护用户的个人信息。`,
 });
 
 const content = `**最后更新日期：2026年1月1日**
 
-全盘搜（以下简称"本站"）重视用户隐私保护。本隐私政策说明本站如何收集、使用、存储和保护您的个人信息。请您在使用本站服务前，仔细阅读本政策。
+${siteShortTitle}（以下简称"本站"）重视用户隐私保护。本隐私政策说明本站如何收集、使用、存储和保护您的个人信息。请您在使用本站服务前，仔细阅读本政策。
 
 ### 1. 信息收集
 

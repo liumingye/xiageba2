@@ -67,6 +67,8 @@ const totalPages = computed(() => data.value?.totalPages || 0);
 const items = computed(() => data.value?.data || []);
 const category = computed(() => data.value?.category);
 
+const { siteShortTitle } = await useSiteSeo();
+
 const pageTitle = computed(() =>
   category.value?.name
     ? `${category.value.name} - 网盘资源分类`
@@ -76,7 +78,7 @@ const pageTitle = computed(() =>
 const pageDescription = computed(() =>
   category.value?.name
     ? `${category.value.name}分类下的网盘资源，免费下载。`
-    : "全盘搜资源分类，各类网盘资源免费下载。",
+    : `${siteShortTitle}资源分类，各类网盘资源免费下载。`,
 );
 
 const canonicalUrl = `/categorie/${categoryId.value}`;

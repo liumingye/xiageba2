@@ -463,6 +463,7 @@ async function transferQuarkUC(
   // `41009` | 分享文件已删除
   // `41005` | 选中的文件违规，不支持分享
   // `41026` | 选中的文件违规，不支持分享
+  // `41011` | 分享地址已失效
   const tempDirId = account.tempDir || "";
   const client = (await getClientByAccount(account)) as QuarkUCClient;
   const shareApi = client.shareApi;
@@ -479,7 +480,11 @@ async function transferQuarkUC(
   } catch (err: any) {
     // 处理分享不存在的情况
     const info = typeof err?.info === "function" ? err.info() : undefined;
-    if (sourceId && info && [41012, 41010, 41007, 41008].includes(info.code)) {
+    if (
+      sourceId &&
+      info &&
+      [41012, 41010, 41007, 41008, 41011].includes(info.code)
+    ) {
       // 禁用资源
       event.waitUntil(disableSource(sourceId));
     }

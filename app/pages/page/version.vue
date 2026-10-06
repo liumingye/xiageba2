@@ -4,19 +4,20 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "VersionPage" });
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
   title: "版权说明",
-  description: "全盘搜版权说明，本站不存储音频文件，所有内容版权归作者所有。",
+  description: `${siteShortTitle}版权说明，本站不存储音频文件，所有内容版权归作者所有。`,
   ogTitle: "版权说明",
-  ogDescription: "全盘搜版权说明，本站不存储音频文件，所有内容版权归作者所有。",
+  ogDescription: `${siteShortTitle}版权说明，本站不存储音频文件，所有内容版权归作者所有。`,
   twitterTitle: "版权说明",
-  twitterDescription:
-    "全盘搜版权说明，本站不存储音频文件，所有内容版权归作者所有。",
+  twitterDescription: `${siteShortTitle}版权说明，本站不存储音频文件，所有内容版权归作者所有。`,
 });
 
 const content = `**最后更新日期：2026年1月1日**
 
-全盘搜（以下简称"本站"）尊重知识产权，本版权说明旨在阐明本站与版权相关内容的处理方式。
+${siteShortTitle}（以下简称"本站"）尊重知识产权，本版权说明旨在阐明本站与版权相关内容的处理方式。
 
 ### 1. 本站立场
 

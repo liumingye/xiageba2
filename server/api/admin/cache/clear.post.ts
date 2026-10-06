@@ -10,5 +10,10 @@ export default defineEventHandler(async (event) => {
   const keys = await storage.getKeys();
   storage.clear();
 
+  // 如果clear无效进行兜底
+  for (const k of keys) {
+    await storage.removeItem(k);
+  }
+
   return { success: true, total: keys.length };
 });

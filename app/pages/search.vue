@@ -362,6 +362,8 @@ const handleRetry = () => {
   retryFetch();
 };
 
+const { siteShortTitle } = await useSiteSeo();
+
 const pageTitle = computed(() => {
   const q = searchKeyword.value;
   if (isAi.value) {
@@ -381,12 +383,12 @@ const pageDescription = computed(() => {
   const q = searchKeyword.value;
   const label = isMusic.value ? "歌曲" : "网盘资源";
   if (q && total.value > 0) {
-    return `在全盘搜搜索"${q}"，共找到 ${total.value} 个相关${label}。`;
+    return `在${siteShortTitle}搜索"${q}"，共找到 ${total.value} 个相关${label}。`;
   }
   if (q) {
-    return `在全盘搜搜索"${q}"的相关结果。`;
+    return `在${siteShortTitle}搜索"${q}"的相关结果。`;
   }
-  return "全盘搜搜索 - 免费下载高品质音乐与网盘资源。";
+  return `${siteShortTitle}搜索 - 免费下载高品质音乐与网盘资源。`;
 });
 
 useSeoMeta({
@@ -401,7 +403,7 @@ useSeoMeta({
 const keywords = [
   searchKeyword.value,
   ...tokens.value,
-  "全盘搜",
+  siteShortTitle,
   "音乐下载",
   "MP3下载",
   "FLAC下载",

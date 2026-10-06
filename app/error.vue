@@ -5,8 +5,9 @@ const props = defineProps<{
   error: NuxtError;
 }>();
 
+const { siteShortTitle } = await useSiteSeo();
 useSeoMeta({
-  title: `${props.error?.status} - ${props.error?.statusText} - 全盘搜`,
+  title: `${props.error?.status} - ${props.error?.statusText} - ${siteShortTitle}`,
 });
 </script>
 

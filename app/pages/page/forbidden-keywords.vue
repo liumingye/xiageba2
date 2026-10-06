@@ -3,16 +3,18 @@ import { ShieldBan, Loader2 } from "@lucide/vue";
 
 defineOptions({ name: "ForbiddenKeywordsPage" });
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
   title: "屏蔽词列表",
   description:
-    "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
+    `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
   ogTitle: "屏蔽词列表",
   ogDescription:
-    "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
+    `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
   twitterTitle: "屏蔽词列表",
   twitterDescription:
-    "全盘搜屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。",
+    `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
 });
 
 const { data, pending, error } = await useLazyFetch<{

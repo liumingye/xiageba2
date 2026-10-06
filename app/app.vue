@@ -25,8 +25,9 @@ const { siteDescription, siteShortTitle } = await useSiteSeo();
 
 useSeoMeta({
   titleTemplate: () => `%s - ${siteShortTitle}`,
-  // description: () => siteDescription,
-  // ogDescription: () => siteDescription,
+  description: siteDescription,
+  ogDescription: siteDescription,
+  twitterDescription: siteDescription,
 });
 </script>
 

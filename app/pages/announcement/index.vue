@@ -7,9 +7,11 @@ defineOptions({
   name: "AnnouncementListPage",
 });
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
   title: "公告列表",
-  description: "查看全盘搜的最新公告与站点通知。",
+  description: `查看${siteShortTitle}的最新公告与站点通知。`,
 });
 
 const route = useRoute();

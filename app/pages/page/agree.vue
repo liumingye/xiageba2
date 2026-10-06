@@ -4,21 +4,23 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "AgreementPage" });
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
   title: "服务协议",
   description:
-    "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
+    `${siteShortTitle}服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。`,
   ogTitle: "服务协议",
   ogDescription:
-    "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
+    `${siteShortTitle}服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。`,
   twitterTitle: "服务协议",
   twitterDescription:
-    "全盘搜服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。",
+    `${siteShortTitle}服务协议，规范用户使用本站网盘搜索与索引服务的权利与义务。`,
 });
 
 const content = `**最后更新日期：2026年1月1日**
 
-欢迎您使用全盘搜（以下简称"本站"）。请您在使用本站服务前，仔细阅读并充分理解以下服务协议条款。您访问或使用本站服务，即表示您已同意接受本协议的全部条款。
+欢迎您使用${siteShortTitle}（以下简称"本站"）。请您在使用本站服务前，仔细阅读并充分理解以下服务协议条款。您访问或使用本站服务，即表示您已同意接受本协议的全部条款。
 
 ### 1. 服务内容
 

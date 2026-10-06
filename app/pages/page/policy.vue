@@ -4,19 +4,21 @@ import { markdownPlugins } from "~/utils/comark";
 
 defineOptions({ name: "PolicyPage" });
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
   title: "免责声明",
-  description: "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
+  description: `${siteShortTitle}免责声明，本站仅提供搜索索引服务，不存储任何音频文件。`,
   ogTitle: "免责声明",
-  ogDescription: "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
+  ogDescription: `${siteShortTitle}免责声明，本站仅提供搜索索引服务，不存储任何音频文件。`,
   twitterTitle: "免责声明",
   twitterDescription:
-    "全盘搜免责声明，本站仅提供搜索索引服务，不存储任何音频文件。",
+    `${siteShortTitle}免责声明，本站仅提供搜索索引服务，不存储任何音频文件。`,
 });
 
 const content = `**最后更新日期：2026年1月1日**
 
-全盘搜（以下简称"本站"）是一个网盘资源索引工具。在使用本站服务之前，请您仔细阅读以下免责声明：
+${siteShortTitle}（以下简称"本站"）是一个网盘资源索引工具。在使用本站服务之前，请您仔细阅读以下免责声明：
 
 ### 1. 服务性质
 

@@ -125,6 +125,8 @@ const handleSubmit = async (
     loading.value = false;
   }
 };
+
+const { siteShortTitle } = await useSiteSeo();
 </script>
 
 <template>
@@ -171,7 +173,7 @@ const handleSubmit = async (
               <div
                 class="text-pretty font-semibold text-highlighted text-5xl items-start"
               >
-                全盘搜
+                {{ siteShortTitle }}
               </div>
               <div class="mt-auto text-xl text-pretty text-muted">管理后台</div>
             </div>

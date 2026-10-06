@@ -89,6 +89,8 @@ watch(
 const source = computed(() => responseData.value?.data);
 const similarList = computed(() => responseData.value?.similar || []);
 
+const { siteShortTitle } = await useSiteSeo();
+
 const pageTitle = computed(() => {
   if (source.value.title) {
     return `${source.value.title} - ${getStorageTypeFriendFromFilter(source.value.type)}资源分享`;
@@ -110,16 +112,16 @@ const pageDescription = computed(() => {
       const pad = (n: number) => String(n).padStart(2, "0");
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     };
-    return `全盘搜为您提供《${source.value.title}》的${getStorageTypeFriendFromFilter(source.value.type)}资源下载，创建日期：${formatDate(source.value.createdAt)}。`;
+    return `${siteShortTitle}为您提供《${source.value.title}》的${getStorageTypeFriendFromFilter(source.value.type)}资源下载，创建日期：${formatDate(source.value.createdAt)}。`;
   }
-  return "全盘搜网盘资源详情页";
+  return `${siteShortTitle}资源详情页`;
 });
 
 const pageKeywords = computed(() => {
   if (source.value) {
     return `${source.value.title},网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷云盘,UC网盘`;
   }
-  return "全盘搜,网盘资源,网盘搜索,夸克网盘,百度网盘,迅雷云盘,UC网盘";
+  return `${siteShortTitle},网盘搜索,夸克网盘,百度网盘,迅雷云盘,UC网盘`;
 });
 
 const canonicalUrl = `/source/${sourceId.value}`;

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import "dotenv/config";
+import { getConfigValue } from "#server/lib/configCache";
 
 interface EmailConfig {
   host: string;
@@ -19,7 +20,9 @@ interface SendEmailOptions {
 
 let transporter: nodemailer.Transporter | null = null;
 
-const getTransporter = (): nodemailer.Transporter | null => {
+const getTransporter = (
+  siteShortTitle: string,
+): nodemailer.Transporter | null => {
   const config: EmailConfig = {
     host: process.env.SMTP_HOST || "",
     port: parseInt(process.env.SMTP_PORT || "587", 10),
@@ -27,7 +30,7 @@ const getTransporter = (): nodemailer.Transporter | null => {
     user: process.env.SMTP_USER || "",
     pass: process.env.SMTP_PASS || "",
     from: process.env.SMTP_FROM || "noreply@example.com",
-    fromName: process.env.SMTP_FROM_NAME || "全盘搜",
+    fromName: siteShortTitle,
   };
 
   if (!config.host || !config.user || !config.pass) {
@@ -50,14 +53,21 @@ const getTransporter = (): nodemailer.Transporter | null => {
   return transporter;
 };
 
-export const sendEmail = async (options: SendEmailOptions): Promise<boolean> => {
-  const transport = getTransporter();
+export const sendEmail = async (
+  options: SendEmailOptions,
+): Promise<boolean> => {
+  const siteShortTitle =
+    process.env.SMTP_FROM_NAME ||
+    (await getConfigValue("site_seo_short_title")) ||
+    "全盘搜";
+
+  const transport = getTransporter(siteShortTitle);
   if (!transport) {
     console.warn("邮件服务未配置，无法发送邮件");
     return false;
   }
 
-  const fromName = process.env.SMTP_FROM_NAME || "全盘搜";
+  const fromName = siteShortTitle;
   const fromEmail = process.env.SMTP_FROM || "noreply@example.com";
 
   try {
@@ -89,10 +99,15 @@ export const sendFeedbackResolvedEmail = async (
     WRONG_QUALITY: "音质问题",
     WRONG_INFO: "信息错误",
   };
-
+  const siteShortTitle =
+    process.env.SMTP_FROM_NAME ||
+    (await getConfigValue("site_seo_short_title")) ||
+    "全盘搜";
   const typeLabel = typeLabels[feedbackType] || feedbackType;
   const siteHost = process.env.SITE_HOST || "";
-  const musicUrl = siteHost ? `${siteHost.replace(/\/$/, "")}/music/${musicId}` : "";
+  const musicUrl = siteHost
+    ? `${siteHost.replace(/\/$/, "")}/music/${musicId}`
+    : "";
 
   const subject = `您反馈的问题已处理 - ${musicTitle}`;
   const html = `
@@ -107,20 +122,24 @@ export const sendFeedbackResolvedEmail = async (
         <p style="margin: 0 0 10px 0;"><strong>反馈类型：</strong>${typeLabel}</p>
         <p style="margin: 0;"><strong>处理状态：</strong><span style="color: #22c55e;">已处理</span></p>
       </div>
-      ${musicUrl ? `
+      ${
+        musicUrl
+          ? `
       <p style="color: #666; line-height: 1.6;">
         点击下方链接查看歌曲详情：
       </p>
       <p style="margin: 10px 0 20px 0;">
         <a href="${musicUrl}" style="color: #6366f1; text-decoration: none; word-break: break-all;">${musicUrl}</a>
       </p>
-      ` : ""}
+      `
+          : ""
+      }
       <p style="color: #666; line-height: 1.6;">
         如果您还有其他问题，欢迎继续向我们反馈。
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
       <p style="color: #999; font-size: 12px;">
-        此邮件由全盘搜系统自动发送，请勿回复。
+        此邮件由${siteShortTitle}系统自动发送，请勿回复。
       </p>
     </div>
   `;

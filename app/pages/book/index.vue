@@ -315,6 +315,8 @@ const getTag = (tags: string) => {
   ].slice(0, 3);
 };
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
   title: () => {
     if (isSearchMode.value && books.value.length > 0) {
@@ -326,7 +328,7 @@ useSeoMeta({
       : "搜小说";
   },
   description:
-    "全盘搜小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。",
+    `${siteShortTitle}小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。`,
 });
 </script>
 
