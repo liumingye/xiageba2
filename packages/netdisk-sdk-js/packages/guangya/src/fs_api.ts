@@ -34,12 +34,10 @@ const normalizeParentId = (parentId?: string): string => {
 
 /** 从响应条目中提取文件信息 */
 const parseGuangyaFile = (item: Record<string, any>): IGuangyaFile => {
-  const fid = clean(firstNonNil(item, "fid", "fileId", "id", "resId")) || "0";
-  const fileName = clean(
-    firstNonNil(item, "file_name", "fileName", "name", "title"),
-  );
+  const fid = clean(firstNonNil(item, "fileId")) || "0";
+  const fileName = clean(firstNonNil(item, "fileName"));
   const isDir = parseIsDir(item);
-  const size = toNumber(firstNonNil(item, "size", "fileSize"));
+  const size = toNumber(firstNonNil(item, "fileSize"));
   return { fid, fileName, isDir, size, raw: item };
 };
 
@@ -178,9 +176,7 @@ export class GuangyaFSApi {
     }
     const data =
       payload.data && typeof payload.data === "object" ? payload.data : payload;
-    const fid = clean(
-      firstNonNil(data, "fid", "fileId", "id", "taskId", "task_id"),
-    );
+    const fid = clean(firstNonNil(data, "fileId"));
     return { fid: fid || "0", raw: payload };
   }
 
@@ -196,6 +192,27 @@ export class GuangyaFSApi {
       raiseApiError(payload, "guangya delete files failed");
     }
     return { raw: payload };
+  }
+
+  /**
+   * 清空回收站
+   * 返回异步任务 ID，可配合任务状态接口轮询
+   */
+  async clearRecycleBin(): Promise<{
+    taskId?: string;
+    raw: Record<string, any>;
+  }> {
+    const payload = await this.client.postJSON<Record<string, any>>(
+      `${GUANGYA_API_USER_RES_V2}/file/clear_recycle_bin`,
+      {},
+    );
+    if (!isGuangyaSuccess(payload)) {
+      raiseApiError(payload, "guangya clear recycle bin failed");
+    }
+    const data =
+      payload.data && typeof payload.data === "object" ? payload.data : {};
+    const taskId = clean(firstNonNil(data, "taskId"));
+    return { taskId: taskId || undefined, raw: payload };
   }
 
   /**
@@ -230,12 +247,8 @@ export class GuangyaFSApi {
     );
     const data =
       payload.data && typeof payload.data === "object" ? payload.data : payload;
-    const nickname = clean(
-      firstNonNil(data, "name", "nickname", "nickName", "username"),
-    );
-    const phone = clean(
-      firstNonNil(data, "phone_number", "phoneNumber", "phone", "mobile"),
-    );
+    const nickname = clean(firstNonNil(data, "name"));
+    const phone = clean(firstNonNil(data, "phone_number"));
     if (!nickname && !phone && !clean(data["sub"])) {
       raiseApiError(payload, "guangya get user info failed");
     }

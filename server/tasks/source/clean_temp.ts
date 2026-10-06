@@ -152,6 +152,9 @@ export default defineTask({
               await client.fsApi.delete(chunk.flatMap((c) => c.fids));
               successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
             }
+            if (items.length > 0) {
+              await client.fsApi.clearRecycleBin();
+            }
           } else if (client instanceof BaiduClientType) {
             let tempDir = account.tempDir;
             if (!tempDir) throw new Error("未配置百度网盘临时目录");
