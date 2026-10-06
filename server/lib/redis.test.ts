@@ -16,6 +16,7 @@ const h = vi.hoisted(() => {
     options: any;
     listeners: Record<string, Function[]> = {};
     disconnectCalled = false;
+    store = new Map<string, string>();
 
     constructor(options: any) {
       this.options = options;
@@ -34,14 +35,34 @@ const h = vi.hoisted(() => {
     on(ev: string, fn: Function) {
       (this.listeners[ev] ||= []).push(fn);
     }
-    async get() {
-      return null;
+    async get(k: string) {
+      return this.store.get(k) ?? null;
     }
-    async set() {
+    async set(k: string, v: string) {
+      this.store.set(k, v);
       return "OK";
     }
-    async del() {
-      return 1;
+    async del(k: string) {
+      return this.store.delete(k) ? 1 : 0;
+    }
+    async mget(...keys: string[]) {
+      return keys.map((k) => this.store.get(k) ?? null);
+    }
+    pipeline() {
+      (globalThis as any).__pipelineCount++;
+      const self = this;
+      const cmds: string[][] = [];
+      const api = {
+        set(...args: string[]) {
+          cmds.push(args);
+          return api;
+        },
+        async exec() {
+          for (const [k, v] of cmds) self.store.set(k, v);
+          return cmds.map(() => [null, "OK"]);
+        },
+      };
+      return api;
     }
   }
 
@@ -53,6 +74,7 @@ const h = vi.hoisted(() => {
 
 (globalThis as any).__redisInstances = [];
 (globalThis as any).__redisMode = "ok";
+(globalThis as any).__pipelineCount = 0;
 
 vi.mock("ioredis", () => ({ Redis: h.FakeRedis }));
 
@@ -75,6 +97,7 @@ const instances = () => (globalThis as any).__redisInstances as any[];
 beforeEach(() => {
   (globalThis as any).__redisInstances = [];
   (globalThis as any).__redisMode = "ok";
+  (globalThis as any).__pipelineCount = 0;
   h.cfg = {
     redis_host: "127.0.0.1",
     redis_port: "6379",
@@ -191,5 +214,56 @@ describe("未配置 Redis", () => {
 
     expect(await m.getRedis()).toBeNull();
     expect(instances()).toHaveLength(0);
+  });
+});
+
+describe("批量读写（供链接检测等场景使用）", () => {
+  it("mget 一次 RTT 读完，并按入参顺序返回", async () => {
+    const m = await fresh();
+    const c = (await m.getRedis()) as any;
+    c.store.set("k1", JSON.stringify("v1"));
+    c.store.set("k3", JSON.stringify("v3"));
+
+    const res = await m.getRedisCacheMany<string>(["k1", "k2", "k3"]);
+
+    expect(res).toEqual(["v1", null, "v3"]);
+  });
+
+  it("单个坏 value 只影响自己，不拖累整批", async () => {
+    const m = await fresh();
+    const c = (await m.getRedis()) as any;
+    c.store.set("bad", "这不是 JSON");
+    c.store.set("good", JSON.stringify({ a: 1 }));
+
+    const res = await m.getRedisCacheMany<any>(["bad", "good"]);
+
+    expect(res[0]).toBeNull();
+    expect(res[1]).toEqual({ a: 1 });
+  });
+
+  it("Redis 不可用时返回全 null，不抛错", async () => {
+    h.cfg.redis_host = "";
+    const m = await fresh();
+
+    expect(await m.getRedisCacheMany<string>(["a", "b"])).toEqual([null, null]);
+  });
+
+  it("批量写入走 pipeline，一次提交而非 N 次", async () => {
+    const m = await fresh();
+    await m.setRedisCacheMany([
+      { key: "a", value: 1, ttlSeconds: 60 },
+      { key: "b", value: 2, ttlSeconds: 60 },
+      { key: "c", value: 3, ttlSeconds: 60 },
+    ]);
+
+    expect((globalThis as any).__pipelineCount).toBe(1);
+  });
+
+  it("空数组不发起任何命令", async () => {
+    const m = await fresh();
+    await m.setRedisCacheMany([]);
+    await m.getRedisCacheMany<string>([]);
+
+    expect((globalThis as any).__pipelineCount).toBe(0);
   });
 });

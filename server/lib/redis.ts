@@ -234,6 +234,70 @@ export const setRedisCache = async (
 };
 
 /**
+ * 批量读取缓存（mget，一次 RTT）
+ *
+ * 逐个调用 getRedisCache 是 N 次 RTT，链接检测这类批量场景下 N 可达数十。
+ * 单个坏 value（非 JSON）只影响自己，不会拖累整批。
+ */
+export const getRedisCacheMany = async <T>(
+  keys: string[],
+): Promise<(T | null)[]> => {
+  const allMiss = () => keys.map(() => null);
+  if (keys.length === 0) return [];
+
+  try {
+    const client = await getRedis();
+    if (!client) return allMiss();
+
+    const values = await client.mget(...keys);
+    return values.map((v) => {
+      if (v === null || v === undefined) return null;
+      try {
+        return JSON.parse(v) as T;
+      } catch {
+        return null;
+      }
+    });
+  } catch (err: any) {
+    console.error(
+      `[Redis] 批量读取 ${keys.length} 个 Key 失败:`,
+      err.message || err,
+    );
+    return allMiss();
+  }
+};
+
+/**
+ * 批量写入缓存（pipeline 一次提交）
+ */
+export const setRedisCacheMany = async (
+  entries: { key: string; value: unknown; ttlSeconds?: number }[],
+): Promise<void> => {
+  if (entries.length === 0) return;
+
+  try {
+    const client = await getRedis();
+    if (!client) return;
+
+    const pipeline = client.pipeline();
+    for (const e of entries) {
+      pipeline.set(
+        e.key,
+        JSON.stringify(e.value),
+        "EX",
+        e.ttlSeconds ?? 30 * 60,
+      );
+    }
+    await pipeline.exec();
+  } catch (err: any) {
+    console.error(
+      `[Redis] 批量写入 ${entries.length} 个 Key 失败:`,
+      err.message || err,
+    );
+  }
+};
+
+/**
  * 从 Redis 删除缓存
  */
 export const delRedisCache = async (key: string): Promise<void> => {

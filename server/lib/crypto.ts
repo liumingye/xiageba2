@@ -50,13 +50,12 @@ export const encryptUrl = async (url: string): Promise<string> => {
 };
 
 /**
- * 使用 AES-CBC 解密 URL，未配置密钥时原样返回
- * 配置存在但解密失败则返回 null
+ * 用已准备好的密钥材料解密单个密文
  */
-export const decryptUrl = async (cipher: string): Promise<string | null> => {
-  const mat = await getAesMaterial();
-  if (!mat) return cipher;
-
+async function decryptWithMaterial(
+  cipher: string,
+  mat: AesMaterial,
+): Promise<string | null> {
   try {
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-CBC", iv: mat.iv },
@@ -67,4 +66,33 @@ export const decryptUrl = async (cipher: string): Promise<string | null> => {
   } catch {
     return null;
   }
+}
+
+/**
+ * 使用 AES-CBC 解密 URL，未配置密钥时原样返回
+ * 配置存在但解密失败则返回 null
+ */
+export const decryptUrl = async (cipher: string): Promise<string | null> => {
+  const mat = await getAesMaterial();
+  if (!mat) return cipher;
+
+  return decryptWithMaterial(cipher, mat);
+};
+
+/**
+ * 批量解密 URL，行为与 decryptUrl 逐项一致。
+ *
+ * 🔒 逐个调用 decryptUrl 会为每个密文都执行一次读配置 + importKey，
+ * N 个链接就是 N 倍开销。这里只准备一次密钥材料。
+ */
+export const decryptUrls = async (
+  ciphers: string[],
+): Promise<(string | null)[]> => {
+  if (ciphers.length === 0) return [];
+
+  const mat = await getAesMaterial();
+  // 未配置密钥时原样返回（与 decryptUrl 保持一致）
+  if (!mat) return ciphers.slice();
+
+  return Promise.all(ciphers.map((c) => decryptWithMaterial(c, mat)));
 };
