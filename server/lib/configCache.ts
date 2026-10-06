@@ -93,30 +93,42 @@ export const getConfigValues = async (
 };
 
 /**
+ * 写缓存的统一入口。
+ *
+ * 🔒 硬约束：缓存不存在 / 已过期时**绝不能用局部数据重建 Map**。
+ * 若把「只含本次写入的 key」的 Map 当成全量缓存并锁 24h，
+ * 后续 getConfigValue(其他 key) 会全部读到空串 ——
+ * redis_host / aes_key / pancheck_servers 等配置会"凭空消失"，
+ * 最长影响 24 小时且只能靠重启恢复。
+ * 正确做法是置空，让读路径用一次全量 findMany 重建。
+ */
+function applyToCache(entries: { key: string; value: string }[]) {
+  // getConfigCache() 会在过期时顺带把 memoryCache 置 null
+  const cached = getConfigCache();
+  if (!cached) {
+    memoryCache = null;
+    return;
+  }
+  for (const { key, value } of entries) {
+    cached.set(key, value);
+  }
+}
+
+/**
  * 设置单个配置值
  */
 export const setConfigValue = async (key: string, value: string) => {
   const safeValue = String(value ?? "");
 
-  // 1. 先写数据库
+  // 1. 先写数据库（失败直接抛出，绝不污染缓存）
   await prisma.config.upsert({
     where: { key },
     update: { value: safeValue },
     create: { key, value: safeValue },
   });
 
-  // 2. 🔒 修复脏数据 Bug：如果缓存还没建立，直接顺手帮它初始化，而不是漏掉
-  if (!memoryCache || memoryCache.expireAt <= Date.now()) {
-    const map = new Map<string, string>();
-    map.set(key, safeValue);
-    memoryCache = {
-      value: map,
-      expireAt: Date.now() + CACHE_TTL,
-    };
-  } else {
-    // 缓存存在则直接追加修改
-    memoryCache.value.set(key, safeValue);
-  }
+  // 2. 落库成功后才更新缓存
+  applyToCache([{ key, value: safeValue }]);
 
   return { success: true };
 };
@@ -125,40 +137,32 @@ export const setConfigValue = async (key: string, value: string) => {
  * 设置多个配置值
  */
 export const setConfigValues = async (
-  configs: { key: string; value: string }[],
+  // value 为 undefined 表示「不修改该 key」
+  configs: { key: string; value?: string }[],
 ) => {
-  const upserts = [];
-  for (const config of configs) {
-    if (config.value !== undefined) {
-      const safeValue = String(config.value ?? "");
-      upserts.push(
-        prisma.config.upsert({
-          where: { key: config.key },
-          update: { value: safeValue },
-          create: { key: config.key, value: safeValue },
-        }),
-      );
-    }
-  }
+  // value 为 undefined 表示「不修改」：DB 跳过，缓存也必须跳过，
+  // 否则会把空串写进缓存而 DB 保留原值，造成长期不一致
+  const entries = configs
+    .filter((c) => c.value !== undefined)
+    .map((c) => ({ key: c.key, value: String(c.value ?? "") }));
 
-  if (upserts.length > 0) {
-    await Promise.all(upserts);
+  if (entries.length === 0) return { success: true };
 
-    // 🔒 修复批量写入时的缓存遗漏 Bug
-    if (!memoryCache || memoryCache.expireAt <= Date.now()) {
-      const map = new Map<string, string>();
-      for (const c of configs) {
-        map.set(c.key, String(c.value ?? ""));
-      }
-      memoryCache = {
-        value: map,
-        expireAt: Date.now() + CACHE_TTL,
-      };
-    } else {
-      for (const c of configs) {
-        memoryCache.value.set(c.key, String(c.value ?? ""));
-      }
-    }
-  }
+  // 🔒 原子性：整批成功或整批回滚。
+  // 原实现用 Promise.all 并发 upsert，任一条失败时其余已落库且无法回滚，
+  // 留下「部分配置已改、部分未改」的中间态。
+  await prisma.$transaction(
+    entries.map((c) =>
+      prisma.config.upsert({
+        where: { key: c.key },
+        update: { value: c.value },
+        create: { key: c.key, value: c.value },
+      }),
+    ),
+  );
+
+  // 只有事务提交成功后才更新缓存
+  applyToCache(entries);
+
   return { success: true };
 };
