@@ -4,6 +4,7 @@ import { getClientByAccount } from "#server/lib/pan-instance";
 import { QuarkUCClient as QuarkUCClientType } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient as BaiduClientType } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient as XunleiClientType } from "@netdisk-sdk/xunlei-sdk";
+import { GuangyaClient as GuangyaClientType } from "@netdisk-sdk/guangya-sdk";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
 import { THIRTY_MINUTES } from "#server/lib/const";
 
@@ -140,6 +141,12 @@ export default defineTask({
               successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
             }
           } else if (client instanceof XunleiClientType) {
+            for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
+              const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
+              await client.fsApi.delete(chunk.flatMap((c) => c.fids));
+              successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
+            }
+          } else if (client instanceof GuangyaClientType) {
             for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
               const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
               await client.fsApi.delete(chunk.flatMap((c) => c.fids));
