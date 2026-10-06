@@ -2,10 +2,11 @@
 // 对应源码：server/utils/novel.ts
 //
 // 仅测试纯函数：buildQuery / cleanCoverImage / mapBookItem。
-// 跳过依赖外部资源的 getRandomBaiduCookie（accountCache）/ fetchBaiduNovel（fetch）
-// / parseBaiduNovelResponse（Nitro createError 全局）。
+// getRandomBaiduCookie 依赖 accountCache，已 mock。
+// fetchBaiduNovel 依赖 fetch，用 stubGlobal 替换后测试超时与错误转换。
+// parseBaiduNovelResponse 依赖 Nitro createError 全局，未覆盖。
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // mock #server/lib/accountCache 防止 Prisma 在模块加载时被实例化
 vi.mock("#server/lib/accountCache", () => ({
@@ -19,6 +20,7 @@ import {
   buildQuery,
   cleanCoverImage,
   mapBookItem,
+  fetchBaiduNovel,
 } from "./novel";
 
 describe("常量", () => {
@@ -161,5 +163,76 @@ describe("mapBookItem", () => {
     const mapped = mapBookItem({ book_id: 1 });
     expect(mapped.bookName).toBeUndefined();
     expect(mapped.author).toBeUndefined();
+  });
+});
+
+describe("fetchBaiduNovel 超时与错误转换", () => {
+  // Nitro 自动导入的 createError 在 vitest 下不存在，stub 一个最小实现
+  beforeEach(() => {
+    vi.stubGlobal("createError", (opts: any) => ({ ...opts }));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** 模拟一个只有 signal abort 才 settle 的挂起请求 */
+  const hangingFetch = (abortName: string) =>
+    vi.fn((_url: string, init: any) =>
+      new Promise((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () =>
+          reject(Object.assign(new Error("aborted"), { name: abortName })),
+        );
+      }),
+    );
+
+  it("上游永不响应时，在 timeout 内中止并抛 504", async () => {
+    vi.stubGlobal("fetch", hangingFetch("TimeoutError"));
+
+    const start = Date.now();
+    await expect(
+      fetchBaiduNovel("/api/x", "cookie", { timeout: 300 }),
+    ).rejects.toMatchObject({ statusCode: 504 });
+    const elapsed = Date.now() - start;
+
+    expect(elapsed).toBeGreaterThanOrEqual(250);
+    // 没有超时的话这里会一直挂着直到 vitest 15s testTimeout
+    expect(elapsed).toBeLessThan(2000);
+  });
+
+  it("网络层错误转换为 502，不再裸抛 fetch failed", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      }),
+    );
+
+    await expect(fetchBaiduNovel("/api/x", "cookie")).rejects.toMatchObject({
+      statusCode: 502,
+    });
+  });
+
+  it("外部 signal 也能中止请求（不等满 timeout）", async () => {
+    vi.stubGlobal("fetch", hangingFetch("AbortError"));
+
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 100);
+
+    await expect(
+      fetchBaiduNovel("/api/x", "cookie", {
+        timeout: 10_000,
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ statusCode: 504 });
+  });
+
+  it("正常响应原样透传", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response('{"errno":0}', { status: 200 })),
+    );
+
+    const res = await fetchBaiduNovel("/api/x", "cookie");
+    expect(res.status).toBe(200);
   });
 });

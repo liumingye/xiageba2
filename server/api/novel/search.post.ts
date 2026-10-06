@@ -3,6 +3,7 @@ import {
   buildQuery,
   mapBookItem,
   fetchBaiduNovel,
+  parseJsonSafe,
 } from "#server/utils/novel";
 
 /**
@@ -30,9 +31,14 @@ export default defineEventHandler(async (event) => {
   });
   const url = `/api/unisearch?${params}`;
 
+  // 仅在「请求成功但返回空结果」时重试（百度侧索引延迟），
+  // 非 2xx 与业务错误码直接抛出，不重试
+  const MAX_ATTEMPTS = 5;
+  const BASE_BACKOFF_MS = 100;
+
   let data: any = null;
 
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const res = await fetchBaiduNovel(url, cookie, { method: "POST" });
 
     if (!res.ok) {
@@ -42,7 +48,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    data = await res.json();
+    data = await parseJsonSafe(res, "小说搜索");
     if (data.error_no !== 0) {
       throw createError({
         statusCode: 500,
@@ -54,8 +60,13 @@ export default defineEventHandler(async (event) => {
       break;
     }
 
-    if (attempt === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    // 指数退避：100 / 200 / 400 / 800ms。
+    // 原实现只在第一次重试前 sleep 100ms，后续 4 次无间隔连打，
+    // 既打不中索引延迟的窗口，又容易撞上游风控。
+    if (attempt < MAX_ATTEMPTS - 1) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, BASE_BACKOFF_MS * 2 ** attempt),
+      );
     }
   }
 

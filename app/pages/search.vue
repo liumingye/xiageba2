@@ -457,7 +457,7 @@ watch(
       stopPanCheck();
       if (!isMusic.value && results.value.length > 0) {
         const ids = (results.value as SourceItem[])
-          .filter((item) => item.type !== "magnet" && item.type !== "guangya")
+          .filter((item) => item.type !== "magnet" && item.type !== "guangya" && item.type !== "139")
           .map((item) => item.id);
         submitPanCheck(ids);
       }

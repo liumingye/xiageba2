@@ -81,6 +81,19 @@ export default defineNuxtConfig({
             duration: 30,
             ban: 120,
           },
+          {
+            path: "/api/novel/search",
+            max: 30,
+            duration: 60,
+            ban: 120,
+          },
+          {
+            path: "/api/novel/**",
+            pattern: true,
+            max: 60,
+            duration: 60,
+            ban: 60,
+          },
         ],
         log: {
           path: "",
