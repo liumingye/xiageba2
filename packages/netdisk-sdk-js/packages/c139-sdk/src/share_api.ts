@@ -208,7 +208,7 @@ export class C139ShareApi {
       catalogInfoList: catalogIdList,
       newCatalogID: toFolderId,
       linkID: linkId,
-      newCatalogName: "temp",
+      newCatalogName: "",
       needPassword: true,
     };
     const req = {

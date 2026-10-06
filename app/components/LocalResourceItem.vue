@@ -126,7 +126,11 @@ const emit = defineEmits<{
           >获取链接</UButton
         >
         <UButton
-          v-if="['quark', 'baidu', 'uc', 'xunlei', 'guangya'].includes(item.type)"
+          v-if="
+            ['quark', 'baidu', 'uc', 'xunlei', 'guangya', '139'].includes(
+              item.type,
+            )
+          "
           variant="outline"
           @click.stop="emit('openTree', item)"
           icon="i-lucide-folder"

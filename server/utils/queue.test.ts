@@ -11,8 +11,8 @@ import { aiRequestQueue } from "./queue";
 /** 等待微任务 + 宏任务一轮，让 Promise 链充分推进 */
 const tick = () => new Promise<void>((r) => setTimeout(() => r(), 0));
 
-/** 占满 10 个并发槽，返回 10 个 release。调用方必须全部消费 */
-async function fillSlots(n = 10) {
+/** 占满 5 个并发槽，返回 5 个 release。调用方必须全部消费 */
+async function fillSlots(n = 5) {
   const releases: Array<() => void> = [];
   for (let i = 0; i < n; i++) {
     const release = await aiRequestQueue.enter(`fill-${i}`, vi.fn());
@@ -56,7 +56,7 @@ describe("aiRequestQueue（RequestQueue 单例）", () => {
   });
 
   it("并发满后进入排队，onProgress 报告位置 1", async () => {
-    const releases = await fillSlots(10);
+    const releases = await fillSlots(5);
     try {
       const onProgress = vi.fn();
       const pending = aiRequestQueue.enter("queued-1", onProgress);
@@ -78,7 +78,7 @@ describe("aiRequestQueue（RequestQueue 单例）", () => {
   });
 
   it("释放一个槽位后，队首被唤醒并返回 release", async () => {
-    const releases = await fillSlots(10);
+    const releases = await fillSlots(5);
     const onProgress1 = vi.fn();
     const onProgress2 = vi.fn();
     const p1 = aiRequestQueue.enter("q1", onProgress1);
@@ -107,7 +107,7 @@ describe("aiRequestQueue（RequestQueue 单例）", () => {
   });
 
   it("多个排队者按 FIFO 顺序唤醒", async () => {
-    const releases = await fillSlots(10);
+    const releases = await fillSlots(5);
     const order: string[] = [];
     const p1 = aiRequestQueue
       .enter("a", () => {})
@@ -152,7 +152,7 @@ describe("aiRequestQueue（RequestQueue 单例）", () => {
   });
 
   it("位置更新广播给所有等待者", async () => {
-    const releases = await fillSlots(10);
+    const releases = await fillSlots(5);
     const cb1 = vi.fn();
     const cb2 = vi.fn();
     const cb3 = vi.fn();

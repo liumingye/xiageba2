@@ -1,6 +1,7 @@
-import { OpenAI } from "openai";
+import type { OpenAI } from "openai";
 import { Pool } from "pg";
 import { prisma } from "#server/lib/prisma";
+import { getAiChatClient } from "#server/lib/aiClient";
 import "dotenv/config";
 import {
   cutForSearch,
@@ -276,7 +277,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: "AI 搜索配置不完整" });
   }
 
-  const openai = new OpenAI({
+  // 按 baseURL + apiKey 复用客户端（内置 timeout / maxRetries），不要每请求 new
+  const openai = getAiChatClient({
     baseURL: aiConfig.baseURL,
     apiKey: aiConfig.apiKey,
   });
@@ -311,7 +313,7 @@ export default defineEventHandler(async (event) => {
         // 实时给前端推送排队进度
         stream.push(
           `data: ${JSON.stringify({
-            chunk: `\r⚠️ 当前服务器爆满，正在排队中（您当前排在第 **${position}** 位），请稍等...`,
+            chunk: `\r⚠️ 当前服务器爆满，正在排队中（您当前排在第 **${position}** 位），请稍等...\n\n`,
           })}\n\n`,
         );
       });
@@ -320,7 +322,7 @@ export default defineEventHandler(async (event) => {
       if (hasWaited) {
         // 只有排过队的人，才需要用 \r 清除刚刚的排队字样
         stream.push(
-          `data: ${JSON.stringify({ chunk: `\n🚀 轮到您了！正在为您思考中...\n\n` })}\n\n`,
+          `data: ${JSON.stringify({ chunk: `\r🚀 轮到您了！正在为您思考中...\n\n` })}\n\n`,
         );
       }
 

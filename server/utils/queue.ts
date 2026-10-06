@@ -68,5 +68,5 @@ class RequestQueue {
   }
 }
 
-// 导出全局单例，所有人共享这 10 个并发坑位
-export const aiRequestQueue = new RequestQueue(10);
+// 导出全局单例，所有人共享这 5 个并发坑位
+export const aiRequestQueue = new RequestQueue(5);

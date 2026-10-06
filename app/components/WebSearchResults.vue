@@ -114,7 +114,8 @@ const startWebSearch = () => {
 
       if (msg.type === "result" && msg.data) {
         results.value.push(msg.data);
-        if (msg.data.type === "magnet" || msg.data.type === "guangya") return;
+        // 不进行检测的类型
+        if (["magnet", "guangya", "139"].includes(msg.data.type)) return;
         // 数据进入缓冲区
         queuePanCheck(msg.data.url);
       } else if (msg.type === "done") {
@@ -258,7 +259,7 @@ defineExpose({ results, searching, error });
               >
               <UButton
                 v-if="
-                  ['quark', 'baidu', 'uc', 'xunlei', 'guangya'].includes(
+                  ['quark', 'baidu', 'uc', 'xunlei', 'guangya', '139'].includes(
                     item.type,
                   )
                 "

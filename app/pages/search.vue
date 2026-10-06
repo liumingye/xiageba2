@@ -457,7 +457,8 @@ watch(
       stopPanCheck();
       if (!isMusic.value && results.value.length > 0) {
         const ids = (results.value as SourceItem[])
-          .filter((item) => item.type !== "magnet" && item.type !== "guangya" && item.type !== "139")
+          // 不进行检测的类型
+          .filter(({ type }) => !["magnet", "guangya", "139"].includes(type))
           .map((item) => item.id);
         submitPanCheck(ids);
       }
@@ -752,6 +753,7 @@ watch(
                 'xunlei',
                 'ali',
                 'guangya',
+                '139',
               ].includes(panFilter)
             "
           >
