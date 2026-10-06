@@ -622,7 +622,7 @@ async function transferBaidu(
     // errtype: 1 | 啊哦，你来晚了，分享的文件已经被取消了，下次要早点哟。
     // errtype: 3 | 此链接分享内容可能因为涉及侵权、色情、反动、低俗等信息，无法访问！
     const info = typeof err?.info === "function" ? err.info() : undefined;
-    if (sourceId && info && [1, 3].includes(info.code)) {
+    if (sourceId && info && [1, 3].includes(info.errtype)) {
       // 禁用资源
       event.waitUntil(disableSource(sourceId));
     }
