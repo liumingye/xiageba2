@@ -67,7 +67,32 @@ importers:
         specifier: ^0.0.7
         version: 0.0.7
 
-  packages/guangya:
+  packages/c139-sdk:
+    dependencies:
+      '@netdisk-sdk/utils':
+        specifier: workspace:^
+        version: link:../utils
+      agentkeepalive:
+        specifier: ^4.6.0
+        version: 4.6.0
+      error:
+        specifier: ^10.4.0
+        version: 10.4.0
+      superagent:
+        specifier: ^10.4.1
+        version: 10.4.1
+    devDependencies:
+      '@types/error':
+        specifier: workspace:^
+        version: link:../../types/error
+      '@types/node':
+        specifier: ^26.6.3
+        version: 26.6.3
+      '@types/superagent':
+        specifier: ^8.1.11
+        version: 8.1.11
+
+  packages/guangya-sdk:
     dependencies:
       '@netdisk-sdk/utils':
         specifier: workspace:^

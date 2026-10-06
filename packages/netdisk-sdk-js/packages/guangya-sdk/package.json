@@ -11,7 +11,7 @@
     "watch": "parcel watch",
     "build": "parcel build"
   },
-  "homepage": "https://github.com/liumingye/xiageba2/tree/main/packages/netdisk-sdk-js/packages/guangya",
+  "homepage": "https://github.com/liumingye/xiageba2/tree/main/packages/netdisk-sdk-js/packages/guangya-sdk",
   "repository": {
     "type": "git",
     "url": "https://github.com/liumingye/xiageba2"
