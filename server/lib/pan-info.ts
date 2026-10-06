@@ -2,10 +2,11 @@ import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
+import { C139Client } from "@netdisk-sdk/c139-sdk";
 import { getClientByAccount, createTempClient } from "#server/lib/pan-instance";
 import type { PanAccount } from "#server/lib/accountCache";
 
-type PanClient = QuarkUCClient | BaiduClient | XunleiClient | GuangyaClient;
+type PanClient = QuarkUCClient | BaiduClient | XunleiClient | GuangyaClient | C139Client;
 
 /**
  * 夸克/UC：账号信息接口
@@ -78,6 +79,16 @@ async function getGuangyaName(client: GuangyaClient): Promise<string> {
 }
 
 /**
+ * 139 云盘：从 cookie 解析账号（手机号）作为昵称
+ * 无独立用户信息接口，直接使用 cookie 中的账号标识
+ */
+async function getC139Name(client: C139Client): Promise<string> {
+  const account = client.getAccount();
+  if (!account) throw new Error("未获取到账号信息");
+  return String(account);
+}
+
+/**
  * 通过已创建的 client 获取账号昵称
  */
 export async function getAccountNameByClient(
@@ -94,6 +105,9 @@ export async function getAccountNameByClient(
   }
   if (client instanceof GuangyaClient) {
     return await getGuangyaName(client);
+  }
+  if (client instanceof C139Client) {
+    return await getC139Name(client);
   }
   throw new Error("不支持的网盘类型");
 }

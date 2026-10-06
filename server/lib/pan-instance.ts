@@ -2,6 +2,7 @@ import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
+import { C139Client } from "@netdisk-sdk/c139-sdk";
 import { updateRefreshTokenByAccountId } from "#server/utils/source";
 import { BAIDU_CLIENT_ID, BAIDU_CLIENT_SECRET } from "#server/lib/const";
 import type { PanAccount } from "#server/lib/accountCache";
@@ -10,7 +11,7 @@ import type { PanAccount } from "#server/lib/accountCache";
 const CLIENT_EXPIRE_HOURS = 0.5;
 const CLIENT_EXPIRE_MS = CLIENT_EXPIRE_HOURS * 60 * 60 * 1000;
 
-export type PanClient = QuarkUCClient | BaiduClient | XunleiClient | GuangyaClient;
+export type PanClient = QuarkUCClient | BaiduClient | XunleiClient | GuangyaClient | C139Client;
 
 interface CachedClient {
   client: PanClient;
@@ -148,6 +149,19 @@ export async function getClientByAccount(
       break;
     }
 
+    case "c139": {
+      if (!account.cookie) {
+        throw createError({
+          statusCode: 500,
+          message: `账号 ${account.id} 未配置 Cookie，请先在账号管理中配置`,
+        });
+      }
+      client = new C139Client({
+        cookie: account.cookie,
+      });
+      break;
+    }
+
     default:
       throw createError({
         statusCode: 500,
@@ -237,6 +251,18 @@ export async function createTempClient(params: {
         refreshToken,
         accessToken: accessToken || undefined,
         expiresAt: expiresAt ? expiresAt.getTime() : undefined,
+      });
+    }
+
+    case "c139": {
+      if (!cookie) {
+        throw createError({
+          statusCode: 400,
+          message: "请先填写 Cookie",
+        });
+      }
+      return new C139Client({
+        cookie,
       });
     }
 

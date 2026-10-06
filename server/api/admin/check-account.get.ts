@@ -3,6 +3,7 @@ import { getClientByAccount } from "#server/lib/pan-instance";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
+import { C139Client } from "@netdisk-sdk/c139-sdk";
 
 export default defineEventHandler(async (event) => {
   const { accountId } = getQuery(event) as { accountId?: string };
@@ -27,6 +28,8 @@ export default defineEventHandler(async (event) => {
       await client.fsOpenApi.listall({ path: "/", start: 0, limit: 1 });
     } else if (client instanceof GuangyaClient) {
       await client.fsApi.listFiles({ parentId: "", page: 0, pageSize: 1 });
+    } else if (client instanceof C139Client) {
+      await client.fsApi.listFiles({ parentFileId: "/", pageSize: 1 });
     } else {
       await client.fsApi.listFiles({ parentId: "", limit: 1 });
     }

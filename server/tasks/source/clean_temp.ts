@@ -5,6 +5,7 @@ import { QuarkUCClient as QuarkUCClientType } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient as BaiduClientType } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient as XunleiClientType } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient as GuangyaClientType } from "@netdisk-sdk/guangya-sdk";
+import { C139Client as C139ClientType } from "@netdisk-sdk/c139-sdk";
 import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
 import { THIRTY_MINUTES } from "#server/lib/const";
 
@@ -154,6 +155,12 @@ export default defineTask({
             }
             if (items.length > 0) {
               await client.fsApi.clearRecycleBin();
+            }
+          } else if (client instanceof C139ClientType) {
+            for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
+              const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
+              await client.fsApi.batchTrash(chunk.flatMap((c) => c.fids));
+              successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
             }
           } else if (client instanceof BaiduClientType) {
             let tempDir = account.tempDir;

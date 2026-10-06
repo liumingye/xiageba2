@@ -2,7 +2,7 @@ import { prisma } from "#server/lib/prisma";
 import { clearAccountCache } from "#server/lib/accountCache";
 import { getAccountNameByCredentials } from "#server/lib/pan-info";
 
-const VALID_TYPES = ["quark", "baidu", "uc", "xunlei", "guangya"];
+const VALID_TYPES = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
@@ -68,6 +68,12 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 400,
         message: "百度网盘必须填写 Cookie",
+      });
+    }
+    if (type === "c139" && !cookie) {
+      throw createError({
+        statusCode: 400,
+        message: "中国移动云盘必须填写 Cookie",
       });
     }
 

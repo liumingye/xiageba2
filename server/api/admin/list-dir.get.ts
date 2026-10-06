@@ -5,6 +5,7 @@ import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
+import { C139Client } from "@netdisk-sdk/c139-sdk";
 
 interface DirItem {
   id: string;
@@ -52,6 +53,24 @@ async function listDirs(client: PanClient): Promise<DirItem[]> {
     const res = await client.fsApi.listFiles({
       parentId: "",
       page: 0,
+      pageSize: 100,
+    });
+    return (res.list || [])
+      .filter((f) => f.isDir)
+      .map((f) => ({ id: f.fid, name: f.fileName }));
+  }
+
+  // C139Client
+  if (client instanceof C139Client) {
+    const test = client.aesDecrypt(
+      Buffer.from("PVGDwmcvfs1uV3d1", "utf-8"),
+      "wFJ71/ 3 JffCxTq15Do7sZ1gKvYPvkmrk4oZcjdj6bDkz5H7saJ/ P70UFj/ xZTQBl0yVCk79iHJRUp9zMn5+yXWHQ9N1rYboKUCI/ YjpI9ZTR0VTcLiED8+DYfVQPHYJEVT5vBeoigIqzdq0nkgO4t3ZQxP16NM9ChyDZUPRO2JjM9tX7mObRS/ 0 N83MI9uTaddoEOnQyoCk+IQwk9Fs1sL+145 lXMYQo6hQZIa/ MoDcnwyaswWUv/ Hhwnc/ XixS37lDe6/ Ovb+Wcpxts9sCAr6OrQZi9rsLvGnLLaRHZr0JTOTj14HpI4h45FbulMj/ DrRM3lH7B8afbLNWogoBwDs2nokV5WRIP/ wnd13HcSotsGIIh/ HJh+o31qIk7080Q0nXM9ECTw8KUsFHV8soitTSQ9fSCAViki005zHR0xJQ0VfvSJpkDQ4eKa8wXA+/yZdMJlX24ZTFFyww9plZKR/ L3acoIhlJsk9WNIwjKaET9WQv0UqNIlxrkChq96+ALSs9rdIKrtIaK2rVmsZ0fJLkML5U+82 mhcVWTYyTgWhEOHrCvq3fUH74qr1usUbBoI48yzTAJtu1Mc2Elqrm5Wt7kNIWImTrQLjWEoUue0DoBpsCGbYX4h83Cwsz+ayHyN4oMPo2lM14hHOpX5pnjroPh/ 31 zppd/ XIEJU6z454FiQUCrZx2MEp3uts7ccRzqJindiaoVp5RZBr4vgrMWf/ t7b086KPmYTtRiKYudSu1xG4iHPPURHqCDBhW24kl8",
+    );
+    console.log(test);
+    // const test2 = await client.shareApi.getOutLinkTitle();
+    // console.log(test2);
+    const res = await client.fsApi.listFiles({
+      parentFileId: "/",
       pageSize: 100,
     });
     return (res.list || [])

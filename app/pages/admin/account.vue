@@ -27,7 +27,7 @@ interface AccountListItem {
 
 interface AccountFormData {
   id?: number;
-  type: "quark" | "baidu" | "uc" | "xunlei" | "guangya";
+  type: "quark" | "baidu" | "uc" | "xunlei" | "guangya" | "c139";
   cookie: string;
   refreshToken: string;
   accessToken: string;
@@ -140,6 +140,15 @@ const saveForm = async () => {
     return;
   }
   if (f.type === "baidu" && !f.cookie) {
+    toast.add({
+      title: "请填写 Cookie",
+      icon: "i-lucide-x",
+      color: "error",
+      duration: 2000,
+    });
+    return;
+  }
+  if (f.type === "c139" && !f.cookie) {
     toast.add({
       title: "请填写 Cookie",
       icon: "i-lucide-x",
@@ -276,7 +285,7 @@ const openDirPicker = () => {
   // 添加模式：校验临时凭证是否填写
   if (!formData.value.id) {
     const t = formData.value.type;
-    if (t === "quark" || t === "uc" || t === "baidu") {
+    if (t === "quark" || t === "uc" || t === "baidu" || t === "c139") {
       if (!formData.value.cookie) {
         toast.add({
           title: "请先填写 Cookie",
@@ -397,7 +406,7 @@ const groupedAccounts = computed(() => {
   return groups;
 });
 
-const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya"];
+const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
 </script>
 
 <template>
@@ -595,6 +604,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya"];
               { label: 'UC 网盘', value: 'uc' },
               { label: '迅雷云盘', value: 'xunlei' },
               { label: '光鸭云盘', value: 'guangya' },
+              { label: '中国移动云盘', value: 'c139' },
             ]"
             :disabled="formIsEdit"
             class="w-full"

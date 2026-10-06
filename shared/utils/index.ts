@@ -58,6 +58,7 @@ const STORAGE_HOST_MAP: Record<string, PanFilter> = {
   "cloud.189.cn": "189",
   "ecloud.189.cn": "189",
   "yun.139.com": "139",
+  "caiyun.139.com": "139",
   "123684.com": "123",
   "123865.com": "123",
   "123912.com": "123",

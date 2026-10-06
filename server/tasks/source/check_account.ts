@@ -3,6 +3,7 @@ import { getClientByAccount } from "#server/lib/pan-instance";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
+import { C139Client } from "@netdisk-sdk/c139-sdk";
 import "dotenv/config";
 import axios from "axios";
 
@@ -12,6 +13,7 @@ const TYPE_LABELS: Record<string, string> = {
   uc: "UC网盘",
   xunlei: "迅雷云盘",
   guangya: "光鸭云盘",
+  c139: "中国移动云盘",
 };
 
 export default defineTask({
@@ -70,6 +72,8 @@ export default defineTask({
           await client.fsOpenApi.listall({ path: "/", start: 0, limit: 1 });
         } else if (client instanceof GuangyaClient) {
           await client.fsApi.listFiles({ parentId: "", page: 0, pageSize: 1 });
+        } else if (client instanceof C139Client) {
+          await client.fsApi.listFiles({ parentFileId: "/", pageSize: 1 });
         } else {
           await client.fsApi.listFiles({ parentId: "", limit: 1 });
         }

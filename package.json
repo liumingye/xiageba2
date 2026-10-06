@@ -18,6 +18,7 @@
     "@iconify-json/lucide": "^1.2.137",
     "@lucide/vue": "^1.48.0",
     "@netdisk-sdk/baidu-sdk": "workspace:*",
+    "@netdisk-sdk/c139-sdk": "workspace:*",
     "@netdisk-sdk/guangya-sdk": "workspace:*",
     "@netdisk-sdk/quarkuc-sdk": "workspace:*",
     "@netdisk-sdk/xunlei-sdk": "workspace:*",

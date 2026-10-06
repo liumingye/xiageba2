@@ -11,6 +11,7 @@ import type { IShareParam, IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
 import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
+import { C139Client } from "@netdisk-sdk/c139-sdk";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
 import { TREE_MAX_LINE } from "#server/lib/const";
@@ -127,6 +128,8 @@ export default defineEventHandler(async (event) => {
       generatedTree = await buildXunleiTree(url);
     } else if (parsed.type === "guangya") {
       generatedTree = await buildGuangyaTree(parsed.fid, parsed.passcode);
+    } else if (parsed.type === "c139") {
+      generatedTree = await buildC139Tree(parsed.fid, parsed.passcode);
     } else {
       throw createError({ statusCode: 400, message: "不支持的该网盘类型" });
     }
@@ -542,6 +545,85 @@ async function walkGuangya(
       await walkGuangya(
         client,
         accessToken,
+        item.fid,
+        prefix + extension,
+        depth + 1,
+        lines,
+      );
+    }
+  }
+}
+
+async function buildC139Tree(
+  linkId: string,
+  passcode: string,
+): Promise<string> {
+  const account = await getRandomAccountByType("c139");
+  if (!account) {
+    throw createError({ statusCode: 500, message: "没有可用的网盘账号" });
+  }
+  const client = (await getClientByAccount(account)) as C139Client;
+
+  const lines: string[] = [];
+  await walkC139(client, linkId, passcode, "root", "", 0, lines);
+  return lines.join("\n");
+}
+
+async function walkC139(
+  client: C139Client,
+  linkId: string,
+  passcode: string,
+  pcaId: string,
+  prefix: string,
+  depth: number,
+  lines: string[],
+): Promise<void> {
+  if (depth >= MAX_DEPTH) return;
+
+  let res;
+  try {
+    res = await client.shareApi.getShareFiles({
+      linkId,
+      pcaId,
+      passwd: passcode,
+    });
+  } catch (e: any) {
+    throw createError({
+      statusCode: 404,
+      message: `获取分享目录失败: ${e.message || "未知错误"}`,
+    });
+  }
+
+  const items = res.list || [];
+  // 目录排前面，同类型按文件名排序
+  items.sort((a, b) => {
+    if (a.isDir && !b.isDir) return -1;
+    if (!a.isDir && b.isDir) return 1;
+    return a.fileName.localeCompare(b.fileName, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
+
+  const filtered = filterAdResults(items, "fileName", automaton_ad_filter);
+
+  for (let i = 0; i < filtered.length; i++) {
+    const item = filtered[i];
+    if (!item) continue;
+    const isLast = i === filtered.length - 1;
+    const connector = depth === 0 ? "" : isLast ? "└─ " : "├─ ";
+    lines.push(`${prefix}${connector}${item.fileName}`);
+
+    if (lines.length >= TREE_MAX_LINE + 5) {
+      break;
+    }
+
+    if (item.isDir) {
+      const extension = depth === 0 ? "" : isLast ? "  " : "│  ";
+      await walkC139(
+        client,
+        linkId,
+        passcode,
         item.fid,
         prefix + extension,
         depth + 1,

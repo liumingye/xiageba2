@@ -10,6 +10,7 @@ export const PAN_TYPE_LABELS: Record<string, string> = {
   uc: "UC 网盘",
   xunlei: "迅雷云盘",
   guangya: "光鸭云盘",
+  c139: "中国移动云盘",
 };
 
 /** 获取网盘类型的中文标签，未知类型回退为原始类型名 */

@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
     if (!admin) {
       // 即使不存在也走一次轻量验证，避免枚举计时攻击
-      verifyPassword("dummy", "0".repeat(64));
+      verifyPassword("dummy", `${"0".repeat(32)}$${"0".repeat(32)}`);
       throw createError({ statusCode: 401, message: "用户名或密码错误" });
     }
 

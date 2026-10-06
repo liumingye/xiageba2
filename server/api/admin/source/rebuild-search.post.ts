@@ -16,17 +16,17 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { all } = await readBody(event);
-
   // 标记加锁
   isRebuilding = true;
+
+  const { all } = await readBody(event);
 
   // 2. ⚡ 立即返回响应，转入后台异步执行（防止前端客户端因长连接超时报错）
   // 利用 Node.js 的事件循环，在当前 tick 结束后开始执行后台繁重任务
   setImmediate(async () => {
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      max: 30,
+      max: 100,
     });
 
     const taskType = all ? "all" : "inc"; // 区分全量还是增量
@@ -118,8 +118,8 @@ export default defineEventHandler(async (event) => {
       );
       console.error("[RebuildSearch] 严重异常:", globalErr);
     } finally {
-      await pool.end();
       isRebuilding = false;
+      await pool.end();
     }
   });
 

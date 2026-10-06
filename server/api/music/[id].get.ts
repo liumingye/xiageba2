@@ -1,5 +1,12 @@
 import { prisma } from "#server/lib/prisma";
 
+const incCount = async (id: string) => {
+  await prisma.music.update({
+    where: { id },
+    data: { viewCount: { increment: 1 } },
+  });
+};
+
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id as string;
 
@@ -25,10 +32,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "音乐不存在" });
   }
 
-  prisma.music.update({
-    where: { id },
-    data: { viewCount: { increment: 1 } },
-  });
+  event.waitUntil(incCount(id));
 
   return {
     ...music,

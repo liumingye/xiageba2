@@ -14,11 +14,11 @@ const prismaClientSingleton = () => {
   const basePrisma = new PrismaClient({
     adapter: new PrismaPg({
       connectionString,
-      max: 30,
+      max: 100,
     }),
   });
 
-  const sql = postgres(connectionString, { max: 30 });
+  const sql = postgres(connectionString, { max: 100 });
 
   // return basePrisma;
   return basePrisma.$extends(

@@ -18,6 +18,7 @@ import {
 import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient, parseGuangyaShareURL } from "@netdisk-sdk/guangya-sdk";
 import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
+import { C139Client, parseC139ShareURL } from "@netdisk-sdk/c139-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
@@ -32,7 +33,14 @@ import {
 import type { H3Event } from "h3";
 import { automaton_ad_filter } from "#server/lib/simpleAC";
 
-type NetdiskType = "quark" | "uc" | "baidu" | "xunlei" | "guangya" | "unknown";
+type NetdiskType =
+  | "quark"
+  | "uc"
+  | "baidu"
+  | "xunlei"
+  | "guangya"
+  | "c139"
+  | "unknown";
 
 interface AdFilterConfig {
   enabled: boolean;
@@ -357,6 +365,8 @@ const ALLOWED_HOSTS = new Set([
   "pan.xunlei.com",
   "www.guangyapan.com",
   "guangyapan.com",
+  "yun.139.com",
+  "caiyun.139.com",
 ]);
 
 /**
@@ -407,6 +417,18 @@ export function parseShareUrl(url: string): ParsedShare {
       return {
         type: "guangya",
         fid: parsed.shareId,
+        passcode: parsed.passcode,
+        url,
+      };
+  }
+
+  // 中国移动云盘: 	https://yun.139.com/shareweb/#/w/i/2ygBjP7ptdnpr&agyn
+  if (url.includes("yun.139.com")) {
+    const parsed = parseC139ShareURL(url);
+    if (parsed.linkId)
+      return {
+        type: "c139",
+        fid: parsed.linkId,
         passcode: parsed.passcode,
         url,
       };
@@ -983,6 +1005,86 @@ async function transferGuangya(
   return { shareUrl, fids: newFids };
 }
 
+/**
+ * 中国移动云盘转存：获取分享文件列表 → 创建转存任务 → 轮询完成 → 创建新分享
+ */
+async function transferC139(
+  event: H3Event<EventHandlerRequest>,
+  account: PanAccount,
+  linkId: string,
+  passcode: string,
+  _sourceId?: string,
+): Promise<{ shareUrl: string; fids: string[] }> {
+  const tempDirId = account.tempDir || "";
+  if (!tempDirId) {
+    throw createError({ statusCode: 500, message: "账号未配置临时目录" });
+  }
+
+  const client = (await getClientByAccount(account)) as C139Client;
+  const shareApi = client.shareApi;
+
+  // 步骤1: 获取分享文件列表
+  const shareResult = await shareApi.getShareFiles({
+    linkId,
+    pcaId: "root",
+    passwd: passcode,
+  });
+  if (!shareResult.list || shareResult.list.length === 0) {
+    // todo 禁用资源
+    throw createError({ statusCode: 404, message: "分享内容为空" });
+  }
+
+  const contentIds = shareResult.list.filter((f) => !f.isDir).map((f) => f.fid);
+  const catalogIds = shareResult.list.filter((f) => f.isDir).map((f) => f.fid);
+
+  // 步骤2: 创建转存任务
+  const taskId = await shareApi.createTransferTask({
+    coIdList: contentIds,
+    catalogIdList: catalogIds,
+    toFolderId: tempDirId,
+    linkId,
+  });
+  if (!taskId) {
+    throw createError({ statusCode: 500, message: "创建转存任务失败" });
+  }
+
+  // 步骤3: 等待转存完成
+  const taskResult = await shareApi.waitTransferTask(taskId);
+  if (Object.keys(taskResult.mapping).length === 0) {
+    throw createError({ statusCode: 500, message: "转存后未获取到文件 ID" });
+  }
+
+  // 按原始类型区分：目录 srcId 集合
+  const dirSrcIds = new Set(
+    shareResult.list.filter((f) => f.isDir).map((f) => f.fid),
+  );
+  // mapping: srcId -> rstId，按原始类型分入 caIDLst / coIDLst
+  const newCaIds: string[] = [];
+  const newCoIds: string[] = [];
+  for (const [srcId, rstId] of Object.entries(taskResult.mapping)) {
+    if (dirSrcIds.has(srcId)) {
+      newCaIds.push(rstId);
+    } else {
+      newCoIds.push(rstId);
+    }
+  }
+  const fids = [...newCaIds, ...newCoIds];
+  if (fids.length === 0) {
+    throw createError({ statusCode: 500, message: "转存后未获取到文件 ID" });
+  }
+
+  // 步骤4: 创建新分享（区分文件 ID 和目录 ID）
+  const shareName = shareResult.list[0]?.fileName || "资源分享";
+  const newShare = await shareApi.createShare(newCoIds, shareName, newCaIds);
+
+  let shareUrl = newShare.linkUrl;
+  if (newShare.passwd) {
+    shareUrl += `&${newShare.passwd}`;
+  }
+
+  return { shareUrl, fids };
+}
+
 function normalizeURL(rawURL: string): string {
   let normalized = rawURL.trim();
   normalized = normalized.replace(/？/g, "?").replace(/＆/g, "&");
@@ -1060,6 +1162,10 @@ export async function transferShareUrl(
       );
       shareUrl = data.shareUrl;
       _fid = JSON.stringify(data.fids);
+    } else if (type === "c139") {
+      const data = await transferC139(event, account, fid, passcode, sourceId);
+      shareUrl = data.shareUrl;
+      _fid = JSON.stringify(data.fids);
     } else {
       return { url: sourceUrl, transferred: false, error: "未实现的网盘类型" };
     }
@@ -1089,7 +1195,7 @@ export async function transferShareUrl(
   // 写入 Redis 缓存
   const cacheKey = sourceId
     ? `source:id:${sourceId}`
-    : `source:url:${Buffer.from(sourceUrl).toString("base64").substring(0, 40)}`;
+    : `source:url:${sourceUrl}`;
   await setRedisCache(cacheKey, shareUrl, Math.max(THIRTY_MINUTES - 300, 60));
 
   return { url: shareUrl, transferred: true };
