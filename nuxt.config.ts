@@ -297,7 +297,10 @@ export default defineNuxtConfig({
   },
   routeRules: {
     "/admin/**": { ssr: false, appLayout: "admin" },
-    "/admin/login": { appLayout: false },
+    "/admin/login": {
+      ssr: true,
+      appLayout: false,
+    },
     "/": {
       ssr: true,
       isr: 300,

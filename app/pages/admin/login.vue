@@ -6,8 +6,10 @@ import { post } from "~/utils/request";
 import type { FormSubmitEvent, AuthFormField, FormError } from "@nuxt/ui";
 import { useStyleTag, useMounted, useStorage } from "@vueuse/core";
 
+const { siteShortTitle } = await useSiteSeo();
+
 useSeoMeta({
-  title: "管理后台系统",
+  title: `登录管理后台`,
 });
 
 const router = useRouter();
@@ -125,8 +127,6 @@ const handleSubmit = async (
     loading.value = false;
   }
 };
-
-const { siteShortTitle } = await useSiteSeo();
 </script>
 
 <template>

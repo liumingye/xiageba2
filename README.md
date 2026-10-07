@@ -3,6 +3,18 @@
 基于 **Nuxt 4 + Vue 3 + PostgreSQL + Prisma 7** 构建的音乐下载与网盘资源搜索网站。
 支持 jieba 中文分词全文检索、多网盘资源转存、音乐刮削、后台管理。
 
+## 分享赚钱
+
+接入[「任推邦」](https://tg.bd.cn/#/pages/login/register?invite_code=3832491&qd=self_team_android)推广平台，分享链接邀请新用户即可赚取推广佣金。
+
+![分享赚钱 - 任推邦](https://s3.liumingye.cn/files/2026/10/20261007164149437.png)
+
+- **500+ 网推项目**：项目丰富、价格置顶、数据精准
+- **累计发佣突破 5 亿元**：APP 项目拉新佣金稳定可靠
+- **零费用入驻**：平台承诺不收取任何入驻 / 做单费用
+
+扫码或[点击链接注册](https://tg.bd.cn/#/pages/login/register?invite_code=3832491&qd=self_team_android)查看项目详情，助力中小达人成长变现。
+
 ## 功能特性
 
 ### 前台
