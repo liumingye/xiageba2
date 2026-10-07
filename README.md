@@ -7,7 +7,7 @@
 
 接入[「任推邦」](https://tg.bd.cn/#/pages/login/register?invite_code=3832491&qd=self_team_android)推广平台，分享链接邀请新用户即可赚取推广佣金。
 
-![分享赚钱 - 任推邦](https://s3.liumingye.cn/files/2026/10/20261007164149437.png)
+![分享赚钱 - 任推邦](https://raw.githubusercontent.com/liumingye/xiageba2/refs/heads/main/img/20261007164149437.png)
 
 - **500+ 网推项目**：项目丰富、价格置顶、数据精准
 - **累计发佣突破 5 亿元**：APP 项目拉新佣金稳定可靠
