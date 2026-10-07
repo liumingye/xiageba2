@@ -201,18 +201,20 @@ export class C139ShareApi {
     const task = data.batchOprTask || {};
     const done =
       Number(task.progress || 0) >= 100 && Number(task.taskStatus || 0) === 2;
-    const mapping: Record<string, string> = {};
+    const mapping: {
+      contentIds: string[];
+      catalogIds: string[];
+    } = {
+      contentIds: [],
+      catalogIds: [],
+    };
     const contentIds = (data.contentList || {}).idRspInfo || [];
     for (const item of contentIds) {
-      if (item.reason === "0000") {
-        mapping[item.srcId] = item.rstId;
-      }
+      mapping.contentIds.push(item.rstId);
     }
     const catalogIds = (data.catalogList || {}).idRspInfo || [];
     for (const item of catalogIds) {
-      if (item.reason === "0000") {
-        mapping[item.srcId] = item.rstId;
-      }
+      mapping.catalogIds.push(item.rstId);
     }
     return { done, mapping, raw: resp };
   }
@@ -233,16 +235,16 @@ export class C139ShareApi {
 
   /**
    * 创建分享链接
-   * @param coIdList 文件 ID 列表
    * @param dedicatedName 分享名称
+   * @param coIdList 文件 ID 列表
    * @param caIdList 目录 ID 列表
    * @param period 有效期数值
    * @param periodUnit 有效期单位（1: 天）
    * @returns 分享链接信息
    */
   async createShare(
-    coIdList: string[],
     dedicatedName: string,
+    coIdList: string[] = [],
     caIdList: string[] = [],
     period = 1,
     periodUnit = 1,

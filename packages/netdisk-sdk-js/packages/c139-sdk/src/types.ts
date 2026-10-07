@@ -73,7 +73,10 @@ export interface IC139TransferResult {
   /** 是否已完成 */
   done: boolean;
   /** 源 ID -> 结果 ID 映射 */
-  mapping: Record<string, string>;
+  mapping: {
+    contentIds: string[];
+    catalogIds: string[];
+  };
   raw: Record<string, any>;
 }
 

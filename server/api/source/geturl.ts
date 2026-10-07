@@ -383,7 +383,7 @@ const ALLOWED_HOSTS = new Set([
 export function parseShareUrl(url: string): ParsedShare {
   const extractPwd = (u: string) => {
     const m = u.match(
-      /(?:pwd=|password=|code=|passcode=|:|：|码)([a-zA-Z0-9]{4})/i,
+      /(?:密|提取|访问|訪問|key=|pwd=|password=|code=|passcode=|:|：|[码碼])\s*([a-zA-Z0-9]{4})/i,
     ); // 严格限制提取码字符集，防正则穿透
     return m && m[1] ? m[1] : "";
   };
@@ -1068,28 +1068,21 @@ async function transferC139(
     throw createError({ statusCode: 500, message: "转存后未获取到文件 ID" });
   }
 
-  // 按原始类型区分：目录 srcId 集合
-  const dirSrcIds = new Set(
-    shareResult.list.filter((f) => f.isDir).map((f) => f.fid),
-  );
-  // mapping: srcId -> rstId，按原始类型分入 caIDLst / coIDLst
-  const newCaIds: string[] = [];
-  const newCoIds: string[] = [];
-  for (const [srcId, rstId] of Object.entries(taskResult.mapping)) {
-    if (dirSrcIds.has(srcId)) {
-      newCaIds.push(rstId);
-    } else {
-      newCoIds.push(rstId);
-    }
-  }
-  const fids = [...newCaIds, ...newCoIds];
+  const fids = [
+    ...taskResult.mapping.contentIds,
+    ...taskResult.mapping.catalogIds,
+  ];
   if (fids.length === 0) {
     throw createError({ statusCode: 500, message: "转存后未获取到文件 ID" });
   }
 
   // 步骤4: 创建新分享（区分文件 ID 和目录 ID）
   const shareName = shareResult.list[0]?.fileName || "资源分享";
-  const newShare = await shareApi.createShare(newCoIds, shareName, newCaIds);
+  const newShare = await shareApi.createShare(
+    shareName,
+    taskResult.mapping.contentIds,
+    taskResult.mapping.catalogIds,
+  );
 
   let shareUrl = newShare.linkUrl;
   if (newShare.passwd) {
@@ -1247,7 +1240,7 @@ export default defineEventHandler(async (event) => {
   // 🚀 一级防御：读取大并发下的分布式 Redis 缓存
   const redisCache = await getRedisCache<string>(cacheKey);
   if (redisCache !== null) {
-    return { url: redisCache, cache: "redis" };
+    // return { url: redisCache, cache: "redis" };
   }
 
   // 🔒 二级防御：并发互斥单飞锁（防止击穿网盘 SDK 和账号限制）
