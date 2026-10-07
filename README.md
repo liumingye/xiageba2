@@ -19,6 +19,26 @@
 
 ---
 
+## 界面预览
+
+前台：
+
+<div align="center">
+  <img src="img/1.jpeg" width="32%" alt="前台 - 首页" />
+  <img src="img/2.jpeg" width="32%" alt="前台 - 搜索结果" />
+  <img src="img/3.jpeg" width="32%" alt="前台 - 资源详情" />
+</div>
+
+后台管理：
+
+<div align="center">
+  <img src="img/admin-1.jpeg" width="32%" alt="后台 - 登录" />
+  <img src="img/admin-2.jpeg" width="32%" alt="后台 - 音乐管理" />
+  <img src="img/admin-3.jpeg" width="32%" alt="后台 - 资源管理" />
+</div>
+
+---
+
 ## 核心功能
 
 ### 前台
