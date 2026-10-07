@@ -27,3 +27,4 @@ prisma/generated
 .xunlei-token-cache.json
 .agents
 .vscode
+.workbuddy
