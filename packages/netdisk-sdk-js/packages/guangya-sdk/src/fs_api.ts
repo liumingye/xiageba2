@@ -22,7 +22,7 @@ const raiseApiError = (
 ): never => {
   const msg = extractGuangyaMessage(payload) || fallback;
   const snippet = JSON.stringify(payload).slice(0, 500);
-  throw ApiError.create(`${msg}; body=${snippet}`);
+  throw ApiError.create(`${msg}; body=${snippet}`, payload);
 };
 
 /** 归一化 parentId："0" / "/" / "root" → "" */

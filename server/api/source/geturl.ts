@@ -921,11 +921,14 @@ async function transferGuangya(
 
   // 步骤1: 校验分享是否存在
   const summary = await shareApi.shareSummary(shareId);
-  if (!summary.exists) {
+  if (summary.raw?.data?.shareStatus !== 1) {
     if (sourceId) {
       event.waitUntil(disableSource(sourceId));
     }
-    throw createError({ statusCode: 404, message: "分享不存在或已失效" });
+    throw createError({
+      statusCode: 404,
+      message: summary.raw?.msg || "分享不存在或已失效",
+    });
   }
 
   // 步骤2: 获取分享访问令牌
@@ -1027,7 +1030,7 @@ async function transferC139(
   account: PanAccount,
   linkId: string,
   passcode: string,
-  _sourceId?: string,
+  sourceId?: string,
 ): Promise<{ shareUrl: string; fids: string[] }> {
   const tempDirId = account.tempDir || "";
   if (!tempDirId) {
@@ -1038,13 +1041,31 @@ async function transferC139(
   const shareApi = client.shareApi;
 
   // 步骤1: 获取分享文件列表
-  const shareResult = await shareApi.getShareFiles({
-    linkId,
-    pcaId: "root",
-    passwd: passcode,
-  });
+  let shareResult = null;
+  try {
+    shareResult = await shareApi.getShareFiles({
+      linkId,
+      pcaId: "root",
+      passwd: passcode,
+    });
+  } catch (err: any) {
+    const info = typeof err?.info === "function" ? err.info() : undefined;
+    // 9188 | 提取码非法
+    // 200000727  | 外链不存在/外链被分享者取消
+    if (sourceId && info && [9188, 200000727].includes(info.code)) {
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({
+      statusCode: 500,
+      message: info.desc || "获取分享文件列表失败",
+    });
+  }
+
   if (!shareResult.list || shareResult.list.length === 0) {
-    // todo 禁用资源
+    // 分享内容为空，禁用资源
+    if (sourceId) {
+      event.waitUntil(disableSource(sourceId));
+    }
     throw createError({ statusCode: 404, message: "分享内容为空" });
   }
 
@@ -1240,7 +1261,7 @@ export default defineEventHandler(async (event) => {
   // 🚀 一级防御：读取大并发下的分布式 Redis 缓存
   const redisCache = await getRedisCache<string>(cacheKey);
   if (redisCache !== null) {
-    // return { url: redisCache, cache: "redis" };
+    return { url: redisCache, cache: "redis" };
   }
 
   // 🔒 二级防御：并发互斥单飞锁（防止击穿网盘 SDK 和账号限制）

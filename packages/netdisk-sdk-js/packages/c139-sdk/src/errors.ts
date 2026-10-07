@@ -73,5 +73,5 @@ export const raiseApiError = (
 ): never => {
   const msg = extractC139Message(payload) || fallback;
   const snippet = JSON.stringify(payload).slice(0, 500);
-  throw ApiError.create(`${msg}; body=${snippet}`);
+  throw ApiError.create(`${msg}; body=${snippet}`, payload);
 };

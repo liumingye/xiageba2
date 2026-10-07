@@ -34,7 +34,7 @@ const raiseApiError = (
 ): never => {
   const msg = extractGuangyaMessage(payload) || fallback;
   const snippet = JSON.stringify(payload).slice(0, 500);
-  throw ApiError.create(`${msg}; body=${snippet}`);
+  throw ApiError.create(`${msg}; body=${snippet}`, payload);
 };
 
 /** 构建创建分享请求载荷（抓包原样） */
