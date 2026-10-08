@@ -354,6 +354,8 @@ const getPic = (url: string) => {
     return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://m.douban.com`;
   } else if (urlObj.hostname.endsWith(".iqiyipic.com")) {
     return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://www.iqiyi.com`;
+  } else if (urlObj.hostname === "bgmimg.anibt.net") {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
   }
   return url;
 };
@@ -397,7 +399,8 @@ const { data: bangumiCalendar } = await useFetch<{ days: BangumiDay[] }>(
   "/api/home/bangumi",
   {
     key: "home-bangumi-calendar",
-    server: true,
+    lazy: true,
+    server: false,
     default: () => ({ days: [] }),
   },
 );
