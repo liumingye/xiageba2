@@ -465,6 +465,7 @@ async function transferQuarkUC(
   // `41026` | 选中的文件违规，不支持分享
   // `41011` | 分享地址已失效
   // `41031` | 分享者用户封禁链接查看受限
+  // `41004` | 文件不存在
   const tempDirId = account.tempDir || "";
   const client = (await getClientByAccount(account)) as QuarkUCClient;
   const shareApi = client.shareApi;
@@ -484,7 +485,7 @@ async function transferQuarkUC(
     if (
       sourceId &&
       info &&
-      [41012, 41010, 41007, 41008, 41011, 41031].includes(info.code)
+      [41012, 41010, 41007, 41008, 41011, 41031, 41004].includes(info.code)
     ) {
       // 禁用资源
       event.waitUntil(disableSource(sourceId));
@@ -620,10 +621,11 @@ async function transferBaidu(
       root: 1,
     });
   } catch (err: any) {
+    // errtype: 0 | 啊哦，你来晚了，分享的文件已经被删除了，下次要早点哟。
     // errtype: 1 | 啊哦，你来晚了，分享的文件已经被取消了，下次要早点哟。
     // errtype: 3 | 此链接分享内容可能因为涉及侵权、色情、反动、低俗等信息，无法访问！
     const info = typeof err?.info === "function" ? err.info() : undefined;
-    if (sourceId && info && [1, 3].includes(info.errtype)) {
+    if (sourceId && info && [0, 1, 3].includes(info.errtype)) {
       // 禁用资源
       event.waitUntil(disableSource(sourceId));
     }
@@ -769,6 +771,7 @@ async function transferXunlei(
   // share_status: EXPIRED | 分享已过期
   // share_status: DELETED | 分享已删除
   // share_status: PROHIBITED | 分享已被禁止
+  // error_code: 7 | 暂无文件
   const tempDirId = account.tempDir || "";
 
   const client = (await getClientByAccount(account)) as XunleiClient;
@@ -781,9 +784,10 @@ async function transferXunlei(
     if (
       sourceId &&
       info &&
-      ["SENSITIVE_RESOURCE", "EXPIRED", "DELETED", "PROHIBITED"].includes(
+      (["SENSITIVE_RESOURCE", "EXPIRED", "DELETED", "PROHIBITED"].includes(
         info.share_status,
-      )
+      ) ||
+        [7].includes(info.error_code))
     ) {
       // 禁用资源
       event.waitUntil(disableSource(sourceId));
