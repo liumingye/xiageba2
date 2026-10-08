@@ -59,7 +59,7 @@ const legalLinks = [
 ];
 
 const extraLinks = [
-  { to: "https://xiageba.apifox.cn/", label: "API", external: true },
+  { to: "https://github.com/liumingye/xiageba2", label: "GitHub", external: true },
   { to: "/sitemap.xml", label: "网站地图" },
   { to: "/admin/login", label: "管理员登录", external: true },
 ];

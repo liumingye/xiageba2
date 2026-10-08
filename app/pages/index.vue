@@ -167,6 +167,7 @@ interface DoubanItem {
   vod_name: string;
   vod_pic: string;
   vod_subtitle: string;
+  vod_douban_score: number;
 }
 
 interface DoubanHomeData {
@@ -840,8 +841,22 @@ const goToBangumiSearch = async (item: BangumiItem) => {
                 暂无封面
               </div>
             </div>
-            <div class="p-2 absolute bottom-0 left-0 right-0 text-white">
-              <h3 class="font-medium text-sm truncate" :title="item.vod_name">
+            <div
+              v-if="item.vod_douban_score"
+              class="absolute top-1 left-1 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-black/65 text-white backdrop-blur-sm"
+              :class="
+                item.vod_douban_score >= 7 ? 'text-yellow-400' : 'text-white'
+              "
+            >
+              {{ item.vod_douban_score }}
+            </div>
+            <div
+              class="p-2 absolute bottom-0 left-0 right-0 text-white cursor-default"
+            >
+              <h3
+                class="font-medium text-sm line-clamp-2"
+                :title="item.vod_name"
+              >
                 {{ item.vod_name }}
               </h3>
               <p
@@ -876,11 +891,6 @@ const goToBangumiSearch = async (item: BangumiItem) => {
           role="tablist"
           aria-label="放送星期"
         >
-          <div
-            class="text-sm text-muted whitespace-nowrap shrink-0 flex items-center h-8"
-          >
-            放送日
-          </div>
           <div
             class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
             @mousedown="
@@ -948,18 +958,21 @@ const goToBangumiSearch = async (item: BangumiItem) => {
                 暂无封面
               </div>
             </div>
-            <div class="p-2 absolute bottom-0 left-0 right-0 text-white">
-              <h3 class="font-medium text-sm truncate" :title="item.name">
+            <div
+              v-if="item.score > 0"
+              class="absolute top-1 left-1 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-black/65 backdrop-blur-sm"
+              :class="item.score >= 7 ? 'text-yellow-400' : 'text-white'"
+            >
+              {{ item.score }}
+            </div>
+            <div
+              class="p-2 absolute bottom-0 left-0 right-0 text-white cursor-default"
+            >
+              <h3 class="font-medium text-sm line-clamp-2" :title="item.name">
                 {{ item.name }}
               </h3>
               <p class="text-xs text-white/80 truncate mt-1">
                 {{ item.airDate }} 开播
-                <span
-                  v-if="item.score > 0"
-                  :class="item.score >= 7 ? 'text-yellow-400' : ''"
-                >
-                  · {{ item.score.toFixed(1) }}分</span
-                >
               </p>
             </div>
           </UCard>

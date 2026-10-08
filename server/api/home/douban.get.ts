@@ -27,7 +27,7 @@ interface DoubanResult {
   // type_name: string;
   // vod_remarks: string;
   // vod_year: string;
-  // vod_douban_score: string;
+  vod_douban_score: string;
   vod_subtitle: string;
 }
 
@@ -458,6 +458,11 @@ const FILTERS: Record<
 //   return `https://movie.douban.com/subject/${vodId}`;
 // }
 
+function addDot0(num: number | undefined) {
+  if (num === 0) return "";
+  return Number.isInteger(num) ? `${num}.0` : String(num || "");
+}
+
 function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
   const cardSubtitle = item.card_subtitle || "";
   // const yearMatch = cardSubtitle.match(/^(\d{4})/);
@@ -486,7 +491,7 @@ function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
     // type_name: CATEGORY_NAMES[categoryId] || "未知分类",
     // vod_remarks,
     // vod_year,
-    // vod_douban_score: item.rating?.value ? item.rating.value.toString() : "",
+    vod_douban_score: addDot0(item.rating?.value),
     vod_subtitle,
   };
 }
@@ -605,7 +610,8 @@ interface IqiyiDramaItem {
   description?: string;
   tag?: string;
   showDate?: string;
-  sns_score?: string | number;
+  sns_score?: string;
+  recom_score?: string;
   album_id?: string | number;
   time_length?: number;
 }
@@ -676,6 +682,7 @@ async function fetchShortDrama(
       vod_name: text(v.title),
       vod_pic,
       vod_subtitle: text(v.desc) || text(v.tag),
+      vod_douban_score: text(v.recom_score) || "",
     };
   });
 

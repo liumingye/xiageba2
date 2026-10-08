@@ -31,7 +31,7 @@ interface BangumiItem {
   id: number;
   name: string;
   airDate: string;
-  score: number;
+  score: string;
   image: string;
 }
 
@@ -48,13 +48,18 @@ function toHttps(url: string): string {
   return url;
 }
 
+function addDot0(num: number | undefined) {
+  if (num === 0) return "";
+  return Number.isInteger(num) ? `${num}.0` : String(num || "");
+}
+
 function mapItem(item: RawItem): BangumiItem {
   const images = item.images || {};
   return {
     id: item.id || 0,
     name: (item.name_cn || item.name || "").trim(),
     airDate: item.air_date || "",
-    score: Number(item.rating?.score || 0),
+    score: addDot0(item.rating?.score),
     image: toHttps(images.large || images.common || images.medium || ""),
   };
 }
