@@ -82,7 +82,7 @@ const hasCategory = computed(
       categoriesWithLatest.value.data.length > 0) ||
     (!!hotMusic.value && hotMusic.value.length > 0),
 );
-const activeContentTab = ref<"category" | "douban">("category");
+const activeContentTab = ref<"category" | "douban" | "bangumi">("category");
 
 interface CategoryLatestItem {
   id: string;
@@ -206,7 +206,7 @@ const fetchDoubanList = async (page: number = 1, append: boolean = false) => {
   try {
     cancelToken = new AbortController();
     signal = cancelToken.signal;
-    const data = await $fetch<DoubanListData>("/api/douban", {
+    const data = await $fetch<DoubanListData>("/api/home/douban", {
       query: {
         categoryId: activeCategoryId.value,
         page,
@@ -297,14 +297,14 @@ const { data: doubanInitial } = await useAsyncData(
   "douban-home",
   async () => {
     try {
-      const homeData = await $fetch<DoubanHomeData>("/api/douban");
+      const homeData = await $fetch<DoubanHomeData>("/api/home/douban");
       const categoryId = activeCategoryId.value;
       const filters: Record<string, string> = {};
       const categoryFilters = (homeData.filters || {})[categoryId] || [];
       for (const filter of categoryFilters) {
         filters[filter.key] = filter.init;
       }
-      const listData = await $fetch<DoubanListData>("/api/douban", {
+      const listData = await $fetch<DoubanListData>("/api/home/douban", {
         query: {
           categoryId,
           page: 1,
@@ -356,6 +356,64 @@ const getPic = (url: string) => {
     return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://www.iqiyi.com`;
   }
   return url;
+};
+
+interface BangumiItem {
+  id: number;
+  // url: string;
+  name: string;
+  // nameJp: string;
+  airDate: string;
+  score: number;
+  // doing: number;
+  image: string;
+}
+
+interface BangumiDay {
+  id: number;
+  cn: string;
+  // en: string;
+  // ja: string;
+  items: BangumiItem[];
+}
+
+// JS 的 getDay() 周日为 0，接口里周日是 7，这里统一成 1~7
+const getCurrentWeekday = () => {
+  const day = new Date().getDay();
+  return day === 0 ? 7 : day;
+};
+
+const WEEKDAY_LABELS: Record<number, string> = {
+  1: "一",
+  2: "二",
+  3: "三",
+  4: "四",
+  5: "五",
+  6: "六",
+  7: "日",
+};
+
+const { data: bangumiCalendar } = await useFetch<{ days: BangumiDay[] }>(
+  "/api/home/bangumi",
+  {
+    key: "home-bangumi-calendar",
+    server: true,
+    default: () => ({ days: [] }),
+  },
+);
+
+const bangumiDays = computed(() => bangumiCalendar.value?.days || []);
+const activeWeekday = ref(getCurrentWeekday());
+
+const bangumiList = computed(() => {
+  const day = bangumiDays.value.find((d) => d.id === activeWeekday.value);
+  return day?.items || [];
+});
+
+const goToBangumiSearch = async (item: BangumiItem) => {
+  musicStore.searchType = "resource";
+  await nextTick();
+  searchBarRef.value?.handleSearch(item.name);
 };
 </script>
 
@@ -477,10 +535,7 @@ const getPic = (url: string) => {
           class="flex flex-wrap gap-2 transition-all duration-300"
           :class="sectionExpanded ? '' : 'max-h-50'"
         >
-          <div
-            v-if="musicStore.searchHistory.length === 0"
-            class="text-muted"
-          >
+          <div v-if="musicStore.searchHistory.length === 0" class="text-muted">
             暂无搜索历史
           </div>
           <UButton
@@ -503,7 +558,7 @@ const getPic = (url: string) => {
   </section>
 
   <section
-    v-if="hasCategory || doubanClasses.length > 0"
+    v-if="hasCategory || doubanClasses.length > 0 || bangumiDays.length > 0"
     aria-labelledby="content-title"
   >
     <UTabs
@@ -526,6 +581,13 @@ const getPic = (url: string) => {
           icon: 'i-lucide-flame',
           value: 'douban',
           slot: 'douban',
+        },
+        {
+          label: '番组放送',
+          icon: 'i-lucide-calendar-days',
+          value: 'bangumi',
+          slot: 'bangumi',
+          disabled: bangumiDays.length === 0,
         },
       ]"
     >
@@ -803,6 +865,101 @@ const getPic = (url: string) => {
         />
         <div v-else class="text-center py-4 text-sm text-muted">
           — 已经到底了 —
+        </div>
+      </template>
+      <template #bangumi>
+        <div
+          class="flex items-center gap-3 mb-4"
+          role="tablist"
+          aria-label="放送星期"
+        >
+          <div
+            class="text-sm text-muted whitespace-nowrap shrink-0 flex items-center h-8"
+          >
+            放送日
+          </div>
+          <div
+            class="overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing flex-1 min-w-0 [&::-webkit-scrollbar]:hidden"
+            @mousedown="
+              onDragMouseDown($event, $event.currentTarget as HTMLElement)
+            "
+            @mousemove="onDragMouseMove"
+            @mouseup="onDragMouseUpOrLeave"
+            @mouseleave="onDragMouseUpOrLeave"
+          >
+            <div class="flex gap-1 min-w-max items-center h-8">
+              <button
+                v-for="day in bangumiDays"
+                :key="day.id"
+                type="button"
+                role="tab"
+                :aria-selected="activeWeekday === day.id"
+                class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap shrink-0 border"
+                :class="
+                  activeWeekday === day.id
+                    ? 'bg-muted shadow-sm border-muted'
+                    : 'opacity-80 hover:bg-muted hover:opacity-100 border-transparent'
+                "
+                @click="activeWeekday = day.id"
+              >
+                星期{{ WEEKDAY_LABELS[day.id] }}
+                <span class="text-xs opacity-60">{{ day.items.length }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="bangumiList.length === 0" class="text-center py-12">
+          <p class="text-muted">该日暂无放送番组</p>
+        </div>
+
+        <div
+          v-else
+          class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4"
+        >
+          <UCard
+            v-for="item in bangumiList"
+            :key="item.id"
+            :ui="{
+              root: 'relative border border-muted ring ring-default transition-all hover:ring-primary-500',
+              body: 'p-0 sm:p-0',
+            }"
+            @click="goToBangumiSearch(item)"
+          >
+            <div class="aspect-2/3 overflow-hidden bg-black">
+              <img
+                v-if="item.image"
+                :src="getPic(item.image)"
+                :alt="item.name"
+                class="w-full h-full object-cover bg-muted mask-bottom2"
+                loading="lazy"
+                decoding="async"
+                @error="
+                  ($event.target as HTMLImageElement).style.display = 'none'
+                "
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center text-sm bg-muted mask-bottom2"
+              >
+                暂无封面
+              </div>
+            </div>
+            <div class="p-2 absolute bottom-0 left-0 right-0 text-white">
+              <h3 class="font-medium text-sm truncate" :title="item.name">
+                {{ item.name }}
+              </h3>
+              <p class="text-xs text-white/80 truncate mt-1">
+                {{ item.airDate }} 开播
+                <span
+                  v-if="item.score > 0"
+                  :class="item.score >= 7 ? 'text-yellow-400' : ''"
+                >
+                  · {{ item.score.toFixed(1) }}分</span
+                >
+              </p>
+            </div>
+          </UCard>
         </div>
       </template>
     </UTabs>

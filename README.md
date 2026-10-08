@@ -204,7 +204,9 @@ node scripts/seed-admin.mjs [user] [pass]   # 创建管理员，默认 admin / a
 │   │   ├── novel/                      # search.post / list.get / [id].get / sample-read.post / get-code.post
 │   │   ├── other/web_search.get.ts     # 全网搜（SSE 流式）
 │   │   ├── ai-search.ts                # AI 搜索（SSE 流式）
-│   │   ├── douban/index.get.ts         # 豆瓣榜单
+│   │   ├── home/                       # 首页聚合接口
+│   │   │   ├── douban.get.ts           # 豆瓣榜单
+│   │   │   └── bangumi.get.ts          # 番组放送（bgmapi 每日放送表）
 │   │   ├── category/ announcement/     # 分类 / 公告
 │   │   ├── wechat.ts                   # 微信公众号消息接口（GET 校验 + POST 处理）
 │   │   ├── site-seo.get.ts / hotwords.get.ts / forbidden-keywords.get.ts / image-proxy.get.ts

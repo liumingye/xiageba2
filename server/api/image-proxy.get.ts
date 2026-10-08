@@ -25,6 +25,7 @@ const WHITELIST_SET = new Set([
   "pic7.iqiyipic.com",
   "pic8.iqiyipic.com",
   "pic9.iqiyipic.com",
+  "bgmimg.anibt.net",
 ]);
 
 /**
