@@ -226,7 +226,7 @@ async function searchResources(
   }
 
   const tokens = prioritizeSearchTokens(cutForSearch(keyword));
-  const keywordWebQuery = buildSearchWebQuery(tokens, false);
+  const keywordWebQuery = buildSearchWebQuery(tokens, true);
   if (!keywordWebQuery.trim()) return [];
 
   const items: WechatSearchItem[] = [];
