@@ -11,7 +11,7 @@ import SearchBar from "~/components/SearchBar.vue";
 import type { NavigationMenuItem } from "@nuxt/ui";
 import { isMobileOrTablet } from "@/utils";
 
-const { icpLicence } = await useSiteSeo();
+const { icpLicence, siteShortTitle } = await useSiteSeo();
 
 // ---------------- 全局壳（UHeader / UFooter）----------------
 
@@ -85,8 +85,6 @@ const disableBack = computed(() => {
 });
 
 const isMobile = isMobileOrTablet();
-
-const { siteShortTitle } = await useSiteSeo();
 </script>
 
 <template>

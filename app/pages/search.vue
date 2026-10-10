@@ -410,6 +410,7 @@ const keywords = [
   "网盘搜索",
   "网盘下载",
 ];
+
 useHead({
   meta: [
     {
@@ -420,8 +421,9 @@ useHead({
   link: [
     {
       rel: "canonical",
-      href: () =>
+      href: absoluteUrl(
         `/search?type=${searchType.value}&q=${encodeURIComponent(searchKeyword.value)}&page=${currentPage.value}`,
+      ),
     },
   ],
 });

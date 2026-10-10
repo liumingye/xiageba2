@@ -95,7 +95,8 @@ const formattedLyrics = computed(() => {
   return music.value.lyrics.split("\n").filter((line: string) => line.trim());
 });
 
-const canonicalUrl = `/music/${musicId.value}`;
+// canonical / og:url / og:image 必须是绝对地址，否则爬虫与社交平台直接忽略
+const canonicalUrl = absoluteUrl(`/music/${musicId.value}`);
 
 const jsonLd = computed(() => {
   if (!music.value) return null;
@@ -128,10 +129,10 @@ useSeoMeta({
   ogTitle: pageTitle,
   ogDescription: pageDescription,
   ogUrl: canonicalUrl,
-  ogImage: music.value?.cover || "",
+  ogImage: absoluteUrl(music.value?.cover || "/img/og-image.png"),
   twitterTitle: pageTitle,
   twitterDescription: pageDescription,
-  twitterImage: music.value?.cover || "",
+  twitterImage: absoluteUrl(music.value?.cover || "/img/og-image.png"),
 });
 
 useHead({

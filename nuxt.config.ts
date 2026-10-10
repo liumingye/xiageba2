@@ -259,7 +259,6 @@ export default defineNuxtConfig({
       },
     ],
     "@nuxt/scripts",
-    "@comark/nuxt",
   ],
   ui: {
     fonts: false,
@@ -301,9 +300,9 @@ export default defineNuxtConfig({
         },
         { property: "og:site_name", content: "全盘搜" },
         { property: "og:type", content: "website" },
-        { name: "og:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
+        { property: "og:title", content: "全盘搜 - 免费网盘资源搜索引擎" },
         {
-          name: "og:description",
+          property: "og:description",
           content:
             "全盘搜是一个快捷便利的公开网盘搜索引擎，为您提供各类优质网盘资源的在线搜索、精准筛选服务。",
         },

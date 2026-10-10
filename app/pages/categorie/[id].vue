@@ -81,7 +81,8 @@ const pageDescription = computed(() =>
     : `${siteShortTitle}资源分类，各类网盘资源免费下载。`,
 );
 
-const canonicalUrl = `/categorie/${categoryId.value}`;
+// canonical / og:url 必须是绝对地址，否则爬虫与社交平台直接忽略
+const canonicalUrl = absoluteUrl(`/categorie/${categoryId.value}`);
 
 useSeoMeta({
   title: pageTitle,
@@ -90,6 +91,7 @@ useSeoMeta({
   ogTitle: pageTitle,
   ogDescription: pageDescription,
   ogUrl: canonicalUrl,
+  ogImage: absoluteUrl("/img/og-image.png"),
   twitterCard: "summary",
   twitterTitle: pageTitle,
   twitterDescription: pageDescription,

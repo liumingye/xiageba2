@@ -14,7 +14,6 @@ defineOptions({
   name: "IndexPage",
 });
 
-const config = useRuntimeConfig();
 const musicStore = useMusicStore();
 const searchBarRef = useTemplateRef("searchBarRef");
 const sectionRef = useTemplateRef("sectionRef");
@@ -116,12 +115,12 @@ const { siteTitle, siteShortTitle } = await useSiteSeo();
 
 useSeoMeta({
   titleTemplate: siteTitle,
-  ogUrl: config.app.baseURL,
-  ogImage: config.app.baseURL + "img/og-image.png",
+  ogUrl: absoluteUrl("/"),
+  ogImage: absoluteUrl("/img/og-image.png"),
 });
 
 useHead({
-  link: [{ rel: "canonical", href: config.app.baseURL }],
+  link: [{ rel: "canonical", href: absoluteUrl("/") }],
 });
 
 onMounted(async () => {

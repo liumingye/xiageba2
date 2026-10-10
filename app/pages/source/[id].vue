@@ -124,7 +124,8 @@ const pageKeywords = computed(() => {
   return `${siteShortTitle},网盘搜索,夸克网盘,百度网盘,迅雷云盘,UC网盘`;
 });
 
-const canonicalUrl = `/source/${sourceId.value}`;
+// canonical / og:url 必须是绝对地址，否则爬虫与社交平台直接忽略
+const canonicalUrl = absoluteUrl(`/source/${sourceId.value}`);
 
 useSeoMeta({
   title: pageTitle,
@@ -133,6 +134,7 @@ useSeoMeta({
   ogTitle: pageTitle,
   ogDescription: pageDescription,
   ogUrl: canonicalUrl,
+  ogImage: absoluteUrl("/img/og-image.png"),
   twitterCard: "summary",
   twitterTitle: pageTitle,
   twitterDescription: pageDescription,
