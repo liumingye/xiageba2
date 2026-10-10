@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { Download, FolderOpen, Clock, Link, Loader2 } from "@lucide/vue";
-import Qrcode from "~/components/Qrcode.vue";
 import {
   getStorageTypeFriendShortFromFilter,
   type PanFilter,

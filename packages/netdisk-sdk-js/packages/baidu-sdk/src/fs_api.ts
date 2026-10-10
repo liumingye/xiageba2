@@ -97,7 +97,7 @@ export class BaiduFSApi {
   }
 
   /** 查询异步任务进度 */
-  taskquery(taskId: string, _await?: boolean): Promise<ITaskQueryResult> {
+  taskquery(taskId: number, _await?: boolean): Promise<ITaskQueryResult> {
     throw "";
   }
 }
@@ -207,15 +207,14 @@ BaiduFSApi.prototype.listall = async function (param) {
 };
 
 export type IFileManagerOpera = keyof IFileManagerFileListTypeMap;
-export type IFileManagerParam<FileList = any> = {
+export type IFileManagerParam<Extend = any> = {
   /** 0 同步，1 自适应，2 异步 */
-  async: 0 | 1 | 2;
+  async?: 0 | 1 | 2;
   /** 全局ondup,遇到重复文件的处理策略,
    * fail(默认，直接返回失败)、newcopy(重命名文件)、overwrite(覆盖文件)、skip（跳过文件）
    */
-  ondup: "fail" | "newcopy" | "overwrite" | "skip";
-  filelist: FileList;
-};
+  ondup?: "fail" | "newcopy" | "overwrite" | "skip";
+} & Extend;
 export type IFileManagerFileListTypeMap = {
   copy: { path: string; dest: string; newname: string };
   move: { path: string; dest: string; newname: string };

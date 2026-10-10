@@ -3,6 +3,10 @@ import { getAccountById } from "#server/lib/accountCache";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { QuarkUCClient as QuarkUCClientType } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient as BaiduClientType } from "@netdisk-sdk/baidu-sdk";
+import type {
+  IFileManagerResult,
+  IOpenApiFileManagerResult,
+} from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient as XunleiClientType } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient as GuangyaClientType } from "@netdisk-sdk/guangya-sdk";
 import { C139Client as C139ClientType } from "@netdisk-sdk/c139-sdk";
@@ -138,7 +142,10 @@ export default defineTask({
           if (client instanceof QuarkUCClientType) {
             for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
               const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
-              await client.fsApi.delete(chunk.flatMap((c) => c.fids));
+              const task = await client.fsApi.delete(
+                chunk.flatMap((c) => c.fids),
+              );
+              await client.fsApi.task(task.task_id, true);
               successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
             }
           } else if (client instanceof XunleiClientType) {
@@ -198,15 +205,22 @@ export default defineTask({
               }
 
               if (allPanPaths.length > 0) {
+                let task:
+                  | IFileManagerResult
+                  | IOpenApiFileManagerResult
+                  | undefined;
                 if (client.accessToken) {
-                  await client.fsOpenApi.filemanager("delete", {
+                  task = await client.fsOpenApi.filemanager("delete", {
                     filelist: allPanPaths,
                     async: 0,
                   });
                 } else {
-                  await client.fsApi.filemanager("delete", {
+                  task = await client.fsApi.filemanager("delete", {
                     filelist: allPanPaths,
-                  } as any);
+                  });
+                }
+                if (task.taskid) {
+                  await client.fsApi.taskquery(task.taskid, true);
                 }
                 successfullyDeletedDbIds.push(...validChunkDbIds);
               } else {
