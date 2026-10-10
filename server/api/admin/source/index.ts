@@ -4,7 +4,6 @@ import { clearTreeSymbols, truncateString } from "#server/utils/source";
 import {
   buildTokens,
   cutForSearch,
-  prioritizeSearchTokens,
   buildSearchWebQuery,
 } from "#server/utils/jieba";
 import { TREE_MAX_LINE } from "#server/lib/const";
@@ -67,7 +66,7 @@ export default defineEventHandler(async (event) => {
           baseParams.push(keyword);
         } else {
           // 分词 + 全文检索逻辑
-          const keywordTokens = prioritizeSearchTokens(cutForSearch(keyword));
+          const keywordTokens = cutForSearch(keyword);
           const keywordWebQuery =
             keywordTokens.length > 0
               ? buildSearchWebQuery(keywordTokens, false)

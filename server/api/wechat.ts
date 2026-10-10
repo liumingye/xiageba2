@@ -9,7 +9,6 @@ import { prisma } from "#server/lib/prisma";
 import {
   buildSearchWebQuery,
   cutForSearch,
-  prioritizeSearchTokens,
 } from "#server/utils/jieba";
 import { automaton_websearch_filter_keywords } from "#server/lib/simpleAC";
 
@@ -225,7 +224,7 @@ async function searchResources(
     return [];
   }
 
-  const tokens = prioritizeSearchTokens(cutForSearch(keyword));
+  const tokens = cutForSearch(keyword);
   const keywordWebQuery = buildSearchWebQuery(tokens, true);
   if (!keywordWebQuery.trim()) return [];
 

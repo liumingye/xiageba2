@@ -54,30 +54,6 @@ export const cutForSearch = (input: string): string[] => {
   return groups;
 };
 
-/** Remove weak, synthetic and overlapping tokens before building a query. */
-export const prioritizeSearchTokens = (tokens: string[]): string[] => {
-  const hasTextToken = tokens.some((token) => !/^\d+$/.test(token));
-  const withoutRandomNumbers = hasTextToken
-    ? tokens.filter((token) => !/^\d{6,}$/.test(token))
-    : tokens;
-  const hasLongToken = withoutRandomNumbers.some(
-    (token) => Array.from(token).length > 1,
-  );
-  const withoutWeakSingles = hasLongToken
-    ? withoutRandomNumbers.filter((token) => Array.from(token).length > 1)
-    : withoutRandomNumbers;
-
-  return withoutWeakSingles.filter(
-    (token, index, allTokens) =>
-      !allTokens.some(
-        (candidate, candidateIndex) =>
-          candidateIndex !== index &&
-          candidate.length > token.length &&
-          candidate.toLocaleLowerCase().includes(token.toLocaleLowerCase()),
-      ),
-  );
-};
-
 export const buildSearchWebQuery = (
   tokens: string[],
   exact: boolean,
@@ -114,7 +90,6 @@ export const buildTokens = (...terms: string[]): string => {
 
 export default {
   cutForSearch,
-  prioritizeSearchTokens,
   buildSearchWebQuery,
   tokenizeIndex,
   buildTokens,

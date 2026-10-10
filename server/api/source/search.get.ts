@@ -1,7 +1,6 @@
 import {
   buildSearchWebQuery,
   cutForSearch,
-  prioritizeSearchTokens,
 } from "#server/utils/jieba";
 import { getStorageType } from "#shared/utils";
 import type { PanFilter } from "#shared/utils";
@@ -119,7 +118,7 @@ export default defineCachedEventHandler(
     }
 
     // 利用结巴分词获取干净的 tokens 数组
-    const keywordTokens = prioritizeSearchTokens(cutForSearch(term));
+    const keywordTokens = cutForSearch(term);
 
     if (keywordTokens.length === 0) {
       return {

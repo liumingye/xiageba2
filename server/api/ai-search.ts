@@ -5,7 +5,6 @@ import { getAiChatClient } from "#server/lib/aiClient";
 import "dotenv/config";
 import {
   cutForSearch,
-  prioritizeSearchTokens,
   buildSearchWebQuery,
 } from "#server/utils/jieba";
 import { PAN_HOST_MAP } from "#server/api/source/search.get";
@@ -29,7 +28,7 @@ async function searchSourcesForAi(keyword: string, panType: PanFilter = "all") {
   if (!term) return [];
 
   // 1. 结巴分词与核心词提取
-  const keywordTokens = prioritizeSearchTokens(cutForSearch(term));
+  const keywordTokens = cutForSearch(term);
   if (keywordTokens.length === 0) return [];
 
   const keywordWebQuery = buildSearchWebQuery(keywordTokens, false);

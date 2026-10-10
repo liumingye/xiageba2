@@ -5,6 +5,7 @@ import {
   Home,
   LoaderCircle,
   Megaphone,
+  BadgeJapaneseYen,
 } from "@lucide/vue";
 import SearchBar from "~/components/SearchBar.vue";
 import type { NavigationMenuItem } from "@nuxt/ui";
@@ -59,7 +60,11 @@ const legalLinks = [
 ];
 
 const extraLinks = [
-  { to: "https://github.com/liumingye/xiageba2", label: "GitHub", external: true },
+  {
+    to: "https://github.com/liumingye/xiageba2",
+    label: "GitHub",
+    external: true,
+  },
   { to: "/sitemap.xml", label: "网站地图" },
   { to: "/admin/login", label: "管理员登录", external: true },
 ];
@@ -212,7 +217,7 @@ const { siteShortTitle } = await useSiteSeo();
       center: 'flex-col',
     }"
   >
-    <p>&copy; 2015-{{ year }} {{siteShortTitle}} - 公开网盘资源搜索引擎</p>
+    <p>&copy; 2015-{{ year }} {{ siteShortTitle }} - 公开网盘资源搜索引擎</p>
 
     <div class="flex items-center justify-center gap-x-2 flex-wrap mt-2">
       <ULink v-for="item in legalLinks" :key="item.to" :to="item.to">

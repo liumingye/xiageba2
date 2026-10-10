@@ -40,7 +40,7 @@ export default defineCachedEventHandler(
     }
 
     // 获取结巴分词的 tokens 数组
-    const keywordTokens = prioritizeSearchTokens(cutForSearch(term));
+    const keywordTokens = cutForSearch(term);
     if (keywordTokens.length === 0) {
       return {
         data: [],

@@ -7,7 +7,7 @@
 
 ## 分享赚钱
 
-接入[「任推邦」](https://tg.bd.cn/#/pages/login/register?invite_code=3832491&qd=self_team_android)推广平台，分享链接邀请新用户即可赚取推广佣金。
+接入[「任推邦」](https://tg.bd.cn/#/pages/login/register?from=baidu&ref=tg.bd.cn&uid=nologin&os=web&qd=self_team_android&t=1791520394299&_nc=hw_db_itab&_r=activity&sid=sg_sign&sign=202cb962ac59075b964b07152d234b70&invite_code=3832491&register=0)推广平台，分享链接邀请新用户即可赚取推广佣金。
 
 ![分享赚钱 - 任推邦](https://raw.githubusercontent.com/liumingye/xiageba2/refs/heads/main/img/20261007164149437.png)
 
@@ -15,7 +15,7 @@
 - **累计发佣突破 5 亿元**：APP 项目拉新佣金稳定可靠
 - **零费用入驻**：平台承诺不收取任何入驻 / 做单费用
 
-扫码或[点击链接注册](https://tg.bd.cn/#/pages/login/register?invite_code=3832491&qd=self_team_android)查看项目详情，助力中小达人成长变现。
+扫码或[点击链接注册](https://tg.bd.cn/#/pages/login/register?from=baidu&ref=tg.bd.cn&uid=nologin&os=web&qd=self_team_android&t=1791520394299&_nc=hw_db_itab&_r=activity&sid=sg_sign&sign=202cb962ac59075b964b07152d234b70&invite_code=3832491&register=0)查看项目详情，助力中小达人成长变现。
 
 ---
 
@@ -91,7 +91,7 @@
 应用层 jieba 分词 + PostgreSQL `tsvector` / GIN 索引：
 
 1. **写入**：`buildTokens()` 对标题、歌手、专辑（资源为标题、描述、目录）做 jieba 分词，写入 `searchVector`
-2. **查询**：`cutForSearch()` 分词 → `prioritizeSearchTokens()` 去噪 → `buildSearchWebQuery()` 组装查询串 → `websearch_to_tsquery('simple', $1)` 匹配
+2. **查询**：`cutForSearch()` 分词 → `buildSearchWebQuery()` 组装查询串 → `websearch_to_tsquery('simple', $1)` 匹配
 3. **精准模式**：所有词以空格连接（AND 语义）；默认模式为核心词 + 其余词 `OR`
 4. 后台「系统维护」提供音乐 / 资源搜索索引重建接口，带进度查询
 
