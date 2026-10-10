@@ -333,7 +333,7 @@ export default defineNuxtConfig({
     fallback: "dark",
   },
   features: {
-    inlineStyles: false,
+    inlineStyles: true ,
   },
   routeRules: {
     "/admin/**": { ssr: false, appLayout: "admin" },
