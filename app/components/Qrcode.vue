@@ -1,23 +1,34 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, watch, onMounted } from "vue";
 
 const qrCodeUrl = ref("");
 const route = useRoute();
-const qrcode = await import("qrcode");
 
-onMounted(() => {
-  watch(
-    () => route.path,
-    async () => {
-      qrCodeUrl.value = await qrcode.toDataURL(window.location.href, {
-        margin: 2,
-      });
-    },
-    {
-      immediate: true,
-    },
-  );
-});
+// 模块级缓存：同一次会话内只加载一次 qrcode
+let qrcodeLib: typeof import("qrcode") | null = null;
+
+/**
+ * 生成当前页面地址的二维码。
+ *
+ * qrcode 是纯客户端依赖（244 KB），原先在 setup 顶层 `await import("qrcode")`，
+ * 会导致：① SSR 阶段加载该模块并阻塞渲染；② setup 变成 async，组件被当成异步组件处理；
+ * ③ 客户端 hydration 时立刻发起一个额外 chunk 请求。
+ * 改为按需加载后，上述三处开销全部消失。
+ */
+const renderQrCode = async () => {
+  if (import.meta.server) return;
+  if (!qrcodeLib) {
+    qrcodeLib = await import("qrcode");
+  }
+  qrCodeUrl.value = await qrcodeLib.toDataURL(window.location.href, {
+    margin: 2,
+  });
+};
+
+// watcher 在 setup 顶层创建，才能随组件卸载自动停止；
+// 首次生成交给 onMounted（此时已在客户端，window 可用）
+onMounted(renderQrCode);
+watch(() => route.path, renderQrCode);
 </script>
 
 <template>

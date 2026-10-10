@@ -235,5 +235,8 @@ const isMobile = isMobileOrTablet();
       </ULink>
     </div>
   </UFooter>
-  <Qrcode v-if="!isMobile" />
+  <!-- 二维码是纯客户端功能：ClientOnly 让 SSR 完全跳过渲染与 hydration -->
+  <ClientOnly>
+    <Qrcode v-if="!isMobile" />
+  </ClientOnly>
 </template>
