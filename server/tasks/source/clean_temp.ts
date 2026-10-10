@@ -10,13 +10,14 @@ import type {
 import { XunleiClient as XunleiClientType } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient as GuangyaClientType } from "@netdisk-sdk/guangya-sdk";
 import { C139Client as C139ClientType } from "@netdisk-sdk/c139-sdk";
-import { setRedisCache, getRedisCache, delRedisCache } from "#server/lib/redis";
+import { acquireLock } from "#server/lib/lock";
 import { THIRTY_MINUTES } from "#server/lib/const";
 
 const ONE_DAY = 24 * 60 * 60 * 1000; // ⚡ 1天的毫秒数
 const PAN_BATCH_LIMIT = 100;
 const LOCK_KEY = "lock:cron:clean-temp-sources";
-const LOCK_TTL = 300;
+/** 锁 TTL 小于任务周期（10 分钟），持有期间会自动续期；持有者崩溃时最多 540s 后自动释放 */
+const LOCK_TTL = 540;
 
 function safeParseFid(fidStr: string): string[] {
   if (!fidStr) return [];
@@ -47,17 +48,21 @@ export default defineTask({
     };
   }> {
     console.log("开始清理临时资源...");
-    // 1. 🔒 抢占 Redis 全局分布式锁
-    const isLocked = await getRedisCache(LOCK_KEY);
-    if (isLocked) {
+    // 1. 🔒 抢占分布式锁（SET NX 原子抢占，多实例下只有一个能拿到）
+    const lockRes = await acquireLock(LOCK_KEY, { ttlSeconds: LOCK_TTL });
+    if (!lockRes.acquired) {
+      const message =
+        lockRes.reason === "locked"
+          ? "已有相同的清理任务在后台运行中，本次触发跳过。"
+          : "Redis 不可用，无法协调多实例，本次清理跳过以避免并发删除网盘文件。";
+      console.log(`[clean_temp] ${message}`);
       return {
         result: {
           success: false,
-          message: "已有相同的清理任务在后台运行中，本次触发跳过。",
+          message,
         },
       };
     }
-    await setRedisCache(LOCK_KEY, { lockedAt: Date.now() }, LOCK_TTL);
 
     try {
       const now = Date.now();
@@ -262,7 +267,8 @@ export default defineTask({
         },
       };
     } finally {
-      await delRedisCache(LOCK_KEY);
+      // 只释放自己仍持有的锁（token 校验），不会误删他人新抢到的锁
+      await lockRes.lock.release();
     }
   },
 });
