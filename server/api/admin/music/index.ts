@@ -21,18 +21,17 @@ export default defineEventHandler(async (event) => {
         return { data: [], total: 0, page, pageSize, totalPages: 0 };
       }
 
-      // 2. 🔥 核心优化：采用大写 OR 拼接成符合 websearch_to_tsquery 语法的宽泛搜索文本
-      const formattedWebQuery = tokens.join(" OR ");
-
-      // 🔥 核心变更：全面平替为 websearch_to_tsquery，安全且完美抗碎
+      // 2. 🔥 采用 | 拼接成符合 to_tsquery 语法的宽泛搜索文本
+      //    （不能用 websearch_to_tsquery：它会静默丢弃括号，导致 OR 语义错乱）
+      const formattedWebQuery = tokens.join(" | ");
       const [musics, total] = await Promise.all([
         prisma.$queryRaw<any[]>`
           WITH hit_rows AS (
             SELECT 
               id,
-              ts_rank_cd("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery})) AS rank
+              ts_rank_cd("searchVector", to_tsquery('simple', ${formattedWebQuery})) AS rank
             FROM "Music"
-            WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
+            WHERE "searchVector" @@ to_tsquery('simple', ${formattedWebQuery})
           )
           SELECT m.id, m.title, m.artist, m.album, m.cover, m.downloads
           FROM hit_rows h
@@ -43,7 +42,7 @@ export default defineEventHandler(async (event) => {
         prisma.$queryRaw<[{ count: number }]>`
           SELECT COUNT(*)::int as count
           FROM "Music"
-          WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
+          WHERE "searchVector" @@ to_tsquery('simple', ${formattedWebQuery})
         `,
       ]);
 

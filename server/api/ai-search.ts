@@ -5,7 +5,7 @@ import { getAiChatClient } from "#server/lib/aiClient";
 import "dotenv/config";
 import {
   cutForSearch,
-  buildSearchWebQuery,
+  buildTsQuery,
 } from "#server/utils/jieba";
 import { PAN_HOST_MAP } from "#server/api/source/search.get";
 import { Readable } from "stream";
@@ -31,7 +31,7 @@ async function searchSourcesForAi(keyword: string, panType: PanFilter = "all") {
   const keywordTokens = cutForSearch(term);
   if (keywordTokens.length === 0) return [];
 
-  const keywordWebQuery = buildSearchWebQuery(keywordTokens, false);
+  const keywordWebQuery = buildTsQuery(keywordTokens, false);
   const tokens = [...keywordTokens];
 
   // 2. 动态构造 SQL 条件与参数
@@ -53,7 +53,7 @@ async function searchSourcesForAi(keyword: string, panType: PanFilter = "all") {
   // 核心文本/向量检索式
   const queryParamIndex = paramIndex++;
   baseParams.push(keywordWebQuery);
-  const searchQueryExpression = `websearch_to_tsquery('simple', $${queryParamIndex})`;
+  const searchQueryExpression = `to_tsquery('simple', $${queryParamIndex})`;
   conditions.push(`"searchVector" @@ search_query.value`);
 
   // 拼接完整的 WHERE
@@ -137,9 +137,9 @@ async function searchMusicForAi(keyword: string) {
   const tokens = cutForSearch(term);
   if (tokens.length === 0) return [];
 
-  // 2. 构建符合 websearch_to_tsquery 语法的查询文本
-  // AI 搜索建议默认走非 exact（OR 模糊匹配），大模型提炼出来的核心词容错率更高
-  const formattedWebQuery = tokens.join(" OR ");
+  // 2. 构建符合 to_tsquery 语法的查询文本
+  // AI 搜索默认走非 exact：主词 AND (其余词 OR …)，括号由 to_tsquery 真实保留
+  const formattedWebQuery = buildTsQuery(tokens, false);
 
   // 限制最大只召回前 6 条，既能保证资源相关度，又能完美控制大模型的 Token 上限
   const limit = 6;
@@ -149,9 +149,9 @@ async function searchMusicForAi(keyword: string) {
     const musics = await prisma.$queryRaw<any[]>`
       SELECT id, title, artist, album
       FROM "Music"
-      WHERE "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
+      WHERE "searchVector" @@ to_tsquery('simple', ${formattedWebQuery})
       ORDER BY 
-        ts_rank_cd("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery}), 1) DESC, 
+        ts_rank_cd("searchVector", to_tsquery('simple', ${formattedWebQuery}), 1) DESC, 
         "viewCount" DESC, 
         "createdAt" DESC
       LIMIT ${limit};

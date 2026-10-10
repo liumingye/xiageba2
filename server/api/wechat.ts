@@ -234,7 +234,7 @@ async function searchResources(
     const sourceLimit = Math.max(1, Math.ceil(limit / 2));
     const sourceRows: any[] = await prisma.$queryRaw`
       WITH search_query AS (
-        SELECT websearch_to_tsquery('simple', ${keywordWebQuery}) AS value
+        SELECT to_tsquery('simple', ${keywordWebQuery}) AS value
       )
       SELECT s.id, s.title, s.description, s.cid, s.url
       FROM "Source" s
@@ -275,7 +275,7 @@ async function searchResources(
     try {
       const musicRows: any[] = await prisma.$queryRaw`
         WITH pq AS (
-          SELECT websearch_to_tsquery('simple', ${keywordWebQuery}) AS q
+          SELECT to_tsquery('simple', ${keywordWebQuery}) AS q
         )
         SELECT m.id, m.title, m.artist, m.album
         FROM "Music" m, pq

@@ -1,7 +1,4 @@
-import {
-  buildSearchWebQuery,
-  cutForSearch,
-} from "#server/utils/jieba";
+import { analyzeQuery } from "#server/utils/jieba";
 import { getStorageType } from "#shared/utils";
 import type { PanFilter } from "#shared/utils";
 import { truncateString } from "#server/utils/source";
@@ -117,10 +114,10 @@ export default defineCachedEventHandler(
       });
     }
 
-    // 利用结巴分词获取干净的 tokens 数组
-    const keywordTokens = cutForSearch(term);
+    // 结巴分词 + 冗余词识别 + 别名扩展 + 召回阶梯
+    const plan = analyzeQuery(term, exact);
 
-    if (keywordTokens.length === 0) {
+    if (plan.tokens.length === 0) {
       return {
         data: [],
         total: 0,
@@ -131,9 +128,12 @@ export default defineCachedEventHandler(
       };
     }
 
-    const keywordWebQuery = buildSearchWebQuery(keywordTokens, exact);
+    // ⚠️ 必须用 to_tsquery：websearch_to_tsquery 会静默丢弃括号，
+    //    'A (B OR C)' 会变成 'A' & 'B' | 'C' → (A & B) | C，模糊搜索因此退化。
+    // 精确模式取最严格的 tier，模糊模式取最宽的精确 tier。
+    const keywordWebQuery = plan.rankQuery || plan.looseQuery;
     const extensionTokens = getResourceFileExtensions(fileTypes);
-    const tokens = [...keywordTokens, ...extensionTokens];
+    const tokens = [...plan.tokens, ...extensionTokens];
 
     // 3. 构建动态 WHERE 条件（Prisma.sql 片段，参数自动安全转义）
     const whereFragments: Prisma.Sql[] = [Prisma.sql`"status" = 1`];
@@ -157,7 +157,7 @@ export default defineCachedEventHandler(
     }
 
     // 关键词与扩展名分别构造 tsquery，避免 websearch 括号改变 OR 优先级。
-    const keywordTsQuery = Prisma.sql`websearch_to_tsquery('simple', ${keywordWebQuery})`;
+    const keywordTsQuery = Prisma.sql`to_tsquery('simple', ${keywordWebQuery})`;
     const searchQueryExpression: Prisma.Sql =
       extensionTokens.length > 0
         ? Prisma.sql`(${keywordTsQuery} && to_tsquery('simple', ${extensionTokens
@@ -177,10 +177,19 @@ export default defineCachedEventHandler(
       orderClause = Prisma.sql`"createdAt" ASC`;
     } else {
       const normalizedTerm = term.toLocaleLowerCase();
-      const titleTokenScores = tokens.map(
-        (token) =>
-          Prisma.sql`CASE WHEN strpos(lower(title), ${token.toLocaleLowerCase()}) > 0 THEN ${Array.from(token).length} ELSE 0 END`,
-      );
+      // 覆盖度打分：权重 = 字符数 × 出现次数（重复词权重翻倍），冗余词不参与
+      const titleTokenScores = plan.groups.map((group) => {
+        const memberChecks = group.members.map(
+          (member) =>
+            Prisma.sql`strpos(lower(title), ${member.toLocaleLowerCase()}) > 0`,
+        );
+        return Prisma.sql`(CASE WHEN ${Prisma.join(memberChecks, " OR ")} THEN ${group.weight} ELSE 0 END)`;
+      });
+      for (const ext of extensionTokens) {
+        titleTokenScores.push(
+          Prisma.sql`(CASE WHEN strpos(lower(title), ${ext.toLocaleLowerCase()}) > 0 THEN ${Array.from(ext).length} ELSE 0 END)`,
+        );
+      }
       orderClause = Prisma.sql`
         CASE
           WHEN lower(btrim(title)) = ${normalizedTerm} THEN 3

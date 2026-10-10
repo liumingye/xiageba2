@@ -91,9 +91,26 @@
 应用层 jieba 分词 + PostgreSQL `tsvector` / GIN 索引：
 
 1. **写入**：`buildTokens()` 对标题、歌手、专辑（资源为标题、描述、目录）做 jieba 分词，写入 `searchVector`
-2. **查询**：`cutForSearch()` 分词 → `buildSearchWebQuery()` 组装查询串 → `websearch_to_tsquery('simple', $1)` 匹配
-3. **精准模式**：所有词以空格连接（AND 语义）；默认模式为核心词 + 其余词 `OR`
+2. **查询**：`analyzeQuery()` 分词 → 识别冗余词 / 重复词 / 别名 → 生成**召回阶梯** → `to_tsquery('simple', $1)` 匹配
+3. **精准模式**：所有词 AND；默认模式按 `exact → core → relaxed → loose` 四级阶梯召回，tier 作为排序第一优先级
 4. 后台「系统维护」提供音乐 / 资源搜索索引重建接口，带进度查询
+
+> ⚠️ **必须用 `to_tsquery`，不要用 `websearch_to_tsquery`**：后者会静默丢弃括号，
+> `A (B OR C)` 被解析成 `'A' & 'B' | 'C'` ≡ `(A & B) | C`，模糊搜索会退化成"命中 C 即返回"。
+
+**排序规则**（音乐搜索，优先级从高到低）：
+
+| 优先级 | 规则 | 分值 |
+| --- | --- | --- |
+| 1 | 召回 tier（完全匹配 → 核心匹配 → 宽松匹配 → 兜底） | 升序 |
+| 2 | 标题 / 歌手 / 专辑 归一化后完全等于查询串 | 1000 / 900 / 850 |
+| 3 | 整串被标题 / 歌手 / 专辑包含 | 400 / 260 / 200 |
+| 4 | 覆盖度：逐词 `字符数 × 出现次数`（重复词权重翻倍） | 累加 |
+| 5 | `ts_rank(searchVector, tsquery, 1)` | — |
+| 6 | `viewCount` → `createdAt` | 兜底 |
+
+**冗余词表**：`server/utils/jieba.ts` 的 `FILLER_WORDS`（我 / 的 / 听 / 一下 / 音乐 …），只降级为"非必命中"，不丢弃。
+**别名表**：`server/utils/search-alias.ts` 的 `SEARCH_ALIASES`，查询端 OR 扩展，无需重建索引。
 
 ### 性能与安全
 

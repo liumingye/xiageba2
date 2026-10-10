@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
           const queryParamIndex = paramIndex++;
           baseParams.push(keywordWebQuery);
 
-          searchQueryExpression = `websearch_to_tsquery('simple', $${queryParamIndex})`;
+          searchQueryExpression = `to_tsquery('simple', $${queryParamIndex})`;
           conditions.push(`"searchVector" @@ search_query.value`);
         }
 

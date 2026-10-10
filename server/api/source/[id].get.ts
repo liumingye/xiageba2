@@ -54,8 +54,8 @@ export default defineEventHandler(async (event) => {
         FROM "Source"
         WHERE id != ${id}
           AND status = 1
-          AND "searchVector" @@ websearch_to_tsquery('simple', ${formattedWebQuery})
-        ORDER BY ts_rank("searchVector", websearch_to_tsquery('simple', ${formattedWebQuery})) DESC
+          AND "searchVector" @@ to_tsquery('simple', ${formattedWebQuery})
+        ORDER BY ts_rank("searchVector", to_tsquery('simple', ${formattedWebQuery})) DESC
         LIMIT 10
       `;
 
