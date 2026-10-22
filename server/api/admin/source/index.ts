@@ -7,6 +7,7 @@ import {
   buildSearchWebQuery,
 } from "#server/utils/jieba";
 import { TREE_MAX_LINE } from "#server/lib/const";
+import { getCategoryList } from "#server/lib/categoryCache";
 
 // 实例化 pg 连接池（保持与 Prisma 数据库连接一致）
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 100 });
@@ -124,10 +125,7 @@ export default defineEventHandler(async (event) => {
         const [dataResult, countResult, categories] = await Promise.all([
           client.query(dataSql, dataParams),
           client.query(countSql, countParams),
-          prisma.category.findMany({
-            orderBy: { sort: "asc" },
-            select: { id: true, name: true },
-          }),
+          getCategoryList(),
         ]);
 
         const sources = dataResult.rows;
@@ -150,29 +148,37 @@ export default defineEventHandler(async (event) => {
     const where: any = {};
     if (cid) where.cid = cid;
 
+    // 1. 先只查 id（轻量，走索引少拉数据）
+    const ids = await prisma.source.findMany({
+      where,
+      select: { id: true },
+      orderBy: { createdAt: "desc", id: "asc" },
+      skip,
+      take: pageSize,
+    });
+
+    // 2. 再通过 where id in (id数组) 查询展示字段
+    const idList = ids.map((s) => s.id);
     const [sources, total, categories] = await Promise.all([
-      prisma.source.findMany({
-        where,
-        orderBy: { createdAt: "desc", id: "asc" },
-        skip,
-        take: pageSize,
-        select: {
-          id: true,
-          cid: true,
-          title: true,
-          url: true,
-          description: true,
-          menu: true,
-          isSelf: true,
-          status: true,
-          createdAt: true,
-        },
-      }),
+      idList.length > 0
+        ? prisma.source.findMany({
+            where: { id: { in: idList } },
+            select: {
+              id: true,
+              cid: true,
+              title: true,
+              url: true,
+              description: true,
+              menu: true,
+              isSelf: true,
+              status: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc", id: "asc" },
+          })
+        : [],
       prisma.source.count({ where }),
-      prisma.category.findMany({
-        orderBy: { sort: "asc" },
-        select: { id: true, name: true },
-      }),
+      getCategoryList(),
     ]);
 
     return {

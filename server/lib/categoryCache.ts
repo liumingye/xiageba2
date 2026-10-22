@@ -33,3 +33,17 @@ export const getCategoryNameMap = async (): Promise<Record<number, string>> => {
 export const clearCategoryNameMapCache = async (): Promise<void> => {
   await delRedisCache(CATEGORY_MAP_CACHE_KEY);
 };
+
+/**
+ * 获取分类列表（数组形态：{ id, name }），带 Redis 缓存。
+ * 与 getCategoryNameMap 共用同一份缓存，只是消费形态不同；
+ * Redis 不可用时自动降级查库，行为与原来一致。
+ */
+export const getCategoryList = async (): Promise<
+  { id: number; name: string }[]
+> => {
+  const map = await getCategoryNameMap();
+  return Object.entries(map)
+    .map(([id, name]) => ({ id: Number(id), name }))
+    .sort((a, b) => a.id - b.id);
+};
