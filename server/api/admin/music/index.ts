@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
             FROM "Music"
             WHERE "searchVector" @@ to_tsquery('simple', ${formattedWebQuery})
           )
-          SELECT m.id, m.title, m.artist, m.album, m.cover, m.downloads, m.status
+          SELECT m.id, m.title, m.artist, m.album, m.cover, m.status
           FROM hit_rows h
           JOIN "Music" m USING(id)
           ORDER BY h.rank DESC, m."createdAt" DESC
@@ -51,7 +51,6 @@ export default defineEventHandler(async (event) => {
       return {
         data: musics.map((m) => ({
           ...m,
-          downloads: m.downloads || [],
         })),
         total: totalCount,
         page,
@@ -61,28 +60,37 @@ export default defineEventHandler(async (event) => {
     }
 
     // 无搜索词时的默认查询
+    // 1. 先只查 id（轻量，走索引少拉数据）
+    const ids = await prisma.music.findMany({
+      select: { id: true },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+    });
+
+    // 2. 再通过 where id in (id数组) 查询展示字段
+    const idList = ids.map((m) => m.id);
     const [musics, total] = await Promise.all([
-      prisma.music.findMany({
-        select: {
-          id: true,
-          title: true,
-          artist: true,
-          album: true,
-          cover: true,
-          downloads: true, // 🛠️ 修复：此前漏了选择该字段，导致下方 JSON.parse 崩溃
-          status: true,
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: pageSize,
-      }),
+      idList.length > 0
+        ? prisma.music.findMany({
+            where: { id: { in: idList } },
+            select: {
+              id: true,
+              title: true,
+              artist: true,
+              album: true,
+              cover: true,
+              status: true,
+            },
+            orderBy: { createdAt: "desc" },
+          })
+        : [],
       prisma.music.count(),
     ]);
 
     return {
       data: musics.map((m) => ({
         ...m,
-        downloads: m.downloads || [],
       })),
       total,
       page,

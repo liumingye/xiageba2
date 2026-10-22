@@ -12,13 +12,18 @@ useSeoMeta({
   title: "音乐管理",
 });
 
+type TableData = Pick<
+  MusicType,
+  "id" | "title" | "artist" | "album" | "cover" | "status"
+>;
+
 const config = useRuntimeConfig();
 const router = useRouter();
 const route = useRoute();
 const { isLoggedIn, logout, checkLogin, initialized } = useAuth();
 const toast = useToast();
 
-const musics = ref<MusicType[]>([]);
+const musics = ref<TableData[]>([]);
 const searchQuery = ref("");
 const currentPage = ref(1);
 const pageSize = ref(20);
@@ -26,7 +31,7 @@ const total = ref(0);
 const totalPages = ref(0);
 const isLoading = ref(false);
 
-const columns: TableColumn<MusicType>[] = [
+const columns: TableColumn<TableData>[] = [
   {
     id: "select",
     enableHiding: false,
@@ -155,7 +160,7 @@ const deleteMusic = async (id: string) => {
 };
 
 // ============ 状态开关 ============
-const toggleStatus = async (item: MusicType) => {
+const toggleStatus = async (item: TableData) => {
   const newStatus = item.status === 1 ? 0 : 1;
 
   try {
@@ -280,7 +285,7 @@ const goToPage = (page: number) => {
       v-model:row-selection="rowSelection"
       :data="isLoading ? [] : musics"
       :columns="columns"
-      :get-row-id="(row: MusicType) => row.id"
+      :get-row-id="(row: TableData) => row.id"
     >
       <template #select-header="{ table }">
         <UCheckbox
