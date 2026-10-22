@@ -18,28 +18,11 @@ interface DoubanResponse {
 }
 
 interface DoubanResult {
-  // vod_id: string;
-  // link: string;
   vod_name: string;
-  // search: boolean;
   vod_pic: string;
-  // type_id: string;
-  // type_name: string;
-  // vod_remarks: string;
-  // vod_year: string;
   vod_douban_score: string;
   vod_subtitle: string;
 }
-
-const CATEGORY_NAMES: Record<string, string> = {
-  movie: "选电影",
-  tv: "选剧集",
-  show: "选综艺",
-  movie_filter: "电影筛选",
-  tv_filter: "电视剧筛选",
-  show_filter: "综艺筛选",
-  short_drama: "选短剧",
-};
 
 const CLASSES = [
   { type_id: "short_drama", type_name: "选短剧" },
@@ -454,10 +437,6 @@ const FILTERS: Record<
   ],
 };
 
-// function buildDoubanSubjectLink(vodId: string): string {
-//   return `https://movie.douban.com/subject/${vodId}`;
-// }
-
 function addDot0(num: number | undefined) {
   if (num === 0) return "";
   return Number.isInteger(num) ? `${num}.0` : String(num || "");
@@ -465,15 +444,6 @@ function addDot0(num: number | undefined) {
 
 function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
   const cardSubtitle = item.card_subtitle || "";
-  // const yearMatch = cardSubtitle.match(/^(\d{4})/);
-  // const vod_year = yearMatch ? yearMatch[1] : "";
-
-  // let vod_remarks = "";
-  // if (item.episodes_info && item.episodes_info.trim()) {
-  //   vod_remarks = item.episodes_info.trim();
-  // } else if (item.is_new) {
-  //   vod_remarks = categoryId === "movie" ? "新片" : "新剧";
-  // }
 
   const vod_pic = item.pic?.large || item.pic?.normal || "";
 
@@ -482,15 +452,8 @@ function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
     parts.length > 1 ? parts.slice(1).join(" / ") : cardSubtitle;
 
   return {
-    // vod_id: item.id || `douban_${item.uri}`,
-    // link: buildDoubanSubjectLink(item.id || `douban_${item.uri}`),
     vod_name: item.title || "",
-    // search: true,
     vod_pic,
-    // type_id: categoryId,
-    // type_name: CATEGORY_NAMES[categoryId] || "未知分类",
-    // vod_remarks,
-    // vod_year,
     vod_douban_score: addDot0(item.rating?.value),
     vod_subtitle,
   };

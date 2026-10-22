@@ -182,7 +182,7 @@ interface DoubanListData {
 
 const doubanClasses = ref<DoubanClass[]>([]);
 const doubanFilters = ref<Record<string, DoubanFilter[]>>({});
-const activeCategoryId = ref("short_drama");
+const activeCategoryId = ref("tv");
 const activeFilters = ref<Record<string, string>>({});
 const doubanList = ref<DoubanItem[]>([]);
 const doubanLoading = ref(false);
