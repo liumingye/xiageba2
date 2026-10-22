@@ -935,6 +935,17 @@ async function transferGuangya(
     });
   }
 
+  // 超过 100TB 不支持转存
+  if (summary.raw?.data?.totalFileSize > 1024 * 1024 * 1024 * 1024 * 100) {
+    if (sourceId) {
+      event.waitUntil(disableSource(sourceId));
+    }
+    throw createError({
+      statusCode: 404,
+      message: "分享不存在或已失效",
+    });
+  }
+
   // 步骤2: 获取分享访问令牌
   let accessToken = "";
   try {
