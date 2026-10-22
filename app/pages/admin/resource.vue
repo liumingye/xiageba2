@@ -852,7 +852,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
         ref="table"
         v-model:column-visibility="columnVisibility"
         v-model:row-selection="rowSelection"
-        :data="sources"
+        :data="isLoading ? [] : sources"
         :loading="isLoading"
         :columns="columns"
         :get-row-id="(row: Source) => row.id"

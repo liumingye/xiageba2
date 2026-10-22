@@ -55,7 +55,6 @@ model Music {
   updatedAt    DateTime?                @updatedAt @db.Timestamptz(3)
   searchVector Unsupported("tsvector")?
 
-  @@index([createdAt])
   @@index([viewCount])
   @@index([status])
   @@index([searchVector], type: Gin)
