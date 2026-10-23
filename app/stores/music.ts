@@ -1,5 +1,4 @@
 import { defineStore, skipHydrate, storeToRefs } from "pinia";
-import { ref } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 export { storeToRefs };
 
