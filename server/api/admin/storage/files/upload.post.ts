@@ -1,5 +1,8 @@
 import { uploadFile } from "#server/lib/s3";
 
+/** 单文件上传体积上限（100MB）。multipart 默认无大小限制，需在应用层拦截 */
+const MAX_UPLOAD_SIZE = 100 * 1024 * 1024;
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const configIdStr = query.configId as string;
@@ -19,6 +22,13 @@ export default defineEventHandler(async (event) => {
   const file = formData.find((f) => f.name === "file");
   if (!file || !file.data) {
     throw createError({ statusCode: 400, message: "未找到上传文件" });
+  }
+
+  if (file.data.length > MAX_UPLOAD_SIZE) {
+    throw createError({
+      statusCode: 413,
+      message: `文件体积超过上限（${MAX_UPLOAD_SIZE / 1024 / 1024}MB）`,
+    });
   }
 
   // 可选自定义路径

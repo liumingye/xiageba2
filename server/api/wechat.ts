@@ -3,20 +3,30 @@ import {
   createDecipheriv,
   createCipheriv,
   randomBytes,
+  timingSafeEqual,
 } from "node:crypto";
 import { getWechatConfig } from "#server/lib/wechatConfig";
 import { prisma } from "#server/lib/prisma";
-import {
-  buildSearchWebQuery,
-  cutForSearch,
-} from "#server/utils/jieba";
+import { buildTsQuery, cutForSearch } from "#server/utils/jieba";
 import { automaton_websearch_filter_keywords } from "#server/lib/simpleAC";
 
 const MAX_KEYWORD_LENGTH = 30;
+const MIN_KEYWORD_LENGTH = 2;
 
 /* =========================================================================
  *  1. 微信消息签名 / XML 解析 / 回复构造 / 加解密
  * ========================================================================= */
+
+/**
+ * 🔒 恒定时间比较：防止通过响应耗时逐字节推测签名。
+ * 长度不一致时退化为无泄漏的 false（不抛错，避免成为 DoS 面）。
+ */
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
 function wechatVerifySignature(
   token: string,
@@ -27,7 +37,7 @@ function wechatVerifySignature(
   if (!token || !signature || !timestamp || !nonce) return false;
   const sorted = [token, timestamp, nonce].sort().join("");
   const digest = createHash("sha1").update(sorted).digest("hex");
-  return digest === signature;
+  return safeEqual(digest, signature);
 }
 
 function wechatMsgSignature(
@@ -136,13 +146,16 @@ function buildTextReply(
   text: string,
 ): string {
   const now = Math.floor(Date.now() / 1000);
+  // 🔒 CDATA 注入防护：用户消息（关键词）可能包含 "]]>"，
+  // 不处理会提前闭合 CDATA 段、向微信平台注入伪造 XML 节点。
+  const safeText = text.replace(/\]\]>/g, "]]&gt;");
   return (
     "<xml>" +
     `<ToUserName><![CDATA[${toUser}]]></ToUserName>` +
     `<FromUserName><![CDATA[${fromUser}]]></FromUserName>` +
     `<CreateTime>${now}</CreateTime>` +
     `<MsgType><![CDATA[text]]></MsgType>` +
-    `<Content><![CDATA[${text}]]></Content>` +
+    `<Content><![CDATA[${safeText}]]></Content>` +
     "</xml>"
   );
 }
@@ -225,7 +238,7 @@ async function searchResources(
   }
 
   const tokens = cutForSearch(keyword);
-  const keywordWebQuery = buildSearchWebQuery(tokens, true);
+  const keywordWebQuery = buildTsQuery(tokens, true);
   if (!keywordWebQuery.trim()) return [];
 
   const items: WechatSearchItem[] = [];
@@ -431,7 +444,7 @@ export default defineEventHandler(async (event) => {
           q.nonce || "",
           encryptContent,
         );
-        if (expectedMsgSig !== q.msg_signature) {
+        if (!safeEqual(expectedMsgSig, q.msg_signature)) {
           throw createError({ statusCode: 403, message: "消息签名校验失败" });
         }
       }
@@ -470,6 +483,8 @@ export default defineEventHandler(async (event) => {
         replyText = "请输入搜索关键词（最多30字）。";
       } else if (content.length > MAX_KEYWORD_LENGTH) {
         replyText = `关键词过长，最多 ${MAX_KEYWORD_LENGTH} 个字。`;
+      } else if (content.length < MIN_KEYWORD_LENGTH) {
+        replyText = `关键词过短，至少 ${MIN_KEYWORD_LENGTH} 个字。`;
       } else {
         const lowerContent = content.toLowerCase();
 

@@ -7,7 +7,7 @@
 #   - 构建 Nuxt 应用
 #   - prune devDependencies，只保留生产依赖
 # ═══════════════════════════════════════════════════════════════
-FROM node:20-slim AS build
+FROM node:22-slim AS build
 
 # 国内源：apt → 清华源
 RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources && \
@@ -83,7 +83,7 @@ RUN rm -rf ./node_modules/.pnpm/typescript@* \
 #   - 从 build stage 直接复用 node_modules + .output
 #   - 无需 npm/pnpm/corepack，减少工具链体积
 # ═══════════════════════════════════════════════════════════════
-FROM node:20-slim AS production
+FROM node:22-slim AS production
 
 # 国内源：apt → 清华源
 RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources && \

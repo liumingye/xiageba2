@@ -3,10 +3,7 @@ import { Pool } from "pg";
 import { prisma } from "#server/lib/prisma";
 import { getAiChatClient } from "#server/lib/aiClient";
 import "dotenv/config";
-import {
-  cutForSearch,
-  buildTsQuery,
-} from "#server/utils/jieba";
+import { cutForSearch, buildTsQuery } from "#server/utils/jieba";
 import { PAN_HOST_MAP } from "#server/api/source/search.get";
 import { Readable } from "stream";
 import { aiRequestQueue } from "#server/utils/queue"; // 引入刚才写的排队机
@@ -15,6 +12,10 @@ import { getStorageTypeFriend } from "#shared/utils";
 import type { PanFilter } from "#shared/utils";
 
 const siteHost = process.env.SITE_HOST || "";
+
+/** 用户输入的最大长度（字符）。防费用放大 + 防超长上下文拖垮排队机 */
+const MAX_MESSAGE_LENGTH = 500;
+const MIN_MESSAGE_LENGTH = 2;
 
 // 保持同一个连接池，或者引用你全局的 pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 100 });
@@ -261,10 +262,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少 message 参数" });
   }
 
-  if (userMessage.trim().length < 2) {
+  // 🔒 长度上限：仅有下限没有上限时，单次请求可送入超大 prompt，
+  // 直接放大模型调用费用（限流挡不住"一次超大请求"）。
+  if (userMessage.trim().length > MAX_MESSAGE_LENGTH) {
     throw createError({
       statusCode: 400,
-      message: "搜索关键词最少 2 个字符",
+      message: `搜索内容过长，最多 ${MAX_MESSAGE_LENGTH} 个字符`,
+    });
+  }
+
+  if (userMessage.trim().length < MIN_MESSAGE_LENGTH) {
+    throw createError({
+      statusCode: 400,
+      message: `搜索内容过短，最少 ${MIN_MESSAGE_LENGTH} 个字符`,
     });
   }
 

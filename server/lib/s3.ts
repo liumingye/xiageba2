@@ -69,6 +69,34 @@ export function getFullKey(config: S3ConfigRow, key: string): string {
   return prefix ? `${prefix}/${key}` : key;
 }
 
+/**
+ * 🔒 S3 对象 Key 安全校验：阻断路径穿越。
+ *
+ * S3 本身没有目录概念，Key 中的 `..` 不会被规范化，但可用来跳出
+ * config.prefix 约定的命名空间，覆盖 / 删除同一 Bucket 下其它应用的
+ * 对象（含前端直传、其它配置项写入的文件）。上传、删除、重命名三条
+ * 写路径都必须先过这道校验。
+ *
+ * 注意：调用方传入的 Key 可能经过 decodeURIComponent 解码，
+ * `%2e%2e%2f` 之流的编码探测在这里统一显形。
+ */
+export function assertSafeS3Key(key: string): string {
+  const raw = String(key ?? "").trim();
+  if (!raw) {
+    throw createError({ statusCode: 400, message: "文件路径不能为空" });
+  }
+  // 统一为正斜杠视角，拒绝 Windows 风格分隔符混入
+  const unified = raw.replace(/\\/g, "/");
+  if (
+    unified.split("/").includes("..") || // 路径穿越段
+    unified.startsWith("/") || // 绝对路径
+    /[\u0000-\u001f\u007f]/.test(unified) // 控制字符
+  ) {
+    throw createError({ statusCode: 400, message: "非法的文件路径" });
+  }
+  return unified;
+}
+
 /** 拼接文件访问 URL */
 export function getFileUrl(config: S3ConfigRow, key: string): string {
   const fullKey = key;
@@ -143,8 +171,9 @@ export async function uploadFile(
   body: Buffer | Uint8Array,
   contentType: string,
 ): Promise<S3FileItem> {
+  const safeKey = assertSafeS3Key(key);
   const { client, config } = await getS3Client(configId);
-  const fullKey = getFullKey(config, key);
+  const fullKey = getFullKey(config, safeKey);
 
   // 检测重复：同一配置下存在相同 path 的未删除记录则跳过
   const existing = await prisma.storageFile.findFirst({
@@ -201,11 +230,12 @@ export async function deleteFile(
   configId: number,
   path: string,
 ): Promise<void> {
+  const safePath = assertSafeS3Key(path);
   const { client, config } = await getS3Client(configId);
 
   // 根据 configId + path 找到记录并软删除
   const record = await prisma.storageFile.findFirst({
-    where: { configId, path, isDeleted: false },
+    where: { configId, path: safePath, isDeleted: false },
   });
   if (record) {
     await prisma.storageFile.update({
@@ -217,7 +247,7 @@ export async function deleteFile(
   // 同时从 S3 删除
   const command = new DeleteObjectCommand({
     Bucket: config.bucket,
-    Key: path,
+    Key: safePath,
   });
 
   await client.send(command);
@@ -229,33 +259,34 @@ export async function renameFile(
   oldPath: string,
   newName: string,
 ): Promise<S3FileItem> {
+  const safeOldPath = assertSafeS3Key(oldPath);
   const { client, config } = await getS3Client(configId);
 
   const record = await prisma.storageFile.findFirst({
-    where: { configId, path: oldPath, isDeleted: false },
+    where: { configId, path: safeOldPath, isDeleted: false },
   });
   if (!record) {
     throw new Error("文件记录不存在");
   }
 
   // 构建新路径：保留原目录，替换文件名
-  const dir = oldPath.includes("/")
-    ? oldPath.slice(0, oldPath.lastIndexOf("/") + 1)
+  const dir = safeOldPath.includes("/")
+    ? safeOldPath.slice(0, safeOldPath.lastIndexOf("/") + 1)
     : "";
-  const newPath = `${dir}${newName}`;
+  const newPath = assertSafeS3Key(`${dir}${newName}`);
 
   // S3 复制到新 key（CopySource 需编码，避免中文等非 ASCII 字符导致 header 报错）
   const copyCommand = new CopyObjectCommand({
     Bucket: config.bucket,
     Key: newPath,
-    CopySource: `${config.bucket}/${encodeURIComponent(oldPath)}`,
+    CopySource: `${config.bucket}/${encodeURIComponent(safeOldPath)}`,
   });
   await client.send(copyCommand);
 
   // 删除旧 key
   const deleteCommand = new DeleteObjectCommand({
     Bucket: config.bucket,
-    Key: oldPath,
+    Key: safeOldPath,
   });
   await client.send(deleteCommand);
 
