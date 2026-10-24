@@ -1,4 +1,4 @@
-import { Check, NBoolean } from "@netdisk-sdk/utils";
+import { Check, type NBoolean } from "@netdisk-sdk/utils";
 
 export type IBaiduResult<Extend = {}> = {
   errno: number | 0;

@@ -1,4 +1,4 @@
-import { Transporter, createTransport } from "nodemailer";
+import { type Transporter, createTransport } from "nodemailer";
 import "dotenv/config";
 import { getConfigValue } from "#server/lib/configCache";
 

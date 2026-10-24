@@ -1,7 +1,7 @@
-import { ContentType, Method, NBoolean, AsyncUtil } from "@netdisk-sdk/utils";
+import { ContentType, Method, type NBoolean, AsyncUtil } from "@netdisk-sdk/utils";
 import { BaiduClient } from "./client";
-import { FileCategory, IFile, ResultInfo } from "./types";
-import { ProgressEvent, Request } from "superagent";
+import { type FileCategory, type IFile, type ResultInfo } from "./types";
+import { type ProgressEvent, Request } from "superagent";
 import type { ReadableStream } from "stream/web";
 
 export class BaiduFSApi {

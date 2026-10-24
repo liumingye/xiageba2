@@ -1,14 +1,15 @@
 import { createHmac,createHash } from 'crypto';
-import { IFile } from "./types";
+import { type IFile } from "./types";
 
 export const decryptMd5 = (md5: string) => {
-    const c9 = md5[9].charCodeAt(0) - 'g'.charCodeAt(0)
+    if (md5.length < 10) return md5;
+    const c9 = md5.charCodeAt(9) - 'g'.charCodeAt(0)
     if (c9 < 0) return md5;
 
     var key2 = md5.slice(0, 9) + c9.toString(16) + md5.slice(10);
     var key3 = "";
     for (let i = 0; i < key2.length; i++)
-        key3 += (parseInt(key2[i], 16) ^ (15 & i)).toString(16);
+        key3 += (parseInt(key2.charAt(i), 16) ^ (15 & i)).toString(16);
     return key3.slice(8, 16) + key3.slice(0, 8) + key3.slice(24, 32) + key3.slice(16, 24);
 }
 
@@ -16,9 +17,9 @@ export const encryptMd5 = (md5: string) => {
     const key = md5.slice(8, 16) + md5.slice(0, 8) + md5.slice(24, 32) + md5.slice(16, 24);
     let key2 = "";
     for (let i = 0; i < key.length; i++)
-        key2 += (parseInt(key[i], 16) ^ (15 & i)).toString(16);
+        key2 += (parseInt(key.charAt(i), 16) ^ (15 & i)).toString(16);
 
-    const key3 = String.fromCharCode(parseInt(key2[9], 16) + 'g'.charCodeAt(0))
+    const key3 = String.fromCharCode(parseInt(key2.charAt(9), 16) + 'g'.charCodeAt(0))
     return key2.slice(0, 9) + key3 + key2.slice(10);
 }
 
@@ -50,21 +51,23 @@ class ARC4 {
 
     constructor(key: Buffer) {
         this.s = Array.from({ length: 256 }, (_, i) => i);
+        const s = this.s;
         let j = 0;
         for (let i = 0; i < 256; i++) {
-            j = (j + this.s[i] + key[i % key.length]) % 256;
-            [this.s[i], this.s[j]] = [this.s[j], this.s[i]];
+            j = (j + s[i]! + key[i % key.length]!) % 256;
+            [s[i], s[j]] = [s[j]!, s[i]!];
         }
     }
 
     private crypt(data: Buffer): Buffer {
+        const s = this.s;
         const out = Buffer.alloc(data.length);
         for (let k = 0; k < data.length; k++) {
             this.i = (this.i + 1) % 256;
-            this.j = (this.j + this.s[this.i]) % 256;
-            [this.s[this.i], this.s[this.j]] = [this.s[this.j], this.s[this.i]];
-            const t = (this.s[this.i] + this.s[this.j]) % 256;
-            out[k] = data[k] ^ this.s[t];
+            this.j = (this.j + s[this.i]!) % 256;
+            [s[this.i], s[this.j]] = [s[this.j]!, s[this.i]!];
+            const t = (s[this.i]! + s[this.j]!) % 256;
+            out[k] = data[k]! ^ s[t]!;
         }
         return out;
     }

@@ -24,7 +24,7 @@ const {
   {
     key: () => `music-${musicId.value}`,
     server: true,
-    default: () => {
+    default: (): Music => {
       return {
         id: musicId.value,
         title: "",
@@ -34,6 +34,7 @@ const {
         lyrics: "",
         playUrl: "",
         downloads: [],
+        status: 1,
       };
     },
   },

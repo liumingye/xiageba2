@@ -1,12 +1,12 @@
 import { XunleiClient } from "./client";
 import { ApiError, throwError } from "./errors";
 import {
-  IXunleiShareDetail,
-  IXunleiShareFile,
-  IXunleiRestoreResult,
-  IXunleiTaskResult,
-  IXunleiCreateShareResult,
-  IXunleiCreateShareParam,
+  type IXunleiShareDetail,
+  type IXunleiShareFile,
+  type IXunleiRestoreResult,
+  type IXunleiTaskResult,
+  type IXunleiCreateShareResult,
+  type IXunleiCreateShareParam,
 } from "./types";
 
 export interface IGetShareParam {

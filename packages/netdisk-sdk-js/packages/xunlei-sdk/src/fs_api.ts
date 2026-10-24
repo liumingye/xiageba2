@@ -1,8 +1,8 @@
 import { XunleiClient } from "./client";
 import {
-  IXunleiFile,
-  IXunleiListFilesParam,
-  IXunleiListFilesResult,
+  type IXunleiFile,
+  type IXunleiListFilesParam,
+  type IXunleiListFilesResult,
 } from "./types";
 
 export interface IXunleiRawFile {

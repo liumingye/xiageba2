@@ -13,7 +13,7 @@ import type {
 import {
   QuarkUCFSApi,
   QuarkUCClient,
-  ISaveTaskStateResult,
+  type ISaveTaskStateResult,
 } from "@netdisk-sdk/quarkUC-sdk";
 import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import {

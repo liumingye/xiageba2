@@ -1,14 +1,14 @@
 import { QuarkUCClient } from "./client";
-import { NBoolean } from "@netdisk-sdk/utils";
+import { type NBoolean } from "@netdisk-sdk/utils";
 import {
-  IFile,
-  ICreateTaskResult,
-  ISaveTaskStateResult,
-  IFidExtend,
+  type IFile,
+  type ICreateTaskResult,
+  type ISaveTaskStateResult,
+  type IFidExtend,
   getFileFid,
-  IQueryPageParam,
+  type IQueryPageParam,
   toSortStr,
-  IQueryPageResult,
+  type IQueryPageResult,
 } from "./types";
 
 export class QuarkUCShareApi {

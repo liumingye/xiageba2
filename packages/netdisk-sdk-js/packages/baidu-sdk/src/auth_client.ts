@@ -1,14 +1,14 @@
 import {
   OAuth2Client,
   OAuth2Fetch,
-  OAuth2Token,
+  type OAuth2Token,
   OAuth2Error,
   generateCodeVerifier,
 } from "@badgateway/oauth2-client";
 export type { OAuth2Token };
 export { generateCodeVerifier };
 
-import { Await, ConstructorArgType } from "@netdisk-sdk/utils";
+import { type Await, type ConstructorArgType } from "@netdisk-sdk/utils";
 
 export const createAuthClient = (
   clientId: string,

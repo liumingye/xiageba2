@@ -7,12 +7,12 @@ import {
 } from "./const";
 import { isGuangyaSuccess, extractGuangyaMessage, ApiError } from "./errors";
 import {
-  IGuangyaAssetsResult,
-  IGuangyaCreateDirParam,
-  IGuangyaFile,
-  IGuangyaListFilesParam,
-  IGuangyaListFilesResult,
-  IGuangyaUserInfoResult,
+  type IGuangyaAssetsResult,
+  type IGuangyaCreateDirParam,
+  type IGuangyaFile,
+  type IGuangyaListFilesParam,
+  type IGuangyaListFilesResult,
+  type IGuangyaUserInfoResult,
 } from "./types";
 
 /** 辅助：失败时抛出带响应片段的错误 */

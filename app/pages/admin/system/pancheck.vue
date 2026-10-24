@@ -19,6 +19,9 @@ const loading = ref(true);
 const pancheckServers = ref<string[]>([]);
 const savingPancheck = ref(false);
 const savedPancheck = ref(false);
+// ⚠️ 不要写回模板：模板属性里的 "//" 会打断 vue-tsc 生成的虚拟代码，
+// 让 v-for 的索引在组件 props 上变成 "Cannot find name"。
+const pancheckPlaceholder = "http://localhost:6080";
 
 // 健康检测结果：索引对应 pancheckServers 下标
 interface PancheckHealthResult {
@@ -162,10 +165,10 @@ const removePancheckServer = (index: number) => {
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
-        <div v-for="(_, index) in pancheckServers" :key="index">
+        <div v-for="(serverUrl, i) in pancheckServers" :key="i">
           <label
             class="flex items-center gap-1.5 text-muted text-sm mb-2"
-            :for="`pan-${index}-url`"
+            :for="`pan-${i}-url`"
             >接口地址
             <UIcon
               v-if="checkingPancheckHealth"
@@ -173,41 +176,38 @@ const removePancheckServer = (index: number) => {
               class="size-4 animate-spin text-muted"
               title="检测中..."
             />
-            <template v-else-if="pancheckHealthResults[index]">
-              <UIcon
-                v-if="pancheckHealthResults[index].ok"
-                name="i-lucide-circle-check"
-                class="size-4 text-green-500"
-                :title="`正常（${pancheckHealthResults[index].durationMs}ms）`"
-              />
-              <UIcon
-                v-else
-                name="i-lucide-circle-x"
-                class="size-4 text-red-500"
-                :title="`异常：${pancheckHealthResults[index].message || pancheckHealthResults[index].status}（${pancheckHealthResults[index].durationMs}ms）`"
-              />
-              <span
-                class="text-xs"
-                :class="
-                  pancheckHealthResults[index].ok
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                "
-              >
-                {{
-                  pancheckHealthResults[index].ok
-                    ? `${pancheckHealthResults[index].durationMs}ms`
-                    : `${pancheckHealthResults[index].message || pancheckHealthResults[index].status}（${pancheckHealthResults[index].durationMs}ms）`
-                }}
-              </span>
-            </template>
+            <UIcon
+              v-else-if="!!pancheckHealthResults[i]?.ok"
+              name="i-lucide-circle-check"
+              class="size-4 text-green-500"
+              :title="`正常（${pancheckHealthResults[i]?.durationMs}ms）`"
+            />
+            <UIcon
+              v-else-if="!!pancheckHealthResults[i]"
+              name="i-lucide-circle-x"
+              class="size-4 text-red-500"
+              :title="`异常：${pancheckHealthResults[i]?.message || pancheckHealthResults[i]?.status}（${pancheckHealthResults[i]?.durationMs}ms）`"
+            />
+            <span
+              v-if="!checkingPancheckHealth && pancheckHealthResults[i]"
+              class="text-xs"
+              :class="
+                pancheckHealthResults[i].ok ? 'text-green-500' : 'text-red-500'
+              "
+            >
+              {{
+                pancheckHealthResults[i].ok
+                  ? `${pancheckHealthResults[i].durationMs}ms`
+                  : `${pancheckHealthResults[i].message || pancheckHealthResults[i].status}（${pancheckHealthResults[i].durationMs}ms）`
+              }}
+            </span>
           </label>
           <div class="flex flex-1 gap-1">
             <UInput
-              :id="`pan-${index}-url`"
-              v-model="pancheckServers[index]"
+              :id="`pan-${i}-url`"
+              v-model="pancheckServers[i]"
               type="text"
-              placeholder="http://localhost:6080"
+              :placeholder="pancheckPlaceholder"
               class="w-full"
             />
             <UButton
@@ -217,7 +217,7 @@ const removePancheckServer = (index: number) => {
               size="sm"
               icon="i-lucide-trash-2"
               aria-label="删除接口"
-              @click="removePancheckServer(index)"
+              @click="removePancheckServer(i)"
             />
           </div>
         </div>

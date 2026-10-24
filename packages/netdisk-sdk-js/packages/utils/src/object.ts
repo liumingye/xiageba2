@@ -1,5 +1,5 @@
 import { Check } from "./check"
-import { AsyncObjectMethod } from "./types"
+import { type AsyncObjectMethod } from "./types"
 import { Lock as AsyncLock } from "async-await-mutex-lock";
 
 export { AsyncLock }

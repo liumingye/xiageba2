@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { purifyUrl } from "./purifyUrl";
-import { parseC139ShareURL } from "@netdisk-sdk/c139-sdk/share_api";
-import { parseGuangyaShareURL } from "@netdisk-sdk/guangya-sdk/share_api";
+import { parseC139ShareURL } from "@netdisk-sdk/c139-sdk";
+import { parseGuangyaShareURL } from "@netdisk-sdk/guangya-sdk";
 
 describe("purifyUrl - 中国移动云盘", () => {
   it("无 & 时不追加提取码", () => {

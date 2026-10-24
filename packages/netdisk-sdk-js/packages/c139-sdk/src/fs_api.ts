@@ -1,7 +1,7 @@
 import { C139Client } from "./client";
 import { C139_FILE_LIST_URL, C139_DOWNLOAD_URL, C139_BATCH_TRASH_URL } from "./const";
 import { isC139Success, raiseApiError } from "./errors";
-import { IC139File, IC139DownloadLink } from "./types";
+import { type IC139File, type IC139DownloadLink } from "./types";
 
 /** 个人盘文件列表参数 */
 export interface IC139ListFilesParam {

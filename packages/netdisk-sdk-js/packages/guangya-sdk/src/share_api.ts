@@ -14,17 +14,17 @@ import {
   normalizeParentId,
 } from "./fs_api";
 import {
-  IGuangyaCreateShareParam,
-  IGuangyaCreateShareResult,
-  IGuangyaFile,
-  IGuangyaParsedShareURL,
-  IGuangyaRestoreParam,
-  IGuangyaRestoreResult,
-  IGuangyaShareAccessTokenResult,
-  IGuangyaShareFilesListParam,
-  IGuangyaShareFilesListResult,
-  IGuangyaShareSummaryResult,
-  IGuangyaTaskStatusResult,
+  type IGuangyaCreateShareParam,
+  type IGuangyaCreateShareResult,
+  type IGuangyaFile,
+  type IGuangyaParsedShareURL,
+  type IGuangyaRestoreParam,
+  type IGuangyaRestoreResult,
+  type IGuangyaShareAccessTokenResult,
+  type IGuangyaShareFilesListParam,
+  type IGuangyaShareFilesListResult,
+  type IGuangyaShareSummaryResult,
+  type IGuangyaTaskStatusResult,
 } from "./types";
 
 /** 辅助：失败时抛出带响应片段的错误 */
@@ -316,10 +316,10 @@ export const parseGuangyaShareURL = (
     const passcodeMatch = rawURL.match(
       /[?&](?:code|pwd|passcode|accessCode)=([^&#]+)/i,
     );
-    if (passcodeMatch) passcode = decodeURIComponent(passcodeMatch[1]);
+    if (passcodeMatch) passcode = decodeURIComponent(passcodeMatch[1] ?? "");
     // 路径中的分享ID
     const pathMatch = rawURL.match(/\/(?:s|share|link|download)\/([^/?#]+)/i);
-    if (pathMatch) shareId = pathMatch[1];
+    if (pathMatch) shareId = pathMatch[1] ?? "";
   }
 
   return { shareId, passcode };

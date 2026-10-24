@@ -10,7 +10,8 @@
     "postinstall": "nuxt prepare",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "vue-tsc --noEmit -p .nuxt/tsconfig.app.json"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",
@@ -36,6 +37,7 @@
     "axios": "^1.20.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",
+    "iconv-lite": "0.7.2",
     "ioredis": "^5.11.1",
     "nodemailer": "^10.2.0",
     "nuxt": "^4.6.1",
@@ -61,7 +63,8 @@
     "postcss-preset-env": "^11.5.4",
     "terser": "^5.51.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "vue-tsc": "^3.3.13"
   },
   "packageManager": "pnpm@10.21.0+sha512.da3337267e400fdd3d479a6c68079ac6db01d8ca4f67572083e722775a796788a7a9956613749e000fac20d424b594f7a791a5f4e2e13581c5ef947f26968a40"
 }

@@ -1,4 +1,4 @@
-import superagent, { Agent } from "superagent";
+import superagent, { type Agent } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
 
 import {
@@ -9,7 +9,7 @@ import {
 import { throwError, AuthError } from "./errors";
 import { XunleiShareApi } from "./share_api";
 import { XunleiFSApi } from "./fs_api";
-import { IXunleiTokenData, IXunleiCaptchaData, IXunleiMethod } from "./types";
+import { type IXunleiTokenData, type IXunleiCaptchaData, type IXunleiMethod } from "./types";
 
 export interface IXunleiTokenInfo {
   refreshToken: string;

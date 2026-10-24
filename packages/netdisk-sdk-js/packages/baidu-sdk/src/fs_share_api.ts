@@ -1,16 +1,16 @@
 import {
   Check,
-  ConstructorArgsType,
-  ConstructorArgType,
+  type ConstructorArgsType,
+  type ConstructorArgType,
   ContentType,
   Method,
-  NBoolean,
-  StringNumber,
+  type NBoolean,
+  type StringNumber,
 } from "@netdisk-sdk/utils";
 import { BaiduClient } from "./client";
-import { IListParam } from "./fs_api";
+import { type IListParam } from "./fs_api";
 import { Request } from "superagent";
-import { IFile } from "./types";
+import { type IFile } from "./types";
 import { generateSharedownloadSign, Android } from "./helper";
 
 export const parseShareParam = (_url: string | URL): IShareParam | null => {

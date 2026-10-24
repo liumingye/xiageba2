@@ -11,14 +11,14 @@ import {
 } from "./const";
 import { isC139Success, raiseApiError, ApiError } from "./errors";
 import {
-  IC139DownloadLink,
-  IC139File,
-  IC139ParsedShareURL,
-  IC139ShareDownloadParam,
-  IC139ShareFilesParam,
-  IC139ShareFilesResult,
-  IC139TransferParam,
-  IC139TransferResult,
+  type IC139DownloadLink,
+  type IC139File,
+  type IC139ParsedShareURL,
+  type IC139ShareDownloadParam,
+  type IC139ShareFilesParam,
+  type IC139ShareFilesResult,
+  type IC139TransferParam,
+  type IC139TransferResult,
 } from "./types";
 
 /** 判断是否 139 网盘链接 */
@@ -64,7 +64,7 @@ export const parseC139ShareURL = (rawURL: string): IC139ParsedShareURL => {
       // pwd=xxx 格式
       const pwdMatch = pwdStr.match(/^pwd=(.+)/i);
       if (pwdMatch) {
-        passcode = pwdMatch[1].trim();
+        passcode = pwdMatch[1]?.trim() ?? "";
       } else {
         // 取末尾 4 位数字字母
         const alnum = pwdStr.replace(/[^a-zA-Z0-9]/g, "");

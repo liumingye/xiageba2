@@ -1,5 +1,3 @@
-import type { NitroFetchRequest, TypedInternalResponse } from "nitropack";
-
 export interface ScrapeResult {
   source: "kuwo" | "qq" | "netease";
   sourceId: string;
@@ -37,16 +35,16 @@ export abstract class MusicScraper {
     url: string,
     headers?: Record<string, string>,
   ): Promise<T> {
-    const res = await $fetch<
-      TypedInternalResponse<NitroFetchRequest, T, "get">
-    >(url, {
+    // $fetch 的返回类型会被 TypedInternalResponse 再包一层，和这里的 T 对不上；
+    // 直接让推断走 $fetch(url) 再断言回 T，避免双重包装。
+    const res = await $fetch(url, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         ...headers,
       },
     } as any);
-    return res;
+    return res as T;
   }
 
   protected lrcToTxt(lrcStr: string) {

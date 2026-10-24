@@ -1,13 +1,13 @@
 import {
   ContentType,
   Method,
-  NBoolean,
-  StringNumber,
+  type NBoolean,
+  type StringNumber,
 } from "@netdisk-sdk/utils";
 import { BaiduClient } from "./client";
 import type { ReadableStream } from "stream/web";
-import { ProgressEvent, Request } from "superagent";
-import { FileCategory, IFile, ResultList } from "./types";
+import { type ProgressEvent, Request } from "superagent";
+import { type FileCategory, type IFile, type ResultList } from "./types";
 import superagent from "superagent";
 
 export class BaiduFSOpenApi {

@@ -1,4 +1,4 @@
-import { ArrayUtil, Check, NBoolean } from "@netdisk-sdk/utils"
+import { ArrayUtil, Check, type NBoolean } from "@netdisk-sdk/utils"
 
 export type IQuarkUCApiResult<T = never, Extend = {}> = {
     status: number | 200,

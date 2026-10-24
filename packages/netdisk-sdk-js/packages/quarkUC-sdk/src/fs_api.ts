@@ -3,17 +3,17 @@ import {
   AsyncUtil,
   Check,
   ContentType,
-  NBoolean,
+  type NBoolean,
 } from "@netdisk-sdk/utils";
 import { QuarkUCClient } from "./client";
 import {
-  ICreateTaskResult,
-  IFidExtend,
-  IFile,
-  IFileFid,
-  IQueryPageParam,
-  IQueryPageResult,
-  ITaskStateResult,
+  type ICreateTaskResult,
+  type IFidExtend,
+  type IFile,
+  type IFileFid,
+  type IQueryPageParam,
+  type IQueryPageResult,
+  type ITaskStateResult,
   getFileFid,
   toSortStr,
 } from "./types";
@@ -367,7 +367,7 @@ x-oss-user-agent:${ua}
     throw HttpError.create(
       `up status: ${result.status}, error: ${result.text}`,
     );
-  return result.headers["etag"];
+  return result.headers["etag"] ?? "";
 };
 
 import crypto from "crypto";

@@ -1,4 +1,4 @@
-import superagent, { Agent, Request } from "superagent";
+import superagent, { type Agent, Request } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
 import { throwError } from "./errors";
 import { BaiduFSOpenApi } from "./fs_openapi";
@@ -110,7 +110,7 @@ export class BaiduClient {
   private async _initializeUserDetails(cookie: string) {
     const bdussMatch = cookie.match(/BDUSS=([^;]+)/);
     if (bdussMatch) {
-      this.bduss = bdussMatch[1];
+      this.bduss = bdussMatch[1] ?? null;
       this.uid = await this._getUidFromSyncApi();
       if (this.uid) {
         this.androidChannel.sk = await this._getSkFromAndroidChannelApi(

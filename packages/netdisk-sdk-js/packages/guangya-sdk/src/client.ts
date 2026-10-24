@@ -1,4 +1,4 @@
-import superagent, { Agent } from "superagent";
+import superagent, { type Agent } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
 import crypto from "crypto";
 
@@ -10,7 +10,7 @@ import {
   GUANGYA_DT,
 } from "./const";
 import { throwError, AuthError } from "./errors";
-import { IGuangyaCredential, IGuangyaTokenData } from "./types";
+import { type IGuangyaCredential, type IGuangyaTokenData } from "./types";
 import { GuangyaShareApi } from "./share_api";
 import { GuangyaFSApi } from "./fs_api";
 

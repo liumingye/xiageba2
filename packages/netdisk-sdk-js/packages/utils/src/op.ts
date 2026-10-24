@@ -1,4 +1,4 @@
-import { Await } from "./types"
+import { type Await } from "./types"
 import { Check } from "./check.js"
 import { ObjectUtil } from "./object"
 

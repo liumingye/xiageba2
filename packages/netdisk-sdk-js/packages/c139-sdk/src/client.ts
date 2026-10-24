@@ -1,4 +1,4 @@
-import superagent, { Agent } from "superagent";
+import superagent, { type Agent } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
 import crypto from "crypto";
 import zlib from "zlib";
@@ -141,7 +141,7 @@ const aesDecrypt = (key: Buffer, b64: string): string => {
   let d = Buffer.concat([decipher.update(ct), decipher.final()]);
   // 去掉 PKCS7 padding
   if (d.length > 0) {
-    const padLen = d[d.length - 1];
+    const padLen = d[d.length - 1] ?? 0;
     if (padLen >= 1 && padLen <= 16) {
       d = d.subarray(0, d.length - padLen);
     }

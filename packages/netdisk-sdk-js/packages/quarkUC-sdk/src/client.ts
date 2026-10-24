@@ -1,4 +1,4 @@
-import superagent, { Agent, Request, Response } from "superagent";
+import superagent, { type Agent, Request, Response } from "superagent";
 import { ArrayUtil, Check, CookieUtil } from "@netdisk-sdk/utils";
 import { HttpsAgent } from "agentkeepalive";
 
@@ -77,7 +77,7 @@ export class QuarkUCClient {
         request.on("response", (resp: Response) => {
           const setCookie = ArrayUtil.toArray(resp.header["set-cookie"])
             .filter(Boolean)
-            .map((v) => v.split(";")[0]);
+            .map((v) => v?.split(";")[0] ?? "");
           const puus = setCookie.find((c) => c.startsWith("__puus"));
           if (puus != null) this.updateCookie(setCookie.join(";"));
         });
