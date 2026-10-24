@@ -9,7 +9,7 @@ import {
   computed,
 } from "vue";
 import { Sparkles, User, ExternalLink } from "@lucide/vue";
-import { safeMarkdownPlugins } from "~/utils/comark";
+import { safeMarkdownPlugins } from "~/utils/comark-safe";
 
 interface ChatMessage {
   role: "user" | "assistant";

@@ -5,23 +5,25 @@ import type { NavigationMenuItem } from "@nuxt/ui";
 import { isMobileOrTablet } from "@/utils";
 import type { PublicLayoutConfig, PublicLayoutLink } from "~/utils/page";
 
-const { icpLicence, siteShortTitle } = await useSiteSeo();
+/* ---------------- 布局装修配置（后台「页面装修」）---------------- */
+// 两个请求必须并行发起：服务端 await useFetch() 会阻塞 SSR，串行写法会把
+// TTFB 变成两次往返。Promise.all 里的调用是同步触发的，请求同时在途。
+const [{ icpLicence, siteShortTitle }, { data: layoutData }] = await Promise.all(
+  [
+    useSiteSeo(),
+    useFetch<{ data: PublicLayoutConfig }>("/api/layout/default", {
+      default: () => ({
+        data: { menuItems: [], footerLinks: [] },
+      }),
+      key: "layout-default",
+      dedupe: "defer",
+    }),
+  ],
+);
 
 // ---------------- 全局壳（UHeader / UFooter）----------------
 
 const route = useRoute();
-
-/* ---------------- 布局装修配置（后台「页面装修」）---------------- */
-const { data: layoutData } = await useFetch<{ data: PublicLayoutConfig }>(
-  "/api/layout/default",
-  {
-    default: () => ({
-      data: { menuItems: [], footerLinks: [] },
-    }),
-    key: "layout-default",
-    dedupe: "defer",
-  },
-);
 
 const menuLinks = computed<PublicLayoutLink[]>(() => {
   const list = layoutData.value?.data?.menuItems;

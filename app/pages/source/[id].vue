@@ -6,7 +6,7 @@ import {
   type PanFilter,
 } from "#shared/utils";
 import { useMusicStore } from "~/stores/music";
-import { safeMarkdownPlugins } from "~/utils/comark";
+import { safeMarkdownPlugins } from "~/utils/comark-safe";
 import type { ApiErrorResponse } from "~/utils/type";
 import { useShare } from "@vueuse/core";
 import type { ISourceItem } from "#shared/type";

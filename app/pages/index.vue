@@ -34,54 +34,11 @@ const checkSectionOverflow = () => {
 
 useResizeObserver(sectionRef, checkSectionOverflow);
 
-const { data: hotMusic } = await useFetch<Music[]>("/api/music/recent", {
-  query: { pageSize: 14 },
-  method: "GET",
-  key: "home-music",
-  server: true,
-  default: () => [],
-});
-
 interface HotWord {
   word: string;
   weight: number;
   type: "music" | "resource";
 }
-
-const { data: hotwordsData } = await useFetch<{ data: HotWord[] }>(
-  "/api/hotwords",
-  {
-    key: "home-hotwords",
-    server: true,
-    default: () => ({ data: [] }),
-  },
-);
-
-const hotwords = computed(() => hotwordsData.value?.data || []);
-
-const hasHotwords = computed(() => hotwords.value.length > 0);
-const hasHistory = computed(() => musicStore.searchHistory.length > 0);
-
-const isMounted = useMounted();
-onMounted(() => {
-  isMounted.value = true;
-});
-
-const showHistorySection = computed(() => {
-  if (hasHotwords.value) return true;
-  if (isMounted.value && hasHistory.value) return true;
-  return false;
-});
-
-const activeHistoryTab = ref(hasHotwords.value ? "hot" : "history");
-
-const hasCategory = computed(
-  () =>
-    (!!categoriesWithLatest.value &&
-      categoriesWithLatest.value.data.length > 0) ||
-    (!!hotMusic.value && hotMusic.value.length > 0),
-);
-const activeContentTab = ref<"category" | "douban" | "bangumi">("category");
 
 interface CategoryLatestItem {
   id: string;
@@ -100,18 +57,59 @@ interface CategoryWithLatest {
   }[];
 }
 
-const { data: categoriesWithLatest } = await useFetch<CategoryWithLatest>(
-  "/api/category",
-  {
+// 首页数据与 SEO 配置并行拉取。服务端 await useFetch() 会阻塞 SSR，
+// 逐行 await 会把首页 TTFB 变成 4 次串行往返。
+const [
+  { data: hotMusic },
+  { data: hotwordsData },
+  { data: categoriesWithLatest },
+  { siteTitle, siteShortTitle },
+] = await Promise.all([
+  useFetch<Music[]>("/api/music/recent", {
+    query: { pageSize: 14 },
+    method: "GET",
+    key: "home-music",
+    server: true,
+    default: () => [],
+  }),
+  useFetch<{ data: HotWord[] }>("/api/hotwords", {
+    key: "home-hotwords",
+    server: true,
+    default: () => ({ data: [] }),
+  }),
+  useFetch<CategoryWithLatest>("/api/category", {
     query: { withLatest: "true" },
     method: "GET",
     key: "home-categories",
     server: true,
     default: () => ({ data: [] }),
-  },
-);
+  }),
+  useSiteSeo(),
+]);
 
-const { siteTitle, siteShortTitle } = await useSiteSeo();
+const hotwords = computed(() => hotwordsData.value?.data || []);
+
+const hasHotwords = computed(() => hotwords.value.length > 0);
+const hasHistory = computed(() => musicStore.searchHistory.length > 0);
+
+// useMounted() 内部已 onMounted 置位，无需再手动赋值
+const isMounted = useMounted();
+
+const showHistorySection = computed(() => {
+  if (hasHotwords.value) return true;
+  if (isMounted.value && hasHistory.value) return true;
+  return false;
+});
+
+const activeHistoryTab = ref(hasHotwords.value ? "hot" : "history");
+
+const hasCategory = computed(
+  () =>
+    (!!categoriesWithLatest.value &&
+      categoriesWithLatest.value.data.length > 0) ||
+    (!!hotMusic.value && hotMusic.value.length > 0),
+);
+const activeContentTab = ref<"category" | "douban" | "bangumi">("category");
 
 useSeoMeta({
   titleTemplate: siteTitle,
