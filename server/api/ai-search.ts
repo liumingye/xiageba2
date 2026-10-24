@@ -17,6 +17,15 @@ const siteHost = process.env.SITE_HOST || "";
 const MAX_MESSAGE_LENGTH = 500;
 const MIN_MESSAGE_LENGTH = 2;
 
+/**
+ * 多轮对话的历史规模上限。
+ * 上下文不是越多越好：system prompt + 工具定义已经占了大量 token，
+ * 无脑带全量历史只会放大费用、稀释当前轮的指令遵循能力。
+ */
+const MAX_HISTORY_MESSAGES = 12;
+/** 历史里 assistant 单条截断长度。回复尾部附带的资源链接列表很长，截断保留近期语义即可 */
+const MAX_HISTORY_ASSISTANT_LENGTH = 800;
+
 // 保持同一个连接池，或者引用你全局的 pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 100 });
 
@@ -140,7 +149,7 @@ async function searchMusicForAi(keyword: string) {
 
   // 2. 构建符合 to_tsquery 语法的查询文本
   // AI 搜索默认走非 exact：主词 AND (其余词 OR …)，括号由 to_tsquery 真实保留
-  const formattedWebQuery = buildTsQuery(tokens, false);
+  const formattedWebQuery = buildTsQuery(tokens, true);
 
   // 限制最大只召回前 6 条，既能保证资源相关度，又能完美控制大模型的 Token 上限
   const limit = 6;
@@ -254,24 +263,77 @@ const SEARCH_TOOLS = [
   },
 ];
 
+/** SSE 事件协议（data: 行的 JSON）：
+ *  - { queue: { position } }   排队进度（position=0 表示轮到本人）
+ *  - { reasoning: "..." }      模型思考过程增量（reasoning_content，无则为空）
+ *  - { tool: { index, name, keywords, panType } }  工具调用开始
+ *  - { toolDone: { index, count } }                 工具调用结束，count 为召回条数
+ *  - { chunk: "..." }          最终回答增量（兼容旧前端）
+ *  - { error: "..." }          出错
+ *  - [DONE]                    流结束
+ */
+interface HistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/**
+ * 解析请求体，兼容两种协议：
+ *  - 新版多轮：{ messages: [{ role, content }, ...] }（最后一条必须是 user）
+ *  - 旧版单轮：{ message: "..." }
+ */
+function parseConversation(body: any): HistoryMessage[] {
+  const rawMessages = Array.isArray(body?.messages) ? body.messages : null;
+
+  if (rawMessages) {
+    const history = rawMessages
+      .filter(
+        (m: any) =>
+          m &&
+          (m.role === "user" || m.role === "assistant") &&
+          typeof m.content === "string" &&
+          m.content.trim(),
+      )
+      .map((m: any) => ({
+        role: m.role as "user" | "assistant",
+        // assistant 历史里尾部附带的资源链接列表很长，截断保留语义、砍掉 token
+        content:
+          m.role === "assistant"
+            ? m.content.slice(0, MAX_HISTORY_ASSISTANT_LENGTH)
+            : m.content.slice(0, MAX_MESSAGE_LENGTH),
+      }))
+      .slice(-MAX_HISTORY_MESSAGES);
+
+    if (history.length === 0 || history[history.length - 1].role !== "user") {
+      throw createError({ statusCode: 400, message: "对话格式不正确" });
+    }
+    return history;
+  }
+
+  // 旧版单轮协议（兼容缓存里的旧前端）
+  const userMessage = body?.message;
+  if (!userMessage || typeof userMessage !== "string") {
+    throw createError({ statusCode: 400, message: "缺少 messages 参数" });
+  }
+  return [{ role: "user", content: userMessage }];
+}
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const userMessage = body?.message;
 
-  if (!userMessage || typeof userMessage !== "string") {
-    throw createError({ statusCode: 400, message: "缺少 message 参数" });
-  }
+  const history = parseConversation(body);
+  const latestUserMessage = history[history.length - 1]!.content;
 
   // 🔒 长度上限：仅有下限没有上限时，单次请求可送入超大 prompt，
   // 直接放大模型调用费用（限流挡不住"一次超大请求"）。
-  if (userMessage.trim().length > MAX_MESSAGE_LENGTH) {
+  if (latestUserMessage.trim().length > MAX_MESSAGE_LENGTH) {
     throw createError({
       statusCode: 400,
       message: `搜索内容过长，最多 ${MAX_MESSAGE_LENGTH} 个字符`,
     });
   }
 
-  if (userMessage.trim().length < MIN_MESSAGE_LENGTH) {
+  if (latestUserMessage.trim().length < MIN_MESSAGE_LENGTH) {
     throw createError({
       statusCode: 400,
       message: `搜索内容过短，最少 ${MIN_MESSAGE_LENGTH} 个字符`,
@@ -303,13 +365,17 @@ export default defineEventHandler(async (event) => {
   const currentMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
     [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userMessage },
+      // 多轮对话：完整历史 + 最新一条 user（parseConversation 已保证末条为 user）
+      ...history.map((m) => ({ role: m.role, content: m.content })),
     ];
 
   const stream = new Readable({
     read() {},
   });
   const requestId = Math.random().toString(36).substring(7);
+  /** SSE 推送助手：统一 data: 行格式 */
+  const push = (payload: unknown) =>
+    stream.push(`data: ${JSON.stringify(payload)}\n\n`);
 
   (async () => {
     let releaseLock: (() => void) | null = null;
@@ -321,89 +387,160 @@ export default defineEventHandler(async (event) => {
         hasWaited = true; // 🌟 只要触发了这个回调，说明真的在排队了，标记置为 true
 
         // 实时给前端推送排队进度
-        stream.push(
-          `data: ${JSON.stringify({
-            chunk: `\r⚠️ 当前服务器爆满，正在排队中（您当前排在第 **${position}** 位），请稍等...\n\n`,
-          })}\n\n`,
-        );
+        push({ queue: { position } });
       });
 
       // 🔑 轮到该用户了：判断是否排过队
       if (hasWaited) {
-        // 只有排过队的人，才需要用 \r 清除刚刚的排队字样
-        stream.push(
-          `data: ${JSON.stringify({ chunk: `\r🚀 轮到您了！正在为您思考中...\n\n` })}\n\n`,
-        );
+        // 只有排过队的人，才需要通知前端清除排队提示
+        push({ queue: { position: 0 } });
       }
 
-      // 1. 首次调用大模型，等待工具决策
-      const response = await openai.chat.completions.create({
+      // 1. 首次调用大模型（流式），等待工具决策。
+      //    流式的意义：思考过程（reasoning_content）可以实时推给前端展示，
+      //    而不是等整个决策结束才黑屏。
+      const firstStream = await openai.chat.completions.create({
         model,
         messages: currentMessages,
         tools: SEARCH_TOOLS,
+        stream: true,
       });
 
-      const message = response.choices[0]?.message;
+      let contentBuf = "";
+      /** index → 累积的 tool_call（流式下 tool_calls 按 index 分片到达） */
+      const toolCallsMap = new Map<
+        number,
+        { id: string; name: string; args: string }
+      >();
 
-      if (!message) {
-        throw createError({ statusCode: 500, message: "AI 模型返回为空" });
+      for await (const chunk of firstStream) {
+        const delta: any = chunk.choices[0]?.delta;
+        if (!delta) continue;
+
+        // 思考过程：DeepSeek/Qwen/GLM 等 OpenAI 兼容端点统一走 reasoning_content，
+        // 个别端点用 reasoning，两个都兜住
+        const reasoning =
+          delta.reasoning_content ??
+          (typeof delta.reasoning === "string" ? delta.reasoning : "");
+        if (reasoning) {
+          push({ reasoning });
+        }
+
+        // 纯聊天（不触发工具）时的正文，边收边推
+        if (delta.content) {
+          contentBuf += delta.content;
+          push({ chunk: delta.content });
+        }
+
+        if (delta.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index ?? 0;
+            const cur = toolCallsMap.get(idx) || { id: "", name: "", args: "" };
+            if (tc.id) cur.id = tc.id;
+            if (tc.function?.name) cur.name = tc.function.name;
+            if (tc.function?.arguments) cur.args += tc.function.arguments;
+            toolCallsMap.set(idx, cur);
+          }
+        }
       }
 
-      const toolCalls = message.tool_calls as
-        | {
-            id: string;
-            function: { name: string; arguments: string };
-          }[]
-        | undefined;
+      const toolCalls = [...toolCallsMap.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([index, tc]) => ({
+          index,
+          id: tc.id || `call_${requestId}_${index}`,
+          name: tc.name,
+          arguments: tc.args,
+        }))
+        .filter((tc) => tc.name);
 
       let finalMessages = [...currentMessages];
-
       let finalMusicList: Array<{ id: string; title: string; artist: string }> =
         [];
       let finalSourceList: Array<{ id: string; title: string; type?: string }> =
         [];
 
       // 2. 触发工具调用逻辑
-      if (toolCalls && toolCalls.length > 0) {
+      if (toolCalls.length > 0) {
+        // 先把工具调用意图推给前端（思考过程的一部分）
+        toolCalls.forEach((tc) => {
+          let args: any = {};
+          try {
+            args = JSON.parse(tc.arguments || "{}");
+          } catch {
+            args = {};
+          }
+          push({
+            tool: {
+              index: tc.index,
+              name: tc.name,
+              keywords: Array.isArray(args.keywords)
+                ? args.keywords
+                : args.keyword
+                  ? [args.keyword]
+                  : [],
+              panType: args.panType,
+            },
+          });
+        });
+
         const toolOutputs = await Promise.all(
           toolCalls.map(async (toolCall) => {
-            const args = JSON.parse(toolCall.function.arguments);
+            let args: any = {};
+            try {
+              args = JSON.parse(toolCall.arguments || "{}");
+            } catch {
+              args = {};
+            }
             const keywords: string[] =
               args.keywords || (args.keyword ? [args.keyword] : []);
 
             // 🎵 路由分支 A：音乐检索
-            if (toolCall.function.name === "search_music") {
+            if (toolCall.name === "search_music") {
               const searchPromises = keywords.map((keyword) =>
                 searchMusicForAi(keyword),
               );
               const resultsArray = await Promise.all(searchPromises);
 
-              const seenIds = new Set();
+              // 本次工具调用自己的结果（按 id 去重，每个关键词取 Top1）
+              const callItems: typeof finalMusicList = [];
+              const seenIds = new Set<string>();
               for (const list of resultsArray) {
                 const coreItems = list.slice(0, 1);
                 for (const item of coreItems) {
-                  if (!seenIds.has(item.id)) {
-                    seenIds.add(item.id);
-                    finalMusicList.push({
-                      id: String(item.id),
+                  const id = String(item.id);
+                  if (!seenIds.has(id)) {
+                    seenIds.add(id);
+                    callItems.push({
+                      id,
                       title: item.title,
                       artist: item.artist || "未知歌手",
                     });
                   }
                 }
               }
-              if (finalMusicList.length > 6)
-                finalMusicList = finalMusicList.slice(0, 6);
+
+              // 合并进全局列表（跨工具调用去重，控制尾部卡片总数）
+              for (const item of callItems) {
+                if (
+                  finalMusicList.length < 6 &&
+                  !finalMusicList.some((m) => m.id === item.id)
+                ) {
+                  finalMusicList.push(item);
+                }
+              }
+
+              push({ toolDone: { index: toolCall.index, count: callItems.length } });
 
               return {
                 role: "tool" as const,
                 tool_call_id: toolCall.id,
-                content: JSON.stringify(finalMusicList),
+                content: JSON.stringify(callItems),
               };
             }
 
             // 💾 路由分支 B：网盘资源检索
-            if (toolCall.function.name === "search_sources") {
+            if (toolCall.name === "search_sources") {
               // 💡 提取大模型识别出的 panType，兜底为 "all"
               const panType: "all" | "quark" | "baidu" | "xunlei" | "uc" =
                 args.panType || "all";
@@ -414,27 +551,38 @@ export default defineEventHandler(async (event) => {
               );
               const resultsArray = await Promise.all(searchPromises);
 
-              const seenIds = new Set();
+              const callItems: typeof finalSourceList = [];
+              const seenIds = new Set<string>();
               for (const list of resultsArray) {
                 const coreItems = list.slice(0, 2);
                 for (const item of coreItems) {
-                  if (!seenIds.has(item.id)) {
-                    seenIds.add(item.id);
-                    finalSourceList.push({
-                      id: String(item.id),
+                  const id = String(item.id);
+                  if (!seenIds.has(id)) {
+                    seenIds.add(id);
+                    callItems.push({
+                      id,
                       title: item.title,
                       type: item.panType || "网盘", // 顺便把具体的网盘字段放到 card 里展示
                     });
                   }
                 }
               }
-              if (finalSourceList.length > 6)
-                finalSourceList = finalSourceList.slice(0, 6);
+
+              for (const item of callItems) {
+                if (
+                  finalSourceList.length < 6 &&
+                  !finalSourceList.some((s) => s.id === item.id)
+                ) {
+                  finalSourceList.push(item);
+                }
+              }
+
+              push({ toolDone: { index: toolCall.index, count: callItems.length } });
 
               return {
                 role: "tool" as const,
                 tool_call_id: toolCall.id,
-                content: JSON.stringify(finalSourceList),
+                content: JSON.stringify(callItems),
               };
             }
 
@@ -446,15 +594,21 @@ export default defineEventHandler(async (event) => {
           (output): output is Exclude<typeof output, null> => output !== null,
         );
 
-        finalMessages.push(message);
+        // 把 assistant 的 tool_calls 决策按 OpenAI 协议原样拼回上下文
+        finalMessages.push({
+          role: "assistant",
+          content: contentBuf || null,
+          tool_calls: toolCalls.map((tc) => ({
+            id: tc.id,
+            type: "function" as const,
+            function: { name: tc.name, arguments: tc.arguments },
+          })),
+        });
         finalMessages.push(...validToolOutputs);
       } else {
-        // 纯聊天
-        finalMessages.push(message);
-        if (message.content) {
-          stream.push(
-            `data: ${JSON.stringify({ chunk: message.content })}\n\n`,
-          );
+        // 纯聊天：正文已在上面边收边推，直接收尾
+        if (!contentBuf) {
+          throw createError({ statusCode: 500, message: "AI 模型返回为空" });
         }
         stream.push("data: [DONE]\n\n");
         stream.push(null);
@@ -471,7 +625,7 @@ export default defineEventHandler(async (event) => {
       for await (const chunk of targetStream) {
         const text = chunk.choices[0]?.delta?.content || "";
         if (text) {
-          stream.push(`data: ${JSON.stringify({ chunk: text })}\n\n`);
+          push({ chunk: text });
         }
       }
 
@@ -502,16 +656,14 @@ export default defineEventHandler(async (event) => {
       }
 
       if (appendMarkdown) {
-        stream.push(`data: ${JSON.stringify({ chunk: appendMarkdown })}\n\n`);
+        push({ chunk: appendMarkdown });
       }
 
       stream.push("data: [DONE]\n\n");
       stream.push(null);
     } catch (error: any) {
       console.error("流式生成发生错误:", error);
-      stream.push(
-        `data: ${JSON.stringify({ error: error.message || "内部错误" })}\n\n`,
-      );
+      push({ error: error.message || "内部错误" });
       stream.push(null);
     } finally {
       // 4. 无论成功还是失败，【必须】在最右释放锁，让后面的人进来！

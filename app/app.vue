@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { zh_cn } from "@nuxt/ui/locale";
+
 const keepalive = {
   include: ["IndexPage", "SearchPage"], // 指定需要缓存的页面 name
   max: 5, // 最多缓存 5 个页面
@@ -31,6 +33,7 @@ useSeoMeta({
 
 <template>
   <UApp
+    :locale="zh_cn"
     :tooltip="{
       delayDuration: 500,
     }"

@@ -53,6 +53,10 @@ const showHeaderSearch = computed(
   () => !(route.path === "/" || route.path.startsWith("/book")),
 );
 
+const showFooter = computed(
+  () => !(route.path === "/search" && route.query.type === "ai"),
+);
+
 // 头部搜索框内容跟随当前路由关键字
 const searchQuery = computed(() => (route.query.q as string) || "");
 
@@ -217,6 +221,7 @@ const isMobile = isMobileOrTablet();
   </UMain>
 
   <UFooter
+    v-if="showFooter"
     :style="{}"
     :ui="{
       container: 'px-1 sm:px-4 lg:px-6 py-4 lg:py-8 text-sm',
