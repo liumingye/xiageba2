@@ -40,7 +40,7 @@
     "iconv-lite": "0.7.2",
     "ioredis": "^5.11.1",
     "nodemailer": "^10.2.0",
-    "nuxt": "^4.6.1",
+    "nuxt": "^4.6.2",
     "nuxt-api-shield": "^1.0.0",
     "openai": "^6.48.0",
     "opencc-js": "^1.4.2",
