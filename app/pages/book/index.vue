@@ -143,6 +143,8 @@ const clearSearch = () => {
 };
 
 // 列表数据（列表模式）
+// 两个 fetch 始终挂载，靠 enabled 互斥。URL 返回 "" 跳不了请求——
+// 那只会发出一次打到当前页面的空地址请求。
 const {
   data: novelData,
   pending: novelLoading,
@@ -150,7 +152,6 @@ const {
   refresh: novelRetryFetch,
 } = await useLazyFetch<{ books: NovelBook[]; hasMore: boolean }>(
   () => {
-    if (isSearchMode.value) return "";
     const params = new URLSearchParams({
       page: (currentPage.value - 1).toString(),
       limit: "20",
@@ -164,6 +165,7 @@ const {
   {
     key: () =>
       `novel-list-${currentPage.value}-${bookStatusFilter.value}-${novelCategoryFilter.value}`,
+    enabled: () => !isSearchMode.value,
     server: true,
     watch: [currentPage, bookStatusFilter, novelCategoryFilter, isSearchMode],
   },
@@ -176,14 +178,12 @@ const {
   error: searchFetchError,
   refresh: searchRetryFetch,
 } = await useLazyFetch<{ books: NovelBook[]; isEnd: boolean }>(
-  () => {
-    if (!isSearchMode.value) return "";
-    return "/api/novel/search";
-  },
+  () => "/api/novel/search",
   {
     method: "POST",
     body: () => ({ query: searchKeyword.value }),
     key: () => `novel-search-${searchKeyword.value}`,
+    enabled: () => isSearchMode.value,
     server: true,
     watch: [searchKeyword],
   },

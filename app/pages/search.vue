@@ -241,14 +241,11 @@ const clearFilters = () => {
 
 const {
   data: pageData,
-  pending: loading,
   error: fetchError,
   refresh: retryFetch,
   status,
 } = await useLazyFetch<PaginatedResponse>(
   () => {
-    // AI 模式不请求搜索 API
-    if (isAi.value) return "";
     const base = isMusic.value ? "/api/music/search" : "/api/source/search";
     const params = new URLSearchParams({
       q: searchKeyword.value,
@@ -267,6 +264,10 @@ const {
   {
     key: () =>
       `search-${searchType.value}-${searchKeyword.value}-${currentPage.value}-${timeFilter.value}-${panFilter.value}-${sortFilter.value}-${fileTypeFilter.value.join(",")}-${exactFilter.value}`,
+    // AI 模式不请求搜索 API。注意不能靠 URL 返回 "" 来跳过——那只是拿到
+    // 一个空字符串地址，请求照样发出去（会解析成当前页面 URL）。
+    // Nuxt 的跳过开关是 enabled。
+    enabled: () => !isAi.value,
     server: true,
     watch: [
       searchKeyword,
@@ -280,6 +281,11 @@ const {
     ],
   },
 );
+
+// 用 status 而不是 pending 判定加载中：enabled=false 时请求直接跳过，
+// status 停在 idle；而 pending 在 pendingWhenIdle 下初始就是 true，
+// 跳过时不会被翻回 false，会让 AI 模式永远转圈。
+const loading = computed(() => status.value === "pending");
 
 const results = computed<MusicSearch[] | ISourceItem[]>(
   () => pageData.value?.data || [],
@@ -618,6 +624,8 @@ watch(
                 :src="music.cover || config.app.baseURL + 'img/cover.png'"
                 :alt="music.title"
                 class="w-12 h-12 rounded-lg object-cover"
+                width="48"
+                height="48"
                 loading="lazy"
                 decoding="async"
                 @error="
