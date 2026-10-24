@@ -159,7 +159,7 @@ const reset = async () => {
     <AdminLayoutLinkList
       v-model="config.menuItems"
       title="导航菜单"
-      hint="显示在顶部导航栏，按列表顺序排列；可选择预设入口或已有页面快速添加"
+      hint="显示在顶部导航栏，按列表顺序排列；图标选填，留空则不展示；可选择预设入口或已有页面快速添加"
       :options="pageOptions"
       :presets="presets"
       to-placeholder="如 /search 或 https://example.com"

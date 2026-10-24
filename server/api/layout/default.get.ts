@@ -7,6 +7,7 @@ import {
 export interface PublicLayoutLink {
   label: string;
   to: string;
+  /** lucide 图标名；空串表示未配置图标，前台不展示 */
   icon: string;
 }
 
@@ -54,7 +55,8 @@ export default defineCachedEventHandler(
           result.push({
             label: item.label || page.title,
             to: `/page/${page.slug}`,
-            icon: item.icon || page.icon || "file-text",
+            // 图标选填：条目未配置则不展示，不再回退页面图标
+            icon: item.icon,
           });
           continue;
         }
@@ -63,7 +65,8 @@ export default defineCachedEventHandler(
         result.push({
           label: item.label,
           to: item.to,
-          icon: item.icon || "link",
+          // 图标选填：未配置则为空串，前台不展示图标
+          icon: item.icon,
         });
       }
       return result;

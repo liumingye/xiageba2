@@ -16,7 +16,7 @@ const props = withDefaults(
     modelValue: LayoutLinkItem[];
     title: string;
     hint?: string;
-    /** 是否显示/要求图标（顶部导航需要，底部链接不需要） */
+    /** 是否展示图标列与图标配置项（底部链接不需要；导航菜单图标为选填） */
     withIcon?: boolean;
     toPlaceholder?: string;
     /** 页面管理中已创建的页面，供「自定义页面」来源选择 */
@@ -94,7 +94,7 @@ const resetForm = () => {
   formSlug.value = "";
   formLabel.value = "";
   formTo.value = "";
-  formIcon.value = "link";
+  formIcon.value = "";
   formEnabled.value = true;
   error.value = "";
 };
@@ -114,7 +114,7 @@ const openEdit = (item: LayoutLinkItem) => {
   formSlug.value = item.slug || "";
   formLabel.value = item.label;
   formTo.value = item.to;
-  formIcon.value = item.icon || "link";
+  formIcon.value = item.icon || "";
   formEnabled.value = item.enabled !== false;
   showModal.value = true;
 };
@@ -212,10 +212,6 @@ const submit = () => {
     error.value = "链接地址不能为空";
     return;
   }
-  if (props.withIcon && !icon) {
-    error.value = "图标不能为空";
-    return;
-  }
 
   const payload: LayoutLinkItem = {
     id: editingId.value || newItemId(),
@@ -271,14 +267,8 @@ const displayLabel = (item: LayoutLinkItem) => {
   return item.label || "（未填写文案）";
 };
 
-/** 展示图标 */
-const displayIcon = (item: LayoutLinkItem) => {
-  if (item.source === "page") {
-    const page = item.ref ? pageById.value.get(item.ref) : undefined;
-    return item.icon || page?.icon || "file-text";
-  }
-  return item.icon || "link";
-};
+/** 展示图标：留空表示未配置图标 */
+const displayIcon = (item: LayoutLinkItem) => item.icon || "";
 
 /** 展示地址 */
 const displayPath = (item: LayoutLinkItem) => {
@@ -333,8 +323,15 @@ const sourceBadge = (item: LayoutLinkItem) => {
           class="size-9 shrink-0 rounded-lg border border-default flex items-center justify-center bg-elevated"
         >
           <UIcon
+            v-if="displayIcon(item)"
             :name="`i-lucide-${displayIcon(item)}`"
             class="size-5 text-color-500"
+          />
+          <UIcon
+            v-else
+            name="i-lucide-image-off"
+            class="size-5 text-color-300"
+            title="未配置图标"
           />
         </div>
 
@@ -526,8 +523,11 @@ const sourceBadge = (item: LayoutLinkItem) => {
           </div>
 
           <div v-if="withIcon">
-            <label class="block text-color-400 text-sm mb-2">图标 *</label>
-            <AdminIconPicker v-model="formIcon" input-id="link-icon" />
+            <label class="block text-color-400 text-sm mb-2" for="link-icon">
+              图标
+            </label>
+            <AdminIconPicker v-model="formIcon" input-id="link-icon" optional />
+            <p class="text-xs text-color-300 mt-1">选填，留空则不展示图标</p>
           </div>
 
           <div class="flex items-center gap-2">

@@ -32,7 +32,7 @@ export interface LayoutLinkItem {
   label: string;
   /** 站内路径或外链；page 来源留空，读取时解析为 /page/<slug> */
   to: string;
-  /** lucide 图标名，不含 i-lucide- 前缀 */
+  /** 选填：lucide 图标名，不含 i-lucide- 前缀；留空表示不配置图标 */
   icon: string;
   enabled: boolean;
   source: LayoutLinkSource;
@@ -117,7 +117,9 @@ function normalizeLink(raw: any, seed?: LinkSeed): LayoutLinkItem {
     id: str(raw?.id) || uid(),
     label: pick(raw?.label, preset?.label, seed?.label),
     to: pick(raw?.to, preset?.to, seed?.to),
-    icon: pick(raw?.icon, preset?.icon, seed?.icon),
+    // 图标选填：完全以条目自身配置为准，留空即不配置（前台不展示）。
+    // 不能用预设/默认种子兜底，否则会把用户没配过的图标又显示出来
+    icon: str(raw?.icon),
     enabled: bool(raw?.enabled, seed?.enabled ?? true),
     source: preset ? "preset" : source,
     ref: preset ? preset.key : str(raw?.ref, seed?.ref ?? ""),

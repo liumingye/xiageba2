@@ -41,7 +41,8 @@ const menuItems = computed<NavigationMenuItem[]>(() =>
     return {
       to: item.to,
       label: item.label,
-      icon: `i-lucide-${item.icon || "link"}`,
+      // 图标选填：未配置则不传 icon，导航项只展示文案
+      icon: item.icon ? `i-lucide-${item.icon}` : undefined,
       target: external ? "_blank" : undefined,
       active: !external && route.path.startsWith(item.to),
     };

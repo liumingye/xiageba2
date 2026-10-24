@@ -29,6 +29,7 @@ export interface LayoutLinkItem {
   label: string;
   /** 站内路径或外链；page 来源留空，运行时解析为 /page/<slug> */
   to: string;
+  /** 选填：lucide 图标名，不含 i-lucide- 前缀；留空表示不配置图标 */
   icon: string;
   enabled: boolean;
   source: LayoutLinkSource;
@@ -69,6 +70,7 @@ export interface LayoutDefaultConfig {
 export interface PublicLayoutLink {
   label: string;
   to: string;
+  /** lucide 图标名；空串表示未配置图标，前台不展示 */
   icon: string;
 }
 

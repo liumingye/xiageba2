@@ -9,11 +9,14 @@ const props = withDefaults(
     /** 输入框 id，便于 label 关联 */
     inputId?: string;
     placeholder?: string;
+    /** 图标选填：为 true 时留空展示「未配置」占位，而不是默认图标预览 */
+    optional?: boolean;
   }>(),
   {
     modelValue: "",
     inputId: "icon-picker-input",
     placeholder: "lucide 图标名，如 shield-alert",
+    optional: false,
   },
 );
 
@@ -113,8 +116,15 @@ const pick = (name: string) => {
         class="size-9 shrink-0 rounded-lg border border-default flex items-center justify-center bg-elevated"
       >
         <UIcon
-          :name="`i-lucide-${model || 'file-text'}`"
+          v-if="model"
+          :name="`i-lucide-${model}`"
           class="size-5 text-color-500"
+        />
+        <UIcon
+          v-else
+          :name="optional ? 'i-lucide-image-off' : 'i-lucide-file-text'"
+          class="size-5"
+          :class="optional ? 'text-color-300' : 'text-color-500'"
         />
       </div>
       <UInput

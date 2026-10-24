@@ -15,10 +15,10 @@ const sourceOf = (item: any): LayoutLinkSource =>
 /**
  * 校验链接型配置
  *
- * - manual / preset：文案与链接必填
- * - page：必须关联页面（pageId 或 slug），文案与图标可留空（运行时取页面标题/图标）
+ * - manual / preset：文案与链接必填，图标选填（留空则前台不展示图标）
+ * - page：必须关联页面（pageId 或 slug），文案与图标可留空（运行时取页面标题）
  */
-function assertLinksValid(list: unknown, name: string, requireIcon = false) {
+function assertLinksValid(list: unknown, name: string) {
   if (list === undefined) return;
   if (!Array.isArray(list)) {
     throw createError({ statusCode: 400, message: `${name} 格式不正确` });
@@ -64,12 +64,6 @@ function assertLinksValid(list: unknown, name: string, requireIcon = false) {
         message: `${name} 中存在缺少链接地址的条目`,
       });
     }
-    if (requireIcon && !String(item?.icon ?? "").trim()) {
-      throw createError({
-        statusCode: 400,
-        message: `${name} 中存在缺少图标的条目`,
-      });
-    }
   }
 }
 
@@ -90,7 +84,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "配置内容不能为空" });
     }
 
-    assertLinksValid(body.menuItems, "导航菜单", true);
+    assertLinksValid(body.menuItems, "导航菜单");
     assertLinksValid(body.footerLinks, "底部链接");
 
     const saved = await saveLayoutDefaultConfig(body);
