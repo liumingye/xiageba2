@@ -295,7 +295,9 @@ const isMobileTablet = computed(() => {
               :src="music.cover || config.app.baseURL + 'img/cover.png'"
               :alt="music.title"
               class="size-48 rounded-xl object-cover"
-              loading="lazy"
+              width="192"
+              height="192"
+              fetchpriority="high"
               decoding="async"
               @error="
                 ($event.target as HTMLImageElement).src =

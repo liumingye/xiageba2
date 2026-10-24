@@ -244,6 +244,8 @@ useSeoMeta({
               :src="detail.coverImage"
               :alt="detail.bookName"
               class="w-full h-full object-cover"
+              width="144"
+              height="208"
               loading="lazy"
               decoding="async"
               @error="coverError = true"

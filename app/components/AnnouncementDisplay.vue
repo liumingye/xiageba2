@@ -117,7 +117,6 @@ onMounted(() => {
     (a) => !dismissedIds.value.includes(a.id),
   );
   if (visible) {
-    console.log(currentDialog.value);
     currentDialog.value = visible;
     showDialog.value = true;
   }

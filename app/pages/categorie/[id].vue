@@ -205,7 +205,6 @@ const openModal = async ({ item }: { item: ISourceItem }) => {
 };
 
 const closeModal = () => {
-  console.log("closeModal");
   modalTitle.value = "";
   modalUrl.value = "";
 };
