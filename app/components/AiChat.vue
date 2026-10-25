@@ -475,24 +475,34 @@ onUnmounted(() => {
         should-auto-scroll
         :user="{
           side: 'right',
-          avatar: {
-            icon: 'i-lucide-user',
-          },
-          variant: 'outline',
-          ui: {
-            leading: 'order-last',
-          },
+          variant: 'soft',
         }"
         :assistant="{
           avatar: {
             icon: 'i-lucide-bot',
+            name: 'AI 智能搜索',
           },
-          variant: 'outline',
+          variant: 'naked',
+          ui: {
+            container: 'flex-col',
+          },
         }"
         :ui="{
           viewport: 'top-[80%]',
         }"
       >
+        <template #leading="{ avatar }">
+          <template v-if="avatar">
+            <UAvatar
+              v-if="avatar.icon"
+              data-slot="leadingAvatar"
+              :icon="avatar.icon"
+            />
+            <span v-if="avatar.name" class="ml-2 text-sm text-muted">
+              {{ avatar.name }}
+            </span>
+          </template>
+        </template>
         <template #content="{ message }">
           <!-- 用户消息：纯文本 -->
           <div
@@ -542,6 +552,7 @@ onUnmounted(() => {
                 "
                 :plugins="safeMarkdownPlugins"
                 class="*:first:mt-0 *:last:mb-0"
+                caret
               />
             </template>
           </template>
