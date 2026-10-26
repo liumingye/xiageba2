@@ -39,18 +39,24 @@ const props = defineProps<{
 const TOOL_LABELS: Record<string, string> = {
   search_music: "检索音乐库",
   search_sources: "检索网盘资源",
+  search_web: "网页搜索",
 };
 const PAN_LABELS: Record<string, string> = {
   quark: "夸克网盘",
   baidu: "百度网盘",
   xunlei: "迅雷云盘",
   uc: "UC 网盘",
+  guangya: "光鸭云盘",
+  "139": "移动云盘",
 };
 
 const suggestions = [
+  { icon: "i-lucide-tv", text: "最近热门的电视剧" },
   { icon: "i-lucide-music", text: "我想听周杰伦的歌" },
   { icon: "i-lucide-moon", text: "推荐几首适合深夜听的歌" },
   { icon: "i-lucide-film", text: "找几部搞笑动漫的资源" },
+  { icon: "i-lucide-music", text: "最近热门的音乐" },
+  { icon: "i-lucide-newspaper", text: "最近热门资讯" },
   { icon: "i-lucide-search", text: "《银魂》全集百度网盘" },
 ];
 
@@ -97,8 +103,14 @@ const isStreaming = (message: UiMessage): boolean =>
 const describeTool = (tool: {
   name: string;
   keywords?: string[];
+  queries?: string[];
   panType?: string;
 }): string => {
+  // 网页搜索：展示检索词
+  if (tool.name === "search_web") {
+    const queries = (tool.queries || []).filter(Boolean);
+    return queries.length ? `检索词：${queries.join("、")}` : "";
+  }
   const keywords = (tool.keywords || []).filter(Boolean);
   const pan =
     tool.name === "search_sources" && tool.panType && tool.panType !== "all"
@@ -171,7 +183,8 @@ const runTurn = async () => {
   const history = messages.value
     .map((m) => ({
       role: m.role,
-      content: m.role === "assistant" ? stripResourceDirect(textOf(m)) : textOf(m),
+      content:
+        m.role === "assistant" ? stripResourceDirect(textOf(m)) : textOf(m),
     }))
     .filter((m) => m.content.trim().length > 0)
     .slice(-12);
