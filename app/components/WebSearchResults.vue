@@ -282,7 +282,7 @@ defineExpose({ results, searching, error });
 
     <div v-if="searching" class="card p-6 text-center">
       <Loader2 class="size-6 text-primary-400 animate-spin mx-auto mb-2" />
-      <p class="text-zinc-400 text-sm">正在全网搜索中...</p>
+      <p class="text-muted text-sm">正在全网搜索中...</p>
     </div>
 
     <div

@@ -330,7 +330,7 @@ const sourceBadge = (item: LayoutLinkItem) => {
           <UIcon
             v-else
             name="i-lucide-image-off"
-            class="size-5 text-color-300"
+            class="size-5 text-color-500"
             title="未配置图标"
           />
         </div>

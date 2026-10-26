@@ -397,7 +397,7 @@ useSeoMeta({
       <template v-if="!isSearchMode">
         <div class="flex items-center gap-2 my-3">
           <Filter class="w-4 h-4 text-primary-400" />
-          <h2 class="text-zinc-500 text-sm">筛选条件</h2>
+          <h2 class="text-muted text-sm">筛选条件</h2>
         </div>
         <div class="flex flex-wrap gap-2 mb-2 h-9">
           <USkeleton class="flex-1 min-w-24" />

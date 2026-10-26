@@ -184,7 +184,7 @@ useSeoMeta({
         <AlertTriangle class="w-7 h-7" />
       </div>
       <h3 class="text-lg font-medium text-white mb-1">加载失败</h3>
-      <p class="text-sm text-zinc-500">{{ errorCardMsg }}</p>
+      <p class="text-sm text-muted">{{ errorCardMsg }}</p>
       <button
         class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
         @click="
@@ -237,7 +237,7 @@ useSeoMeta({
         >
           <!-- 封面 -->
           <div
-            class="relative w-28 h-40 md:w-36 md:h-52 mx-auto md:mx-0 rounded-xl overflow-hidden bg-zinc-800 shrink-0 shadow-lg"
+            class="relative w-28 h-40 md:w-36 md:h-52 mx-auto md:mx-0 rounded-xl overflow-hidden shrink-0 shadow-lg"
           >
             <img
               v-if="!coverError && detail.coverImage"
@@ -251,7 +251,7 @@ useSeoMeta({
               @error="coverError = true"
             />
             <div v-else class="w-full h-full flex items-center justify-center">
-              <BookOpen class="w-12 h-12 text-zinc-600" />
+              <BookOpen class="w-12 h-12 text-muted" />
             </div>
             <div
               class="absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-medium"
@@ -386,11 +386,11 @@ useSeoMeta({
     <!-- 加载后无数据兜底 -->
     <div v-else class="text-center py-20">
       <div
-        class="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4"
+        class="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4"
       >
-        <BookOpen class="w-8 h-8 text-zinc-600" />
+        <BookOpen class="w-8 h-8 text-muted" />
       </div>
-      <p class="text-zinc-500 mb-4">暂无该小说详情</p>
+      <p class="text-muted mb-4">暂无该小说详情</p>
       <button
         class="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
         @click="navigateTo('/book')"

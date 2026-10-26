@@ -437,12 +437,12 @@ const isMobileTablet = computed(() => {
             {{ line }}
           </p>
         </div>
-        <p v-else class="text-zinc-500 text-center py-8">暂无歌词</p>
+        <p v-else class="text-muted text-center py-8">暂无歌词</p>
       </UCard>
     </article>
 
     <div v-else class="text-center py-20">
-      <p class="text-zinc-500">音乐不存在</p>
+      <p class="text-muted">音乐不存在</p>
       <button
         class="mt-4 text-primary-500 hover:text-primary-400 transition-colors"
         @click="navigateTo('/')"

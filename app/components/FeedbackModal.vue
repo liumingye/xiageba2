@@ -126,7 +126,7 @@ const handleSubmit = async () => {
             :maxlength="100"
             class="w-full"
           />
-          <p class="text-right text-xs text-zinc-400 mt-1">
+          <p class="text-right text-xs text-muted mt-1">
             {{ description.length }}/100
           </p>
         </div>

@@ -61,7 +61,7 @@ useSeoMeta({
       body: 'p-12 text-center',
     }"
   >
-    <Megaphone class="size-12 mx-auto text-zinc-600 mb-3" />
+    <Megaphone class="size-12 mx-auto text-muted mb-3" />
     <p class="text-muted">公告不存在</p>
   </UCard>
 
@@ -86,7 +86,7 @@ useSeoMeta({
         <h1 class="text-xl font-bold wrap-break-word">
           {{ announcement.title }}
         </h1>
-        <p class="text-xs text-zinc-500 mt-1">
+        <p class="text-xs text-muted mt-1">
           <NuxtTime
             :datetime="announcement.createdAt"
             year="numeric"
@@ -103,7 +103,7 @@ useSeoMeta({
     <div>
       <div
         v-if="announcement.content"
-        class="text-sm text-muted wrap-break-word leading-relaxed"
+        class="text-sm wrap-break-word leading-relaxed"
       >
         <Markdown
           :value="announcement.content"
