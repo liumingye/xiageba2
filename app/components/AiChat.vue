@@ -83,7 +83,9 @@ const textOf = (message: UiMessage): string =>
 /** 历史消息里 AI 回复末尾追加的「站内网盘资源直达」卡片是系统生成的，不进对话上下文 */
 const stripResourceDirect = (content: string): string =>
   content
-    .replace(/\n?---\n+###\s*[🎵💾]\s*站内网盘资源直达[\s\S]*$/, "")
+    // ⚠️ 必须带 u 标志：emoji 是增补平面字符，非 u 模式下字符类按 UTF-16 码元匹配，
+    // [🎵💾] 里的 🎵 会被拆成两个代理对码元，永远匹配不到，整个替换失效
+    .replace(/\n?---\n+###\s*[🎵💾]\s*站内网盘资源直达[\s\S]*$/u, "")
     .trim();
 
 /** UChatMessages 的插槽属性是 AI SDK 的 UIMessage 类型，这里转成自己的结构 */
