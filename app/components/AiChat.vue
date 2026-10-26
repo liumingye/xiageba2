@@ -80,6 +80,12 @@ const textOf = (message: UiMessage): string =>
     .map((part) => part.text)
     .join("");
 
+/** 历史消息里 AI 回复末尾追加的「站内网盘资源直达」卡片是系统生成的，不进对话上下文 */
+const stripResourceDirect = (content: string): string =>
+  content
+    .replace(/\n?---\n+###\s*[🎵💾]\s*站内网盘资源直达[\s\S]*$/, "")
+    .trim();
+
 /** UChatMessages 的插槽属性是 AI SDK 的 UIMessage 类型，这里转成自己的结构 */
 const partsOf = (message: UiMessage): ChatPart[] => message.parts;
 
@@ -161,7 +167,10 @@ const removeMessage = (msg: UiMessage) => {
 const runTurn = async () => {
   // 历史快照在占位消息入列前拍，占位消息永远不会进上下文
   const history = messages.value
-    .map((m) => ({ role: m.role, content: textOf(m) }))
+    .map((m) => ({
+      role: m.role,
+      content: m.role === "assistant" ? stripResourceDirect(textOf(m)) : textOf(m),
+    }))
     .filter((m) => m.content.trim().length > 0)
     .slice(-12);
 
