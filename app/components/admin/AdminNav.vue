@@ -29,7 +29,7 @@ import {
   ChevronDown,
   MoreHorizontal,
   Wrench,
-  KeyRound,
+  Shield,
   Filter,
   Sparkles,
   TrendingUp,
@@ -152,9 +152,9 @@ const navItems: NavItem[] = [
         icon: Database,
       },
       {
-        label: "加密配置",
+        label: "安全配置",
         path: "/admin/system/aes",
-        icon: KeyRound,
+        icon: Shield,
       },
       {
         label: "过滤配置",

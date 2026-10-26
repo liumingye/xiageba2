@@ -39,6 +39,7 @@ useSeoMeta({
     }"
   >
     <BrowserCompatCheck />
+    <CaptchaModal />
     <NuxtAnnouncer />
     <NuxtRouteAnnouncer />
     <NuxtLoadingIndicator :height="1" />

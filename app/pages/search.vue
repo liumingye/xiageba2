@@ -70,7 +70,7 @@ const openTreeModal = async ({
       type === "id"
         ? `id=${(item as ISourceItem).id}`
         : `url=${encodeURIComponent(item.url)}`;
-    const res = await fetch(`/api/source/tree?${query}`);
+    const res = await captchaFetch(`/api/source/tree?${query}`);
     const data = await res.json();
     if (res.ok && data.success) {
       treeModalContent.value = data.tree || "（空目录）";
@@ -107,7 +107,7 @@ const openModal = async ({
   setModalLoading(item.title || "");
 
   try {
-    const res = await fetch("/api/source/geturl", {
+    const res = await captchaFetch("/api/source/geturl", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
@@ -541,7 +541,7 @@ watch(
         <h3 class="text-lg font-medium text-white mb-1">
           {{ errorInfo.title }}
         </h3>
-        <p class="text-sm text-zinc-500">{{ errorInfo.message }}</p>
+        <p class="text-sm text-muted">{{ errorInfo.message }}</p>
         <button
           v-if="errorInfo.canRetry"
           class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
@@ -559,17 +559,17 @@ watch(
         aria-busy="true"
         aria-label="正在加载搜索结果"
       >
-        <div class="h-3 bg-zinc-700 rounded w-1/4 animate-pulse mb-2" />
+        <div class="h-3 bg-accented rounded w-1/4 animate-pulse mb-2" />
         <article
           v-for="(_, i) in skeletonList"
           :key="i"
           class="card p-3 animate-pulse"
         >
           <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-zinc-700 rounded-lg" />
+            <div class="w-12 h-12 bg-accented rounded-lg" />
             <div class="flex-1 space-y-1">
-              <div class="h-3 bg-zinc-700 rounded w-3/4" />
-              <div class="h-2 bg-zinc-700 rounded w-1/3" />
+              <div class="h-3 bg-accented rounded w-3/4" />
+              <div class="h-2 bg-accented rounded w-1/3" />
             </div>
           </div>
         </article>
@@ -638,7 +638,7 @@ watch(
                   class="text-sm font-medium truncate"
                   v-html="highlight(music.title)"
                 />
-                <p class="text-xs text-zinc-500 truncate">
+                <p class="text-xs text-muted truncate">
                   <span v-html="highlight(music.artist)" /><span
                     v-if="music.album"
                   >
@@ -656,7 +656,7 @@ watch(
                   </span>
                 </div>
               </div>
-              <ArrowRight class="w-4 h-4 text-zinc-600 shrink-0" />
+              <ArrowRight class="w-4 h-4 text-muted shrink-0" />
             </NuxtLink>
           </article>
 
@@ -668,9 +668,7 @@ watch(
               >
                 <CircleSlash />
               </div>
-              <p class="text-muted">
-                {{ "此搜索关键词暂无结果" }}
-              </p>
+              <p class="text-muted">此搜索关键词暂无结果</p>
             </div>
           </template>
         </template>

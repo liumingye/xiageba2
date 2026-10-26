@@ -145,7 +145,7 @@ const fetchMenu = async () => {
   menuError.value = "";
 
   try {
-    const res = await fetch(
+    const res = await captchaFetch(
       `/api/source/tree?id=${encodeURIComponent(sourceId.value)}`,
     );
     const data = await res.json();
@@ -179,7 +179,7 @@ const fetchDirectUrl = async () => {
   funnyStart();
 
   try {
-    const res = await fetch("/api/source/geturl", {
+    const res = await captchaFetch("/api/source/geturl", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: sourceId.value }),
@@ -337,7 +337,7 @@ onMounted(() => {
           <h4>获取下载链接:</h4>
 
           <div v-if="!fetchedUrl && !fetchingUrl" class="space-y-3">
-            <p class="text-xs text-zinc-500">
+            <p class="text-xs text-muted">
               点击下方按钮获取网盘的下载链接，有效期为30分钟，请及时转存，失效后可重新获取。
             </p>
             <UButton

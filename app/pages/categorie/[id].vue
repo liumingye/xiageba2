@@ -151,7 +151,7 @@ const openTreeModal = async ({ item }: { item: ISourceItem }) => {
 
   try {
     const query = `id=${(item as ISourceItem).id}`;
-    const res = await fetch(`/api/source/tree?${query}`);
+    const res = await captchaFetch(`/api/source/tree?${query}`);
     const data = await res.json();
     if (res.ok && data.success) {
       treeModalContent.value = data.tree || "（空目录）";
@@ -186,7 +186,7 @@ const openModal = async ({ item }: { item: ISourceItem }) => {
   setModalLoading(item.title || "");
 
   try {
-    const res = await fetch("/api/source/geturl", {
+    const res = await captchaFetch("/api/source/geturl", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: item.id }),

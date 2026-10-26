@@ -40,6 +40,7 @@ import {
 } from "#server/lib/geturl-record";
 import type { H3Event } from "h3";
 import { automaton_ad_filter } from "#server/lib/simpleAC";
+import { assertBotDefense } from "#server/utils/bot-defense";
 
 type NetdiskType =
   | "quark"
@@ -1251,6 +1252,9 @@ export default defineEventHandler(async (event) => {
   if (event.method !== "POST") {
     throw createError({ statusCode: 403, message: "请求方法错误" });
   }
+
+  // BOT 防御闸门：未启用时直接放行，启用后需携带有效通行令牌
+  await assertBotDefense(event, "/api/source/geturl");
 
   const body = await readBody(event);
   let inputUrl = body.url as string | undefined;

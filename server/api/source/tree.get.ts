@@ -16,6 +16,7 @@ import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
 import { TREE_MAX_LINE } from "#server/lib/const";
 import { automaton_ad_filter, SimpleAC } from "#server/lib/simpleAC";
+import { assertBotDefense } from "#server/utils/bot-defense";
 
 const MAX_DEPTH = 5;
 
@@ -37,6 +38,9 @@ const filterAdResults = <T>(
 };
 
 export default defineEventHandler(async (event) => {
+  // BOT 防御闸门：未启用时直接放行，启用后需携带有效通行令牌
+  await assertBotDefense(event, "/api/source/tree");
+
   const query = getQuery(event);
   let inputUrl = query.url as string | undefined;
   const id = query.id as string | undefined;

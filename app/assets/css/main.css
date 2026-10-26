@@ -307,3 +307,9 @@ body {
 .comark-content img.w-full {
   width: auto;
 }
+
+/** 极验 */
+.geetest_captcha,
+.geetest_popup_wrap {
+  pointer-events: auto;
+}
