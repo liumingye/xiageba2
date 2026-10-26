@@ -203,6 +203,8 @@ const SYSTEM_PROMPT = `
 - 如果提到了“百度”或“度盘”，参数 panType 必须传 "baidu"
 - 如果提到了“迅雷”，参数 panType 必须传 "xunlei"
 - 如果提到了“UC”，参数 panType 必须传 "uc"
+- 如果提到了“光鸭云盘”，参数 panType 必须传 "guangya"
+- 如果提到了“移动云盘”，参数 panType 必须传 "139"
 - 如果用户【没有提及】任何具体的网盘名称，panType 必须默认传 "all"
 
 # Capability & Workflow (严格执行)
@@ -252,7 +254,7 @@ const SEARCH_TOOLS = [
           // 💡 核心改动：加入 panType 枚举字段参数
           panType: {
             type: "string",
-            enum: ["all", "quark", "baidu", "xunlei", "uc"],
+            enum: ["all", "quark", "baidu", "xunlei", "uc", "guangya", "139"],
             description:
               "网盘资源类型筛选。用户指定了某个网盘则传对应值，未指定则必须传 'all'。",
           },
@@ -530,7 +532,9 @@ export default defineEventHandler(async (event) => {
                 }
               }
 
-              push({ toolDone: { index: toolCall.index, count: callItems.length } });
+              push({
+                toolDone: { index: toolCall.index, count: callItems.length },
+              });
 
               return {
                 role: "tool" as const,
@@ -542,8 +546,14 @@ export default defineEventHandler(async (event) => {
             // 💾 路由分支 B：网盘资源检索
             if (toolCall.name === "search_sources") {
               // 💡 提取大模型识别出的 panType，兜底为 "all"
-              const panType: "all" | "quark" | "baidu" | "xunlei" | "uc" =
-                args.panType || "all";
+              const panType:
+                | "all"
+                | "quark"
+                | "baidu"
+                | "xunlei"
+                | "uc"
+                | "guangya"
+                | "139" = args.panType || "all";
 
               // 💡 将 panType 传入底层的搜索函数中
               const searchPromises = keywords.map((keyword) =>
@@ -577,7 +587,9 @@ export default defineEventHandler(async (event) => {
                 }
               }
 
-              push({ toolDone: { index: toolCall.index, count: callItems.length } });
+              push({
+                toolDone: { index: toolCall.index, count: callItems.length },
+              });
 
               return {
                 role: "tool" as const,
