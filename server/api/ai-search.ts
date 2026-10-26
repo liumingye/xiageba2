@@ -10,6 +10,7 @@ import { aiRequestQueue } from "#server/utils/queue"; // 引入刚才写的排�
 import { getAiSearchConfig } from "#server/api/admin/config/ai-search";
 import { getStorageTypeFriend } from "#shared/utils";
 import type { PanFilter } from "#shared/utils";
+import { searchExaWeb } from "#server/lib/exaSearch";
 
 const siteHost = process.env.SITE_HOST || "";
 
@@ -192,10 +193,11 @@ const SYSTEM_PROMPT = `
 你是一个极其专业、懂音乐、资源广博且温和风趣的“音乐与网盘资源智能导航专家”。你的目标是深度理解用户的真实意图，通过调用底层的“音乐库搜索工具”或“网盘资源搜索工具”为用户找到他们想听、想下载或寻找的内容。
 
 # Task Alignment & Routing Rules (核心工具选择逻辑)
-请根据用户的输入，自主决定调用哪一个或同时调用哪两个工具：
+请根据用户的输入，自主决定调用哪一个或同时调用哪几个工具：
 - 【情况 A：只想听歌 / 寻找歌曲代表作】当用户表达“想听歌”、“推荐几首xx的歌”、“有哪些热门歌曲”或描述某种音乐风格时，你必须调用 [search_music] 工具。
 - 【情况 B：寻找或下载影视、动漫、软件、图书资源】当用户提到“网盘”、“下载”、“资源”，或者【让推荐/寻找影视剧、搞笑动漫、科幻电影、电子书、软件】时，你必须调用 [search_sources] 工具。
 - 【情况 C：既想听又想找资源】当用户同时包含上述两种意图时，你应当【同时】调用这两个工具。
+- 【情况 D：开放网络事实 / 资讯 / 站外信息】需要从网络上搜索信息时，调用 [search_web] 工具。典型：热门音乐、热门电视剧、新闻资讯、人物百科、事件背景、软件教程、天气、旅游攻略、歌词赏析、专辑发行背景等**你需要引用站外事实才能答准**的问题。
 
 # Tool Parameter Extraction Rules (参数提取规则)
 当调用 [search_sources] 时，请仔细分析用户是否指定了特定的网盘平台：
@@ -207,13 +209,17 @@ const SYSTEM_PROMPT = `
 - 如果提到了“移动云盘”，参数 panType 必须传 "139"
 - 如果用户【没有提及】任何具体的网盘名称，panType 必须默认传 "all"
 
+当调用 [search_web] 时：
+- query 必须是**具体的检索词**，不要把整句提问原样塞进去；一个主题最多拆成 2-3 个独立 query 分别检索。
+- numResults 按问题复杂度给 3~8，简单事实类给 3 即可。
+
 # Capability & Workflow (严格执行)
 1. 意图发散与推理（极其重要）：当用户寻找“代表作 / 推荐某一类型作品 / 资源合集”时，你需要在脑海中广博地拆解出最具代表性的 4-6 个具体作品名称。
    - 如果是搜音乐，必须将不同的歌曲（格式：'歌手名 歌名'）全部塞进 [search_music] 的 keywords 数组中。
    - 如果是找/推荐动漫、电影等资源，必须将你脑海中筛选出的具体作品名称（如：'银魂', '男子高中生的日常', '齐木楠雄的灾难'）塞进 [search_sources] 的 keywords 数组中，绝对不能塞‘搞笑’、‘动漫’这种宽泛的形容词！
 2. 文本规范：在第二次输出回答时，你在正文中【绝对不要】输出任何带有 URL、ID、括号或特殊前缀的链接格式。你只需要用最自然、人性化的纯文本向用户介绍你找到了哪些经典作品。
-3. 链接由系统生成：你不需要关心链接怎么写，系统会在你的回答末尾自动附加绝对准确的直达卡片。
-`;
+3. 链接由系统生成：站内曲目/资源的链接你不需要关心怎么写，系统会在你的回答末尾自动附加绝对准确的直达卡片。
+4. 网页搜索结果的使用：[search_web] 返回的条目带 title / text / publishedDate。回答时**必须忠于返回的 text 内容**，不得编造未出现在结果中的事实；多个来源冲突时如实说明存在不同说法。正文里可以用纯文本提到来源站点名称，但不要输出 URL。`;
 
 const SEARCH_TOOLS = [
   {
@@ -263,6 +269,30 @@ const SEARCH_TOOLS = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "search_web",
+      description:
+        "开放网络检索（Exa）。当需要站外事实才能回答时调用：新闻资讯、人物/作品背景、事件经过、教程步骤、榜单评价等。返回条目的标题、摘要与发布时间。",
+      parameters: {
+        type: "object",
+        properties: {
+          queries: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "具体检索词数组，1~3 个为宜。例如：['周杰伦 七里香 发行时间', '七里香 专辑 评价']。",
+          },
+          numResults: {
+            type: "number",
+            description: "每个检索词的召回条数，3~8，默认 5。",
+          },
+        },
+        required: ["queries"],
+      },
+    },
+  },
 ];
 
 /** SSE 事件协议（data: 行的 JSON）：
@@ -273,10 +303,20 @@ const SEARCH_TOOLS = [
  *  - { chunk: "..." }          最终回答增量（兼容旧前端）
  *  - { error: "..." }          出错
  *  - [DONE]                    流结束
+ *
+ * 工具三件套：search_music（站内曲库）/ search_sources（站内网盘）/ search_web（Exa 开放网络）。
  */
 interface HistoryMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+/** 网页搜索结果（注入 tool 消息前做字段精简，控制上下文体积） */
+interface WebSearchItem {
+  title: string;
+  url: string;
+  text: string;
+  publishedDate: string;
 }
 
 /**
@@ -366,7 +406,11 @@ export default defineEventHandler(async (event) => {
 
   const currentMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
     [
-      { role: "system", content: SYSTEM_PROMPT },
+      {
+        role: "system",
+        content:
+          SYSTEM_PROMPT + `\n当前日期是${new Date().toLocaleDateString()}`,
+      },
       // 多轮对话：完整历史 + 最新一条 user（parseConversation 已保证末条为 user）
       ...history.map((m) => ({ role: m.role, content: m.content })),
     ];
@@ -461,6 +505,8 @@ export default defineEventHandler(async (event) => {
         [];
       let finalSourceList: Array<{ id: string; title: string; type?: string }> =
         [];
+      /** 网页搜索命中条数：>0 时正文末尾追加来源附注 */
+      let webHitCount = 0;
 
       // 2. 触发工具调用逻辑
       if (toolCalls.length > 0) {
@@ -480,6 +526,11 @@ export default defineEventHandler(async (event) => {
                 ? args.keywords
                 : args.keyword
                   ? [args.keyword]
+                  : [],
+              queries: Array.isArray(args.queries)
+                ? args.queries
+                : args.query
+                  ? [args.query]
                   : [],
               panType: args.panType,
             },
@@ -598,6 +649,50 @@ export default defineEventHandler(async (event) => {
               };
             }
 
+            // 🌐 路由分支 C：开放网络检索（Exa）
+            if (toolCall.name === "search_web") {
+              const queries: string[] = Array.isArray(args.queries)
+                ? args.queries.filter(
+                    (q: unknown) => typeof q === "string" && q.trim(),
+                  )
+                : args.query
+                  ? [String(args.query)]
+                  : [];
+              const numResults = Number(args.numResults) || 5;
+
+              // 每个 query 并发检索，失败的 query 不拖垮整次调用
+              const resultsArray = await Promise.all(
+                queries.map((q) =>
+                  searchExaWeb(q, numResults).catch(
+                    () => [] as WebSearchItem[],
+                  ),
+                ),
+              );
+
+              // 跨 query 按 url 去重，整体上限 12 条，控制注入上下文的体积
+              const seenUrls = new Set<string>();
+              const items: WebSearchItem[] = [];
+              for (const list of resultsArray) {
+                for (const item of list) {
+                  if (seenUrls.has(item.url)) continue;
+                  seenUrls.add(item.url);
+                  if (items.length >= 12) break;
+                  items.push(item);
+                }
+              }
+
+              webHitCount += items.length;
+              push({
+                toolDone: { index: toolCall.index, count: items.length },
+              });
+
+              return {
+                role: "tool" as const,
+                tool_call_id: toolCall.id,
+                content: JSON.stringify(items),
+              };
+            }
+
             return null;
           }),
         );
@@ -665,6 +760,11 @@ export default defineEventHandler(async (event) => {
 
           appendMarkdown += `${index + 1}. [【${source.type}】${safeTitle}](${siteHost}/source/${source.id}){target="_blank"}\n`;
         });
+      }
+
+      // 网页搜索命中时追加来源附注（站内直达卡片在前，来源附注殿后）
+      if (webHitCount > 0) {
+        appendMarkdown += `\n\n---\n\n> 🌐 本回答含网络检索结果，共参考 ${webHitCount} 条网页来源\n`;
       }
 
       if (appendMarkdown) {
