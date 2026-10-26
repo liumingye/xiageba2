@@ -361,6 +361,7 @@ function parseConversation(body: any): HistoryMessage[] {
 }
 
 export default defineEventHandler(async (event) => {
+  await assertBotDefense(event, "/api/ai-search");
   const body = await readBody(event);
 
   const history = parseConversation(body);

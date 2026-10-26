@@ -277,7 +277,9 @@ describe("注册表", () => {
     const paths = listProtectedApis().map((a) => a.path);
     expect(paths).toContain("/api/source/geturl");
     expect(paths).toContain("/api/source/tree");
+    expect(paths).toContain("/api/ai-search");
     expect(isKnownProtectedApi("/api/source/geturl")).toBe(true);
+    expect(isKnownProtectedApi("/api/ai-search")).toBe(true);
     expect(isKnownProtectedApi("/api/unknown")).toBe(false);
 
     expect(() =>

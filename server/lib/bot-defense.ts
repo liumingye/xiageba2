@@ -219,6 +219,11 @@ registerProtectedApi({
   label: "获取目录树",
   description: "GET /api/source/tree.ts（递归拉取网盘目录）",
 });
+registerProtectedApi({
+  path: "/api/ai-search",
+  label: "AI 智能搜索",
+  description: "POST /api/ai-search.ts（大模型对话式搜索，调用成本高）",
+});
 
 // ============ 配置解析与校验 ============
 

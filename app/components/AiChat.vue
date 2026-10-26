@@ -2,6 +2,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
 import { Sparkles, ExternalLink } from "@lucide/vue";
 import { safeMarkdownPlugins } from "~/utils/comark-safe";
+import { captchaFetch } from "~/utils/captchaFetch";
 
 // ---------- 数据结构（与 Nuxt UI UChatMessages 期望的 UIMessage 形状对齐） ----------
 interface TextPart {
@@ -209,7 +210,7 @@ const runTurn = async () => {
   abortController = controller;
 
   try {
-    const res = await fetch("/api/ai-search", {
+    const res = await captchaFetch("/api/ai-search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: history }),
