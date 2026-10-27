@@ -421,6 +421,15 @@ export default defineNuxtConfig({
       ],
     },
   },
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        paths: {
+          "~/*": ["./*"],
+        },
+      },
+    },
+  },
   $production: {
     devtools: {
       enabled: false,
