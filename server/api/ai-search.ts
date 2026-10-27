@@ -28,7 +28,7 @@ const MAX_HISTORY_MESSAGES = 12;
 const MAX_HISTORY_ASSISTANT_LENGTH = 800;
 
 // 保持同一个连接池，或者引用你全局的 pool
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 100 });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 15 });
 
 /**
  * 专供大模型 Agent 调用的底层数据库检索函数

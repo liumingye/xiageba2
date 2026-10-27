@@ -433,7 +433,6 @@ const saveAesConfig = async () => {
             v-model="botConfig.verifyTtlMinutes"
             :min="1"
             :max="1440"
-            class="w-full"
           />
           <p class="text-muted text-xs mt-1">
             用户通过验证后，该时间内访问受保护接口无需重新验证，过期后需重新验证（1-1440）
