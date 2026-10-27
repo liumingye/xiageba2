@@ -15,6 +15,9 @@ export default defineEventHandler(async (event) => {
   if (!musicId) {
     throw createError({ statusCode: 400, message: "缺少音乐ID" });
   }
+  if (typeof musicId !== "string" || musicId.length > 32) {
+    throw createError({ statusCode: 400, message: "音乐ID格式错误" });
+  }
 
   if (!type || !FEEDBACK_TYPES.includes(type)) {
     throw createError({
@@ -23,6 +26,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (description !== undefined && typeof description !== "string") {
+    throw createError({ statusCode: 400, message: "补充说明格式错误" });
+  }
   if (description && description.length > 100) {
     throw createError({
       statusCode: 400,
@@ -32,6 +38,9 @@ export default defineEventHandler(async (event) => {
 
   // 验证邮箱格式（如果提供）
   if (email) {
+    if (typeof email !== "string" || email.length > 254) {
+      throw createError({ statusCode: 400, message: "邮箱格式不正确" });
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw createError({

@@ -178,7 +178,7 @@ export default defineTask({
             let tempDir = account.tempDir;
             if (!tempDir) throw new Error("未配置百度网盘临时目录");
             if (!tempDir.startsWith("/")) tempDir = `/${tempDir}`;
-            tempDir = tempDir.replace(/\/+/g, "/").replace(/\/$/, "");
+            tempDir = tempDir.replace(/\/+/g, "/")
 
             for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
               const chunk = items.slice(i, i + PAN_BATCH_LIMIT);

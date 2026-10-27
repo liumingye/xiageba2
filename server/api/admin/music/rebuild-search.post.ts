@@ -6,7 +6,10 @@ import { setRedisCache } from "#server/lib/redis"; // 确保引入你的 Redis �
 let isRebuilding = false;
 
 export default defineEventHandler(async (event) => {
-  // 1. 拦截并发触发
+  // 先解析请求体，再检查并置锁；检查与置锁之间不能有 await，
+  // 否则并发触发会同时通过检查，各自启动一套重建任务。
+  const { all } = await readBody(event);
+
   if (isRebuilding) {
     throw createError({
       statusCode: 423,
@@ -14,22 +17,21 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { all } = await readBody(event);
-
-  // 标记加锁
   isRebuilding = true;
 
-  // 2. ⚡ 立即返回响应，转入后台异步执行，防客户端 HTTP 超时
+  // ⚡ 立即返回响应，转入后台异步执行，防客户端 HTTP 超时
   setImmediate(async () => {
-    // 独立轻量连接池，把常规通道留给前端在线用户
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      max: 15,
-    });
+    let pool: Pool | null = null;
 
     const taskType = all ? "all" : "inc";
 
     try {
+      // 独立轻量连接池，把常规通道留给前端在线用户
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: 15,
+      });
+
       console.log(
         `[RebuildMusicSearch] 开始重建音乐全文索引... 模式: ${all ? "全量" : "仅增量"}`,
       );
@@ -37,6 +39,8 @@ export default defineEventHandler(async (event) => {
       const CHUNK_SIZE = 500; // ⚡ 音乐的数据一般比带有大文件树的 Source 小，批次大小可适当调大到 500
       let lastId = ""; // 基于 ID 游标分页，避开低效的 OFFSET
       let totalUpdated = 0;
+      let failedBatches = 0;
+      let lastBatchError = "";
       let hasMore = true;
 
       // 基础查询条件
@@ -99,7 +103,9 @@ export default defineEventHandler(async (event) => {
             },
             300,
           );
-        } catch (updateErr) {
+        } catch (updateErr: any) {
+          failedBatches += 1;
+          lastBatchError = updateErr?.message || String(updateErr);
           console.error(
             `[RebuildMusicSearch] 批次更新失败，范围: ${ids[0]} ~ ${ids[ids.length - 1]}`,
             updateErr,
@@ -110,20 +116,25 @@ export default defineEventHandler(async (event) => {
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
 
-      // 7. 任务顺利结束，写入完成状态（保留60秒供前端捞取最终的“🎉完成”提示）
+      // 7. 有失败批次时不能报 done，否则全量重建会被误判为完整。
       await setRedisCache(
         "status:rebuild:music",
         {
-          status: "done",
+          status: failedBatches > 0 ? "error" : "done",
           current: totalUpdated,
           type: taskType,
           updatedAt: Date.now(),
+          ...(failedBatches > 0
+            ? {
+                message: `有 ${failedBatches} 个批次更新失败，最后错误：${lastBatchError}`,
+              }
+            : {}),
         },
         60,
       );
 
       console.log(
-        `[RebuildMusicSearch] 音乐全文索引重建任务圆满结束，共处理 ${totalUpdated} 条记录。`,
+        `[RebuildMusicSearch] 音乐全文索引重建结束，共处理 ${totalUpdated} 条记录，失败批次 ${failedBatches}。`,
       );
     } catch (globalErr) {
       // 8. 异常兜底，防止前端状态卡死在 running
@@ -140,8 +151,10 @@ export default defineEventHandler(async (event) => {
         globalErr,
       );
     } finally {
-      await pool.end();
       isRebuilding = false; // 🔓 解除原子锁
+      await pool?.end().catch((err) => {
+        console.error("[RebuildMusicSearch] 关闭连接池失败:", err);
+      });
     }
   });
 

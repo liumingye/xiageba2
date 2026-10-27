@@ -60,7 +60,7 @@ function mapItem(item: RawItem): BangumiItem {
     name: (item.name_cn || item.name || "").trim(),
     airDate: item.air_date || "",
     score: addDot0(item.rating?.score),
-    image: toHttps(images.large || images.common || images.medium || ""),
+    image: toHttps(images.common || images.medium || images.large || ""),
   };
 }
 

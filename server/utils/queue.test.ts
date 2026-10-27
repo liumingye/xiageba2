@@ -151,6 +151,33 @@ describe("aiRequestQueue（RequestQueue 单例）", () => {
     await tick();
   });
 
+  it("排队者断开后立即出队，不会在轮到时继续执行", async () => {
+    const releases = await fillSlots(5);
+    const controller = new AbortController();
+    const onProgress = vi.fn();
+
+    try {
+      const pending = aiRequestQueue.enter("aborted", onProgress, controller.signal);
+      await tick();
+      expect(onProgress).toHaveBeenCalledWith(1);
+
+      controller.abort();
+      await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+
+      // 释放一个槽位，不应把已取消的请求唤醒；排在其后的请求应前移。
+      const nextProgress = vi.fn();
+      const next = aiRequestQueue.enter("next", nextProgress, undefined);
+      await tick();
+      expect(nextProgress).toHaveBeenCalledWith(1);
+
+      await drainAll(releases, [next]);
+    } catch (e) {
+      await drainAll(releases, []);
+      throw e;
+    }
+    await tick();
+  });
+
   it("位置更新广播给所有等待者", async () => {
     const releases = await fillSlots(5);
     const cb1 = vi.fn();

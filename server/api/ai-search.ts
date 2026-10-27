@@ -27,6 +27,32 @@ const MAX_HISTORY_MESSAGES = 12;
 /** 历史里 assistant 单条截断长度。回复尾部附带的资源链接列表很长，截断保留近期语义即可 */
 const MAX_HISTORY_ASSISTANT_LENGTH = 800;
 
+/**
+ * 工具参数上限。
+ * 模型输出不可信：用户可通过提示注入要求它生成上百个 keywords，
+ * 单次请求就会放大成上百条 SQL / Exa 检索，既烧钱也打满连接池。
+ */
+const MAX_TOOL_KEYWORDS = 8;
+const MAX_TOOL_QUERIES = 3;
+const MAX_TOOL_KEYWORD_LENGTH = 100;
+const MAX_WEB_RESULTS = 8;
+
+/** 把模型给出的任意值收敛成有上限、已去空的字符串数组 */
+function toStringList(value: unknown, max: number): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const text = item.trim().slice(0, MAX_TOOL_KEYWORD_LENGTH);
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    result.push(text);
+    if (result.length >= max) break;
+  }
+  return result;
+}
+
 // 保持同一个连接池，或者引用你全局的 pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 15 });
 
@@ -234,6 +260,7 @@ const SEARCH_TOOLS = [
           keywords: {
             type: "array",
             items: { type: "string" },
+            maxItems: MAX_TOOL_KEYWORDS,
             description:
               "精准检索词数组。格式建议为 ['歌手名 歌曲名']（例如：['周杰伦 晴天']）。",
           },
@@ -254,6 +281,7 @@ const SEARCH_TOOLS = [
           keywords: {
             type: "array",
             items: { type: "string" },
+            maxItems: MAX_TOOL_KEYWORDS,
             description:
               "具体的动漫名称、电影名称或资源关键词数组。请给出具体的作品名，例如：['银魂', '男子高中生的日常', '游戏三人娘']。",
           },
@@ -281,11 +309,14 @@ const SEARCH_TOOLS = [
           queries: {
             type: "array",
             items: { type: "string" },
+            maxItems: MAX_TOOL_QUERIES,
             description:
               "具体检索词数组，1~3 个为宜。例如：['周杰伦 七里香 发行时间', '七里香 专辑 评价']。",
           },
           numResults: {
             type: "number",
+            minimum: 3,
+            maximum: MAX_WEB_RESULTS,
             description: "每个检索词的召回条数，3~8，默认 5。",
           },
         },
@@ -362,6 +393,12 @@ function parseConversation(body: any): HistoryMessage[] {
 
 export default defineEventHandler(async (event) => {
   await assertBotDefense(event, "/api/ai-search");
+
+  // 客户端断开后必须停止排队与上游调用，否则仍会产生模型费用并占用并发槽。
+  const abortController = new AbortController();
+  const onClientClose = () => abortController.abort();
+  event.node.res.once("close", onClientClose);
+
   const body = await readBody(event);
 
   const history = parseConversation(body);
@@ -429,13 +466,17 @@ export default defineEventHandler(async (event) => {
     let hasWaited = false; // 💡 引入标记位：默认没有排过队
 
     try {
-      // 核心：卡进排队机
-      releaseLock = await aiRequestQueue.enter(requestId, (position) => {
-        hasWaited = true; // 🌟 只要触发了这个回调，说明真的在排队了，标记置为 true
+      // 核心：卡进排队机；排队期间客户端断开会被立即移出队列
+      releaseLock = await aiRequestQueue.enter(
+        requestId,
+        (position) => {
+          hasWaited = true; // 🌟 只要触发了这个回调，说明真的在排队了，标记置为 true
 
-        // 实时给前端推送排队进度
-        push({ queue: { position } });
-      });
+          // 实时给前端推送排队进度
+          push({ queue: { position } });
+        },
+        abortController.signal,
+      );
 
       // 🔑 轮到该用户了：判断是否排过队
       if (hasWaited) {
@@ -446,12 +487,15 @@ export default defineEventHandler(async (event) => {
       // 1. 首次调用大模型（流式），等待工具决策。
       //    流式的意义：思考过程（reasoning_content）可以实时推给前端展示，
       //    而不是等整个决策结束才黑屏。
-      const firstStream = await openai.chat.completions.create({
-        model,
-        messages: currentMessages,
-        tools: SEARCH_TOOLS,
-        stream: true,
-      });
+      const firstStream = await openai.chat.completions.create(
+        {
+          model,
+          messages: currentMessages,
+          tools: SEARCH_TOOLS,
+          stream: true,
+        },
+        { signal: abortController.signal },
+      );
 
       let contentBuf = "";
       /** index → 累积的 tool_call（流式下 tool_calls 按 index 分片到达） */
@@ -523,16 +567,14 @@ export default defineEventHandler(async (event) => {
             tool: {
               index: tc.index,
               name: tc.name,
-              keywords: Array.isArray(args.keywords)
-                ? args.keywords
-                : args.keyword
-                  ? [args.keyword]
-                  : [],
-              queries: Array.isArray(args.queries)
-                ? args.queries
-                : args.query
-                  ? [args.query]
-                  : [],
+              keywords: toStringList(
+                Array.isArray(args.keywords) ? args.keywords : [args.keyword],
+                MAX_TOOL_KEYWORDS,
+              ),
+              queries: toStringList(
+                Array.isArray(args.queries) ? args.queries : [args.query],
+                MAX_TOOL_QUERIES,
+              ),
               panType: args.panType,
             },
           });
@@ -546,8 +588,10 @@ export default defineEventHandler(async (event) => {
             } catch {
               args = {};
             }
-            const keywords: string[] =
-              args.keywords || (args.keyword ? [args.keyword] : []);
+            const keywords = toStringList(
+              Array.isArray(args.keywords) ? args.keywords : [args.keyword],
+              MAX_TOOL_KEYWORDS,
+            );
 
             // 🎵 路由分支 A：音乐检索
             if (toolCall.name === "search_music") {
@@ -652,19 +696,19 @@ export default defineEventHandler(async (event) => {
 
             // 🌐 路由分支 C：开放网络检索（Exa）
             if (toolCall.name === "search_web") {
-              const queries: string[] = Array.isArray(args.queries)
-                ? args.queries.filter(
-                    (q: unknown) => typeof q === "string" && q.trim(),
-                  )
-                : args.query
-                  ? [String(args.query)]
-                  : [];
-              const numResults = Number(args.numResults) || 5;
+              const queries = toStringList(
+                Array.isArray(args.queries) ? args.queries : [args.query],
+                MAX_TOOL_QUERIES,
+              );
+              const numResults = Math.min(
+                MAX_WEB_RESULTS,
+                Math.max(3, Number(args.numResults) || 5),
+              );
 
               // 每个 query 并发检索，失败的 query 不拖垮整次调用
               const resultsArray = await Promise.all(
                 queries.map((q) =>
-                  searchExaWeb(q, numResults).catch(
+                  searchExaWeb(q, numResults, abortController.signal).catch(
                     () => [] as WebSearchItem[],
                   ),
                 ),
@@ -694,13 +738,19 @@ export default defineEventHandler(async (event) => {
               };
             }
 
-            return null;
+            // 未声明/模型幻觉出的工具也必须回一条 tool 消息；
+            // 否则第二次请求的 assistant.tool_calls 会缺少对应响应，被上游 400 拒绝。
+            return {
+              role: "tool" as const,
+              tool_call_id: toolCall.id,
+              content: JSON.stringify({
+                error: `不支持的检索工具: ${toolCall.name}`,
+              }),
+            };
           }),
         );
 
-        const validToolOutputs = toolOutputs.filter(
-          (output): output is Exclude<typeof output, null> => output !== null,
-        );
+        const validToolOutputs = toolOutputs;
 
         // 把 assistant 的 tool_calls 决策按 OpenAI 协议原样拼回上下文
         finalMessages.push({
@@ -724,11 +774,14 @@ export default defineEventHandler(async (event) => {
       }
 
       // 3. 第二次调用大模型：流式输出正文
-      const targetStream = await openai.chat.completions.create({
-        model,
-        messages: finalMessages,
-        stream: true,
-      });
+      const targetStream = await openai.chat.completions.create(
+        {
+          model,
+          messages: finalMessages,
+          stream: true,
+        },
+        { signal: abortController.signal },
+      );
 
       for await (const chunk of targetStream) {
         const text = chunk.choices[0]?.delta?.content || "";
@@ -775,14 +828,18 @@ export default defineEventHandler(async (event) => {
       stream.push("data: [DONE]\n\n");
       stream.push(null);
     } catch (error: any) {
-      console.error("流式生成发生错误:", error);
-      push({ error: error.message || "内部错误" });
-      stream.push(null);
+      // 客户端主动断开属于正常终止，不写错误日志、不再往已关闭的流推送。
+      if (!abortController.signal.aborted) {
+        console.error("流式生成发生错误:", error);
+        push({ error: error.message || "内部错误" });
+      }
+      if (!stream.destroyed) stream.push(null);
     } finally {
       // 4. 无论成功还是失败，【必须】在最右释放锁，让后面的人进来！
       if (releaseLock) {
         releaseLock();
       }
+      event.node.res.off("close", onClientClose);
     }
   })();
 

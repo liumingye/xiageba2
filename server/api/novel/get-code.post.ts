@@ -7,7 +7,7 @@ import {
 } from "#server/utils/novel";
 
 const CACHE_KEY_PREFIX = "novel:pcode:";
-const CACHE_TTL_DAYS = 365;
+const CACHE_TTL_DAYS = 180;
 const CACHE_TTL_SECONDS = CACHE_TTL_DAYS * 24 * 60 * 60; // 2592000
 
 /**

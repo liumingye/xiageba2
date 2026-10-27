@@ -36,8 +36,14 @@ export default defineEventHandler(async (event) => {
   }
 
   if (action === "category") {
-    const nextCid =
-      cid === null || cid === undefined || cid === "" ? null : Number(cid) || null;
+    let nextCid: number | null = null;
+    if (cid !== null && cid !== undefined && cid !== "") {
+      const parsedCid = Number(cid);
+      if (!Number.isInteger(parsedCid) || parsedCid <= 0) {
+        throw createError({ statusCode: 400, message: "分类 ID 不合法" });
+      }
+      nextCid = parsedCid;
+    }
     const result = await prisma.source.updateMany({
       where: { id: { in: idList } },
       data: { cid: nextCid },

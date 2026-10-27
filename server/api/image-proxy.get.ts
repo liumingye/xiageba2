@@ -5,6 +5,13 @@ import {
   createError,
 } from "h3";
 
+/** 单张图片最大允许字节数 */
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+/** 最多跟随的重定向次数 */
+const MAX_REDIRECTS = 3;
+/** 需要手动校验 Location 后再跟随的状态码 */
+const REDIRECT_STATUS = new Set([301, 302, 303, 307, 308]);
+
 const WHITELIST_SET = new Set([
   "img1.doubanio.com",
   "img2.doubanio.com",
@@ -42,6 +49,96 @@ function isHostnameAllowed(hostname: string): boolean {
   return false;
 }
 
+/**
+ * 校验并返回可请求的 URL。
+ * 重定向不能再交给 fetch 自动跟随：自动跟随会先向未校验的 Location 发出请求，
+ * 再检查最终域名，此时 SSRF 请求已经打到目标上了。
+ */
+function parseAllowedUrl(raw: string, base?: URL): URL {
+  let parsed: URL;
+  try {
+    parsed = base ? new URL(raw, base) : new URL(raw);
+  } catch {
+    throw createError({ statusCode: 400, message: "无效的 url 参数" });
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw createError({
+      statusCode: 400,
+      message: "仅支持 http 或 https 协议",
+    });
+  }
+  if (parsed.username || parsed.password) {
+    throw createError({ statusCode: 403, message: "不允许携带 URL 认证信息" });
+  }
+  if (!isHostnameAllowed(parsed.hostname)) {
+    throw createError({
+      statusCode: 403,
+      message: `该图片域名不在白名单中: ${parsed.hostname}`,
+    });
+  }
+  return parsed;
+}
+
+/** 手动跟随重定向，每一跳都先做域名白名单校验 */
+async function fetchAllowedImage(
+  initialUrl: URL,
+  headers: Record<string, string>,
+): Promise<Response> {
+  let currentUrl = initialUrl;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const res = await fetch(currentUrl, {
+      headers,
+      redirect: "manual",
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!REDIRECT_STATUS.has(res.status)) return res;
+
+    const location = res.headers.get("Location");
+    // 丢掉重定向响应体，避免连接一直挂着
+    await res.body?.cancel();
+
+    if (!location) {
+      throw createError({ statusCode: 502, message: "重定向缺少 Location" });
+    }
+    if (hop === MAX_REDIRECTS) {
+      throw createError({ statusCode: 502, message: "重定向次数过多" });
+    }
+
+    currentUrl = parseAllowedUrl(location, currentUrl);
+  }
+
+  throw createError({ statusCode: 502, message: "重定向次数过多" });
+}
+
+/**
+ * 按实际流经的字节数限流。
+ * Content-Length 可能缺失或造假，不能只依赖响应头。
+ */
+function limitStreamBytes(
+  body: ReadableStream<Uint8Array> | null,
+): ReadableStream<Uint8Array> | null {
+  if (!body) return null;
+
+  let received = 0;
+  return body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        received += chunk.byteLength;
+        if (received > MAX_IMAGE_BYTES) {
+          controller.error(
+            createError({ statusCode: 413, message: "图片体积过大，拒绝代理" }),
+          );
+          return;
+        }
+        controller.enqueue(chunk);
+      },
+    }),
+  );
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const targetUrl = (query.url as string) || "";
@@ -51,29 +148,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "缺少 url 参数" });
   }
 
-  let parsedUrl: URL;
-  try {
-    // 使用标准 URL 解析器
-    parsedUrl = new URL(targetUrl);
-  } catch {
-    throw createError({ statusCode: 400, message: "无效的 url 参数" });
-  }
-
-  // 🔒 安全提升：严格校验协议，防止用 file:// 或 ftp:// 协议探测服务器本地文件
-  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-    throw createError({
-      statusCode: 400,
-      message: "仅支持 http 或 https 协议",
-    });
-  }
-
-  // 🔒 安全提升：改用 hostname 避免受到 port(端口号) 欺骗或混淆
-  if (!isHostnameAllowed(parsedUrl.hostname)) {
-    throw createError({
-      statusCode: 403,
-      message: `该图片域名不在白名单中: ${parsedUrl.hostname}`,
-    });
-  }
+  const parsedUrl = parseAllowedUrl(targetUrl);
 
   const headers: Record<string, string> = {
     Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
@@ -88,34 +163,15 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // 默认 fetch 会自动跟随重定向(redirect: 'follow')
-    const res = await fetch(targetUrl, {
-      headers,
-      // 🔒 性能防御：设定超时，防止慢速链接把服务器挂起
-      signal: AbortSignal.timeout(10000),
-    });
-
-    // 🔒 再次验证最终落地域名，防止 302 重定向到内网或非法网址
-    let finalUrl: URL;
-    try {
-      finalUrl = new URL(res.url);
-    } catch {
-      throw createError({ statusCode: 502, message: "响应解析失败" });
-    }
-
-    if (!isHostnameAllowed(finalUrl.hostname)) {
-      throw createError({
-        statusCode: 403,
-        message: `重定向后的目标图片域名不在白名单中: ${finalUrl.hostname}`,
-      });
-    }
+    const res = await fetchAllowedImage(parsedUrl, headers);
 
     // 🔒 校验响应大小，防止通过超大文件撑爆服务器带宽或内存 (例如限制 20MB)
     const contentLength = parseInt(
       res.headers.get("Content-Length") || "0",
       10,
     );
-    if (contentLength > 20 * 1024 * 1024) {
+    if (contentLength > MAX_IMAGE_BYTES) {
+      await res.body?.cancel();
       throw createError({ statusCode: 413, message: "图片体积过大，拒绝代理" });
     }
 
@@ -127,6 +183,7 @@ export default defineEventHandler(async (event) => {
       !contentType.startsWith("image/") &&
       contentType !== "application/octet-stream"
     ) {
+      await res.body?.cancel();
       throw createError({ statusCode: 415, message: "不支持的响应媒体类型" });
     }
 
@@ -138,11 +195,13 @@ export default defineEventHandler(async (event) => {
     );
 
     setResponseStatus(event, res.status);
-    return res.body;
+    return limitStreamBytes(res.body);
   } catch (error: any) {
     if (error.name === "TimeoutError") {
       throw createError({ statusCode: 504, message: "请求源站图片超时" });
     }
+    // 保留前面主动抛出的 400/403/413/415，不要统一吞成 502。
+    if (error?.statusCode) throw error;
     throw createError({ statusCode: 502, message: "图片代理请求失败" });
   }
 });

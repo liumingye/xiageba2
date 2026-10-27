@@ -11,6 +11,14 @@ export default defineEventHandler(async (event) => {
     if (!username || !password) {
       throw createError({ statusCode: 400, message: "用户名和密码不能为空" });
     }
+    if (
+      typeof username !== "string" ||
+      typeof password !== "string" ||
+      username.length > 50 ||
+      password.length > 200
+    ) {
+      throw createError({ statusCode: 400, message: "用户名或密码格式错误" });
+    }
 
     const existingAdmin = await prisma.admin.findUnique({
       where: { username },
@@ -60,6 +68,16 @@ export default defineEventHandler(async (event) => {
         message: "请提供要修改的用户名或密码",
       });
     }
+    if (
+      (username !== undefined &&
+        (typeof username !== "string" ||
+          !username.trim() ||
+          username.length > 50)) ||
+      (password !== undefined &&
+        (typeof password !== "string" || password.length > 200))
+    ) {
+      throw createError({ statusCode: 400, message: "用户名或密码格式错误" });
+    }
 
     const existingAdmin = await prisma.admin.findUnique({
       where: { id },
@@ -102,17 +120,29 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: "缺少管理员ID" });
     }
 
-    const count = await prisma.admin.count();
-    if (count <= 1) {
-      throw createError({
-        statusCode: 400,
-        message: "至少需要保留一个管理员",
-      });
-    }
+    // count 与 delete 必须在同一个事务里串行化，否则两个并发删除请求
+    // 会同时读到 count=2，把仅有的两个管理员全部删掉，造成永久锁死后台。
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('admin:delete'))`;
 
-    await prisma.admin.delete({
-      where: { id },
-    });
+        const count = await tx.admin.count();
+        if (count <= 1) {
+          throw createError({
+            statusCode: 400,
+            message: "至少需要保留一个管理员",
+          });
+        }
+
+        const target = await tx.admin.findUnique({ where: { id } });
+        if (!target) {
+          throw createError({ statusCode: 404, message: "管理员不存在" });
+        }
+
+        await tx.admin.delete({ where: { id } });
+      },
+      { timeout: 10_000 },
+    );
 
     return { success: true };
   }

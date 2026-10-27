@@ -25,8 +25,8 @@ const dbRow = {
   status: 1,
 };
 
-vi.mock("#server/lib/prisma", () => ({
-  prisma: {
+vi.mock("#server/lib/prisma", () => {
+  const txMock = {
     music: {
       update: async (args: any) => {
         h.updateCalls.push(args);
@@ -37,8 +37,16 @@ vi.mock("#server/lib/prisma", () => ({
       h.executeRawCalls++;
       return 1;
     },
-  },
-}));
+  };
+
+  return {
+    prisma: {
+      ...txMock,
+      // 生产代码把主记录与全文索引放进同一事务，测试直接执行同一组 mock
+      $transaction: async (fn: (tx: typeof txMock) => unknown) => fn(txMock),
+    },
+  };
+});
 
 vi.mock("#server/utils/jieba", () => ({
   buildTokens: () => "fake-tokens",

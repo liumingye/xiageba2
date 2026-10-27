@@ -8,7 +8,11 @@ import { TREE_MAX_LINE } from "#server/lib/const";
 let isRebuilding = false;
 
 export default defineEventHandler(async (event) => {
-  // 1. 拦截并发触发
+  // 先解析请求体，再置锁；否则 readBody 抛错会绕过 setImmediate 的 finally，
+  // 让 isRebuilding 永久为 true。
+  const { all } = await readBody(event);
+
+  // 检查与置锁之间不能有 await，否则并发请求会同时通过检查。
   if (isRebuilding) {
     throw createError({
       statusCode: 423,
@@ -16,27 +20,28 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // 标记加锁
   isRebuilding = true;
 
-  const { all } = await readBody(event);
-
-  // 2. ⚡ 立即返回响应，转入后台异步执行（防止前端客户端因长连接超时报错）
+  // ⚡ 立即返回响应，转入后台异步执行（防止前端客户端因长连接超时报错）
   // 利用 Node.js 的事件循环，在当前 tick 结束后开始执行后台繁重任务
   setImmediate(async () => {
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      max: 15,
-    });
+    let pool: Pool | null = null;
 
     const taskType = all ? "all" : "inc"; // 区分全量还是增量
 
     try {
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: 15,
+      });
+
       console.log(`[RebuildSearch] 开始重建全文索引...`);
 
       const CHUNK_SIZE = 200;
       let lastId = "";
       let totalUpdated = 0;
+      let failedBatches = 0;
+      let lastBatchError = "";
       let hasMore = true;
 
       const baseWhere = all
@@ -86,28 +91,36 @@ export default defineEventHandler(async (event) => {
             },
             300,
           );
-        } catch (updateErr) {
+        } catch (updateErr: any) {
+          // 单批失败不应让状态显示 done：否则管理员会误以为全量索引已完整。
+          failedBatches += 1;
+          lastBatchError = updateErr?.message || String(updateErr);
           console.error(`[RebuildSearch] 批次更新失败`, updateErr);
         }
 
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
 
-      // ⚡ 【新增改动点 2】：整个遍历任务圆满结束，将状态标记为 done，保持 60 秒供前端读取最终状态
       await setRedisCache(
         `status:rebuild:source`,
         {
-          status: "done",
+          status: failedBatches > 0 ? "error" : "done",
           current: totalUpdated,
           type: taskType,
           updatedAt: Date.now(),
+          ...(failedBatches > 0
+            ? {
+                message: `有 ${failedBatches} 个批次更新失败，最后错误：${lastBatchError}`,
+              }
+            : {}),
         },
         60,
       );
 
-      console.log(`[RebuildSearch] 全文索引重建任务成功结束`);
+      console.log(
+        `[RebuildSearch] 全文索引重建结束，已处理 ${totalUpdated} 条，失败批次 ${failedBatches}`,
+      );
     } catch (globalErr) {
-      // ⚡ 【新增改动点 3】：如果中途发生严重崩溃，写入错误状态，防止前端无限等待
       await setRedisCache(
         `status:rebuild:source`,
         {
@@ -119,7 +132,9 @@ export default defineEventHandler(async (event) => {
       console.error("[RebuildSearch] 严重异常:", globalErr);
     } finally {
       isRebuilding = false;
-      await pool.end();
+      await pool?.end().catch((err) => {
+        console.error("[RebuildSearch] 关闭连接池失败:", err);
+      });
     }
   });
 

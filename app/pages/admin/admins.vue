@@ -28,6 +28,7 @@ const columns: TableColumn<Admin>[] = [
   },
 ];
 
+const toast = useToast();
 const router = useRouter();
 const { isLoggedIn, checkLogin, initialized } = useAuth();
 
@@ -134,8 +135,19 @@ const editAdmin = async () => {
 const deleteAdmin = async (id: string) => {
   if (!confirm("确定要删除该管理员吗？")) return;
 
-  await del("/api/admin", { data: { id } });
-  await loadAdmins();
+  try {
+    await del("/api/admin", { data: { id } });
+    await loadAdmins();
+  } catch (e: any) {
+    if (e?.response?.data?.message) {
+      toast.add({
+        title: e.response.data.message,
+        icon: "i-lucide-x",
+        color: "error",
+        duration: 2000,
+      });
+    }
+  }
 };
 </script>
 

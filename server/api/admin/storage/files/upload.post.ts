@@ -14,6 +14,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "configId 不合法" });
   }
 
+  // readMultipartFormData 会把整个请求体读进内存，必须在读取前先看声明长度。
+  // 这里给 multipart 边界预留 1MB，最终仍以 file.data.length 为准。
+  const declaredLength = Number(getHeader(event, "content-length") || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_UPLOAD_SIZE + 1024 * 1024) {
+    throw createError({
+      statusCode: 413,
+      message: `文件体积超过上限（${MAX_UPLOAD_SIZE / 1024 / 1024}MB）`,
+    });
+  }
+
   const formData = await readMultipartFormData(event);
   if (!formData) {
     throw createError({ statusCode: 400, message: "未收到文件数据" });

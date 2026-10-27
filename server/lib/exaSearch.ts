@@ -113,38 +113,56 @@ const mcpHeaders = (sessionId?: string): Record<string, string> => {
   return headers;
 };
 
-const postMcp = async (body: object, sessionId?: string) => {
+const postMcp = async (
+  body: object,
+  sessionId?: string,
+  signal?: AbortSignal,
+) => {
+  const timeoutSignal = AbortSignal.timeout(EXA_TIMEOUT_MS);
   const res = await fetch(EXA_MCP_URL, {
     method: "POST",
     headers: mcpHeaders(sessionId),
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(EXA_TIMEOUT_MS),
+    // 客户端断开时立即取消，不再等 20 秒超时
+    signal: signal
+      ? AbortSignal.any([signal, timeoutSignal])
+      : timeoutSignal,
   });
   return res;
 };
 
 /** 建立（或复用）MCP 会话；失败时返回 null 由调用方降级 */
-const ensureSession = async (): Promise<McpSession | null> => {
+const ensureSession = async (
+  signal?: AbortSignal,
+): Promise<McpSession | null> => {
   if (cachedSession) return cachedSession;
 
   try {
-    const initRes = await postMcp({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "initialize",
-      params: {
-        protocolVersion: "2024-11-05",
-        capabilities: {},
-        clientInfo: { name: "xiageba-ai-search", version: "1.0" },
+    const initRes = await postMcp(
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "xiageba-ai-search", version: "1.0" },
+        },
       },
-    });
+      undefined,
+      signal,
+    );
     if (!initRes.ok) return null;
 
     const sid = initRes.headers.get("mcp-session-id") || "";
     await initRes.text(); // 消费响应体，释放连接
 
     // initialized 通知（无 id，无需读响应体）
-    await postMcp({ jsonrpc: "2.0", method: "notifications/initialized" }, sid);
+    await postMcp(
+      { jsonrpc: "2.0", method: "notifications/initialized" },
+      sid,
+      signal,
+    );
 
     cachedSession = { sessionId: sid, nextId: 2 };
     return cachedSession;
@@ -167,6 +185,7 @@ const invalidateSession = () => {
 export async function searchExaWeb(
   query: string,
   numResults = 5,
+  signal?: AbortSignal,
 ): Promise<ExaWebResult[]> {
   const term = (query || "").trim();
   if (!term) return [];
@@ -175,7 +194,9 @@ export async function searchExaWeb(
 
   // 会话可能已过期：失败时重连重试一次
   for (let attempt = 0; attempt < 2; attempt++) {
-    const session = await ensureSession();
+    if (signal?.aborted) return [];
+
+    const session = await ensureSession(signal);
     if (!session) return [];
 
     try {
@@ -190,6 +211,7 @@ export async function searchExaWeb(
           },
         },
         session.sessionId,
+        signal,
       );
 
       // 会话过期 → 重连

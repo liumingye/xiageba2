@@ -10,6 +10,13 @@ export default defineEventHandler(async (event) => {
     if (!username || !password) {
       throw createError({ statusCode: 400, message: "用户名和密码不能为空" });
     }
+    if (typeof username !== "string" || typeof password !== "string") {
+      throw createError({ statusCode: 400, message: "用户名或密码格式错误" });
+    }
+    // 限长既匹配数据库列宽，也避免超长输入进入同步 scrypt 阻塞事件循环。
+    if (username.length > 50 || password.length > 200) {
+      throw createError({ statusCode: 400, message: "用户名或密码格式错误" });
+    }
 
     const admin = await prisma.admin.findUnique({
       where: { username },

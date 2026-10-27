@@ -103,35 +103,40 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { title, artist, album, cover, lyrics, playUrl, downloads } = body;
 
-    if (!title || !artist) {
-      throw createError({ statusCode: 400, message: "歌名和歌手不能为空" });
+    if (typeof title !== "string" || !title.trim()) {
+      throw createError({ statusCode: 400, message: "歌名不能为空" });
+    }
+    if (typeof artist !== "string" || !artist.trim()) {
+      throw createError({ statusCode: 400, message: "歌手不能为空" });
+    }
+    if (downloads !== undefined && !Array.isArray(downloads)) {
+      throw createError({ statusCode: 400, message: "下载列表格式错误" });
     }
 
-    // 1) 由 Prisma 创建记录
-    const music = await prisma.music.create({
-      data: {
-        title,
-        artist,
-        album: album || "",
-        cover: cover || "",
-        lyrics: lyrics || "",
-        playUrl: playUrl || "",
-        downloads: downloads || [],
-      },
+    // 创建记录与全文索引放同一事务，避免出现能查到详情但搜不到的半成品数据。
+    return await prisma.$transaction(async (tx) => {
+      const music = await tx.music.create({
+        data: {
+          title: title.trim(),
+          artist: artist.trim(),
+          album: album || "",
+          cover: cover || "",
+          lyrics: lyrics || "",
+          playUrl: playUrl || "",
+          downloads: downloads || [],
+        },
+      });
+
+      const searchVectorTokens = buildTokens(
+        music.title || "",
+        music.artist || "",
+        music.album || "",
+      );
+
+      await tx.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens || ""}) WHERE id = ${music.id}`;
+
+      return music;
     });
-
-    // 2) 用 jieba 构造 tokens 并维护 searchVector
-    const searchVectorTokens = buildTokens(
-      music.title || "",
-      music.artist || "",
-      music.album || "",
-    );
-
-    if (searchVectorTokens) {
-      await prisma.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens}) WHERE id = ${music.id}`;
-    }
-
-    return music;
   }
 
   if (method === "PUT") {
@@ -146,36 +151,71 @@ export default defineEventHandler(async (event) => {
     // 部分字段更新：只写入显式传入的字段。
     // 状态开关只会传 { id, status }，若按全量字段更新会把 downloads 等清空。
     const data: any = {};
-    if (title !== undefined) data.title = title;
-    if (artist !== undefined) data.artist = artist;
-    if (album !== undefined) data.album = album;
-    if (cover !== undefined) data.cover = cover;
-    if (lyrics !== undefined) data.lyrics = lyrics;
-    if (playUrl !== undefined) data.playUrl = playUrl;
-    if (downloads !== undefined) data.downloads = downloads || [];
+    const requireText = (field: string, value: unknown) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw createError({ statusCode: 400, message: `${field}不能为空` });
+      }
+      return value;
+    };
+
+    if (title !== undefined) data.title = requireText("歌名", title);
+    if (artist !== undefined) data.artist = requireText("歌手", artist);
+    if (album !== undefined) {
+      if (typeof album !== "string") {
+        throw createError({ statusCode: 400, message: "专辑格式错误" });
+      }
+      data.album = album;
+    }
+    if (cover !== undefined) {
+      if (typeof cover !== "string") {
+        throw createError({ statusCode: 400, message: "封面格式错误" });
+      }
+      data.cover = cover;
+    }
+    if (lyrics !== undefined) {
+      if (typeof lyrics !== "string") {
+        throw createError({ statusCode: 400, message: "歌词格式错误" });
+      }
+      data.lyrics = lyrics;
+    }
+    if (playUrl !== undefined) {
+      if (typeof playUrl !== "string") {
+        throw createError({ statusCode: 400, message: "播放地址格式错误" });
+      }
+      data.playUrl = playUrl;
+    }
+    if (downloads !== undefined) {
+      if (!Array.isArray(downloads)) {
+        throw createError({ statusCode: 400, message: "下载列表格式错误" });
+      }
+      data.downloads = downloads;
+    }
     if (status !== undefined) {
-      data.status = status === 0 || status === "0" ? 0 : 1;
+      const parsedStatus = Number(status);
+      if (parsedStatus !== 0 && parsedStatus !== 1) {
+        throw createError({ statusCode: 400, message: "音乐状态不合法" });
+      }
+      data.status = parsedStatus;
     }
 
     if (Object.keys(data).length === 0) {
       throw createError({ statusCode: 400, message: "没有需要更新的字段" });
     }
 
-    // 1) 由 Prisma 更新数据
-    const music = await prisma.music.update({
-      where: { id },
-      data,
-    });
+    // 1) 更新主记录与全文索引必须同一事务，避免一边成功一边失败导致搜索结果与详情不一致。
+    const music = await prisma.$transaction(async (tx) => {
+      const updated = await tx.music.update({ where: { id }, data });
 
-    // 2) 标题/歌手/专辑变化时才需要重建全文检索向量（纯切状态不重建）
-    if (title !== undefined || artist !== undefined || album !== undefined) {
-      const searchVectorTokens = buildTokens(
-        music.title || "",
-        music.artist || "",
-        music.album || "",
-      );
-      await prisma.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens}) WHERE id = ${music.id}`;
-    }
+      if (title !== undefined || artist !== undefined || album !== undefined) {
+        const searchVectorTokens = buildTokens(
+          updated.title || "",
+          updated.artist || "",
+          updated.album || "",
+        );
+        await tx.$executeRaw`UPDATE "Music" SET "searchVector" = to_tsvector('simple', ${searchVectorTokens}) WHERE id = ${updated.id}`;
+      }
+      return updated;
+    });
 
     // 清理 ISR 缓存
     const storage = useStorage(`cache:nuxt:payload:`);

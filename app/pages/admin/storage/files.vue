@@ -2,7 +2,14 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
-import { FileText, HardDrive, FileAudio, FileVideo, File } from "@lucide/vue";
+import {
+  FileText,
+  HardDrive,
+  FileAudio,
+  FileVideo,
+  File,
+  Loader2,
+} from "@lucide/vue";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
 import { useClipboard } from "@vueuse/core";
 import { get, post, del, patch } from "~/utils/request";
@@ -45,7 +52,7 @@ const selectedConfigId = ref<string>("");
 const files = ref<StorageFile[]>([]);
 const searchKeyword = ref<string>("");
 const currentPage = ref<number>(1);
-const pageSize = 20;
+const pageSize = 24;
 const total = ref<number>(0);
 const isLoading = ref<boolean>(false);
 const isUploading = ref<boolean>(false);

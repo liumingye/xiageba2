@@ -225,6 +225,12 @@ model S3Config {
   @@index([isHidden])
 }
 
+// ⚠️ (configId, path) 的活跃唯一约束是**部分唯一索引**
+// （WHERE "isDeleted" = false，见 migration 20261027232000_add_storage_file_active_path_unique）。
+// Prisma schema 表达不了部分索引，所以这里看不到对应声明 —— 这不是漏了。
+// 千万不要改成 @@unique([configId, path])：完整唯一约束会把已软删除的行也算进去，
+// 导致删掉文件后无法再上传同名文件；同时也别手工删掉数据库里那个索引，
+// 它是多进程/多副本部署下唯一能拦住"两条记录指向同一个对象"的防线。
 model StorageFile {
   id        String    @id @default(cuid(2)) @db.VarChar(32)
   configId  Int

@@ -10,20 +10,26 @@ export default defineEventHandler(async (event) => {
   }
 
   if (method === "PUT") {
-    const body = await readBody(event);
-    const { resolvedBy } = body;
+    const existing = await prisma.feedback.findUnique({ where: { id } });
+    if (!existing) {
+      throw createError({ statusCode: 404, message: "反馈不存在" });
+    }
 
-    const feedback = await prisma.feedback.update({
-      where: { id },
+    // 只在 PENDING -> DONE 的这一次更新后发邮件。
+    // 原实现每次 PUT 都发，管理员重复点击会给用户重复发信。
+    const result = await prisma.feedback.updateMany({
+      where: { id, status: "PENDING" },
       data: {
         status: "DONE",
-        resolvedBy: resolvedBy || null,
+        resolvedBy: event.context.user?.username || null,
         resolvedAt: new Date(),
       },
     });
 
-    // 如果用户提供了邮箱，发送通知邮件
-    if (feedback.email) {
+    const feedback = await prisma.feedback.findUniqueOrThrow({ where: { id } });
+
+    // 如果用户提供了邮箱且本次确实完成了状态迁移，发送通知邮件
+    if (result.count > 0 && feedback.email) {
       try {
         await sendFeedbackResolvedEmail(
           feedback.email,
