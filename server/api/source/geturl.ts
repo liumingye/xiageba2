@@ -1324,6 +1324,23 @@ export default defineEventHandler(async (event) => {
     return { url: sourceUrl };
   }
 
+  // 🔒 三级防御：写入前的二次检查（双检）
+  //
+  // 为什么必须有这一步：上面的 has() 检查与本处的 set() 之间隔着多个 await
+  // （id 分支的 findUnique、以及今天的 geturl 计数查询），每个 await 都会让出
+  // 事件循环。并发请求因此会「全部通过上面的检查」，再依次各自上锁，
+  // 等于锁完全没生效 —— 同一链接会被并发转存 N 次，白白消耗 N 份网盘 quotas。
+  //
+  // 二次检查与 set() 之间不允许出现任何 await，靠 JS 单线程的同步执行保证
+  // 「检查 + 写入」的原子性；此时若已有在途请求，直接复用它。
+  const recheck = inflightRequests.get(cacheKey);
+  if (recheck) {
+    const result = await recheck;
+    if (result) {
+      return { url: result.url, cache: "inflight" };
+    }
+  }
+
   // 构建核心转存处理链条
   const transferPromise = transferShareUrl(
     event,
@@ -1334,7 +1351,7 @@ export default defineEventHandler(async (event) => {
     id,
   );
 
-  // 将 Promise 送入全局互斥拦截器
+  // 将 Promise 送入全局互斥拦截器（与上面的 recheck 之间无 await）
   inflightRequests.set(cacheKey, transferPromise);
 
   try {

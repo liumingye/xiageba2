@@ -115,6 +115,20 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // 🔒 三级防御：写入前的二次检查（双检）
+  //
+  // 上面的 has() 与本处的 set() 之间隔着 findUnique、菜单行数判断等 await，
+  // 每个 await 都会让出事件循环，并发请求因此会「全部通过上面的检查」，
+  // 再依次各自上锁 —— 锁形同虚设，同一目录会被并发拉取 N 次，瞬间榨干网盘连接池。
+  //
+  // 本检查到 set() 之间不存在 await（下方异步函数调用是同步返回 Promise），
+  // 靠 JS 单线程的同步执行保证「检查 + 写入」的原子性。
+  const recheck = treeInflightRequests.get(cacheKey);
+  if (recheck) {
+    const activeTree = await recheck;
+    return { tree: activeTree, success: true, cache: "inflight" };
+  }
+
   // 构建核心的文件树递归生成任务链
   const generateTreePromise = (async () => {
     const parsed = parseShareUrl(url);
