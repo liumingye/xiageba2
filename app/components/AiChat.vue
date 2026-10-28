@@ -443,7 +443,7 @@ onUnmounted(() => {
     </button>
   </div>
 
-  <div v-else class="flex flex-col h-[calc(100vh-var(--spacing)*33)]">
+  <div v-else class="flex flex-col h-[calc(100dvh-var(--spacing)*34)]">
     <!-- 顶栏：标题 + 新对话 -->
     <div
       class="flex items-center justify-between gap-2 px-4 py-2 border-b border-default shrink-0"
@@ -607,7 +607,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 输入区 -->
-    <div class="pb-2 shrink-0">
+    <div class="pb-1 shrink-0">
       <div class="max-w-3xl mx-auto">
         <UChatPrompt
           v-model="input"
@@ -629,5 +629,6 @@ onUnmounted(() => {
         </UChatPrompt>
       </div>
     </div>
+    <div class="text-xs text-dimmed text-center">内容由 AI 生成，请核实重要信息</div>
   </div>
 </template>
