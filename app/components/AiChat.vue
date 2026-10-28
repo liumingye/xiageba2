@@ -3,6 +3,7 @@ import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
 import { Sparkles, ExternalLink } from "@lucide/vue";
 import { safeMarkdownPlugins } from "~/utils/comark-safe";
 import { captchaFetch } from "~/utils/captchaFetch";
+import { getPanTypeLabel } from "~/utils/pan";
 
 // ---------- 数据结构（与 Nuxt UI UChatMessages 期望的 UIMessage 形状对齐） ----------
 interface TextPart {
@@ -41,14 +42,6 @@ const TOOL_LABELS: Record<string, string> = {
   search_music: "检索音乐库",
   search_sources: "检索网盘资源",
   search_web: "网页搜索",
-};
-const PAN_LABELS: Record<string, string> = {
-  quark: "夸克网盘",
-  baidu: "百度网盘",
-  xunlei: "迅雷云盘",
-  uc: "UC 网盘",
-  guangya: "光鸭云盘",
-  "139": "移动云盘",
 };
 
 const suggestions = [
@@ -115,7 +108,7 @@ const describeTool = (tool: {
   const keywords = (tool.keywords || []).filter(Boolean);
   const pan =
     tool.name === "search_sources" && tool.panType && tool.panType !== "all"
-      ? `平台：${PAN_LABELS[tool.panType] || tool.panType}`
+      ? `平台：${getPanTypeLabel(tool.panType || "")}`
       : "";
   const kw = keywords.length ? `关键词：${keywords.join("、")}` : "";
   return [pan, kw].filter(Boolean).join(" · ");

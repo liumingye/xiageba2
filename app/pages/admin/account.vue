@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { Loader2, KeyRound, UserCog } from "@lucide/vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
-import { getPanTypeLabel } from "~/utils/pan";
+import { getPanTypeLabel, PAN_TYPE_OPTIONS } from "~/utils/pan";
 
 useSeoMeta({
   title: "账号管理",
@@ -37,7 +36,7 @@ interface AccountFormData {
 }
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
+
 const toast = useToast();
 
 const accounts = ref<AccountListItem[]>([]);
@@ -386,14 +385,6 @@ const getBaiduOauthToken = async () => {
 };
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadAccounts();
 });
 
@@ -598,14 +589,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
             id="form-type"
             v-model="formData.type"
             value-key="value"
-            :items="[
-              { label: '夸克网盘', value: 'quark' },
-              { label: '百度网盘', value: 'baidu' },
-              { label: 'UC 网盘', value: 'uc' },
-              { label: '迅雷云盘', value: 'xunlei' },
-              { label: '光鸭云盘', value: 'guangya' },
-              { label: '中国移动云盘', value: 'c139' },
-            ]"
+            :items="PAN_TYPE_OPTIONS"
             :disabled="formIsEdit"
             class="w-full"
           />

@@ -164,16 +164,25 @@ const timeOptions = [
   { value: "year", label: "一年内" },
 ];
 
+/**
+ * 搜索筛选用的网盘选项
+ *
+ * 注意：这是「搜索目标」的全集，比 utils/pan.ts 里那 6 种「可转存账号类型」
+ * 多了阿里、天翼、123、115 等 —— 它们能搜到资源但没有转存账号，值也不同
+ * （这里的 139 是搜索接口的取值，不是库里的 c139）。所以不要跟
+ * PAN_TYPE_OPTIONS 合并，合并会改变传给搜索接口的参数。
+ * 标签文案要跟那边保持一致，改的时候两边都看一眼。
+ */
 const panOptions = [
   { value: "all", label: "所有网盘" },
   { value: "quark", label: "夸克网盘" },
   { value: "baidu", label: "百度网盘" },
   { value: "xunlei", label: "迅雷云盘" },
   { value: "guangya", label: "光鸭云盘" },
+  { value: "139", label: "移动网盘" },
   { value: "uc", label: "UC网盘" },
   { value: "ali", label: "阿里网盘" },
   { value: "189", label: "天翼网盘" },
-  { value: "139", label: "移动网盘" },
   { value: "123", label: "123网盘" },
   { value: "115", label: "115网盘" },
 ];
