@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import {
   FileText,
   HardDrive,
@@ -44,7 +44,7 @@ interface StorageFile {
 }
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
+
 const toast = useToast();
 
 const configs = ref<StorageConfig[]>([]);
@@ -168,7 +168,7 @@ const handleUpload = async () => {
     await loadFiles();
   } catch (err: any) {
     toast.add({
-      title: err?.response?.data?.message || "上传失败，请重试",
+      title: getApiErrorMessage(err, "上传失败，请重试"),
       icon: "i-lucide-x",
       color: "error",
     });
@@ -195,7 +195,7 @@ const handleDelete = async (file: StorageFile) => {
     await loadFiles();
   } catch (err: any) {
     toast.add({
-      title: err?.response?.data?.message || "删除失败，请重试",
+      title: getApiErrorMessage(err, "删除失败，请重试"),
       icon: "i-lucide-x",
       color: "error",
     });
@@ -268,7 +268,7 @@ const confirmRename = async () => {
     await loadFiles();
   } catch (err: any) {
     toast.add({
-      title: err?.response?.data?.message || "重命名失败，请重试",
+      title: getApiErrorMessage(err, "重命名失败，请重试"),
       icon: "i-lucide-x",
       color: "error",
     });
@@ -283,14 +283,6 @@ watch(selectedConfigId, () => {
 });
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadConfigs();
   await loadFiles();
 });

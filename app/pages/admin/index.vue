@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { Search, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
@@ -20,7 +20,7 @@ type TableData = Pick<
 const config = useRuntimeConfig();
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, logout, checkLogin, initialized } = useAuth();
+
 const toast = useToast();
 
 const musics = ref<TableData[]>([]);
@@ -61,19 +61,6 @@ const columns: TableColumn<TableData>[] = [
 ];
 
 onMounted(async () => {
-  // 等待状态初始化
-  if (!initialized.value) {
-    checkLogin();
-  }
-
-  // 延迟检查登录状态，确保 localStorage 已读取
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
-
   // 从 URL 读取分页参数
   const page = parseInt(route.query.page as string);
   if (page && page > 0) {
@@ -207,7 +194,7 @@ const batchUpdateStatus = async (status: number) => {
     await loadMusic();
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "批量操作失败",
+      title: getApiErrorMessage(e, "批量操作失败"),
       color: "error",
     });
   } finally {
@@ -236,7 +223,7 @@ const batchDelete = async () => {
     await loadMusic();
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "批量删除失败",
+      title: getApiErrorMessage(e, "批量删除失败"),
       color: "error",
     });
   } finally {

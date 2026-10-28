@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import type { TableColumn } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -51,7 +51,6 @@ const columns: TableColumn<ApiItem>[] = [
 
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const apis = ref<ApiItem[]>([]);
 const currentPage = ref(1);
@@ -125,12 +124,6 @@ const loadApis = async () => {
 };
 
 onMounted(async () => {
-  if (!initialized.value) checkLogin();
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   currentPage.value = Math.max(1, parseInt(route.query.page as string) || 1);
   keyword.value = (route.query.q as string) || "";
   await loadApis();
@@ -218,8 +211,7 @@ const saveApi = async () => {
     showModal.value = false;
     await loadApis();
   } catch (e: any) {
-    const data = e?.response?.data;
-    error.value = data?.message || "保存失败";
+    error.value = getApiErrorMessage(e, "保存失败");
   }
 };
 

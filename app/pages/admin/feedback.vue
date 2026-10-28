@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
@@ -13,7 +14,7 @@ useSeoMeta({
 
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, username, checkLogin, initialized } = useAuth();
+const { username } = useAuth();
 
 const feedbacks = ref<any[]>([]);
 const currentPage = ref(1);
@@ -24,15 +25,6 @@ const isLoading = ref(false);
 const statusFilter = ref<"" | "PENDING" | "DONE">("");
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
-
   // 从 URL 读取分页参数
   const page = parseInt(route.query.page as string);
   if (page && page > 0) {
@@ -112,8 +104,7 @@ const checkLinks = async (musicId: string) => {
     checkResults.value[musicId] = data;
   } catch (e: any) {
     if (e?.response?.status === 401) return;
-    const err = e?.response?.data;
-    alert(err?.message || "检测失败");
+    alert(getApiErrorMessage(e, "检测失败"));
   } finally {
     checkingId.value = null;
   }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, watch } from "vue";
 import { Loader2, Folder, Check, FolderOpen } from "@lucide/vue";
 import { get } from "~/utils/request";
@@ -50,7 +51,7 @@ const loadDirs = async () => {
       errorMsg.value = "根目录下没有文件夹";
     }
   } catch (e: any) {
-    errorMsg.value = e?.response?.data?.message || "获取目录列表失败";
+    errorMsg.value = getApiErrorMessage(e, "获取目录列表失败");
   } finally {
     loading.value = false;
   }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { Link } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 
@@ -12,7 +12,6 @@ useSeoMeta({
 const toast = useToast();
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const loading = ref(true);
 
@@ -64,7 +63,7 @@ const checkPancheckHealth = async () => {
     }
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "健康检测失败",
+      title: getApiErrorMessage(e, "健康检测失败"),
       icon: "i-lucide-x",
       color: "error",
     });
@@ -76,14 +75,6 @@ const checkPancheckHealth = async () => {
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadPancheckConfig();
   loading.value = false;
 });

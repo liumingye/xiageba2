@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, watch, reactive, computed } from "vue";
 import {
   Search,
@@ -127,7 +128,7 @@ const handleSearch = async () => {
       errorMsg.value = "未找到相关歌曲，请尝试其他关键词";
     }
   } catch (e: any) {
-    errorMsg.value = e?.response?.data?.message || "网络错误，请检查网络连接";
+    errorMsg.value = getApiErrorMessage(e, "网络错误，请检查网络连接");
   } finally {
     isSearching.value = false;
   }
@@ -147,7 +148,7 @@ const selectItem = async (item: SearchItem) => {
     scrapeResult.value = data.result;
     selectDiffFields();
   } catch (e: any) {
-    errorMsg.value = e?.response?.data?.message || "网络错误，请检查网络连接";
+    errorMsg.value = getApiErrorMessage(e, "网络错误，请检查网络连接");
   } finally {
     isLoadingDetail.value = false;
   }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { MessageSquare } from "@lucide/vue";
 import { useClipboard } from "@vueuse/core";
 import { get, post } from "~/utils/request";
@@ -14,7 +14,6 @@ const toast = useToast();
 const { copy: copyToClipboard } = useClipboard();
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const loading = ref(true);
 
@@ -75,7 +74,7 @@ const saveWechatConfig = async () => {
     }, 2000);
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "保存失败",
+      title: getApiErrorMessage(e, "保存失败"),
       icon: "i-lucide-x",
       color: "error",
     });
@@ -126,7 +125,7 @@ const uploadWechatVerifyFile = async () => {
     }
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "上传失败",
+      title: getApiErrorMessage(e, "上传失败"),
       icon: "i-lucide-x",
       color: "error",
     });
@@ -155,14 +154,6 @@ const copyText = async (text: string, label?: string) => {
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadWechatConfig();
   // 构造回调地址域名（仅用于显示复制）
   if (typeof window !== "undefined") {

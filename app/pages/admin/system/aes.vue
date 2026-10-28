@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { Key, ShieldCheck } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 import { loadScriptOnce } from "~/utils/loadScript";
@@ -11,7 +11,6 @@ useSeoMeta({
 });
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const loading = ref(true);
 
@@ -109,8 +108,10 @@ const saveBotDefense = async () => {
       savedBot.value = false;
     }, 2000);
   } catch (e: any) {
-    botSaveError.value =
-      e?.response?.data?.message || e?.message || "保存失败，请检查配置";
+    botSaveError.value = getApiErrorMessage(
+      e,
+      e?.message || "保存失败，请检查配置",
+    );
   } finally {
     savingBot.value = false;
   }
@@ -192,14 +193,6 @@ watch(
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await Promise.all([loadAesConfig(), loadBotDefense()]);
   loading.value = false;
   renderPreview();

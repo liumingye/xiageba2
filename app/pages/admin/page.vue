@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { FileText, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -17,7 +17,6 @@ import {
 useSeoMeta({ title: "页面管理" });
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const pages = ref<AdminPage[]>([]);
 const currentPage = ref(1);
@@ -124,12 +123,6 @@ const loadPages = async () => {
 };
 
 onMounted(async () => {
-  if (!initialized.value) checkLogin();
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadPages();
 });
 
@@ -200,8 +193,7 @@ const addPage = async () => {
     await loadPages();
     closeAddModal();
   } catch (e: any) {
-    const err = e?.response?.data;
-    error.value = err?.message || "添加失败";
+    error.value = getApiErrorMessage(e, "添加失败");
   } finally {
     submitting.value = false;
   }
@@ -227,8 +219,7 @@ const saveEdit = async () => {
     await loadPages();
     closeEditModal();
   } catch (e: any) {
-    const err = e?.response?.data;
-    error.value = err?.message || "保存失败";
+    error.value = getApiErrorMessage(e, "保存失败");
   } finally {
     submitting.value = false;
   }
@@ -254,8 +245,7 @@ const deletePage = async (item: AdminPage) => {
     await del(`/api/admin/page/${item.id}`);
     await loadPages();
   } catch (e: any) {
-    const err = e?.response?.data;
-    alert(err?.message || "删除失败");
+    alert(getApiErrorMessage(e, "删除失败"));
   }
 };
 </script>

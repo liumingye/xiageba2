@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { getApiErrorMessage } from "~/utils/apiError";
+import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { ImageIcon } from "@lucide/vue";
 import ScrapeModal from "~/components/admin/ScrapeModal.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
@@ -25,7 +25,6 @@ useSeoMeta({
 });
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const form = ref({
   title: "",
@@ -53,18 +52,6 @@ watch(
     coverImgError.value = false;
   },
 );
-
-onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-  }
-});
 
 const goBack = () => {
   router.push("/admin");
@@ -112,7 +99,7 @@ const handleSubmit = async () => {
     });
     router.push("/admin");
   } catch (err: any) {
-    error.value = err?.response?.data?.message || "保存失败";
+    error.value = getApiErrorMessage(err, "保存失败");
   } finally {
     addMusicing.value = false;
   }

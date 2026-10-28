@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { HardDrive } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
 import { get, post, put, del } from "~/utils/request";
@@ -43,7 +43,6 @@ const columns: TableColumn<S3Config>[] = [
 ];
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const configs = ref<S3Config[]>([]);
 const showModal = ref(false);
@@ -70,14 +69,6 @@ const loadConfigs = async () => {
 };
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadConfigs();
 });
 
@@ -148,7 +139,7 @@ const saveConfig = async () => {
     showModal.value = false;
     await loadConfigs();
   } catch (err: any) {
-    error.value = err?.response?.data?.message || "保存失败";
+    error.value = getApiErrorMessage(err, "保存失败");
   } finally {
     saving.value = false;
   }

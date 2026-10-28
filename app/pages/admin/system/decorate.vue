@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { Loader2, Globe, Palette, Smartphone } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 import {
@@ -20,7 +20,6 @@ import {
 useSeoMeta({ title: "页面装修" });
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 /** 站点 SEO 配置（与 /api/admin/config/site-seo 字段一致） */
 interface SiteSeoConfig {
@@ -72,20 +71,13 @@ const loadConfig = async () => {
     siteSeo.value = { ...emptySiteSeo(), ...(seoRes?.data || {}) };
     appConfig.value = { ...emptyAppConfig(), ...(appRes?.data || {}) };
   } catch (e: any) {
-    const err = e?.response?.data;
-    error.value = err?.message || "配置加载失败";
+    error.value = getApiErrorMessage(e, "配置加载失败");
   } finally {
     loading.value = false;
   }
 };
 
 onMounted(async () => {
-  if (!initialized.value) checkLogin();
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadConfig();
 });
 
@@ -103,8 +95,7 @@ const save = async () => {
       saved.value = false;
     }, 2000);
   } catch (e: any) {
-    const err = e?.response?.data;
-    error.value = err?.message || "保存失败";
+    error.value = getApiErrorMessage(e, "保存失败");
   } finally {
     saving.value = false;
   }

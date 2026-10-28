@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { Megaphone, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -11,9 +11,6 @@ import type { Announcement } from "~/utils/announcement";
 useSeoMeta({
   title: "公告管理",
 });
-
-const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const announcements = ref<Announcement[]>([]);
 const currentPage = ref(1);
@@ -114,14 +111,6 @@ const loadAnnouncements = async () => {
 };
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadAnnouncements();
 });
 
@@ -177,8 +166,7 @@ const addAnnouncement = async () => {
     await loadAnnouncements();
     closeAddModal();
   } catch (e: any) {
-    const err = e?.response?.data;
-    error.value = err?.message || "添加失败";
+    error.value = getApiErrorMessage(e, "添加失败");
   }
 };
 
@@ -201,8 +189,7 @@ const saveEdit = async () => {
     await loadAnnouncements();
     closeEditModal();
   } catch (e: any) {
-    const err = e?.response?.data;
-    error.value = err?.message || "保存失败";
+    error.value = getApiErrorMessage(e, "保存失败");
   }
 };
 

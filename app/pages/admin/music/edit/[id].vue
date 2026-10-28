@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { ImageIcon } from "@lucide/vue";
 import ScrapeModal from "~/components/admin/ScrapeModal.vue";
 import FilePickerModal from "~/components/admin/FilePickerModal.vue";
@@ -26,7 +26,6 @@ useSeoMeta({
 
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const id = ref("");
 
@@ -58,17 +57,6 @@ watch(
 );
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
-
   id.value = route.params.id as string;
 
   if (id.value) {
@@ -138,7 +126,7 @@ const handleSubmit = async () => {
     });
     router.push("/admin");
   } catch (err: any) {
-    error.value = err?.response?.data?.message || "保存失败";
+    error.value = getApiErrorMessage(err, "保存失败");
   } finally {
     saveEditing.value = false;
   }

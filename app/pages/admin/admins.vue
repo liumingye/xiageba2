@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { User, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
@@ -30,7 +30,6 @@ const columns: TableColumn<Admin>[] = [
 
 const toast = useToast();
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const admins = ref<Admin[]>([]);
 const showAddModal = ref(false);
@@ -52,16 +51,6 @@ const loadAdmins = async () => {
 };
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadAdmins();
 });
 
@@ -102,7 +91,7 @@ const addAdmin = async () => {
     await loadAdmins();
     closeAddModal();
   } catch (e: any) {
-    error.value = e.response?.data?.message || "添加失败";
+    error.value = getApiErrorMessage(e, "添加失败");
   }
 };
 
@@ -128,7 +117,7 @@ const editAdmin = async () => {
     await loadAdmins();
     closeEditModal();
   } catch (e: any) {
-    error.value = e.response?.data?.message || "更新失败";
+    error.value = getApiErrorMessage(e, "更新失败");
   }
 };
 
@@ -139,9 +128,11 @@ const deleteAdmin = async (id: string) => {
     await del("/api/admin", { data: { id } });
     await loadAdmins();
   } catch (e: any) {
-    if (e?.response?.data?.message) {
+    // 后端没给具体原因时保持静默（401 由请求拦截器统一处理）
+    const message = getApiErrorMessage(e, "");
+    if (message) {
       toast.add({
-        title: e.response.data.message,
+        title: message,
         icon: "i-lucide-x",
         color: "error",
         duration: 2000,

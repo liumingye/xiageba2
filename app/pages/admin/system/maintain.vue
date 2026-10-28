@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { getApiErrorMessage } from "~/utils/apiError";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useIntervalFn } from "@vueuse/core";
-import { useAuth } from "~/composables/useAuth";
 import { get, post } from "~/utils/request";
 
 useSeoMeta({
@@ -10,7 +10,6 @@ useSeoMeta({
 });
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const isRebuilding = ref(false);
 const rebuildMsg = ref("");
@@ -83,7 +82,7 @@ const clearISRCache = async () => {
     const data = await post("/api/admin/cache/clear");
     clearMsg.value = `已清理全部缓存，共 ${data.total} 项`;
   } catch (err: any) {
-    clearMsg.value = err?.response?.data?.message || "请求失败";
+    clearMsg.value = getApiErrorMessage(err, "请求失败");
   } finally {
     isClearing.value = false;
   }
@@ -91,15 +90,6 @@ const clearISRCache = async () => {
 
 // ============ 生命周期 ============
 
-onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-  }
-});
 </script>
 
 <template>

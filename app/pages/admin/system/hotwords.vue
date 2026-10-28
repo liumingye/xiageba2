@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { TrendingUp } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 
@@ -10,7 +9,6 @@ useSeoMeta({
 });
 
 const router = useRouter();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
 
 const loading = ref(true);
 
@@ -27,14 +25,6 @@ const savedHotwords = ref(false);
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
   await loadHotwordsConfig();
   loading.value = false;
 });

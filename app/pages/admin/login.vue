@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "~/composables/useAuth";
@@ -117,12 +118,7 @@ const handleSubmit = async (
         : "/admin";
     router.push(SAFE_REDIRECT);
   } catch (e: any) {
-    if (e.response) {
-      error.value =
-        e.response.data.message || e.response.data.error || "登录失败";
-    } else {
-      error.value = "网络错误";
-    }
+    error.value = e?.response ? getApiErrorMessage(e, "登录失败") : "网络错误";
   } finally {
     loading.value = false;
   }
