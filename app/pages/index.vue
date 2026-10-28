@@ -9,6 +9,7 @@ import {
 } from "@lucide/vue";
 import SearchBarBig from "~/components/SearchBarBig.vue";
 import { useMounted, useResizeObserver } from "@vueuse/core";
+import { useDoubanList, type DoubanItem } from "~/composables/useDoubanList";
 
 defineOptions({
   name: "IndexPage",
@@ -142,119 +143,21 @@ const handleHotwordClick = (hotword: HotWord) => {
   });
 };
 
-interface DoubanFilterOption {
-  name: string;
-  value: string;
-}
-
-interface DoubanFilter {
-  key: string;
-  name: string;
-  init: string;
-  value: DoubanFilterOption[];
-}
-
-interface DoubanClass {
-  type_id: string;
-  type_name: string;
-}
-
-interface DoubanItem {
-  vod_id: string;
-  vod_name: string;
-  vod_pic: string;
-  vod_subtitle: string;
-  vod_douban_score: number;
-}
-
-interface DoubanHomeData {
-  class: DoubanClass[];
-  filters: Record<string, DoubanFilter[]>;
-}
-
-interface DoubanListData {
-  list: DoubanItem[];
-  page: number;
-  pagecount: number;
-}
-
-const doubanClasses = ref<DoubanClass[]>([]);
-const doubanFilters = ref<Record<string, DoubanFilter[]>>({});
-const activeCategoryId = ref("tv");
-const activeFilters = ref<Record<string, string>>({});
-const doubanList = ref<DoubanItem[]>([]);
-const doubanLoading = ref(false);
-const doubanPage = ref(1);
-const doubanPageCount = ref(0);
-
-const currentFilters = computed(() => {
-  return doubanFilters.value[activeCategoryId.value] || [];
-});
-
-let cancelToken: AbortController | null = null;
-let signal: AbortSignal | null = null;
-
-const fetchDoubanList = async (page: number = 1, append: boolean = false) => {
-  if (doubanLoading.value) {
-    cancelToken?.abort();
-    cancelToken = null;
-    signal = null;
-  }
-  doubanLoading.value = true;
-  try {
-    cancelToken = new AbortController();
-    signal = cancelToken.signal;
-    const data = await $fetch<DoubanListData>("/api/home/douban", {
-      query: {
-        categoryId: activeCategoryId.value,
-        page,
-        filters: JSON.stringify(activeFilters.value),
-      },
-      signal,
-    });
-    if (append) {
-      doubanList.value.push(...(data.list || []));
-    } else {
-      doubanList.value = data.list || [];
-    }
-    doubanPage.value = data.page || page;
-    doubanPageCount.value = data.pagecount || 0;
-  } catch {
-    if (!append) {
-      doubanList.value = [];
-    }
-  } finally {
-    doubanLoading.value = false;
-  }
-};
-
-const loadMoreDouban = () => {
-  if (doubanLoading.value) return;
-  if (doubanPage.value >= doubanPageCount.value) return;
-  fetchDoubanList(++doubanPage.value, true);
-};
-
-const resetActiveFilters = () => {
-  const filters: Record<string, string> = {};
-  for (const filter of currentFilters.value) {
-    filters[filter.key] = filter.init;
-  }
-  activeFilters.value = filters;
-};
-
-const onCategoryChange = (categoryId: string) => {
-  activeCategoryId.value = categoryId;
-  resetActiveFilters();
-  doubanPage.value = 1;
-  doubanPageCount.value = 0;
-  fetchDoubanList(1, false);
-};
-
-const onFilterChange = () => {
-  doubanPage.value = 1;
-  doubanPageCount.value = 0;
-  fetchDoubanList(1, false);
-};
+const {
+  doubanClasses,
+  doubanFilters,
+  activeCategoryId,
+  activeFilters,
+  currentFilters,
+  doubanList,
+  doubanLoading,
+  doubanPage,
+  doubanPageCount,
+  loadMoreDouban,
+  onCategoryChange,
+  onFilterChange,
+  loadInitial: loadDoubanInitial,
+} = useDoubanList();
 
 const goToResourceSearch = async (item: DoubanItem) => {
   musicStore.searchType = "resource";
@@ -291,53 +194,7 @@ const onDragMouseUpOrLeave = () => {
   dragState.value.el = null;
 };
 
-const { data: doubanInitial } = await useAsyncData(
-  "douban-home",
-  async () => {
-    try {
-      const homeData = await $fetch<DoubanHomeData>("/api/home/douban");
-      const categoryId = activeCategoryId.value;
-      const filters: Record<string, string> = {};
-      const categoryFilters = (homeData.filters || {})[categoryId] || [];
-      for (const filter of categoryFilters) {
-        filters[filter.key] = filter.init;
-      }
-      const listData = await $fetch<DoubanListData>("/api/home/douban", {
-        query: {
-          categoryId,
-          page: 1,
-          filters: JSON.stringify(filters),
-        },
-      });
-      return {
-        class: homeData.class || [],
-        filters: homeData.filters || {},
-        list: listData.list || [],
-        page: listData.page || 1,
-        pagecount: listData.pagecount || 0,
-      };
-    } catch {
-      return { class: [], filters: {}, list: [], page: 1, pagecount: 0 };
-    }
-  },
-  {
-    server: true,
-    default: () => ({
-      class: [],
-      filters: {},
-      list: [],
-      page: 1,
-      pagecount: 0,
-    }),
-  },
-);
-
-doubanClasses.value = doubanInitial.value?.class || [];
-doubanFilters.value = doubanInitial.value?.filters || {};
-doubanList.value = doubanInitial.value?.list || [];
-doubanPage.value = doubanInitial.value?.page || 1;
-doubanPageCount.value = doubanInitial.value?.pagecount || 0;
-resetActiveFilters();
+await loadDoubanInitial();
 
 const getPic = (url: string) => {
   // 接口返回的图片地址可能为空或非标准 URL，直接 new URL() 会抛 TypeError 导致渲染崩溃
