@@ -1,5 +1,4 @@
 import { prisma } from "#server/lib/prisma";
-import { getConfigValue } from "#server/lib/configCache";
 import { decryptUrl } from "#server/lib/crypto";
 import {
   parseShareParam,
@@ -16,17 +15,9 @@ import {
   type ISaveTaskStateResult,
 } from "@netdisk-sdk/quarkUC-sdk";
 import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import {
-  GuangyaClient,
-  parseGuangyaShareURL,
-  isGuangyaURL,
-} from "@netdisk-sdk/guangya-sdk";
+import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
 import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
-import {
-  C139Client,
-  parseC139ShareURL,
-  isC139URL,
-} from "@netdisk-sdk/c139-sdk";
+import { C139Client } from "@netdisk-sdk/c139-sdk";
 import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
@@ -39,46 +30,14 @@ import {
   incrementTodayGeturlCount,
 } from "#server/lib/geturl-record";
 import type { H3Event } from "h3";
-import { automaton_ad_filter } from "#server/lib/simpleAC";
+import {
+  ALLOWED_HOSTS,
+  parseShareUrl,
+  normalizeShareUrl,
+} from "#server/lib/pan/share-url";
+import type { PanFile, PanType, TransferResult } from "#server/lib/pan/types";
+import { scheduleAdCleanup } from "#server/lib/pan/ad-filter";
 import { assertBotDefense } from "#server/utils/bot-defense";
-
-type NetdiskType =
-  | "quark"
-  | "uc"
-  | "baidu"
-  | "xunlei"
-  | "guangya"
-  | "c139"
-  | "unknown";
-
-interface AdFilterConfig {
-  enabled: boolean;
-  keywords: string;
-}
-
-const DEFAULT_AD_FILTER: AdFilterConfig = {
-  enabled: false,
-  keywords: "",
-};
-
-async function getAdFilterConfig(): Promise<AdFilterConfig> {
-  const value = await getConfigValue("ad_filter");
-  if (!value) return { ...DEFAULT_AD_FILTER };
-  try {
-    const parsed = JSON.parse(value);
-    return { ...DEFAULT_AD_FILTER, ...parsed };
-  } catch {
-    return { ...DEFAULT_AD_FILTER };
-  }
-}
-
-type PanSDKType = "quarkUC" | "xunlei" | "baidu" | "guangya";
-
-interface PanFile {
-  id: string;
-  name: string;
-  isDir: boolean;
-}
 
 const disableSource = async (sourceId: string) => {
   await prisma.source.update({
@@ -226,136 +185,6 @@ async function listFilesGuangya(
   }));
 }
 
-async function findAdFilesRecursive(
-  fsApi: any,
-  parentId: string,
-  maxDepth: number,
-  currentDepth: number,
-  sdkType: PanSDKType,
-): Promise<string[]> {
-  if (!automaton_ad_filter) return [];
-
-  const result: string[] = [];
-
-  let listFn: (
-    fsApi: any,
-    parentId: string,
-    isTop: boolean,
-  ) => Promise<PanFile[]>;
-  if (sdkType === "quarkUC") {
-    listFn = listFilesQuarkUC;
-  } else if (sdkType === "xunlei") {
-    listFn = listFilesXunlei;
-  } else if (sdkType === "guangya") {
-    listFn = listFilesGuangya;
-  } else {
-    listFn = listFilesBaidu;
-  }
-
-  const files = await listFn(fsApi, parentId, false);
-
-  for (const file of files) {
-    const fileNameLower = file.name.toLowerCase();
-    const isAd = automaton_ad_filter.hasMatch(fileNameLower);
-
-    if (isAd) {
-      result.push(file.id);
-      continue;
-    }
-
-    if (file.isDir && currentDepth < maxDepth) {
-      const childAdFiles = await findAdFilesRecursive(
-        fsApi,
-        file.id,
-        maxDepth,
-        currentDepth + 1,
-        sdkType,
-      );
-      result.push(...childAdFiles);
-    }
-  }
-
-  return result;
-}
-
-async function deleteAdFiles(
-  fsApi: any,
-  topFids: string[],
-  sdkType: PanSDKType,
-): Promise<void> {
-  if (!automaton_ad_filter) return;
-
-  const adFids: string[] = [];
-
-  let listFn: (
-    fsApi: any,
-    parentId: string,
-    isTop: boolean,
-  ) => Promise<PanFile[]>;
-  if (sdkType === "quarkUC") {
-    listFn = listFilesQuarkUC;
-  } else if (sdkType === "xunlei") {
-    listFn = listFilesXunlei;
-  } else if (sdkType === "guangya") {
-    listFn = listFilesGuangya;
-  } else {
-    listFn = listFilesBaidu;
-  }
-
-  for (const fid of topFids) {
-    try {
-      const files = await listFn(fsApi, fid, true);
-
-      for (const file of files) {
-        const fileNameLower = file.name.toLowerCase();
-        const isAd = automaton_ad_filter.hasMatch(fileNameLower);
-
-        if (isAd) {
-          adFids.push(file.id);
-          continue;
-        }
-
-        if (file.isDir) {
-          const childAdFiles = await findAdFilesRecursive(
-            fsApi,
-            file.id,
-            2,
-            1,
-            sdkType,
-          );
-          adFids.push(...childAdFiles);
-        }
-      }
-    } catch (e) {
-      console.error("检查广告文件失败", fid, e);
-    }
-  }
-
-  if (adFids.length > 0) {
-    try {
-      if (sdkType === "baidu") {
-        await fsApi.filemanager("delete", {
-          async: 2,
-          ondup: "fail",
-          filelist: adFids,
-        });
-      } else {
-        await fsApi.delete(adFids);
-      }
-      console.log(`已删除 ${adFids.length} 个广告文件/目录 (${sdkType})`);
-    } catch (e) {
-      console.error("删除广告文件失败", e);
-    }
-  }
-}
-
-interface ParsedShare {
-  type: NetdiskType;
-  fid: string;
-  passcode: string;
-  url: string;
-}
-
 interface TransferShareUrlResult {
   url: string;
   transferred: boolean;
@@ -364,87 +193,6 @@ interface TransferShareUrlResult {
 
 // 🔒 内存进程锁（单实例高效防并发击穿）
 const inflightRequests = new Map<string, Promise<TransferShareUrlResult>>();
-
-// 提取白名单为全局 Set，O(1) 复杂度高性能判断
-const ALLOWED_HOSTS = new Set([
-  "pan.quark.cn",
-  "pan.baidu.com",
-  "drive.uc.cn",
-  "fast.uc.cn",
-  "pan.xunlei.com",
-  "www.guangyapan.com",
-  "guangyapan.com",
-  "yun.139.com",
-  "caiyun.139.com",
-]);
-
-/**
- * 解析分享链接，识别网盘类型并提取 fid 和提取码
- */
-export function parseShareUrl(url: string): ParsedShare {
-  const extractPwd = (u: string) => {
-    const m = u.match(
-      /(?:密|提取|访问|訪問|key=|pwd=|password=|code=|passcode=|:|：|[码碼])\s*([a-zA-Z0-9]{4})/i,
-    ); // 严格限制提取码字符集，防正则穿透
-    return m && m[1] ? m[1] : "";
-  };
-
-  // 夸克: https://pan.quark.cn/s/xxxx?pwd=yyyy
-  let match = url.match(/pan\.quark\.cn\/s\/([a-zA-Z0-9-_]+)/i);
-  if (match && match[1])
-    return { type: "quark", fid: match[1], passcode: extractPwd(url), url };
-
-  // UC: https://drive.uc.cn/s/xxxx?pwd=yyyy
-  match = url.match(/(?:drive|fast)\.uc\.cn\/s\/([a-zA-Z0-9-_]+)/i);
-  if (match && match[1])
-    return { type: "uc", fid: match[1], passcode: extractPwd(url), url };
-
-  // 百度: https://pan.baidu.com/s/xxxx?pwd=yyyy
-  match = url.match(/pan\.baidu\.com\/s\/([a-zA-Z0-9-_]+)/i);
-  if (match && match[1])
-    return { type: "baidu", fid: match[1], passcode: extractPwd(url), url };
-
-  // 百度: 	https://pan.baidu.com/share/init?surl=xxxx?pwd=yyyy
-  match = url.match(/pan\.baidu\.com\/share\/init\?surl=([a-zA-Z0-9-_]+)/i);
-  if (match && match[1])
-    return {
-      type: "baidu",
-      fid: "1" + match[1],
-      passcode: extractPwd(url),
-      url,
-    };
-
-  // 迅雷: https://pan.xunlei.com/s/xxxx?pwd=yyyy
-  match = url.match(/pan\.xunlei\.com\/s\/([a-zA-Z0-9-_]+)/i);
-  if (match && match[1])
-    return { type: "xunlei", fid: match[1], passcode: extractPwd(url), url };
-
-  // 光鸭: https://www.guangyapan.com/s/xxxx?code=yyyy 等多种格式
-  if (isGuangyaURL(url)) {
-    const parsed = parseGuangyaShareURL(url);
-    if (parsed.shareId)
-      return {
-        type: "guangya",
-        fid: parsed.shareId,
-        passcode: parsed.passcode,
-        url,
-      };
-  }
-
-  // 中国移动云盘: 	https://yun.139.com/shareweb/#/w/i/2ygBjP7ptdnpr&agyn
-  if (isC139URL(url)) {
-    const parsed = parseC139ShareURL(url);
-    if (parsed.linkId)
-      return {
-        type: "c139",
-        fid: parsed.linkId,
-        passcode: parsed.passcode,
-        url,
-      };
-  }
-
-  return { type: "unknown", fid: "", passcode: "", url };
-}
 
 /**
  * 夸克/UC网盘转存：获取分享token → 获取文件列表 → 转存到临时目录 → 创建新分享
@@ -535,14 +283,12 @@ async function transferQuarkUC(
   }
 
   // 步骤5: 异步删除广告文件（后台执行，不阻塞分享创建）
-  const adFilterConfig = await getAdFilterConfig();
-  if (adFilterConfig.enabled && saveAsTopFids.length > 0) {
-    event.waitUntil(
-      deleteAdFiles(client.fsApi, saveAsTopFids, "quarkUC").catch((e) =>
-        console.error("异步删除广告文件失败", e),
-      ),
-    );
-  }
+  await scheduleAdCleanup(event, {
+    topFids: saveAsTopFids,
+    listChildren: (parentId, isTop) =>
+      listFilesQuarkUC(client.fsApi, parentId, isTop),
+    remove: (ids) => client.fsApi.delete(ids),
+  });
 
   // 步骤6: 等待分享完成
   let share_task_data: ISaveTaskStateResult | null = null;
@@ -738,14 +484,17 @@ async function transferBaidu(
   }
 
   // 异步删除广告文件（后台执行，不阻塞分享创建）
-  const adFilterConfig = await getAdFilterConfig();
-  if (adFilterConfig.enabled && fids.length > 0) {
-    event.waitUntil(
-      deleteAdFiles(client.fsOpenApi, fids, "baidu").catch((e) =>
-        console.error("异步删除广告文件失败", e),
-      ),
-    );
-  }
+  await scheduleAdCleanup(event, {
+    topFids: fids,
+    listChildren: (parentId, isTop) =>
+      listFilesBaidu(client.fsOpenApi, parentId, isTop),
+    remove: (ids) =>
+      client.fsOpenApi.filemanager("delete", {
+        async: 2,
+        ondup: "fail",
+        filelist: ids,
+      }),
+  });
 
   let shareUrl = shareResult.link;
   if (pwd) {
@@ -827,14 +576,12 @@ async function transferXunlei(
   }
 
   // 异步删除广告文件（后台执行，不阻塞分享创建）
-  const adFilterConfig = await getAdFilterConfig();
-  if (adFilterConfig.enabled && fileIds.length > 0) {
-    event.waitUntil(
-      deleteAdFiles(client.fsApi, fileIds, "xunlei").catch((e) =>
-        console.error("异步删除广告文件失败", e),
-      ),
-    );
-  }
+  await scheduleAdCleanup(event, {
+    topFids: fileIds,
+    listChildren: (parentId, isTop) =>
+      listFilesXunlei(client.fsApi, parentId, isTop),
+    remove: (ids) => client.fsApi.delete(ids),
+  });
 
   const shareResult = await client.shareApi.createShare({
     fileIds,
@@ -1016,14 +763,12 @@ async function transferGuangya(
   const newFids = newFiles.map((f) => f.fid);
 
   // 异步删除广告文件（后台执行，不阻塞分享创建）
-  const adFilterConfig = await getAdFilterConfig();
-  if (adFilterConfig.enabled && newFids.length > 0) {
-    event.waitUntil(
-      deleteAdFiles(fsApi, newFids, "guangya").catch((e) =>
-        console.error("异步删除广告文件失败", e),
-      ),
-    );
-  }
+  await scheduleAdCleanup(event, {
+    topFids: newFids,
+    listChildren: (parentId, isTop) =>
+      listFilesGuangya(fsApi, parentId, isTop),
+    remove: (ids) => fsApi.delete(ids),
+  });
 
   // 步骤8: 创建新分享
   const title = shareFiles[0]?.fileName || "资源分享";
@@ -1132,12 +877,38 @@ async function transferC139(
   return { shareUrl, fids };
 }
 
-function normalizeURL(rawURL: string): string {
-  let normalized = rawURL.trim();
-  normalized = normalized.replace(/？/g, "?").replace(/＆/g, "&");
-  normalized = normalized.split(/\s+/).join("");
-  return normalized;
+interface TransferContext {
+  sourceUrl: string;
+  fid: string;
+  passcode: string;
+  sourceId?: string;
 }
+
+type TransferStrategy = (
+  event: H3Event<EventHandlerRequest>,
+  account: PanAccount,
+  ctx: TransferContext,
+) => Promise<TransferResult>;
+
+/**
+ * 网盘类型 → 转存实现。
+ * 各网盘的转存流程差异大（stoken / seckey / 快照 diff / 任务轮询），
+ * 因此保留各自实现，只把「按类型分派」收进这张表：新增网盘改表即可，编排层不动。
+ */
+const TRANSFER_STRATEGIES: Partial<Record<PanType, TransferStrategy>> = {
+  quark: (event, account, c) =>
+    transferQuarkUC(event, account, c.fid, c.passcode, c.sourceId),
+  uc: (event, account, c) =>
+    transferQuarkUC(event, account, c.fid, c.passcode, c.sourceId),
+  baidu: (event, account, c) =>
+    transferBaidu(event, account, c.sourceUrl, c.sourceId),
+  xunlei: (event, account, c) =>
+    transferXunlei(event, account, c.fid, c.passcode, c.sourceId),
+  guangya: (event, account, c) =>
+    transferGuangya(event, account, c.fid, c.passcode, c.sourceId),
+  c139: (event, account, c) =>
+    transferC139(event, account, c.fid, c.passcode, c.sourceId),
+};
 
 /**
  * 核心转存逻辑（可复用，供 wechat 等其他模块调用）
@@ -1146,7 +917,7 @@ function normalizeURL(rawURL: string): string {
 export async function transferShareUrl(
   event: H3Event<EventHandlerRequest>,
   sourceUrl: string,
-  type: NetdiskType,
+  type: PanType,
   fid: string,
   passcode: string,
   sourceId?: string,
@@ -1165,57 +936,26 @@ export async function transferShareUrl(
     return { url: sourceUrl, transferred: false };
   }
 
+  const strategy = TRANSFER_STRATEGIES[type];
+  if (!strategy) {
+    return { url: sourceUrl, transferred: false, error: "未实现的网盘类型" };
+  }
+
   // 随机选取一个该类型的启用账号
   const account = await getRandomAccountByType(type);
   if (!account) {
     return { url: sourceUrl, transferred: false, error: "无可用转存账号" };
   }
 
-  let shareUrl: string;
-  let _fid: string;
+  let data: TransferResult;
 
   try {
-    if (type === "quark" || type === "uc") {
-      const data = await transferQuarkUC(
-        event,
-        account,
-        fid,
-        passcode,
-        sourceId,
-      );
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else if (type === "baidu") {
-      const data = await transferBaidu(event, account, sourceUrl, sourceId);
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else if (type === "xunlei") {
-      const data = await transferXunlei(
-        event,
-        account,
-        fid,
-        passcode,
-        sourceId,
-      );
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else if (type === "guangya") {
-      const data = await transferGuangya(
-        event,
-        account,
-        fid,
-        passcode,
-        sourceId,
-      );
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else if (type === "c139") {
-      const data = await transferC139(event, account, fid, passcode, sourceId);
-      shareUrl = data.shareUrl;
-      _fid = JSON.stringify(data.fids);
-    } else {
-      return { url: sourceUrl, transferred: false, error: "未实现的网盘类型" };
-    }
+    data = await strategy(event, account, {
+      sourceUrl,
+      fid,
+      passcode,
+      sourceId,
+    });
   } catch (e: any) {
     // 失效计数
     if (e.statusCode === 404 && sourceId) {
@@ -1230,11 +970,13 @@ export async function transferShareUrl(
     throw createError({ statusCode: 500, message: e.message || "转存失败" });
   }
 
+  const shareUrl = data.shareUrl;
+
   // 异步落库
   event.waitUntil(
     prisma.sourceTemp
       .create({
-        data: { url: shareUrl, fid: _fid, accountId: account.id },
+        data: { url: shareUrl, fid: JSON.stringify(data.fids), accountId: account.id },
       })
       .catch((err) => console.error("落库失败", err)),
   );
@@ -1275,7 +1017,7 @@ export default defineEventHandler(async (event) => {
     const decryptedUrl = await decryptUrl(inputUrl);
     if (!decryptedUrl)
       throw createError({ statusCode: 400, message: "链接解密失败" });
-    sourceUrl = normalizeURL(decryptedUrl);
+    sourceUrl = normalizeShareUrl(decryptedUrl);
   }
 
   const cacheKey = id ? `source:id:${id}` : `source:url:${sourceUrl}`;
@@ -1311,7 +1053,7 @@ export default defineEventHandler(async (event) => {
     if (source.isSelf) {
       return { url: source.url };
     }
-    sourceUrl = normalizeURL(source.url);
+    sourceUrl = normalizeShareUrl(source.url);
   }
 
   if (!sourceUrl) throw createError({ statusCode: 400, message: "链接为空" });
