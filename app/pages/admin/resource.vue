@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useAuth } from "~/composables/useAuth";
 import { get, post, put, del } from "~/utils/request";
 import { purifyUrl } from "~/utils/purifyUrl";
 import { Loader2 } from "@lucide/vue";
 import type { ContextMenuItem, TableColumn, TableRow } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
+import ImportSourceModal from "~/components/admin/ImportSourceModal.vue";
+import BatchCategoryModal from "~/components/admin/BatchCategoryModal.vue";
+import {
+  FILTER_ALL,
+  NO_CATEGORY,
+  cidParam,
+  toApiCid,
+} from "~/utils/sourceCategory";
 
 useSeoMeta({
   title: "资源管理",
@@ -29,14 +37,8 @@ interface Category {
   name: string;
 }
 
-// USelect 不允许 value 为空字符串（空串用于清除选择显示 placeholder），
-// 用哨兵值代替“全部分类/无分类”，传给 API/URL 时再归一化为空
-const FILTER_ALL = "__all__";
-const NO_CATEGORY = "__none__";
-const cidParam = (value: string) =>
-  value && value !== FILTER_ALL ? value : "";
-const toApiCid = (value: string) =>
-  value && value !== NO_CATEGORY ? value : "";
+// 分类下拉的哨兵值与归一化逻辑统一放在 utils/sourceCategory
+// （导入弹窗、批量分类弹窗也要用，不能只留在这个页面里）
 
 const columns: TableColumn<Source>[] = [
   {
@@ -74,7 +76,7 @@ const columns: TableColumn<Source>[] = [
 
 const router = useRouter();
 const route = useRoute();
-const { isLoggedIn, checkLogin, initialized } = useAuth();
+
 const toast = useToast();
 const table = useTemplateRef("table");
 const columnVisibility = ref({
@@ -97,7 +99,6 @@ const selectedIds = computed(() =>
 );
 const batchOperating = ref(false);
 const showBatchCategoryModal = ref(false);
-const batchCid = ref<string>(NO_CATEGORY);
 
 const clearSelection = () => {
   rowSelection.value = {};
@@ -131,19 +132,6 @@ const menuAbortController = ref<AbortController | null>(null);
 const error = ref("");
 
 const showImportModal = ref(false);
-const importCid = ref<string>(NO_CATEGORY);
-const importHasHeader = ref(true);
-const importIsSelf = ref(false);
-const importStrategy = ref<"skip" | "update">("skip");
-const importFile = ref<File | null>(null);
-const importing = ref(false);
-const importResult = ref<{
-  total: number;
-  inserted: number;
-  updated: number;
-  duplicate: number;
-  failed: number;
-} | null>(null);
 
 const loadSources = async () => {
   let url = `/api/admin/source?page=${currentPage.value}&pageSize=20`;
@@ -172,15 +160,6 @@ const loadSources = async () => {
 };
 
 onMounted(async () => {
-  if (!initialized.value) {
-    checkLogin();
-  }
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  if (!isLoggedIn.value) {
-    router.push("/admin/login");
-    return;
-  }
-
   // 从 URL 读取分页/筛选参数
   const page = parseInt(route.query.page as string);
   if (page && page > 0) {
@@ -337,14 +316,13 @@ const addSource = async () => {
     await loadSources();
   } catch (e: any) {
     const status = e?.response?.status;
-    const err = e?.response?.data;
     if (status === 409) {
       // 地址重复，弹出选择窗口：更新 / 强制添加 / 跳过重复 / 取消
-      duplicateList.value = err?.data?.duplicates || [];
+      duplicateList.value = e?.response?.data?.data?.duplicates || [];
       showDuplicateModal.value = true;
       error.value = "";
     } else {
-      error.value = err?.message || "添加失败";
+      error.value = getApiErrorMessage(e, "添加失败");
     }
   } finally {
     addSourceing.value = false;
@@ -398,9 +376,8 @@ const resolveDuplicate = async (opts: {
       await loadSources();
     }
   } catch (e: any) {
-    const err = e?.response?.data;
     closeDuplicateModal();
-    error.value = err?.message || "操作失败";
+    error.value = getApiErrorMessage(e, "操作失败");
   } finally {
     duplicateSubmitting.value = false;
   }
@@ -437,8 +414,7 @@ const saveEdit = async () => {
     closeEditModal();
     await loadSources();
   } catch (e: any) {
-    const err = e?.response?.data;
-    error.value = err?.message || "保存失败";
+    error.value = getApiErrorMessage(e, "保存失败");
   } finally {
     saveEditing.value = false;
   }
@@ -491,7 +467,7 @@ const batchUpdateStatus = async (status: number) => {
     await loadSources();
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "批量操作失败",
+      title: getApiErrorMessage(e, "批量操作失败"),
       color: "error",
     });
   } finally {
@@ -501,11 +477,11 @@ const batchUpdateStatus = async (status: number) => {
 
 const openBatchCategoryModal = () => {
   if (!selectedIds.value.length) return;
-  batchCid.value = NO_CATEGORY;
   showBatchCategoryModal.value = true;
 };
 
-const batchSetCategory = async () => {
+/** 分类由弹窗组件给出（可能是 NO_CATEGORY 哨兵），这里归一化成接口参数 */
+const batchSetCategory = async (cid: string) => {
   const ids = selectedIds.value;
   if (!ids.length || batchOperating.value) return;
 
@@ -514,7 +490,7 @@ const batchSetCategory = async () => {
     const data = await post("/api/admin/source/batch", {
       action: "category",
       ids,
-      cid: toApiCid(batchCid.value),
+      cid: toApiCid(cid),
     });
     toast.add({
       title: `已更新 ${data.count} 项资源的分类`,
@@ -525,7 +501,7 @@ const batchSetCategory = async () => {
     await loadSources();
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "批量设置分类失败",
+      title: getApiErrorMessage(e, "批量设置分类失败"),
       color: "error",
     });
   } finally {
@@ -554,7 +530,7 @@ const batchDelete = async () => {
     await loadSources();
   } catch (e: any) {
     toast.add({
-      title: e?.response?.data?.message || "批量删除失败",
+      title: getApiErrorMessage(e, "批量删除失败"),
       color: "error",
     });
   } finally {
@@ -599,69 +575,6 @@ async function pasteAndPurifyEdit() {
 function purifyCurrentEdit() {
   editUrl.value = purifyUrl(editUrl.value);
 }
-
-const openImportModal = () => {
-  showImportModal.value = true;
-  importCid.value = NO_CATEGORY;
-  importHasHeader.value = true;
-  importIsSelf.value = false;
-  importStrategy.value = "skip";
-  importFile.value = null;
-  importResult.value = null;
-  error.value = "";
-};
-
-const closeImportModal = () => {
-  showImportModal.value = false;
-};
-
-const handleFileChange = (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  importFile.value = target.files?.[0] || null;
-  importResult.value = null;
-};
-
-const importSources = async () => {
-  if (!importFile.value) {
-    error.value = "请选择要导入的 Excel 文件";
-    return;
-  }
-
-  importing.value = true;
-  error.value = "";
-  importResult.value = null;
-
-  try {
-    const formData = new FormData();
-    formData.append("file", importFile.value);
-    formData.append("cid", toApiCid(importCid.value));
-    formData.append("hasHeader", String(importHasHeader.value));
-    formData.append("isSelf", String(importIsSelf.value));
-    formData.append("strategy", importStrategy.value);
-
-    const data = await post("/api/admin/source/import", formData);
-
-    if (data.success) {
-      importResult.value = data;
-      const part =
-        importStrategy.value === "update" && data.updated
-          ? `，更新 ${data.updated} 条`
-          : `，重复 ${data.duplicate} 条`;
-      toast.add({
-        title: `导入完成：成功 ${data.inserted} 条${part}，失败 ${data.failed} 条`,
-        icon: "i-lucide-check",
-        color: "success",
-      });
-      await loadSources();
-    } else {
-      error.value = data.message || "导入失败";
-    }
-  } catch (e: any) {
-    error.value = e?.response?.data?.message || "导入失败，请重试";
-  } finally {
-    importing.value = false;
-  }
-};
 
 const items = ref<ContextMenuItem[]>([]);
 
@@ -776,7 +689,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
         color="neutral"
         variant="soft"
         icon="i-lucide-file-up"
-        @click="openImportModal"
+        @click="showImportModal = true"
       >
         导入
       </UButton>
@@ -1388,164 +1301,17 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
     </template>
   </UModal>
 
-  <UModal
+  <ImportSourceModal
     v-model:open="showImportModal"
-    title="导入资源"
-    :dismissible="false"
-    @close="closeImportModal"
-    :ui="{
-      footer: 'justify-end',
-    }"
-  >
-    <template #body>
-      <UAlert
-        v-if="error"
-        color="error"
-        variant="soft"
-        :title="error"
-        class="mb-4"
-      />
-      <div class="space-y-4">
-        <div>
-          <label class="block text-color-400 text-sm mb-2" for="import-cid"
-            >资源分类</label
-          >
-          <USelect
-            id="import-cid"
-            v-model="importCid"
-            class="w-full"
-            :items="[
-              { label: '无分类', value: NO_CATEGORY },
-              ...categories.map((cat) => ({
-                label: cat.name,
-                value: cat.id.toString(),
-              })),
-            ]"
-          />
-        </div>
-        <div>
-          <label class="block text-color-400 text-sm mb-2" for="import-file"
-            >Excel 文件 *</label
-          >
-          <UInput
-            id="import-file"
-            type="file"
-            accept=".xlsx"
-            class="cursor-pointer w-full"
-            @change="handleFileChange"
-          />
-          <p class="mt-2 text-color-500 text-xs">
-            第一列为资源名称，第二列为资源地址，系统将自动去重后插入。
-          </p>
-        </div>
-        <UCheckbox
-          id="hasHeader"
-          v-model="importHasHeader"
-          label="第一行为表头，跳过不导入"
-        />
-        <UCheckbox
-          id="importIsSelf"
-          v-model="importIsSelf"
-          label="是自己的资源，搜索结果靠前"
-        />
-        <div>
-          <label class="block text-color-400 text-sm mb-2" for="import-strategy"
-            >重复资源处理</label
-          >
-          <USelect
-            id="import-strategy"
-            v-model="importStrategy"
-            class="w-full"
-            :items="[
-              { label: '跳过添加重复资源', value: 'skip' },
-              { label: '更新原有资源信息', value: 'update' },
-            ]"
-          />
-          <p class="mt-2 text-color-500 text-xs">
-            当 Excel
-            中的地址已存在时，选择“跳过”则忽略该条；选择“更新”则会覆盖原有资源的名称、分类与
-            isSelf 标记。
-          </p>
-        </div>
-        <UAlert
-          v-if="importResult"
-          color="success"
-          variant="soft"
-          icon="i-lucide-check"
-        >
-          <template #title>导入完成</template>
-          共解析 {{ importResult.total }} 条，成功导入
-          {{ importResult.inserted }} 条
-          <template v-if="importResult.updated">
-            ，更新 {{ importResult.updated }} 条
-          </template>
-          ，重复 {{ importResult.duplicate }} 条，失败
-          {{ importResult.failed }} 条。
-        </UAlert>
-      </div>
-    </template>
-    <template #footer>
-      <div class="flex gap-4">
-        <UButton color="neutral" variant="soft" @click="closeImportModal">
-          取消
-        </UButton>
-        <UButton
-          color="primary"
-          :loading="importing"
-          :disabled="importing || !importFile"
-          @click="importSources"
-        >
-          {{ importing ? "导入中..." : "开始导入" }}
-        </UButton>
-      </div>
-    </template>
-  </UModal>
+    :categories="categories"
+    @imported="loadSources"
+  />
 
-  <UModal
+  <BatchCategoryModal
     v-model:open="showBatchCategoryModal"
-    title="批量设置分类"
-    :dismissible="false"
-    :ui="{
-      footer: 'justify-end',
-    }"
-  >
-    <template #body>
-      <div class="space-y-4">
-        <p class="text-sm text-muted">
-          将为选中的 {{ selectedIds.length }} 项资源设置以下分类：
-        </p>
-        <USelect
-          v-model="batchCid"
-          class="w-full"
-          :items="[
-            { label: '无分类', value: NO_CATEGORY },
-            ...categories.map((cat) => ({
-              label: cat.name,
-              value: cat.id.toString(),
-            })),
-          ]"
-        />
-      </div>
-    </template>
-    <template #footer>
-      <div class="flex gap-4">
-        <UButton
-          color="neutral"
-          variant="soft"
-          :disabled="batchOperating"
-          @click="showBatchCategoryModal = false"
-        >
-          取消
-        </UButton>
-        <UButton
-          color="primary"
-          :loading="batchOperating"
-          :disabled="batchOperating"
-          @click="batchSetCategory"
-        >
-          {{ batchOperating ? "设置中..." : "确定" }}
-        </UButton>
-      </div>
-    </template>
-  </UModal>
+    :categories="categories"
+    :selected-count="selectedIds.length"
+    :loading="batchOperating"
+    @confirm="batchSetCategory"
+  />
 </template>
