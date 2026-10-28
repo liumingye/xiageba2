@@ -9,6 +9,10 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { onClickOutside } from "@vueuse/core";
+import {
+  buildNavLayoutKey,
+  computeVisibleNavCount,
+} from "~/utils/navOverflow";
 
 import {
   Music,
@@ -417,17 +421,10 @@ const setMeasureItemRef = (
 /**
  * 实际计算桌面端能显示多少菜单
  *
- * 注意：
+ * 这里只负责测量和订阅：拿到容器宽度、各菜单宽度之后，
+ * 「能放几个」交给 navOverflow 里的纯函数决定。
  *
- * 这个函数只依赖：
- *
- * 1. 容器宽度
- * 2. 菜单自身宽度
- * 3. 更多按钮宽度
- *
- * 不依赖 route.path。
- *
- * 所以切换菜单时不会重新计算。
+ * 不依赖 route.path，所以切换菜单时不会重新计算。
  */
 const calculateDesktopLayout = async () => {
   /**
@@ -474,37 +471,15 @@ const calculateDesktopLayout = async () => {
   /**
    * 更多按钮宽度。
    *
-   * 正常情况下可以测量出来。
-   *
-   * 极端情况下没有拿到 DOM，
-   * 使用一个安全默认值。
+   * 极端情况下没有拿到 DOM，使用一个安全默认值。
    */
   const moreWidth = measureMoreRef.value?.offsetWidth || 88;
 
   /**
-   * Tailwind：
-   *
-   * gap-1 = 0.25rem = 4px
+   * 宽度完全没变化（滚动、动画里 ResizeObserver 触发很密）就直接结束。
    */
-  const GAP = 4;
+  const layoutKey = buildNavLayoutKey({ containerWidth, itemWidths, moreWidth });
 
-  /**
-   * 生成布局缓存 key。
-   *
-   * 只要这些值没变化，
-   * 就说明没有必要重新计算。
-   */
-  const layoutKey = [
-    Math.round(containerWidth),
-    ...itemWidths.map((width) => Math.round(width)),
-    Math.round(moreWidth),
-  ].join("|");
-
-  /**
-   * 布局完全没变化。
-   *
-   * 直接结束。
-   */
   if (layoutKey === lastLayoutKey) {
     layoutReady.value = true;
     return;
@@ -512,71 +487,11 @@ const calculateDesktopLayout = async () => {
 
   lastLayoutKey = layoutKey;
 
-  /* -------------------------------------------------------
-   * 计算全部菜单是否可以一次性放下
-   * ----------------------------------------------------- */
-
-  const totalWidth =
-    itemWidths.reduce((sum, width) => sum + width, 0) +
-    Math.max(navItems.length - 1, 0) * GAP;
-
-  /**
-   * 全部菜单都放得下。
-   */
-  if (totalWidth <= containerWidth) {
-    visibleCount.value = navItems.length;
-    layoutReady.value = true;
-
-    return;
-  }
-
-  /* -------------------------------------------------------
-   * 需要显示「更多」
-   *
-   * 所以要提前预留：
-   *
-   * 更多按钮宽度
-   * +
-   * 一个 gap
-   * ----------------------------------------------------- */
-
-  const availableForItems = containerWidth - moreWidth - GAP;
-
-  let count = 0;
-  let usedWidth = 0;
-
-  /**
-   * 按导航数据顺序尽量放菜单。
-   */
-  for (let i = 0; i < itemWidths.length; i++) {
-    const itemWidth = itemWidths[i];
-
-    if (itemWidth) {
-      const nextWidth = count === 0 ? itemWidth : usedWidth + GAP + itemWidth;
-
-      /**
-       * 再放一个就超出空间了。
-       */
-      if (nextWidth > availableForItems) {
-        break;
-      }
-
-      usedWidth = nextWidth;
-      count++;
-    }
-  }
-
-  /**
-   * 至少保留一个菜单。
-   */
-  count = Math.max(count, 1);
-
-  /**
-   * 不能超过总菜单数量。
-   */
-  count = Math.min(count, navItems.length);
-
-  visibleCount.value = count;
+  visibleCount.value = computeVisibleNavCount({
+    containerWidth,
+    itemWidths,
+    moreWidth,
+  });
 
   layoutReady.value = true;
 };
@@ -942,7 +857,7 @@ watch(isDesktop, async () => {
                        更多中的分组
                   ===================================== -->
 
-                  <div v-if="item.children" class="px-2">
+                  <div v-if="item.children" class="mb-1 px-2">
                     <button
                       type="button"
                       class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors"
@@ -973,7 +888,7 @@ watch(isDesktop, async () => {
                       v-show="
                         expandedDrawerGroups[item.label] || isGroupActive(item)
                       "
-                      class="pl-3 ml-3 border-l border-zinc-700 space-y-1 mb-1"
+                      class="pl-3 ml-3 border-l border-zinc-700 space-y-1 mb-1 pt-1"
                     >
                       <button
                         v-for="child in item.children"
@@ -1006,7 +921,7 @@ watch(isDesktop, async () => {
                   <button
                     v-else
                     type="button"
-                    class="mx-2 w-[calc(100%-1rem)] flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors"
+                    class="mb-1 mx-2 w-[calc(100%-1rem)] flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors"
                     :class="
                       isPathActive(item.path)
                         ? 'text-primary-400 bg-primary-500/10 font-medium'
