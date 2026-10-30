@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { get, post, put, del } from "~/utils/request";
-import { Loader2, KeyRound, UserCog } from "@lucide/vue";
+import { Loader2, KeyRound, UserCog, QrCode } from "@lucide/vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
 import { getPanTypeLabel, PAN_TYPE_OPTIONS } from "~/utils/pan";
 
@@ -60,6 +60,109 @@ const baiduOauthCodeVerifier = ref("");
 const baiduOauthCode = ref("");
 const gettingOauthUrl = ref(false);
 const gettingOauthToken = ref(false);
+
+// 扫码登录（夸克 / UC / 百度）
+const QR_LOGIN_TYPES = ["quark", "uc", "baidu"];
+const qrShow = ref(false);
+const qrLoading = ref(false);
+const qrImage = ref("");
+const qrStatus = ref<"pending" | "scanned" | "confirmed" | "expired" | "error">(
+  "pending",
+);
+const qrErrorMsg = ref("");
+let qrPollTimer: ReturnType<typeof setTimeout> | null = null;
+let qrSessionId = "";
+
+const canQrLogin = computed(() =>
+  QR_LOGIN_TYPES.includes(formData.value.type),
+);
+
+const openQrLogin = async () => {
+  qrShow.value = true;
+  qrLoading.value = true;
+  qrImage.value = "";
+  qrStatus.value = "pending";
+  qrErrorMsg.value = "";
+  stopQrPolling();
+
+  try {
+    const data = await post("/api/admin/pan-qr", {
+      action: "create",
+      type: formData.value.type,
+    });
+    qrSessionId = data.sessionId;
+    qrImage.value = data.qrcode;
+    qrLoading.value = false;
+    startQrPolling();
+  } catch (e: any) {
+    qrLoading.value = false;
+    qrStatus.value = "error";
+    qrErrorMsg.value =
+      e?.response?.data?.message || "获取二维码失败，请重试";
+  }
+};
+
+const startQrPolling = () => {
+  stopQrPolling();
+  qrPollTimer = setTimeout(pollQrStatus, 2000);
+};
+
+const stopQrPolling = () => {
+  if (qrPollTimer) {
+    clearTimeout(qrPollTimer);
+    qrPollTimer = null;
+  }
+};
+
+const pollQrStatus = async () => {
+  try {
+    const data = await post("/api/admin/pan-qr", {
+      action: "poll",
+      sessionId: qrSessionId,
+    });
+
+    if (data.status === "confirmed") {
+      qrStatus.value = "confirmed";
+      formData.value.cookie = data.cookie || "";
+      toast.add({
+        title: "扫码成功，Cookie 已回填",
+        icon: "i-lucide-check",
+        color: "success",
+        duration: 2000,
+      });
+      // 稍作停留让用户看到成功态，再自动关闭
+      setTimeout(() => {
+        closeQrLogin();
+      }, 1200);
+      return;
+    }
+    if (data.status === "expired") {
+      qrStatus.value = "expired";
+      qrErrorMsg.value = "二维码已过期，请重新生成";
+      return;
+    }
+    if (data.status === "error") {
+      qrStatus.value = "error";
+      qrErrorMsg.value = data.message || "登录失败，请重试";
+      return;
+    }
+    if (data.status === "scanned") {
+      qrStatus.value = "scanned";
+    }
+    // pending / scanned 继续轮询
+    startQrPolling();
+  } catch (e: any) {
+    // 会话过期（404）等：提示重新生成
+    qrStatus.value = "error";
+    qrErrorMsg.value =
+      e?.response?.data?.message || "轮询失败，请重新生成二维码";
+  }
+};
+
+const closeQrLogin = () => {
+  stopQrPolling();
+  qrShow.value = false;
+};
 
 function getEmptyForm(): AccountFormData {
   return {
@@ -597,9 +700,21 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
 
         <!-- Cookie -->
         <div v-if="formData.type !== 'xunlei' && formData.type !== 'guangya'">
-          <label class="block text-color-400 text-sm mb-2" for="form-cookie"
-            >Cookie</label
-          >
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-color-400 text-sm" for="form-cookie"
+              >Cookie</label
+            >
+            <UButton
+              v-if="canQrLogin"
+              color="neutral"
+              variant="soft"
+              size="xs"
+              icon="i-lucide-qr-code"
+              @click="openQrLogin"
+            >
+              扫码登录
+            </UButton>
+          </div>
           <UTextarea
             id="form-cookie"
             v-model="formData.cookie"
@@ -742,4 +857,90 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
     @close="dirPickerShow = false"
     @select="handleDirSelect"
   />
+
+  <!-- 扫码登录弹窗 -->
+  <UModal
+    :open="qrShow"
+    title="扫码登录"
+    :dismissible="true"
+    @update:open="
+      (v) => {
+        if (!v) closeQrLogin();
+      }
+    "
+  >
+    <template #body>
+      <div class="flex flex-col items-center justify-center py-4 space-y-4">
+        <p class="text-sm text-color-500">
+          请使用{{ getPanTypeLabel(formData.type) }}手机 App 扫描二维码登录
+        </p>
+
+        <!-- 二维码 / 状态 -->
+        <div
+          class="w-[220px] h-[220px] rounded-lg border border-zinc-700/50 bg-white flex items-center justify-center overflow-hidden"
+        >
+          <img
+            v-if="qrImage && qrStatus !== 'confirmed' && qrStatus !== 'expired' && qrStatus !== 'error'"
+            :src="qrImage"
+            alt="登录二维码"
+            class="w-full h-full object-contain"
+          />
+          <div
+            v-else-if="qrLoading"
+            class="flex items-center justify-center text-zinc-500"
+          >
+            <Loader2 class="w-8 h-8 animate-spin" />
+          </div>
+          <div
+            v-else-if="qrStatus === 'confirmed'"
+            class="flex flex-col items-center gap-2 text-green-500"
+          >
+            <span class="i-lucide-check-circle text-5xl" />
+            <span class="text-sm">登录成功</span>
+          </div>
+          <div
+            v-else-if="qrStatus === 'expired'"
+            class="flex flex-col items-center gap-3 p-4 text-center"
+          >
+            <span class="i-lucide-clock text-4xl text-zinc-500" />
+            <span class="text-sm text-zinc-500">{{ qrErrorMsg || "二维码已过期" }}</span>
+          </div>
+          <div
+            v-else-if="qrStatus === 'error'"
+            class="flex flex-col items-center gap-3 p-4 text-center"
+          >
+            <span class="i-lucide-x-circle text-4xl text-red-500" />
+            <span class="text-sm text-red-400">{{ qrErrorMsg || "登录失败" }}</span>
+          </div>
+          <div
+            v-else
+            class="flex items-center justify-center text-zinc-500"
+          >
+            <QrCode class="w-10 h-10" />
+          </div>
+        </div>
+
+        <!-- 状态提示 -->
+        <p
+          v-if="qrStatus === 'pending' && !qrLoading"
+          class="text-xs text-color-400"
+        >
+          等待扫码...
+        </p>
+        <p v-else-if="qrStatus === 'scanned'" class="text-xs text-blue-400">
+          已扫码，请在手机上确认登录
+        </p>
+
+        <!-- 过期/失败后重新生成 -->
+        <UButton
+          v-if="qrStatus === 'expired' || qrStatus === 'error'"
+          color="primary"
+          icon="i-lucide-refresh-cw"
+          @click="openQrLogin"
+        >
+          重新生成二维码
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>
