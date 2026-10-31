@@ -387,7 +387,7 @@ export default defineNuxtConfig({
     },
     scheduledTasks: {
       "*/10 * * * *": ["source:clean_temp"],
-      "*/5 * * * *": ["source:check_account"],
+      "*/5 * * * *": ["source:check_account", "source:check_violated"],
       "0 * * * *": ["shield:cleanIpData", "shield:cleanBans"],
     },
   },
