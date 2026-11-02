@@ -7,14 +7,11 @@ const { siteShortTitle } = await useSiteSeo();
 
 useSeoMeta({
   title: "屏蔽词列表",
-  description:
-    `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
+  description: `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
   ogTitle: "屏蔽词列表",
-  ogDescription:
-    `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
+  ogDescription: `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
   twitterTitle: "屏蔽词列表",
-  twitterDescription:
-    `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
+  twitterDescription: `${siteShortTitle}屏蔽词列表，搜索时将屏蔽包含屏蔽词的关键词，以维护健康搜索环境。`,
 });
 
 const { data, pending, error } = await useLazyFetch<{
@@ -29,7 +26,7 @@ const { data, pending, error } = await useLazyFetch<{
     屏蔽词列表
   </h1>
 
-  <article class="card p-6">
+  <UCard as="article">
     <!-- 加载中 -->
     <div v-if="pending" class="flex items-center justify-center py-12">
       <Loader2 class="size-5 animate-spin mr-2" />
@@ -57,13 +54,13 @@ const { data, pending, error } = await useLazyFetch<{
 
       <p v-else class="py-8 text-center text-muted text-sm">暂无屏蔽词</p>
     </template>
-  </article>
+  </UCard>
 </template>
 
 <style scoped>
 @reference "~/assets/css/main.css";
 
 .word {
-  @apply inline-flex items-center px-2.5 py-1 text-xs rounded-md bg-accented border border-accented;
+  @apply inline-flex items-center px-2 py-1 text-xs rounded-md bg-elevated;
 }
 </style>

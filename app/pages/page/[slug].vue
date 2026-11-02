@@ -69,7 +69,7 @@ if (import.meta.server && !page.value) {
       {{ page.title }}
     </h1>
 
-    <article class="card">
+    <UCard as="article" :ui="{ body: 'p-0!' }">
       <div class="wrap-break-word leading-relaxed m-6">
         <Markdown
           v-if="page.content"
@@ -79,7 +79,7 @@ if (import.meta.server && !page.value) {
         />
         <p v-else class="text-muted text-sm">该页面暂无内容。</p>
       </div>
-    </article>
+    </UCard>
   </template>
 
   <div v-else class="flex flex-col items-center gap-3 py-16">

@@ -527,7 +527,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
               </div>
             </NuxtLink>
 
-            <div class="space-y-1.5 pb-3 border-b border-muted">
+            <div class="space-y-1.5 pb-3 border-b border-default">
               <div v-if="cat.latest.length === 0" class="text-sm text-muted">
                 暂无资源
               </div>
