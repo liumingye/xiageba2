@@ -121,17 +121,16 @@ watch(
           :ui="{
             body: 'p-3 md:p-6',
           }"
-          variant="subtle"
         >
           <div class="flex items-start gap-4 mb-6">
             <USkeleton class="size-10 bg-accented"></USkeleton>
             <div class="flex-1 space-y-2">
-              <USkeleton class="h-4 bg-accented w-1/4 my-2"></USkeleton>
-              <USkeleton class="h-3 bg-accented w-1/2"></USkeleton>
+              <USkeleton class="h-4 bg-accented w-1/4 mt-1 mb-2"></USkeleton>
+              <USkeleton class="h-3 bg-elevated w-1/2"></USkeleton>
             </div>
           </div>
           <USkeleton class="h-5 bg-accented w-full mb-2"></USkeleton>
-          <USkeleton class="h-5 bg-accented w-full"></USkeleton>
+          <USkeleton class="h-5 bg-elevated w-full"></USkeleton>
         </UCard>
       </div>
 
@@ -156,7 +155,6 @@ watch(
           :ui="{
             body: 'p-3 md:p-6',
           }"
-          variant="subtle"
         >
           <div class="flex items-center gap-4">
             <div
@@ -214,17 +212,16 @@ watch(
           :ui="{
             body: 'p-3 md:p-6',
           }"
-          variant="subtle"
         >
           <div class="flex items-start gap-4 mb-6">
             <USkeleton class="size-10 bg-accented"></USkeleton>
             <div class="flex-1 space-y-2">
-              <USkeleton class="h-4 bg-accented w-1/4 my-2"></USkeleton>
-              <USkeleton class="h-3 bg-accented w-1/2"></USkeleton>
+              <USkeleton class="h-4 bg-accented w-1/4 mt-1 mb-2"></USkeleton>
+              <USkeleton class="h-3 bg-elevated w-1/2"></USkeleton>
             </div>
           </div>
           <USkeleton class="h-5 bg-accented w-full mb-2"></USkeleton>
-          <USkeleton class="h-5 bg-accented w-full"></USkeleton>
+          <USkeleton class="h-5 bg-elevated w-full"></USkeleton>
         </UCard>
       </div>
 
@@ -249,7 +246,6 @@ watch(
           :ui="{
             body: 'p-3 md:p-6',
           }"
-          variant="subtle"
         >
           <div class="flex items-center gap-4">
             <div
@@ -267,7 +263,7 @@ watch(
                   {{ item.title }}
                 </h2>
                 <span
-                  class="text-xs px-1.5 py-0.5 rounded bg-accented text-toned shrink-0"
+                  class="text-xs px-1.5 py-0.5 rounded bg-elevated text-toned shrink-0"
                 >
                   已归档
                 </span>

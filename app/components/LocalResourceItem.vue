@@ -25,9 +25,11 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <article
-    class="relative card p-3 hover:border-primary-500/50 transition-colors"
+  <UCard
+    as="article"
+    class="relative hover:ring-primary/50"
     role="article"
+    :ui="{ body: 'sm:p-3 p-2' }"
   >
     <div
       v-if="checkStatus === 'invalid'"
@@ -162,5 +164,5 @@ const emit = defineEmits<{
         </span>
       </div>
     </div>
-  </article>
+  </UCard>
 </template>

@@ -114,7 +114,7 @@ export async function deleteAdFiles(
         }
       }
     } catch (e) {
-      console.error("检查广告文件失败", fid, e);
+      console.error("检查广告文件失败", fid);
     }
   }
 

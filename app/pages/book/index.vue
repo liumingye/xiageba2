@@ -10,6 +10,7 @@ import {
 } from "@lucide/vue";
 import { useDebounceFn } from "@vueuse/core";
 import type { SampleReadBook } from "@/components/SampleReadModal.vue";
+import { NuxtLink } from "#components";
 
 defineOptions({
   name: "BookIndexPage",
@@ -327,8 +328,7 @@ useSeoMeta({
       ? `搜小说 - 第${currentPage.value}页`
       : "搜小说";
   },
-  description:
-    `${siteShortTitle}小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。`,
+  description: `${siteShortTitle}小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。`,
 });
 </script>
 
@@ -360,9 +360,9 @@ useSeoMeta({
 
   <main>
     <!-- 错误提示 -->
-    <div v-if="errorInfo" class="card p-5 text-center mb-6" role="alert">
+    <UCard v-if="errorInfo" class="text-center" role="alert">
       <div
-        class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 text-white"
+        class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 text-inverted"
         :class="
           errorInfo.type === 'rate-limit' || errorInfo.type === 'param'
             ? 'bg-yellow-500'
@@ -376,15 +376,16 @@ useSeoMeta({
         {{ errorInfo.title }}
       </h3>
       <p class="text-sm text-gray-500">{{ errorInfo.message }}</p>
-      <button
+      <UButton
         v-if="errorInfo.canRetry"
-        class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+        class="mt-4"
         @click="handleRetry"
+        size="md"
       >
         <RotateCcw class="w-4 h-4" />
         重新加载
-      </button>
-    </div>
+      </UButton>
+    </UCard>
 
     <!-- 加载骨架屏 -->
     <div
@@ -407,16 +408,16 @@ useSeoMeta({
       </template>
       <USkeleton class="h-5 w-46 my-3.5" />
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div v-for="(_, i) in 8" :key="i" class="card p-3">
+        <UCard v-for="(_, i) in 8" :key="i" :ui="{ body: 'p-3!' }">
           <USkeleton class="aspect-3/4 mb-2 bg-accented" />
           <USkeleton class="h-5 w-2/3 mb-1 bg-accented" />
-          <USkeleton class="h-4 w-full mb-1 bg-accented" />
-          <USkeleton class="h-4.5 w-1/3 mb-4 bg-accented" />
+          <USkeleton class="h-4 w-full mb-1 bg-elevated" />
+          <USkeleton class="h-4.5 w-1/3 mb-4 bg-elevated" />
           <div class="flex gap-3">
             <USkeleton class="h-8 w-1/2 bg-accented" />
             <USkeleton class="h-8 w-1/2 bg-accented" />
           </div>
-        </div>
+        </UCard>
       </div>
     </div>
 
@@ -482,11 +483,15 @@ useSeoMeta({
       <!-- 小说列表网格 -->
       <template v-if="books.length > 0">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          <NuxtLink
+          <UCard
+            :as="NuxtLink"
             :to="`/book/${encodeURIComponent(book.bookId)}`"
             v-for="book in books"
             :key="book.bookId"
-            class="card p-3 hover:border-primary-500/50 transition-colors flex flex-col cursor-pointer group"
+            class="hover:ring-primary-500/50"
+            :ui="{
+              body: 'p-3!',
+            }"
           >
             <!-- 封面 -->
             <div
@@ -562,7 +567,7 @@ useSeoMeta({
                 口令
               </UButton>
             </div>
-          </NuxtLink>
+          </UCard>
         </div>
       </template>
 

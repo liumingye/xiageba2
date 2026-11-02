@@ -177,7 +177,7 @@ useSeoMeta({
 <template>
   <main class="mt-4">
     <!-- 错误（兜底，大部分错误已在 watch 中转走 Nuxt error 页） -->
-    <div v-if="showErrorCard" class="card p-5 text-center mb-6" role="alert">
+    <UCard v-if="showErrorCard" class="mb-6 text-center" role="alert">
       <div
         class="w-14 h-14 rounded-full bg-red-900/50 text-red-400 flex items-center justify-center mx-auto mb-3"
       >
@@ -195,12 +195,11 @@ useSeoMeta({
         <RotateCcw class="w-4 h-4" />
         重新加载
       </button>
-    </div>
+    </UCard>
 
     <!-- 骨架屏 -->
-    <div
+    <UCard
       v-else-if="loading"
-      class="card p-4 md:p-6 animate-pulse space-y-5"
       aria-busy="true"
       aria-label="正在加载小说详情"
     >
@@ -212,26 +211,26 @@ useSeoMeta({
         />
         <div class="flex-1 w-full space-y-3 text-center md:text-left">
           <div class="h-7 bg-accented rounded w-3/4 mx-auto md:mx-0" />
-          <div class="h-4 bg-accented rounded w-1/3 mx-auto md:mx-0" />
+          <div class="h-4 bg-elevated rounded w-1/3 mx-auto md:mx-0" />
           <div class="flex flex-wrap gap-2 justify-center md:justify-start">
-            <div class="h-6 bg-accented rounded w-16" />
-            <div class="h-6 bg-accented rounded w-16" />
-            <div class="h-6 bg-accented rounded w-16" />
+            <div class="h-6 bg-elevated rounded w-16" />
+            <div class="h-6 bg-elevated rounded w-16" />
+            <div class="h-6 bg-elevated rounded w-16" />
           </div>
-          <div class="h-4 bg-accented rounded w-1/2 mx-auto md:mx-0" />
-          <div class="h-4 bg-accented rounded w-2/3 mx-auto md:mx-0" />
+          <div class="h-4 bg-elevated rounded w-1/2 mx-auto md:mx-0" />
+          <div class="h-4 bg-elevated rounded w-2/3 mx-auto md:mx-0" />
           <div class="flex gap-2 pt-2 justify-center md:justify-start">
-            <div class="h-9 bg-accented rounded w-28" />
-            <div class="h-9 bg-accented rounded w-28" />
+            <div class="h-9 bg-elevated rounded w-28" />
+            <div class="h-9 bg-elevated rounded w-28" />
           </div>
         </div>
       </div>
-    </div>
+    </UCard>
 
     <!-- 详情内容 -->
     <template v-else-if="detail?.bookName">
       <!-- 头：封面 + 标题 + 操作 -->
-      <div class="card p-4 md:p-6 mb-6">
+      <UCard class="mb-6">
         <div
           class="flex flex-col md:flex-row items-start md:items-stretch gap-4 md:gap-6"
         >
@@ -359,10 +358,10 @@ useSeoMeta({
             </div>
           </div>
         </div>
-      </div>
+      </UCard>
 
       <!-- 简介 -->
-      <div class="card p-4 md:p-6 mb-6">
+      <UCard class="mb-6">
         <h3 class="flex items-center gap-2 font-medium mb-3">
           <Calendar class="w-5 h-5 text-primary" />
           简介
@@ -380,7 +379,7 @@ useSeoMeta({
           </p>
         </div>
         <p v-else class="text-sm text-muted">暂无简介</p>
-      </div>
+      </UCard>
     </template>
 
     <!-- 加载后无数据兜底 -->

@@ -120,7 +120,7 @@ export const submitCheckRequest = async (
     );
     return { ...res.data, server_id };
   } catch (err) {
-    console.error("PanCheck submit error server: ", serverUrl, err);
+    console.error("PanCheck submit error server: ", serverUrl);
     return null;
   }
 };

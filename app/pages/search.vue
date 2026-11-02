@@ -531,9 +531,9 @@ watch(
     </ClientOnly>
 
     <template v-else>
-      <div
+      <UCard
         v-if="errorInfo && searchKeyword"
-        class="card p-5 text-center mb-6"
+        class="text-center"
         role="alert"
       >
         <div
@@ -559,7 +559,7 @@ watch(
           <RotateCcw class="w-4 h-4" />
           重新搜索
         </button>
-      </div>
+      </UCard>
 
       <div
         v-else-if="loading && searchKeyword"
@@ -568,20 +568,22 @@ watch(
         aria-busy="true"
         aria-label="正在加载搜索结果"
       >
-        <div class="h-3 bg-accented rounded w-1/4 animate-pulse mb-2" />
-        <article
+        <div class="h-3 bg-elevated rounded w-1/4 animate-pulse mb-2" />
+        <UCard
           v-for="(_, i) in skeletonList"
           :key="i"
-          class="card p-3 animate-pulse"
+          as="article"
+          class="animate-pulse"
+          :ui="{ body: 'p-3!' }"
         >
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 bg-accented rounded-lg" />
             <div class="flex-1 space-y-1">
-              <div class="h-3 bg-accented rounded w-3/4" />
-              <div class="h-2 bg-accented rounded w-1/3" />
+              <div class="h-5 bg-accented rounded w-3/4" />
+              <div class="h-3 bg-elevated rounded w-1/3" />
             </div>
           </div>
-        </article>
+        </UCard>
       </div>
 
       <div v-else-if="searchKeyword" class="space-y-2">
@@ -619,11 +621,13 @@ watch(
             </UButton>
           </div>
 
-          <article
+          <UCard
             v-for="music in <MusicSearch[]>results"
             :key="music.id"
-            class="card cursor-pointer hover:border-primary-500/50 transition-colors"
+            as="article"
+            class="hover:ring-primary/50"
             role="article"
+            :ui="{ body: 'p-0!' }"
           >
             <NuxtLink
               :to="`/music/${music.id}`"
@@ -667,7 +671,7 @@ watch(
               </div>
               <ArrowRight class="w-4 h-4 text-muted shrink-0" />
             </NuxtLink>
-          </article>
+          </UCard>
 
           <template v-if="results.length === 0">
             <div class="text-center py-20">

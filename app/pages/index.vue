@@ -23,7 +23,7 @@ const sectionOverflowing = ref(true);
 
 // 首页宫格卡片统一使用 UCard，保持与原 .card 一致的观感
 const gridCardUi = {
-  root: "bg-muted border border-muted rounded-xl overflow-visible",
+  root: "rounded-xl overflow-visible",
   body: "flex flex-col px-2 sm:px-2 lg:px-3 py-4 sm:py-4",
 };
 
@@ -376,10 +376,10 @@ const goToBangumiSearch = async (item: BangumiItem) => {
             v-for="(hotword, index) in hotwords"
             :key="hotword.word"
             color="neutral"
-            variant="subtle"
+            variant="outline"
             size="lg"
             :ui="{
-              base: 'rounded-xl',
+              base: 'rounded-xl ring-default',
             }"
             @click="handleHotwordClick(hotword)"
           >
@@ -401,10 +401,10 @@ const goToBangumiSearch = async (item: BangumiItem) => {
             v-for="keyword in musicStore.searchHistory"
             :key="keyword"
             color="neutral"
-            variant="subtle"
+            variant="outline"
             size="lg"
             :ui="{
-              base: 'rounded-xl',
+              base: 'rounded-xl ring-default',
             }"
             @click="searchBarRef?.handleSearch(keyword)"
           >
@@ -590,7 +590,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
                   :class="
                     activeCategoryId === cls.type_id
                       ? 'bg-muted shadow-sm border-muted'
-                      : 'opacity-80 hover:bg-muted hover:opacity-100 border-transparent'
+                      : 'opacity-90 hover:bg-muted hover:opacity-100 border-transparent'
                   "
                   @click="onCategoryChange(cls.type_id)"
                 >
@@ -628,7 +628,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
                   :class="
                     activeFilters[filter.key] === opt.value
                       ? 'bg-muted shadow-sm border-muted'
-                      : 'opacity-80 hover:bg-muted hover:opacity-100 border-transparent'
+                      : 'opacity-90 hover:bg-muted hover:opacity-100 border-transparent'
                   "
                   @click="
                     activeFilters[filter.key] = opt.value;

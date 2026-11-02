@@ -10,7 +10,7 @@ const LOCK_TTL = 240;
 /** 每页拉取的违规分享数量 */
 const PAGE_SIZE = 500;
 /** 每次批量取消的分享数量 */
-const DELETE_BATCH_SIZE = 20;
+const DELETE_BATCH_SIZE = 50;
 
 interface ViolatedShareItem {
   share_id?: string;

@@ -191,10 +191,12 @@ defineExpose({ results, searching, error });
   </div>
   <template v-if="filteredResults.length !== 0 || searching">
     <template v-if="filteredResults.length > 0">
-      <article
+      <UCard
+        as="article"
         v-for="(item, idx) in filteredResults"
         :key="idx"
-        class="card p-3 relative"
+        class="relative"
+        :ui="{ body: 'sm:p-3 p-2' }"
       >
         <div
           v-if="getCheckStatus(item.url) === 'invalid'"
@@ -277,20 +279,20 @@ defineExpose({ results, searching, error });
             >
           </div>
         </div>
-      </article>
+      </UCard>
     </template>
 
-    <div v-if="searching" class="card p-6 text-center">
+    <UCard v-if="searching" class="text-center">
       <Loader2 class="size-6 text-primary-400 animate-spin mx-auto mb-2" />
       <p class="text-muted text-sm">正在全网搜索中...</p>
-    </div>
+    </UCard>
 
-    <div
+    <UCard
       v-else-if="error && filteredResults.length === 0"
-      class="card p-5 text-center"
+      class="text-center"
     >
       <p class="text-red-400 text-sm">{{ error }}</p>
-    </div>
+    </UCard>
   </template>
   <template v-else>
     <div class="text-center py-20">
