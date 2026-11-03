@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import { FileText, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
@@ -15,8 +14,6 @@ import {
 } from "~/utils/page";
 
 useSeoMeta({ title: "页面管理" });
-
-const router = useRouter();
 
 const pages = ref<AdminPage[]>([]);
 const currentPage = ref(1);

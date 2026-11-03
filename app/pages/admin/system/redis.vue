@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { Database } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 
 useSeoMeta({
   title: "Redis 配置",
 });
-
-const router = useRouter();
 
 const loading = ref(true);
 

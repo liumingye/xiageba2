@@ -165,11 +165,7 @@ const fetchingUrl = ref(false);
 const fetchedUrl = ref("");
 const fetchError = ref("");
 // 搞笑加载文案（详情页自己调 funnyLoading）
-const {
-  currentText: funnyText,
-  start: funnyStart,
-  stop: funnyStop,
-} = useFunnyLoading();
+const { start: funnyStart, stop: funnyStop } = useFunnyLoading();
 
 const fetchDirectUrl = async () => {
   if (fetchingUrl.value) return;

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { HardDrive } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
 import { get, post, put, del } from "~/utils/request";
@@ -41,8 +40,6 @@ const columns: TableColumn<S3Config>[] = [
     },
   },
 ];
-
-const router = useRouter();
 
 const configs = ref<S3Config[]>([]);
 const showModal = ref(false);

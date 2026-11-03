@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { get, post, put, del } from "~/utils/request";
 import { User, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
@@ -29,7 +28,6 @@ const columns: TableColumn<Admin>[] = [
 ];
 
 const toast = useToast();
-const router = useRouter();
 
 const admins = ref<Admin[]>([]);
 const showAddModal = ref(false);

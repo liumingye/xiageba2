@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import { Loader2, Globe, Palette, Smartphone } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 import {
@@ -12,14 +11,11 @@ import {
 } from "~/utils/page";
 import {
   APP_UPDATE_STRATEGY_OPTIONS,
-  DEFAULT_APP_PREVIEW_IMAGE,
   emptyAppConfig,
   type AppDownloadConfig,
 } from "~/utils/app";
 
 useSeoMeta({ title: "页面装修" });
-
-const router = useRouter();
 
 /** 站点 SEO 配置（与 /api/admin/config/site-seo 字段一致） */
 interface SiteSeoConfig {

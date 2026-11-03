@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ChevronDown, ListFilter } from "@lucide/vue";
-
 export interface MultiSelectComboboxOption {
   value: string;
   label: string;

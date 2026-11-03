@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import {
   BookOpen,
-  Key,
-  Eye,
-  X,
   AlertTriangle,
   RotateCcw,
   Filter,

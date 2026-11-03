@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { Link } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 
@@ -10,8 +9,6 @@ useSeoMeta({
 });
 
 const toast = useToast();
-
-const router = useRouter();
 
 const loading = ref(true);
 
@@ -156,7 +153,7 @@ const removePancheckServer = (index: number) => {
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
-        <div v-for="(serverUrl, i) in pancheckServers" :key="i">
+        <div v-for="(_, i) in pancheckServers" :key="i">
           <label
             class="flex items-center gap-1.5 text-muted text-sm mb-2"
             :for="`pan-${i}-url`"

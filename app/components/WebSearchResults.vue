@@ -2,8 +2,6 @@
 import {
   Globe,
   Loader2,
-  Folder,
-  Download,
   CheckCircle,
   CircleSlash,
   XCircle,

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import { Key, ShieldCheck } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 import { loadScriptOnce } from "~/utils/loadScript";
@@ -9,8 +8,6 @@ import { loadScriptOnce } from "~/utils/loadScript";
 useSeoMeta({
   title: "安全配置",
 });
-
-const router = useRouter();
 
 const loading = ref(true);
 

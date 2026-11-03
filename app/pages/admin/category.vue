@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { get, post, put, del } from "~/utils/request";
 import { Tag } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
@@ -56,8 +55,6 @@ const columns: TableColumn<Category>[] = [
     },
   },
 ];
-
-const router = useRouter();
 
 const categories = ref<Category[]>([]);
 const currentPage = ref(1);

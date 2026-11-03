@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Megaphone } from "@lucide/vue";
+import { Megaphone } from "@lucide/vue";
 import { getIconConfig, type Announcement } from "~/utils/announcement";
 import { markdownPlugins } from "~/utils/comark";
 

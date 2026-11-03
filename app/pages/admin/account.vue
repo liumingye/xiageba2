@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { get, post, put, del } from "~/utils/request";
 import { Loader2, KeyRound, UserCog, QrCode } from "@lucide/vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
@@ -34,8 +33,6 @@ interface AccountFormData {
   tempDir: string;
   status: number;
 }
-
-const router = useRouter();
 
 const toast = useToast();
 

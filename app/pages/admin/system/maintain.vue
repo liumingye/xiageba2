@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 import { useIntervalFn } from "@vueuse/core";
 import { get, post } from "~/utils/request";
 
 useSeoMeta({
   title: "系统维护",
 });
-
-const router = useRouter();
 
 const isRebuilding = ref(false);
 const rebuildMsg = ref("");

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { MessageSquare } from "@lucide/vue";
 import { useClipboard } from "@vueuse/core";
 import { get, post } from "~/utils/request";
@@ -12,8 +11,6 @@ useSeoMeta({
 
 const toast = useToast();
 const { copy: copyToClipboard } = useClipboard();
-
-const router = useRouter();
 
 const loading = ref(true);
 

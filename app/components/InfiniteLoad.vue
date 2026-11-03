@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from "vue";
+import { nextTick } from "vue";
 import { useIntersectionObserver } from "@vueuse/core";
 
 const emit = defineEmits<{

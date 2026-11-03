@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, computed, watch, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import {
   FileText,
   HardDrive,
@@ -42,8 +41,6 @@ interface StorageFile {
   url: string;
   mimeType?: string;
 }
-
-const router = useRouter();
 
 const toast = useToast();
 

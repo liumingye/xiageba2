@@ -68,8 +68,6 @@ let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 let idSeq = 0;
 const nextId = () => `m_${Date.now().toString(36)}_${idSeq++}`;
 
-const toast = useToast();
-
 const showWelcome = computed(
   () => messages.value.length === 0 && status.value === "ready",
 );

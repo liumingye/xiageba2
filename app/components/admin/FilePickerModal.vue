@@ -206,20 +206,6 @@ const handleDelete = async (file: FileItem) => {
 const handleClose = () => {
   emit("close");
 };
-
-const pageNumbers = computed<(number | string)[]>(() => {
-  const t = totalPages.value;
-  const c = currentPage.value;
-  if (t <= 7) return Array.from({ length: t }, (_, i) => i + 1);
-  const pages: (number | string)[] = [1];
-  if (c > 3) pages.push("...");
-  const start = Math.max(2, c - 1);
-  const end = Math.min(t - 1, c + 1);
-  for (let i = start; i <= end; i++) pages.push(i);
-  if (c < t - 2) pages.push("...");
-  pages.push(t);
-  return pages;
-});
 </script>
 
 <template>

@@ -145,7 +145,6 @@ const handleHotwordClick = (hotword: HotWord) => {
 
 const {
   doubanClasses,
-  doubanFilters,
   activeCategoryId,
   activeFilters,
   currentFilters,
@@ -373,7 +372,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
           :class="sectionExpanded ? '' : 'max-h-50'"
         >
           <UButton
-            v-for="(hotword, index) in hotwords"
+            v-for="hotword in hotwords"
             :key="hotword.word"
             color="neutral"
             variant="outline"

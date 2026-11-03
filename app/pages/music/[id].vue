@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useEventListener, useMediaQuery, useMounted } from "@vueuse/core";
-import { Download, Play, Pause, Disc3, MicVocal, Search } from "@lucide/vue";
+import { useEventListener, useMediaQuery } from "@vueuse/core";
+import { Play, Pause, MicVocal } from "@lucide/vue";
 import DownloadModal from "~/components/DownloadModal.vue";
 import type { Music } from "~/stores/music";
 import { useMusicStore } from "~/stores/music";
@@ -212,10 +212,6 @@ const togglePlay = () => {
 const openDownloadModal = (download: DownloadOption) => {
   showDownloadModal.value = true;
   selectedDownload.value = download;
-};
-
-const closeDownloadModal = () => {
-  showDownloadModal.value = false;
 };
 
 const musicStore = useMusicStore();

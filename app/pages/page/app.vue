@@ -33,17 +33,6 @@ const previewImage = computed(
   () => appConfig.value.previewImageUrl || DEFAULT_APP_PREVIEW_IMAGE,
 );
 
-/** 版本号文案：优先「v版本名（Build 版本码）」，单独存在时取其一 */
-const versionText = computed(() => {
-  const { versionName, versionCode } = appConfig.value;
-  if (versionName && versionCode > 0) {
-    return `v${versionName}（Build ${versionCode}）`;
-  }
-  if (versionName) return `v${versionName}`;
-  if (versionCode > 0) return `Build ${versionCode}`;
-  return "";
-});
-
 /** APK 下载按钮（悬停展示下载地址二维码） */
 const downloadLink = computed<ButtonProps>(() => ({
   label: "安卓 APK 下载",

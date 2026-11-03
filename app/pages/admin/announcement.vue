@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { Megaphone, Loader2 } from "@lucide/vue";
 import type { TableColumn } from "@nuxt/ui";
 import AdminPagination from "~/components/admin/AdminPagination.vue";
