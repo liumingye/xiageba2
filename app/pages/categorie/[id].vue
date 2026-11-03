@@ -115,7 +115,7 @@ const goToPage = (page: number) => {
   window.scrollTo({ top: 0 });
 };
 
-const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck();
+const { registerItems, getCheckStatus, stopPanCheck, vPanCheck } = usePanCheck();
 
 watch(
   [data],
@@ -130,7 +130,8 @@ watch(
             item.type !== "139",
         )
         .map((item) => item.id);
-      submitPanCheck(ids);
+      // 仅注册，元素滚入视口后才真正发起检测
+      registerItems(ids);
     }
   },
   { immediate: true },
@@ -235,6 +236,7 @@ const closeModal = () => {
     <LocalResourceItem
       v-for="item in items"
       :key="item.id"
+      v-pan-check="item.id"
       :item="item"
       :check-status="getCheckStatus(item.id)"
       @open-tree="openTreeModal({ item })"

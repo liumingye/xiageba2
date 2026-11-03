@@ -82,7 +82,7 @@
 | `@netdisk-sdk/c139-sdk` | 中国移动云盘 |
 | `@netdisk-sdk/utils` | 公共工具 |
 
-能力：分享链接解析与转存、目录树预览、链接有效性检测（前端 `usePanCheck`，支持 `ids` / `urls` 双模式）、多账号轮换与过期重建、账号失效定时巡检与通知。
+能力：分享链接解析与转存、目录树预览、链接有效性检测（前端 `usePanCheck` 视口懒检测，支持 `ids` / `urls` 双模式）、多账号轮换与过期重建、账号失效定时巡检与通知。
 
 `/api/source/geturl` 仅处理白名单域名（`pan.quark.cn`、`pan.baidu.com`、`drive.uc.cn`、`pan.xunlei.com`），其余域名直接返回原链接。
 

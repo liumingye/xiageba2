@@ -467,7 +467,7 @@ const goToPage = (page: number) => {
 
 const skeletonList = Array.from({ length: 4 });
 
-const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck();
+const { registerItems, getCheckStatus, stopPanCheck, vPanCheck } = usePanCheck();
 
 watch(
   [results],
@@ -479,7 +479,8 @@ watch(
           // 不进行检测的类型
           .filter(({ type }) => !["magnet", "guangya", "139"].includes(type))
           .map((item) => item.id);
-        submitPanCheck(ids);
+        // 仅注册，元素滚入视口后才真正发起检测
+        registerItems(ids);
       }
     }
   },
@@ -788,6 +789,7 @@ watch(
               <LocalResourceItem
                 v-for="item in <ISourceItem[]>results"
                 :key="item.id"
+                v-pan-check="item.id"
                 :item="item"
                 :check-status="getCheckStatus(item.id)"
                 :highlight-html="highlight(item.title)"

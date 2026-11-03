@@ -6,7 +6,6 @@ import {
   CircleSlash,
   XCircle,
 } from "@lucide/vue";
-import { useDebounceFn } from "@vueuse/core";
 import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 
 export interface WebSearchResult {
@@ -41,45 +40,18 @@ const filteredResults = computed<WebSearchResult[]>(() => {
   return results.value.filter((item) => item.type === f);
 });
 
-// 实例化 panCheck Hook
-const { submitPanCheck, getCheckStatus, stopPanCheck } = usePanCheck({
+// 实例化 panCheck Hook（视口懒检测：只有渲染出来且进入视口的链接才会送检）
+const {
+  registerItems,
+  getCheckStatus,
+  stopPanCheck,
+  vPanCheck,
+} = usePanCheck({
   mode: "urls",
   batchSize: 10,
 });
 
 let eventSource: EventSource | null = null;
-
-// 待提交校验的 URL 缓冲区
-const pendingBuffer = new Set<string>();
-const submittedUrls = new Set<string>();
-
-/**
- * 冲刷缓冲区，发起校验
- */
-const flushPanCheck = () => {
-  if (pendingBuffer.size === 0) return;
-
-  const urlsToSubmit = Array.from(pendingBuffer);
-  pendingBuffer.clear();
-
-  // 增量追加提交
-  submitPanCheck(urlsToSubmit);
-};
-
-/**
- * 管道化处理：将接收到的新数据放入缓存区并触发防抖。
- * 使用 useDebounceFn，每次调用自动重置计时，组件卸载时自动清理。
- */
-const debouncedFlush = useDebounceFn(flushPanCheck, 2000);
-
-const queuePanCheck = (url?: string) => {
-  if (url && !submittedUrls.has(url)) {
-    pendingBuffer.add(url);
-    submittedUrls.add(url);
-  }
-
-  debouncedFlush();
-};
 
 const startWebSearch = () => {
   // 1. 清理上一轮网络与检测状态
@@ -88,8 +60,6 @@ const startWebSearch = () => {
 
   results.value = [];
   error.value = "";
-  submittedUrls.clear();
-  pendingBuffer.clear();
 
   if (
     props.disabled ||
@@ -114,13 +84,11 @@ const startWebSearch = () => {
         results.value.push(msg.data);
         // 不进行检测的类型
         if (["magnet", "guangya", "139"].includes(msg.data.type)) return;
-        // 数据进入缓冲区
-        queuePanCheck(msg.data.url);
+        // 注册待检测：卡片滚入视口后才真正送检
+        registerItems([msg.data.url]);
       } else if (msg.type === "done") {
         searching.value = false;
         closeEventSource();
-        // 结束时立即冲刷剩余的缓冲区
-        flushPanCheck();
       } else if (msg.type === "error") {
         error.value = msg.message || "全网搜失败";
         searching.value = false;
@@ -147,7 +115,6 @@ const closeEventSource = () => {
 const stopWebSearch = () => {
   closeEventSource();
   stopPanCheck();
-  pendingBuffer.clear();
   searching.value = false;
 };
 
@@ -193,6 +160,7 @@ defineExpose({ results, searching, error });
         as="article"
         v-for="(item, idx) in filteredResults"
         :key="idx"
+        v-pan-check="item.url"
         class="relative"
         :ui="{ body: 'sm:p-3 p-2' }"
       >
