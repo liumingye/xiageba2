@@ -53,10 +53,37 @@ const {
 
 let eventSource: EventSource | null = null;
 
+// 流式结果按帧合并落库：EventSource 一批可能推入几十条，逐条 push 会让
+// 整个列表重渲染 O(n²)（第 N 条到达时连前 N-1 张卡一起重渲染），合并后一帧最多一次
+let pendingResults: WebSearchResult[] = [];
+let pushFrame = 0;
+
+const flushPendingResults = () => {
+  pushFrame = 0;
+  if (pendingResults.length === 0) return;
+  results.value.push(...pendingResults);
+  pendingResults = [];
+};
+
+const queueResult = (item: WebSearchResult) => {
+  pendingResults.push(item);
+  if (pushFrame) return;
+  pushFrame = requestAnimationFrame(flushPendingResults);
+};
+
+const cancelPendingResults = () => {
+  if (pushFrame) {
+    cancelAnimationFrame(pushFrame);
+    pushFrame = 0;
+  }
+  pendingResults = [];
+};
+
 const startWebSearch = () => {
   // 1. 清理上一轮网络与检测状态
   closeEventSource();
   stopPanCheck();
+  cancelPendingResults();
 
   results.value = [];
   error.value = "";
@@ -81,7 +108,8 @@ const startWebSearch = () => {
       const msg = JSON.parse(event.data);
 
       if (msg.type === "result" && msg.data) {
-        results.value.push(msg.data);
+        // 进入待渲染缓冲，按帧统一落库（见 queueResult 注释）
+        queueResult(msg.data);
         // 不进行检测的类型
         if (["magnet", "guangya", "139"].includes(msg.data.type)) return;
         // 注册待检测：卡片滚入视口后才真正送检
@@ -115,6 +143,7 @@ const closeEventSource = () => {
 const stopWebSearch = () => {
   closeEventSource();
   stopPanCheck();
+  cancelPendingResults();
   searching.value = false;
 };
 
@@ -158,9 +187,10 @@ defineExpose({ results, searching, error });
     <template v-if="filteredResults.length > 0">
       <UCard
         as="article"
-        v-for="(item, idx) in filteredResults"
-        :key="idx"
+        v-for="item in filteredResults"
+        :key="item.url"
         v-pan-check="item.url"
+        v-memo="[item.url, getCheckStatus(item.url)]"
         class="relative"
         :ui="{ body: 'sm:p-3 p-2' }"
       >

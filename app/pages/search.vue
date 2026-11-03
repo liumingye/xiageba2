@@ -305,6 +305,17 @@ const tokens = computed(() => (pageData.value as any)?.tokens || []);
 
 const highlight = (text: string): string => highlightTokens(text, tokens.value);
 
+// 高亮结果按 item 预计算：menu 是目录树文本、可能很大，放在模板里意味着
+// 每次重渲染（检测状态回填、筛选变化等）都会对全部条目重跑正则；
+// 收敛到 computed 后只有 results / tokens 变化时才跑一次
+const highlightedResults = computed(() =>
+  (results.value as ISourceItem[]).map((item) => ({
+    item,
+    titleHtml: highlight(item.title),
+    menuHtml: item.menu ? highlight(item.menu) : "",
+  })),
+);
+
 // 错误分类：rate-limit / server / network
 interface ErrorInfo {
   type: "rate-limit" | "server" | "network" | "param";
@@ -787,15 +798,15 @@ watch(
             </div>
             <template v-if="results.length > 0">
               <LocalResourceItem
-                v-for="item in <ISourceItem[]>results"
-                :key="item.id"
-                v-pan-check="item.id"
-                :item="item"
-                :check-status="getCheckStatus(item.id)"
-                :highlight-html="highlight(item.title)"
-                :highlight-menu="highlight(item.menu)"
-                @open-tree="openTreeModal({ item, type: 'id' })"
-                @open-modal="openModal({ item, type: 'id' })"
+                v-for="entry in highlightedResults"
+                :key="entry.item.id"
+                v-pan-check="entry.item.id"
+                :item="entry.item"
+                :check-status="getCheckStatus(entry.item.id)"
+                :highlight-html="entry.titleHtml"
+                :highlight-menu="entry.menuHtml"
+                @open-tree="openTreeModal({ item: entry.item, type: 'id' })"
+                @open-modal="openModal({ item: entry.item, type: 'id' })"
               />
             </template>
             <template v-else>
