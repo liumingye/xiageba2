@@ -4,7 +4,7 @@ import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { clearTreeSymbols, truncateString } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
 import { parseShareUrl } from "#server/lib/pan/share-url";
-import { renderTree, sortEntries } from "#server/lib/pan/tree";
+import { renderTree, sortEntries, toIsDir } from "#server/lib/pan/tree";
 import { filterAdFiles } from "#server/lib/pan/ad-filter";
 import type { PanFile, ParsedShare } from "#server/lib/pan/types";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
@@ -188,14 +188,6 @@ async function requireAccount(type: string) {
     throw createError({ statusCode: 500, message: "没有可用的网盘账号" });
   }
   return account;
-}
-
-/**
- * 百度的 isdir 在不同接口/不同版本下出现过数字 1 与字符串 "1" 两种形态。
- * 这里按「是否为目录」做宽容判定，避免严格等于 1 把子目录误判成文件导致不展开。
- */
-function toIsDir(value: unknown): boolean {
-  return value === 1 || value === "1" || value === true;
 }
 
 async function buildQuarkUCTree(

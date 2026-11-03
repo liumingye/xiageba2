@@ -1,21 +1,10 @@
-import { getRedisCache } from "#server/lib/redis";
+import { getRebuildStatus } from "#server/lib/rebuild-search";
 
 /**
  * 获取当前后台全文索引的重建进度
  * GET /api/admin/music/rebuild-status
+ *
+ * 实际逻辑（Redis 缓存读取 + idle 回落）在 lib 单点维护，
+ * 与 source 端点共用；这里只指定目标。
  */
-export default defineEventHandler(async () => {
-  // 从高速 Redis 缓存中获取状态，完全不碰数据库，高并发下性能极高
-  const cachedStatus = await getRedisCache<{
-    status: "running" | "done" | "error";
-    current?: number;
-    message?: string;
-  }>("status:rebuild:music");
-
-  // 如果缓存里什么都没有，说明当前根本没有任务在跑
-  if (!cachedStatus) {
-    return { status: "idle", current: 0 };
-  }
-
-  return cachedStatus;
-});
+export default defineEventHandler(async () => getRebuildStatus("music"));

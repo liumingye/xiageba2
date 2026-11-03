@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { prisma } from "#server/lib/prisma";
 import { resolveLinkStatus, submitCheckRequest } from "#server/lib/pan-check";
 

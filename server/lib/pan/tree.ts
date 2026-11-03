@@ -15,6 +15,19 @@ const DEFAULT_MAX_DEPTH = 5;
 const LINE_LIMIT_SLACK = 5;
 
 /**
+ * 目录标志位的宽容判定。
+ *
+ * 百度的 isdir 在不同接口/不同版本下出现过数字 1 与字符串 "1" 两种形态，
+ * 严格 `=== 1` 会把子目录误判成文件导致不展开。容忍 1 | "1" | true。
+ *
+ * 原为 tree.get.ts 的私有函数；list-dir.get.ts 列根目录时同样需要，
+ * 提升为网盘域共享工具。
+ */
+export function toIsDir(value: unknown): boolean {
+  return value === 1 || value === "1" || value === true;
+}
+
+/**
  * 目录排在前面，同类型按文件名自然序排序（原地排序，与既有行为一致）
  */
 export function sortEntries<T extends { name: string; isDir: boolean }>(

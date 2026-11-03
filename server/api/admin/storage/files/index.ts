@@ -1,4 +1,5 @@
 import { listFiles } from "#server/lib/s3";
+import { parsePagination } from "#server/utils/admin";
 
 export default defineEventHandler(async (event) => {
   if (event.method !== "GET") {
@@ -15,8 +16,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "configId 不合法" });
   }
 
-  const page = Math.max(1, parseInt(query.page as string) || 1);
-  const pageSize = Math.min(100, Math.max(1, parseInt(query.pageSize as string) || 20));
+  const { page, pageSize } = parsePagination(query);
   const search = (query.search as string) || "";
 
   const result = await listFiles(configId, { search, page, pageSize });

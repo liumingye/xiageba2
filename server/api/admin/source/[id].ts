@@ -1,7 +1,5 @@
 import { prisma } from "#server/lib/prisma";
-import { clearTreeSymbols } from "#server/utils/source";
-import { buildTokens } from "#server/utils/jieba";
-import { TREE_MAX_LINE } from "#server/lib/const";
+import { buildSourceSearchTokens } from "#server/utils/source";
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id as string;
@@ -71,12 +69,9 @@ export default defineEventHandler(async (event) => {
 
       // 标题/描述/目录变化时重建索引；清空内容也要写回空向量，
       // 否则旧向量会继续命中已删除的关键词。
+      // 分词规则与全量重建 / 批量导入共用 buildSourceSearchTokens。
       if (needsVectorRebuild) {
-        const tokens = buildTokens(
-          updated.title || "",
-          updated.description || "",
-          truncateString(clearTreeSymbols(updated.menu || ""), TREE_MAX_LINE),
-        );
+        const tokens = buildSourceSearchTokens(updated);
         await tx.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens || ""}) WHERE id = ${updated.id}`;
       }
       return updated;

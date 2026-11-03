@@ -1,17 +1,13 @@
 import { prisma } from "#server/lib/prisma";
 import { assertValidSlug } from "#server/lib/page";
+import { paginated, parsePagination } from "#server/utils/admin";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
 
   if (method === "GET") {
     const query = getQuery(event);
-    const page = Math.max(1, parseInt(query.page as string) || 1);
-    const pageSize = Math.min(
-      100,
-      Math.max(1, parseInt(query.pageSize as string) || 20),
-    );
-    const skip = (page - 1) * pageSize;
+    const pagination = parsePagination(query);
 
     const where: any = {};
     if (query.status === "DRAFT" || query.status === "PUBLISHED") {
@@ -29,19 +25,13 @@ export default defineEventHandler(async (event) => {
       prisma.page.findMany({
         where,
         orderBy: [{ sort: "asc" }, { createdAt: "desc" }],
-        skip,
-        take: pageSize,
+        skip: pagination.skip,
+        take: pagination.pageSize,
       }),
       prisma.page.count({ where }),
     ]);
 
-    return {
-      data: list,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+    return paginated(list, total, pagination);
   }
 
   if (method === "POST") {

@@ -1,7 +1,5 @@
 import { prisma } from "#server/lib/prisma";
-
-// 单次批量操作上限，防止误提交超大请求
-const BATCH_MAX = 1000;
+import { parseBatchIds } from "#server/utils/admin";
 
 /**
  * 音乐批量操作
@@ -11,25 +9,10 @@ const BATCH_MAX = 1000;
  */
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { action, ids, status } = body;
+  const { action, status } = body;
 
-  if (!Array.isArray(ids) || ids.length === 0) {
-    throw createError({ statusCode: 400, message: "缺少音乐ID列表" });
-  }
-  if (ids.length > BATCH_MAX) {
-    throw createError({
-      statusCode: 400,
-      message: `单次最多操作 ${BATCH_MAX} 条`,
-    });
-  }
-  // 过滤非法 id，去重
-  const idList = [
-    ...new Set(ids.filter((id: unknown) => typeof id === "string" && id)),
-  ];
-
-  if (idList.length === 0) {
-    throw createError({ statusCode: 400, message: "音乐ID列表为空" });
-  }
+  // 非空 / 上限 / 过滤非法 id / 去重，与资源侧同一套校验
+  const idList = parseBatchIds(body.ids, "音乐");
 
   if (action === "status") {
     const s = Number(status);

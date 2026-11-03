@@ -1,8 +1,7 @@
 import { Pool } from "pg";
+import { buildSourceSearchTokens } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
-import { clearTreeSymbols, truncateString } from "#server/utils/source";
-import { setRedisCache } from "#server/lib/redis";
-import { TREE_MAX_LINE } from "#server/lib/const";
+import { setRedisCache, getRedisCache } from "#server/lib/redis";
 
 type RebuildTarget = "music" | "source";
 
@@ -61,11 +60,11 @@ const TARGET_CONFIGS: Record<RebuildTarget, RebuildTargetConfig> = {
       `SELECT id, title, description, menu FROM "Source" ${baseWhere} ORDER BY id ASC LIMIT ${batchSize};`,
     updateSql: `UPDATE "Source" as s SET "searchVector" = to_tsvector('simple', t.tokens) FROM (SELECT unnest($1::text[]) as id, unnest($2::text[]) as tokens) as t WHERE s.id = t.id;`,
     buildRowTokens: (row) =>
-      buildTokens(
-        row.title || "",
-        row.description || "",
-        truncateString(clearTreeSymbols(row.menu || ""), TREE_MAX_LINE),
-      ),
+      buildSourceSearchTokens({
+        title: row.title,
+        description: row.description,
+        menu: row.menu,
+      }),
     startLog: () => `[RebuildSearch] 开始重建全文索引...`,
     batchErrorLog: () => `[RebuildSearch] 批次更新失败`,
     successLog: (totalUpdated, failedBatches) =>
@@ -73,6 +72,36 @@ const TARGET_CONFIGS: Record<RebuildTarget, RebuildTargetConfig> = {
     fatalErrorLog: "[RebuildSearch] 严重异常:",
     closePoolErrorLog: "[RebuildSearch] 关闭连接池失败:",
   },
+};
+
+/**
+ * 重复触发重建时的 423 错误。
+ * label 为「音乐」「资源」等业务名，文案与各端点旧实现逐字一致。
+ */
+export const rebuildAlreadyRunning = (label: string) =>
+  createError({
+    statusCode: 423,
+    message: `当前已有${label}全文索引重建任务在后台运行中，请勿重复触发`,
+  });
+
+/**
+ * 查询某个目标的重建进度（供 rebuild-status 端点使用）。
+ *
+ * 从高速 Redis 缓存读取，完全不碰数据库；缓存为空说明当前没有任务，
+ * 返回 idle。多副本部署时这段逻辑随 lib 单点维护，端点只做委托。
+ */
+export const getRebuildStatus = async (target: RebuildTarget) => {
+  const cachedStatus = await getRedisCache<{
+    status: "running" | "done" | "error";
+    current?: number;
+    message?: string;
+  }>(TARGET_CONFIGS[target].cacheKey);
+
+  if (!cachedStatus) {
+    return { status: "idle", current: 0 };
+  }
+
+  return cachedStatus;
 };
 
 /**

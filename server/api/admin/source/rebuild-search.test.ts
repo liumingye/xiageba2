@@ -23,7 +23,7 @@ vi.mock("#server/utils/jieba", () => ({
 }));
 
 vi.mock("#server/utils/source", () => ({
-  clearTreeSymbols: (v: string) => v,
+  buildSourceSearchTokens: (s: any) => `tokens:${s.title ?? ""}`,
 }));
 
 vi.mock("#server/lib/redis", () => ({
@@ -38,7 +38,6 @@ vi.stubGlobal("readBody", async () => {
   return h.body;
 });
 vi.stubGlobal("createError", (o: any) => Object.assign(new Error(o.message), o));
-vi.stubGlobal("truncateString", (v: string) => v);
 
 const { default: handler } = await import("./rebuild-search.post");
 

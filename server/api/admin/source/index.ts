@@ -1,29 +1,21 @@
 import { Pool } from "pg";
 import { prisma } from "#server/lib/prisma";
-import { clearTreeSymbols, truncateString } from "#server/utils/source";
-import {
-  buildTokens,
-  cutForSearch,
-  buildSearchWebQuery,
-} from "#server/utils/jieba";
-import { TREE_MAX_LINE } from "#server/lib/const";
+import { buildSourceSearchTokens } from "#server/utils/source";
+import { cutForSearch, buildSearchWebQuery } from "#server/utils/jieba";
 import { getCategoryList } from "#server/lib/categoryCache";
+import { paginated, parsePagination } from "#server/utils/admin";
 
 // 实例化 pg 连接池（保持与 Prisma 数据库连接一致）
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 15 });
 
-/** 重建资源的 searchVector 全文索引 */
+/** 重建资源的 searchVector 全文索引（分词规则与全量重建共用单点实现） */
 const updateSearchVector = async (source: {
   id: string;
   title: string | null;
   description: string | null;
   menu: string | null;
 }) => {
-  const tokens = buildTokens(
-    source.title || "",
-    source.description || "",
-    truncateString(clearTreeSymbols(source.menu || ""), TREE_MAX_LINE),
-  );
+  const tokens = buildSourceSearchTokens(source);
   if (tokens) {
     await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
   }
@@ -34,12 +26,8 @@ export default defineEventHandler(async (event) => {
 
   if (method === "GET") {
     const query = getQuery(event);
-    const page = Math.max(1, parseInt(query.page as string) || 1);
-    const pageSize = Math.min(
-      100,
-      Math.max(1, parseInt(query.pageSize as string) || 20),
-    );
-    const skip = (page - 1) * pageSize;
+    const pagination = parsePagination(query);
+    const { pageSize, skip } = pagination;
     const cid = Number(query.cid) || null;
     const keyword = (query.keyword as string | undefined)?.trim();
 
@@ -132,11 +120,7 @@ export default defineEventHandler(async (event) => {
         const total = parseInt(countResult.rows[0]?.count || "0", 10);
 
         return {
-          data: sources,
-          total,
-          page,
-          pageSize,
-          totalPages: Math.ceil(total / pageSize),
+          ...paginated(sources, total, pagination),
           categories,
         };
       } finally {
@@ -182,11 +166,7 @@ export default defineEventHandler(async (event) => {
     ]);
 
     return {
-      data: sources,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
+      ...paginated(sources, total, pagination),
       categories,
     };
   }

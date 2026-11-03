@@ -1,31 +1,24 @@
 import { prisma } from "#server/lib/prisma";
 import { clearCategoryNameMapCache } from "#server/lib/categoryCache";
+import { paginated, parsePagination } from "#server/utils/admin";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
 
   if (method === "GET") {
     const query = getQuery(event);
-    const page = Math.max(1, parseInt(query.page as string) || 1);
-    const pageSize = Math.min(100, Math.max(1, parseInt(query.pageSize as string) || 20));
-    const skip = (page - 1) * pageSize;
+    const pagination = parsePagination(query);
 
     const [categories, total] = await Promise.all([
       prisma.category.findMany({
         orderBy: [{ sort: "asc" }, { createdAt: "desc" }],
-        skip,
-        take: pageSize,
+        skip: pagination.skip,
+        take: pagination.pageSize,
       }),
       prisma.category.count(),
     ]);
 
-    return {
-      data: categories,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+    return paginated(categories, total, pagination);
   }
 
   if (method === "POST") {

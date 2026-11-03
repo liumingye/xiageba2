@@ -1,5 +1,7 @@
 import { prisma } from "#server/lib/prisma";
 import { clearAccountCache } from "#server/lib/accountCache";
+import { buildTokens } from "#server/utils/jieba";
+import { TREE_MAX_LINE } from "#server/lib/const";
 
 interface TokenInfo {
   refreshToken: string;
@@ -112,6 +114,28 @@ export const truncateString = (str: string, maxLine = 150, ellipsis = "") => {
 
   return str;
 };
+
+/**
+ * Source 全文索引分词：唯一权威实现。
+ *
+ * 语义与全量重建（lib/rebuild-search.ts 的 source 配置）对齐：
+ * 标题 + 描述 + 清掉树形符号并按 TREE_MAX_LINE 截断后的目录。
+ *
+ * 重构前有三处各写各的：source/index.ts 与 source/[id].ts 带截断，
+ * source/import.post.ts 漏了截断（超长 menu 会把整棵树塞进 tsvector），
+ * 且 source/[id].ts 的 truncateString 靠 Nitro 自动导入隐式生效。
+ * 现在新建 / 更新 / 批量导入 / 全量重建统一走这里。
+ */
+export const buildSourceSearchTokens = (source: {
+  title?: string | null;
+  description?: string | null;
+  menu?: string | null;
+}): string =>
+  buildTokens(
+    source.title || "",
+    source.description || "",
+    truncateString(clearTreeSymbols(source.menu || ""), TREE_MAX_LINE),
+  );
 
 /**
  * 移除字符串中的严格URL

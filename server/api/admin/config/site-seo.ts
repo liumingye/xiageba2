@@ -1,4 +1,4 @@
-import { getConfigValues, setConfigValues } from "#server/lib/configCache";
+import { createConfigKVHandler } from "#server/utils/admin";
 import { clearCacheNitroHandlers } from "#server/utils/cache";
 
 const SEO_KEYS = [
@@ -8,31 +8,9 @@ const SEO_KEYS = [
   "site_icp_licence",
 ];
 
-export default defineEventHandler(async (event) => {
-  const method = event.method;
-
-  if (method === "GET") {
-    const result = await getConfigValues(SEO_KEYS);
-    return { data: result };
-  }
-
-  if (method === "POST") {
-    const body = await readBody(event);
-
-    const configs = [];
-    for (const key of SEO_KEYS) {
-      if (body && body[key] !== undefined) {
-        configs.push({ key, value: (body[key] || "").toString().trim() });
-      }
-    }
-
-    const result = await setConfigValues(configs);
-
-    // 清理缓存
-    await clearCacheNitroHandlers("site-seo-data");
-
-    return result;
-  }
-
-  throw createError({ statusCode: 405, message: "不支持的请求方法" });
+// 保存后清理前台 SEO 数据的 Nitro 缓存，否则最长 30 分钟不生效；
+// 值与旧实现一致：falsy 统一为空串，其余 trim。
+export default createConfigKVHandler(SEO_KEYS, {
+  normalizeValue: (v) => (v ? String(v).trim() : ""),
+  afterSave: () => clearCacheNitroHandlers("site-seo-data"),
 });

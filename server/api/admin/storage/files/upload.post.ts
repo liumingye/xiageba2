@@ -1,4 +1,5 @@
-import { uploadFile } from "#server/lib/s3";
+import { uploadFile, getFullKey, getS3Config } from "#server/lib/s3";
+import { prisma } from "#server/lib/prisma";
 
 /** 单文件上传体积上限（100MB）。multipart 默认无大小限制，需在应用层拦截 */
 const MAX_UPLOAD_SIZE = 100 * 1024 * 1024;
@@ -49,9 +50,6 @@ export default defineEventHandler(async (event) => {
   const key = customPath ? `${customPath.replace(/^\/+|\/+$/g, "")}/${originalName}` : originalName;
 
   // 上传前检测重复
-  const { prisma } = await import("#server/lib/prisma");
-  const { getFullKey, getS3Config } = await import("#server/lib/s3");
-
   const config = await getS3Config(configId);
   const fullKey = getFullKey(config, key);
   const existing = await prisma.storageFile.findFirst({

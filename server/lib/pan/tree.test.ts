@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderTree, sortEntries } from "./tree";
+import { renderTree, sortEntries, toIsDir } from "./tree";
 import type { PanFile } from "./types";
 
 const file = (id: string, name: string): PanFile => ({ id, name, isDir: false });
@@ -31,6 +31,27 @@ describe("sortEntries", () => {
   it("原地排序并返回同一数组引用", () => {
     const input = [file("1", "b"), file("2", "a")];
     expect(sortEntries(input)).toBe(input);
+  });
+});
+
+describe("toIsDir", () => {
+  it("数字 1、字符串 '1'、true 都判为目录", () => {
+    expect(toIsDir(1)).toBe(true);
+    expect(toIsDir("1")).toBe(true);
+    expect(toIsDir(true)).toBe(true);
+  });
+
+  it("0、'0'、false、undefined、null 判为文件", () => {
+    expect(toIsDir(0)).toBe(false);
+    expect(toIsDir("0")).toBe(false);
+    expect(toIsDir(false)).toBe(false);
+    expect(toIsDir(undefined)).toBe(false);
+    expect(toIsDir(null)).toBe(false);
+  });
+
+  it("百度真机出现的 truthy 非 1 值（如 '1 ' 之外不猜，但 2/'yes' 不算目录）", () => {
+    expect(toIsDir(2)).toBe(false);
+    expect(toIsDir("yes")).toBe(false);
   });
 });
 

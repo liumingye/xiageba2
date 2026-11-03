@@ -1,7 +1,6 @@
 import * as XLSX from "xlsx";
 import { prisma } from "#server/lib/prisma";
-import { clearTreeSymbols } from "#server/utils/source";
-import { buildTokens } from "#server/utils/jieba";
+import { buildSourceSearchTokens } from "#server/utils/source";
 
 interface ImportRow {
   title: string;
@@ -153,11 +152,8 @@ export default defineEventHandler(async (event) => {
           const tokenStrings: string[] = [];
 
           for (const rec of insertedRecords) {
-            const tokens = buildTokens(
-              rec.title || "",
-              rec.description || "",
-              clearTreeSymbols(rec.menu || ""),
-            );
+            // 与全量重建 / 单条更新共用同一套分词规则（含树形符号清理与行数截断）
+            const tokens = buildSourceSearchTokens(rec);
             // 如果切词有内容，则加入批量更新列表
             if (tokens) {
               ids.push(rec.id);
@@ -208,11 +204,7 @@ export default defineEventHandler(async (event) => {
             const ids: string[] = [];
             const tokenStrings: string[] = [];
             for (const rec of updatedRecords) {
-              const tokens = buildTokens(
-                rec.title || "",
-                rec.description || "",
-                clearTreeSymbols(rec.menu || ""),
-              );
+              const tokens = buildSourceSearchTokens(rec);
               if (tokens) {
                 ids.push(rec.id);
                 tokenStrings.push(tokens);

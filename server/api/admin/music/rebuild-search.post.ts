@@ -1,4 +1,7 @@
-import { createSearchRebuildTask } from "#server/lib/rebuild-search";
+import {
+  createSearchRebuildTask,
+  rebuildAlreadyRunning,
+} from "#server/lib/rebuild-search";
 
 const rebuildTask = createSearchRebuildTask("music");
 
@@ -7,10 +10,7 @@ export default defineEventHandler(async (event) => {
   const { all } = await readBody(event);
 
   if (!rebuildTask.start(all)) {
-    throw createError({
-      statusCode: 423,
-      message: "当前已有音乐全文索引重建任务在后台运行中，请勿重复触发",
-    });
+    throw rebuildAlreadyRunning("音乐");
   }
 
   return {

@@ -1,13 +1,12 @@
 import { prisma } from "#server/lib/prisma";
+import { paginated, parsePagination } from "#server/utils/admin";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
 
   if (method === "GET") {
     const query = getQuery(event);
-    const page = Math.max(1, parseInt(query.page as string) || 1);
-    const pageSize = Math.min(100, Math.max(1, parseInt(query.pageSize as string) || 20));
-    const skip = (page - 1) * pageSize;
+    const pagination = parsePagination(query);
     const status = query.status as string | undefined;
 
     const where = status ? { status: status as "PENDING" | "DONE" } : {};
@@ -16,19 +15,13 @@ export default defineEventHandler(async (event) => {
       prisma.feedback.findMany({
         where,
         orderBy: { createdAt: "desc" },
-        skip,
-        take: pageSize,
+        skip: pagination.skip,
+        take: pagination.pageSize,
       }),
       prisma.feedback.count({ where }),
     ]);
 
-    return {
-      data: feedbacks,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+    return paginated(feedbacks, total, pagination);
   }
 
   if (method === "DELETE") {

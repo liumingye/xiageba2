@@ -1,6 +1,7 @@
 import { getAccountById } from "#server/lib/accountCache";
 import { getClientByAccount, createTempClient } from "#server/lib/pan-instance";
 import type { PanClient } from "#server/lib/pan-instance";
+import { toIsDir } from "#server/lib/pan/tree";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
@@ -32,8 +33,10 @@ async function listDirs(client: PanClient): Promise<DirItem[]> {
       order: "name",
       desc: 0,
     });
+    // 百度 isdir 真机上不严格等于 1（出现过 "1"），必须宽容判定，
+    // 否则子目录被当成文件过滤掉，临时目录只能选到根目录
     return (res.list || [])
-      .filter((f) => f.isdir === 1)
+      .filter((f) => toIsDir(f.isdir))
       .map((f) => ({ id: f.path, name: f.server_filename }));
   }
 

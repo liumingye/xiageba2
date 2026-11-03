@@ -1,10 +1,11 @@
 import { getWechatConfig, saveWechatConfig } from "#server/lib/wechatConfig";
-import { readMultipartFormData } from "h3";
 
 /**
  * 上传微信公众号验证 TXT 文件
  * POST /api/admin/config/wechat-verify-file
  * form-data: file=<*.txt>
+ *
+ * readMultipartFormData 走 Nitro 自动导入，与 import.post.ts 等保持一致。
  */
 export default defineEventHandler(async (event) => {
   if (event.method !== "POST") {

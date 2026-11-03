@@ -1,8 +1,9 @@
 import { prisma } from "#server/lib/prisma";
 import { clearAccountCache } from "#server/lib/accountCache";
 import { getAccountNameByCredentials } from "#server/lib/pan-info";
+import { PAN_ACCOUNT_TYPES } from "#server/lib/const";
 
-const VALID_TYPES = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
+const VALID_TYPES: readonly string[] = PAN_ACCOUNT_TYPES;
 
 export default defineEventHandler(async (event) => {
   const method = event.method;
