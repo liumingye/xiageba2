@@ -219,6 +219,28 @@ describe("usePanCheck（视口懒检测）", () => {
     expect(sentBatches()).toEqual([["a"]]);
   });
 
+  it("stop 后重新注册时，被 Vue 复用的元素通过同值 updated 恢复观察", async () => {
+    const { registerItems, vPanCheck, stopPanCheck } = usePanCheck();
+    registerItems(["a"]);
+    const elA = {} as Element;
+    mountItem(vPanCheck, elA, "a");
+
+    // 结果重新拉取：watch 里 stopPanCheck + registerItems
+    stopPanCheck();
+    registerItems(["a"]);
+
+    // 列表重排/筛选后同一 key 的 DOM 被复用，不会重新 mounted，
+    // Vue 只会以相同绑定值触发 updated
+    updateItem(vPanCheck, elA, "a", "a");
+
+    const observer = FakeIntersectionObserver.instances[1]!;
+    expect(observer.observed.has(elA)).toBe(true);
+
+    observer.fire(elA, true);
+    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    expect(sentBatches()).toEqual([["a"]]);
+  });
+
   it("invalid / 未知状态分别映射为 invalid / failed", async () => {
     statusOverrides = { b: "invalid", c: "pending" };
     const { registerItems, vPanCheck, itemStatusMap, validItems } =
@@ -267,7 +289,7 @@ describe("usePanCheck（视口懒检测）", () => {
     expect(getCheckStatus("a")).toBeUndefined();
   });
 
-  it("指令 updated 仅在绑定值变化时重新观察", async () => {
+  it("指令 updated 幂等：同值更新不重复 observe，绑定变化时重新观察", async () => {
     const { registerItems, vPanCheck } = usePanCheck();
     registerItems(["a", "b"]);
     const el = {} as Element;

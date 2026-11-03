@@ -254,9 +254,11 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
       observeElement(el, binding.value);
     },
     updated(el, binding) {
-      if (binding.value !== binding.oldValue) {
-        observeElement(el, binding.value);
-      }
+      // 绑定值未变时也要重试观察：结果重新拉取后 stopPanCheck 会清空
+      // itemToEl/elToItem 并 disconnect observer，而同一 key 的元素会被 Vue
+      // 复用（列表重排/筛选），不会再触发 mounted，只能靠 updated 恢复观察，
+      // 否则这些元素永远不会进入视口检测。observeElement 自身幂等。
+      observeElement(el, binding.value);
     },
     unmounted(el) {
       releaseElement(el);
