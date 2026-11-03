@@ -1,5 +1,5 @@
 import { XunleiClient } from "./client";
-import { ApiError, throwError } from "./errors";
+import { ApiError } from "./errors";
 import {
   type IXunleiShareDetail,
   type IXunleiShareFile,

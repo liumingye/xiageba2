@@ -6,19 +6,11 @@ import zlib from "zlib";
 import {
   C139_SHARE_AES_KEY,
   C139_SHARE_X_DEVICEINFO,
-  C139_SHARE_X_HUAWEI_CHANNELSRC,
-  C139_SHARE_X_MM_SOURCE,
   C139_SHARE_MOBILE_UA,
   C139_PC_UA,
-  C139_X_DEVICEINFO,
   C139_X_CLIENT_INFO,
   C139_YUN_CHANNEL_SOURCE,
-  C139_MCLOUD_VERSION,
-  C139_MCLOUD_CLIENT,
-  C139_MCLOUD_CHANNEL,
   C139_YUN_MODULE_TYPE,
-  C139_M4C_SRC,
-  C139_M4C_CALLER,
 } from "./const";
 import { throwError, AuthError } from "./errors";
 import { C139ShareApi } from "./share_api";
@@ -237,9 +229,6 @@ export class C139Client {
   ): Promise<Record<string, any>> {
     const encrypted = aesEncrypt(this.aesKey, plainBody);
     const headers: Record<string, string> = {
-      // "hcy-cool-flag": "1",
-      // "x-huawei-channelsrc": C139_SHARE_X_HUAWEI_CHANNELSRC,
-      // "x-mm-source": C139_SHARE_X_MM_SOURCE,
       "Content-Type": "application/json;charset=UTF-8",
       "User-Agent": C139_SHARE_MOBILE_UA,
       Origin: "https://yun.139.com",
@@ -291,18 +280,10 @@ export class C139Client {
     url: string,
     payload: Record<string, any>,
   ): Promise<Record<string, any>> {
-    const bodyJson = JSON.stringify(payload);
     const headers: Record<string, string> = {
       "Content-Type": "application/json;charset=UTF-8",
       "User-Agent": C139_PC_UA,
       Accept: "application/json, text/plain, */*",
-      // "mcloud-channel": C139_MCLOUD_CHANNEL,
-      // "mcloud-client": C139_MCLOUD_CLIENT,
-      // "mcloud-sign": signHeader(bodyJson),
-      // "mcloud-version": C139_MCLOUD_VERSION,
-      // "x-deviceinfo": C139_X_DEVICEINFO,
-      // "x-m4c-src": C139_M4C_SRC,
-      // "x-m4c-caller": C139_M4C_CALLER,
       "x-svctype": "1",
       "x-yun-api-version": "v1",
       "x-yun-app-channel": C139_YUN_CHANNEL_SOURCE,

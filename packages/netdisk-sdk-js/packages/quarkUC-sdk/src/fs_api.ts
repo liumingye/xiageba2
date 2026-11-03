@@ -2,7 +2,6 @@ import {
   ArrayUtil,
   AsyncUtil,
   Check,
-  ContentType,
   type NBoolean,
 } from "@netdisk-sdk/utils";
 import { QuarkUCClient } from "./client";
@@ -18,7 +17,8 @@ import {
   toSortStr,
 } from "./types";
 import { HttpError } from "./errors";
-// import OSS from 'ali-oss';
+import crypto from "crypto";
+import { Buffer } from "buffer";
 
 export type IRecordID = Pick<IRecycleFile, "record_id">;
 export type IRecordIDExtend = IRecordID | string;
@@ -370,8 +370,6 @@ x-oss-user-agent:${ua}
   return result.headers["etag"] ?? "";
 };
 
-import crypto from "crypto";
-import { Buffer } from "buffer";
 QuarkUCFSApi.prototype.upCommit = async function (param, md5s) {
   const {
     auth_info,

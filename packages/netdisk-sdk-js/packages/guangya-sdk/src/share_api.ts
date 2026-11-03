@@ -16,7 +16,6 @@ import {
 import {
   type IGuangyaCreateShareParam,
   type IGuangyaCreateShareResult,
-  type IGuangyaFile,
   type IGuangyaParsedShareURL,
   type IGuangyaRestoreParam,
   type IGuangyaRestoreResult,

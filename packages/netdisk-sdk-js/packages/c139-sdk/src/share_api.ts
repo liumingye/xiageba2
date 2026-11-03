@@ -1,8 +1,6 @@
 import { C139Client } from "./client";
 import {
-  C139_SHARE_GENERAL_URL,
   C139_SHARE_LIST_URL,
-  C139_SHARE_LINK_URL,
   C139_TRANSFER_CREATE_URL,
   C139_TRANSFER_QUERY_URL,
   C139_CREATE_SHARE_URL,
@@ -11,10 +9,8 @@ import {
 } from "./const";
 import { isC139Success, raiseApiError, ApiError } from "./errors";
 import {
-  type IC139DownloadLink,
   type IC139File,
   type IC139ParsedShareURL,
-  type IC139ShareDownloadParam,
   type IC139ShareFilesParam,
   type IC139ShareFilesResult,
   type IC139TransferParam,

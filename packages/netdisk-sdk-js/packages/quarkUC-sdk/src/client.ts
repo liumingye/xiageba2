@@ -45,7 +45,7 @@ export class QuarkUCClient {
 
   constructor(config: any, agent?: Agent) {
     if (Check.isString(config.type)) {
-      const { type, cookie } = config;
+      const { type } = config;
       if (type == "quark") {
         this.config = {
           ...config,
