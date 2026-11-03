@@ -3,18 +3,24 @@ import type { DirectiveBinding, ObjectDirective } from "vue";
 import { usePanCheck } from "./usePanCheck";
 
 /**
- * usePanCheck 视口懒检测单测
+ * usePanCheck 视口懒检测单测（滚动停止才送检）
  *
  * node 环境无 DOM，用假 IntersectionObserver + fetch stub + 假定时器驱动。
  * 锁定行为：
- * 1. registerItems 只注册不检测，元素进入视口才发起请求（核心重构目标）
- * 2. flushDelay 聚合 + batchSize 串行分批
- * 3. stopPanCheck 中断未发出的批次并清空状态
- * 4. 老浏览器（无 IntersectionObserver）退化为注册即检测
- * 5. enabled=false 全程静默
+ * 1. registerItems 只注册不检测，滚动停止后仍在视口内才发起请求
+ * 2. 快速滚过（进了又出）的 item 不送检；中途停顿不足 settle 会重置计时
+ * 3. flushDelay 聚合 + batchSize 串行分批，在途批次跑完再接续新视口
+ * 4. stopPanCheck 中断未发出的批次并清空状态
+ * 5. 老浏览器（无 IntersectionObserver）退化为注册即检测
+ * 6. enabled=false 全程静默
  */
 
 const FLUSH_DELAY = 150;
+const SETTLE_DELAY = 300;
+
+/** 推进到「滚动停止 + 队列聚合」之后 */
+const advancePastSettle = () =>
+  vi.advanceTimersByTimeAsync(SETTLE_DELAY + FLUSH_DELAY + 20);
 
 type ServerStatus = "valid" | "invalid" | "pending" | "unknown";
 
@@ -103,7 +109,7 @@ const updateItem = (
 const unmountItem = (d: PanCheckDirective, el: Element) =>
   d.unmounted!(el, makeBinding(""), null as never, null);
 
-describe("usePanCheck（视口懒检测）", () => {
+describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     // onBeforeUnmount 在无组件实例时会 warn，测试中屏蔽
@@ -117,7 +123,7 @@ describe("usePanCheck（视口懒检测）", () => {
     vi.restoreAllMocks();
   });
 
-  it("registerItems 只注册不检测，进入视口才发起请求", async () => {
+  it("registerItems 只注册不检测，滚动停止才发起请求", async () => {
     const { registerItems, vPanCheck, itemStatusMap } = usePanCheck();
     registerItems(["a", "b", "c"]);
     // 注册不等于检测：未进入视口前没有任何状态与请求
@@ -131,21 +137,25 @@ describe("usePanCheck（视口懒检测）", () => {
     const observer = FakeIntersectionObserver.instances[0]!;
     expect(observer.observed.size).toBe(2);
 
-    // 只有 a 进入视口
+    // a 进入视口但滚动未停：不发请求，观察保持
     observer.fire(elA, true);
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    await vi.advanceTimersByTimeAsync(SETTLE_DELAY - 50);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(observer.observed.has(elA)).toBe(true);
 
+    // 滚动停下：送检
+    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 70);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(sentBatches()).toEqual([["a"]]);
     expect(itemStatusMap.get("a")).toBe("valid");
     expect(itemStatusMap.get("b")).toBeUndefined();
     expect(itemStatusMap.get("c")).toBeUndefined();
-    // 一次性观察：进入视口后解绑，滚回去不重复检测
+    // 送检后解绑，滚回去不重复检测
     expect(observer.observed.has(elA)).toBe(false);
   });
 
-  it("后续滚入视口的 item 会补充检测", async () => {
-    const { registerItems, vPanCheck, itemStatusMap } = usePanCheck();
+  it("快速滚过（进了又出视口）的 item 不送检", async () => {
+    const { registerItems, vPanCheck } = usePanCheck();
     registerItems(["a", "b"]);
     const elA = {} as Element;
     const elB = {} as Element;
@@ -153,15 +163,50 @@ describe("usePanCheck（视口懒检测）", () => {
     mountItem(vPanCheck, elB, "b");
     const observer = FakeIntersectionObserver.instances[0]!;
 
+    // 一路滚到底：a 瞬间进入又离开，b 停在视口内
     observer.fire(elA, true);
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
+    observer.fire(elA, false);
     observer.fire(elB, true);
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await advancePastSettle();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sentBatches()).toEqual([["b"]]);
+  });
+
+  it("滚动中途停顿不足 settle 会重置计时，不停不送检", async () => {
+    const { registerItems, vPanCheck } = usePanCheck();
+    registerItems(["a"]);
+    const elA = {} as Element;
+    mountItem(vPanCheck, elA, "a");
+    const observer = FakeIntersectionObserver.instances[0]!;
+
+    observer.fire(elA, true);
+    await vi.advanceTimersByTimeAsync(SETTLE_DELAY - 100);
+    // 又滚动了：离开视口，计时重置
+    observer.fire(elA, false);
+    await vi.advanceTimersByTimeAsync(SETTLE_DELAY + FLUSH_DELAY + 20);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("中途停顿达标即送检，在途批次跑完再接续新视口", async () => {
+    const { registerItems, vPanCheck } = usePanCheck();
+    registerItems(["a", "b"]);
+    const elA = {} as Element;
+    const elB = {} as Element;
+    mountItem(vPanCheck, elA, "a");
+    mountItem(vPanCheck, elB, "b");
+    const observer = FakeIntersectionObserver.instances[0]!;
+
+    // 第一波：a 停住 → 送检
+    observer.fire(elA, true);
+    await advancePastSettle();
+    expect(sentBatches()).toEqual([["a"]]);
+
+    // 继续滚动，b 进入视口 → 排到队尾，前一批已完成后自然接续
+    observer.fire(elB, true);
+    await advancePastSettle();
     expect(sentBatches()).toEqual([["a"], ["b"]]);
-    expect(itemStatusMap.get("b")).toBe("valid");
   });
 
   it("batchSize 内合并、超量串行排队", async () => {
@@ -192,9 +237,9 @@ describe("usePanCheck（视口懒检测）", () => {
     const observer = FakeIntersectionObserver.instances[0]!;
     observer.fire(elA, true);
 
-    // 在 flush 定时器触发前中止
+    // 在 settle 定时器触发前中止
     stopPanCheck();
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    await advancePastSettle();
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(itemStatusMap.size).toBe(0);
@@ -213,7 +258,7 @@ describe("usePanCheck（视口懒检测）", () => {
     // stop 后旧 observer 已 disconnect，重新 observe 会创建新实例
     const observer = FakeIntersectionObserver.instances[1]!;
     observer.fire(elA, true);
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    await advancePastSettle();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(sentBatches()).toEqual([["a"]]);
@@ -231,7 +276,7 @@ describe("usePanCheck（视口懒检测）", () => {
     });
     const observer = FakeIntersectionObserver.instances[0]!;
     els.forEach((el) => observer.fire(el, true));
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    await advancePastSettle();
 
     expect(itemStatusMap.get("a")).toBe("valid");
     expect(itemStatusMap.get("b")).toBe("invalid");
@@ -260,7 +305,7 @@ describe("usePanCheck（视口懒检测）", () => {
     registerItems(["a"]);
     const elA = {} as Element;
     mountItem(vPanCheck, elA, "a");
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    await advancePastSettle();
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(FakeIntersectionObserver.instances.length).toBe(0);
@@ -284,21 +329,23 @@ describe("usePanCheck（视口懒检测）", () => {
     expect(observer.observed.size).toBe(1);
 
     observer.fire(el, true);
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    await advancePastSettle();
     expect(sentBatches()).toEqual([["b"]]);
   });
 
-  it("元素卸载时解绑观察，不再触发检测", async () => {
+  it("元素卸载时解绑观察，settle 后也不送检", async () => {
     const { registerItems, vPanCheck } = usePanCheck();
     registerItems(["a"]);
     const el = {} as Element;
     mountItem(vPanCheck, el, "a");
     const observer = FakeIntersectionObserver.instances[0]!;
 
+    // 进入视口后、settle 触发前元素被卸载
+    observer.fire(el, true);
     unmountItem(vPanCheck, el);
     expect(observer.observed.size).toBe(0);
 
-    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 10);
+    await advancePastSettle();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

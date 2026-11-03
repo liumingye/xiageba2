@@ -10,10 +10,16 @@ interface UsePanCheckOptions {
   mode?: "ids" | "urls";
   /** 单次请求批量大小（服务端上限 20），默认 10 */
   batchSize?: number;
-  /** 视口预检边距：链接距视口还有多远就提前检测，默认 "200px" */
+  /** 视口预检边距：链接距视口还有多远就视为进入（预检）区域，默认 "200px" */
   rootMargin?: string;
-  /** 视口条目聚合延迟（ms）：把连续滚入视口的多个链接合并成一批，默认 150 */
+  /** 视口条目聚合延迟（ms）：把同一批入队的多个链接合并发出，默认 150 */
   flushDelay?: number;
+  /**
+   * 滚动停止判定延时（ms）：视口组成一变化就重置计时，滚动停下这么久
+   * 之后才把当前仍在视口内的 item 送入检测队列。默认 300。
+   * 直接一路滚到底时，中途「进了又出」的 item 不会送检。
+   */
+  scrollSettleDelay?: number;
 }
 
 /** 浏览器环境才允许发起检测（SSR / 无 fetch 时静默跳过） */
@@ -27,6 +33,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     batchSize = 10,
     rootMargin = "200px",
     flushDelay = 150,
+    scrollSettleDelay = 300,
   } = options;
 
   const checking = ref(false);
@@ -40,7 +47,9 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
 
   // 已注册但尚未检测的 item（等待绑定元素进入视口）
   const pendingItems = new Set<string>();
-  // 已进入视口、排队等待检测的 item
+  // 已进入（预检）视口、等待「滚动停止」判定后送检的 item ↔ 元素
+  const inViewMap = new Map<string, Element>();
+  // 已入队、等待检测的 item
   const visibleQueue: string[] = [];
   const queuedItems = new Set<string>();
 
@@ -50,11 +59,12 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
 
   let observer: IntersectionObserver | null = null;
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * 注册待检测的 item。
-   * 不再一次性全部提交：只有通过 vPanCheck 绑定的元素进入视口后，
-   * 才会真正发起检测请求。
+   * 不再一次性全部提交：只有通过 vPanCheck 绑定的元素在「滚动停止」
+   * 后仍处于视口内，才会真正发起检测请求。
    */
   const registerItems = (items: string[]) => {
     if (!enabled || !isBrowser() || items.length === 0) return;
@@ -162,20 +172,48 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   };
 
   const handleIntersect = (entries: IntersectionObserverEntry[]) => {
-    const entered: string[] = [];
+    let viewportChanged = false;
     for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
       const item = elToItem.get(entry.target);
       if (!item) continue;
-      // 一次性观察：进入视口后解绑，滚回去不重复检测
-      observer?.unobserve(entry.target);
-      elToItem.delete(entry.target);
-      itemToEl.delete(item);
-      if (pendingItems.has(item) && !queuedItems.has(item)) {
-        entered.push(item);
+      if (entry.isIntersecting) {
+        // 只记录「当前在视口内」，不立即送检
+        if (!inViewMap.has(item)) {
+          inViewMap.set(item, entry.target);
+          viewportChanged = true;
+        }
+      } else if (inViewMap.delete(item)) {
+        // 已经离开视口（含快速滚过）：不再送检
+        viewportChanged = true;
       }
     }
-    if (entered.length > 0) enqueueItems(entered);
+    // 视口组成一变化就重置计时：滚动不停，始终不送检
+    if (viewportChanged) scheduleViewportFlush();
+  };
+
+  /** 滚动停止判定：停下 scrollSettleDelay 后，把当前仍在视口内的 item 送入队列 */
+  const scheduleViewportFlush = () => {
+    if (settleTimer !== null) clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      settleTimer = null;
+      flushViewport();
+    }, scrollSettleDelay);
+  };
+
+  const flushViewport = () => {
+    if (inViewMap.size === 0) return;
+    const ready: string[] = [];
+    for (const [item, el] of inViewMap) {
+      // 已检测过 / 已在队列中的 item 不重复送检
+      if (!pendingItems.has(item) || queuedItems.has(item)) continue;
+      ready.push(item);
+      // 一次性观察：送检后解绑，滚回去不重复检测
+      observer?.unobserve(el);
+      elToItem.delete(el);
+      itemToEl.delete(item);
+      inViewMap.delete(item);
+    }
+    if (ready.length > 0) enqueueItems(ready);
   };
 
   const ensureObserver = () => {
@@ -208,6 +246,8 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     observer?.unobserve(el);
     elToItem.delete(el);
     itemToEl.delete(item);
+    // 元素卸载时从待送检集合移除，防止 settle 后送检已消失的条目
+    inViewMap.delete(item);
   };
 
   /**
@@ -229,9 +269,14 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
       clearTimeout(flushTimer);
       flushTimer = null;
     }
+    if (settleTimer !== null) {
+      clearTimeout(settleTimer);
+      settleTimer = null;
+    }
     visibleQueue.length = 0;
     queuedItems.clear();
     pendingItems.clear();
+    inViewMap.clear();
 
     observer?.disconnect();
     observer = null;
@@ -246,7 +291,8 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   onBeforeUnmount(stopPanCheck);
 
   /**
-   * 模板指令：绑在列表项根元素上，元素进入视口才触发检测。
+   * 模板指令：绑在列表项根元素上。元素进入视口不立即检测，
+   * 等滚动停止（scrollSettleDelay）后仍留在视口内才送检。
    * 用法：<LocalResourceItem v-for="item in items" v-pan-check="item.id" ... />
    */
   const vPanCheck: ObjectDirective<Element, string> = {
