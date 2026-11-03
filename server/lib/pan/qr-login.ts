@@ -75,9 +75,6 @@ function genRequestId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const UA_CHROME =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
 /** 把 Set-Cookie 头数组解析成「key=value」数组（去 path/expires 等属性） */
 function parseSetCookie(setCookie: string | string[] | undefined): string[] {
   const list = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
@@ -113,7 +110,6 @@ function cookieArrayToString(cookies: string[]): string {
 
 /** 夸克与 UC 共用同一套 CAS 流程，仅地址/clientId/二维码模板不同 */
 function makeQuarkUCStrategy(
-  type: "quark" | "uc",
   conf: {
     tokenUrl: string;
     pollUrl: string;
@@ -420,7 +416,7 @@ const baiduStrategy: QrStrategy = {
 // ---------------------------------------------------------------------------
 
 const STRATEGIES: Record<QrLoginType, QrStrategy> = {
-  quark: makeQuarkUCStrategy("quark", {
+  quark: makeQuarkUCStrategy({
     tokenUrl: "https://uop.quark.cn/cas/ajax/getTokenForQrcodeLogin",
     pollUrl: "https://uop.quark.cn/cas/ajax/getServiceTicketByQrcodeToken",
     clientId: "532",
@@ -436,7 +432,7 @@ const STRATEGIES: Record<QrLoginType, QrStrategy> = {
     ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) quark-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch",
     referer: "https://pan.quark.cn",
   }),
-  uc: makeQuarkUCStrategy("uc", {
+  uc: makeQuarkUCStrategy({
     tokenUrl: "https://api.open.uc.cn/cas/ajax/getTokenForQrcodeLogin",
     pollUrl: "https://api.open.uc.cn/cas/ajax/getServiceTicketByQrcodeToken",
     clientId: "381",

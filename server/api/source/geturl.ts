@@ -100,7 +100,7 @@ async function listFilesQuarkUC(
 async function listFilesXunlei(
   fsApi: XunleiFSApi,
   parentId: string,
-  isTop: boolean,
+  _isTop: boolean,
 ): Promise<PanFile[]> {
   const result: PanFile[] = [];
   let pageToken = "";
@@ -136,7 +136,7 @@ async function listFilesXunlei(
 async function listFilesBaidu(
   fsApi: BaiduFSOpenApi,
   dirPath: string,
-  isTop: boolean,
+  _isTop: boolean,
 ): Promise<PanFile[]> {
   const result: PanFile[] = [];
   let start = 0;
@@ -465,7 +465,6 @@ async function transferBaidu(
 
   const fids = list.map((item) => item.to);
 
-  // const pwd = shareParam.pwd || "6666";
   const pwd = "6666";
 
   let shareResult: ICreateShareResult | null = null;

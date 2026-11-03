@@ -1,6 +1,5 @@
 import { getWechatConfig, saveWechatConfig } from "#server/lib/wechatConfig";
 import type { WechatConfig } from "#server/lib/wechatConfig";
-import { prisma } from "#server/lib/prisma";
 
 export default defineEventHandler(async (event) => {
   const method = event.method;

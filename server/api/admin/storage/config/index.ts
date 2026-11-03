@@ -1,5 +1,4 @@
 import { prisma } from "#server/lib/prisma";
-import { clearS3ClientCache } from "#server/lib/s3";
 
 export default defineEventHandler(async (event) => {
   if (event.method === "GET") {

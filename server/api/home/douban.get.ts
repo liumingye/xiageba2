@@ -442,7 +442,7 @@ function addDot0(num: number | undefined) {
   return Number.isInteger(num) ? `${num}.0` : String(num || "");
 }
 
-function mapItem(item: DoubanItem, categoryId: string): DoubanResult {
+function mapItem(item: DoubanItem): DoubanResult {
   const cardSubtitle = item.card_subtitle || "";
 
   const vod_pic = item.pic?.large || item.pic?.normal || "";
@@ -552,7 +552,7 @@ async function fetchCategory(
   }
 
   const list = data.items
-    .map((item) => mapItem(item, categoryId))
+    .map((item) => mapItem(item))
     .filter((v) => v.vod_pic);
   const total = data.total || data.count || list.length;
   const limit = 20;

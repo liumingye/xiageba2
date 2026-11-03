@@ -436,7 +436,6 @@ export async function webSearchConcurrent(
         }
       } catch (err) {
         console.error(`搜索引擎线路 [${config.name}] 发生故障`);
-        // console.error(`搜索引擎线路 [${config.name}] 发生故障:`, err);
       } finally {
         // 执行完毕后，无论成功或失败都解除锁定
         searchInflightLocks.delete(lockKey);

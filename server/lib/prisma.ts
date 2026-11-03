@@ -20,15 +20,9 @@ const prismaClientSingleton = () => {
 
   const sql = postgres(connectionString, { max: 15 });
 
-  // return basePrisma;
   return basePrisma.$extends(
     speedExtension({
       postgres: sql,
-      // debug: true,
-      // onQuery: (info) => {
-      //   console.log(`${info.model}.${info.method} ${info.duration}ms`);
-      //   console.log(info.sql);
-      // },
     }),
   ) as unknown as SpeedClient<typeof basePrisma>;
 };

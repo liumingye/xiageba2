@@ -10,7 +10,7 @@ import type { PanFile, ParsedShare } from "#server/lib/pan/types";
 import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
 import type { IShareFile } from "@netdisk-sdk/quarkuc-sdk";
 import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
-import type { IShareParam, IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
+import type { IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
 import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
 import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
@@ -274,8 +274,7 @@ async function buildBaiduTree(shareUrl: string): Promise<string> {
       num: 200,
       root: 1,
     });
-  } catch (err) {
-    // console.error("获取分享目录失败:", err);
+  } catch {
     throw createError({ statusCode: 404, message: "分享已过期" });
   }
 
@@ -333,8 +332,7 @@ async function buildXunleiTree(
       passCode: passcode,
       limit: 200,
     });
-  } catch (e) {
-    // console.error("获取分享详情失败:", e);
+  } catch {
     throw createError({ statusCode: 404, message: "分享已过期" });
   }
 

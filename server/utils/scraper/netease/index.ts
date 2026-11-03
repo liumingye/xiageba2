@@ -71,7 +71,6 @@ export class NetEaseScraper extends MusicScraper {
         }),
       });
 
-      // console.log(data);
       if (data.code === 400 || data.code === 406) {
         throw new Error("访问过于频繁或接口失效");
       }

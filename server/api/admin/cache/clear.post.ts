@@ -3,7 +3,7 @@
  * https://nitro.build/docs/cache
  * https://github.com/unjs/unstorage
  */
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   const storage = useStorage("cache:");
 
   // 全量清理
