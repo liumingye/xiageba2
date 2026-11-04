@@ -9,14 +9,17 @@ import { usePanCheck } from "./usePanCheck";
  * 锁定行为：
  * 1. registerItems 只注册不检测，滚动停止后仍在视口内才发起请求
  * 2. 快速滚过（进了又出）的 item 不送检；中途停顿不足 settle 会重置计时
- * 3. flushDelay 聚合 + batchSize 串行分批，在途批次跑完再接续新视口
- * 4. stopPanCheck 中断未发出的批次并清空状态
- * 5. 老浏览器（无 IntersectionObserver）退化为注册即检测
- * 6. enabled=false 全程静默
+ * 3. 移动端触摸滚动（IO 回调被抑制/延迟）时 scroll 事件兜底重置 settle，
+ *    flush 前再做真实位置校验，已滚出视口的不送检
+ * 4. flushDelay 聚合 + batchSize 串行分批，在途批次跑完再接续新视口
+ * 5. stopPanCheck 中断未发出的批次并清空状态
+ * 6. 老浏览器（无 IntersectionObserver）退化为注册即检测
+ * 7. enabled=false 全程静默
  */
 
 const FLUSH_DELAY = 150;
 const SETTLE_DELAY = 300;
+const VIEWPORT_HEIGHT = 800;
 
 /** 推进到「滚动停止 + 队列聚合」之后 */
 const advancePastSettle = () =>
@@ -56,6 +59,33 @@ class FakeIntersectionObserver {
   }
 }
 
+/** 假 window：支持 scroll 事件监听/触发，供移动端场景用例驱动 */
+type ScrollListener = (event?: unknown) => void;
+const scrollListeners = new Set<ScrollListener>();
+const fakeWindow = {
+  innerHeight: VIEWPORT_HEIGHT,
+  addEventListener: (type: string, fn: ScrollListener) => {
+    if (type === "scroll") scrollListeners.add(fn);
+  },
+  removeEventListener: (type: string, fn: ScrollListener) => {
+    if (type === "scroll") scrollListeners.delete(fn);
+  },
+};
+const fireScroll = () => scrollListeners.forEach((fn) => fn({ type: "scroll" }));
+
+/** 构造带几何信息的假元素 */
+const makeElement = (rect: { top: number; bottom: number }) =>
+  ({
+    getBoundingClientRect: () => ({
+      top: rect.top,
+      bottom: rect.bottom,
+      left: 0,
+      right: 0,
+      width: 0,
+      height: rect.bottom - rect.top,
+    }),
+  }) as unknown as Element;
+
 let statusOverrides: Record<string, ServerStatus> = {};
 let fetchMock: ReturnType<
   typeof vi.fn<
@@ -65,6 +95,7 @@ let fetchMock: ReturnType<
 
 const stubBrowser = () => {
   statusOverrides = {};
+  scrollListeners.clear();
   fetchMock = vi.fn(async (_url: string, init?: { body?: string }) => {
     const body = JSON.parse(String(init?.body ?? "{}"));
     const items: string[] = body.ids ?? body.urls ?? [];
@@ -75,7 +106,7 @@ const stubBrowser = () => {
     return { json: async () => ({ success: true, statuses }) };
   });
   vi.stubGlobal("fetch", fetchMock);
-  vi.stubGlobal("window", {});
+  vi.stubGlobal("window", fakeWindow);
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
   FakeIntersectionObserver.instances = [];
 };
@@ -186,6 +217,61 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
     observer.fire(elA, false);
     await vi.advanceTimersByTimeAsync(SETTLE_DELAY + FLUSH_DELAY + 20);
 
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("移动端：IO 回调被抑制时 scroll 事件兜底，滑动停后才送检", async () => {
+    const { registerItems, vPanCheck } = usePanCheck();
+    registerItems(["a"]);
+    const elA = {} as Element;
+    mountItem(vPanCheck, elA, "a");
+    const observer = FakeIntersectionObserver.instances[0]!;
+
+    // 首屏进入视口
+    observer.fire(elA, true);
+
+    // 模拟移动端触摸滚动：惯性滑动期间 IO 回调被浏览器抑制，
+    // 只有 scroll 事件在持续触发
+    fireScroll();
+    await vi.advanceTimersByTimeAsync(SETTLE_DELAY - 50);
+    fireScroll();
+    await vi.advanceTimersByTimeAsync(SETTLE_DELAY - 50);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // 惯性停住：300ms 后送检
+    await vi.advanceTimersByTimeAsync(FLUSH_DELAY + 70);
+    expect(sentBatches()).toEqual([["a"]]);
+  });
+
+  it("移动端：IO 报了 enter 但已滚出视口的项，flush 前位置校验滤除", async () => {
+    const { registerItems, vPanCheck } = usePanCheck();
+    registerItems(["a", "b"]);
+    // a 此刻真在视口内；b 的 exit 回调还没到（IO 延迟），但实际已滚出视口
+    const elA = makeElement({ top: 100, bottom: 400 });
+    const elB = makeElement({ top: -2000, bottom: -1600 });
+    mountItem(vPanCheck, elA, "a");
+    mountItem(vPanCheck, elB, "b");
+    const observer = FakeIntersectionObserver.instances[0]!;
+
+    observer.fire(elA, true);
+    observer.fire(elB, true);
+    await advancePastSettle();
+
+    expect(sentBatches()).toEqual([["a"]]);
+  });
+
+  it("stopPanCheck 解绑 scroll 监听，stop 后滚动不再触发送检", async () => {
+    const { registerItems, vPanCheck, stopPanCheck } = usePanCheck();
+    registerItems(["a"]);
+    const elA = {} as Element;
+    mountItem(vPanCheck, elA, "a");
+    expect(scrollListeners.size).toBe(1);
+
+    stopPanCheck();
+    expect(scrollListeners.size).toBe(0);
+
+    fireScroll();
+    await advancePastSettle();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

@@ -30,10 +30,10 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   const {
     enabled = true,
     mode = "ids",
-    batchSize = 10,
+    batchSize = 15,
     rootMargin = "200px",
-    flushDelay = 150,
-    scrollSettleDelay = 300,
+    flushDelay = 100,
+    scrollSettleDelay = 100,
   } = options;
 
   const checking = ref(false);
@@ -60,6 +60,35 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   let observer: IntersectionObserver | null = null;
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
+  let scrollBound = false;
+
+  /**
+   * 滚动信号监听。移动端触摸滚动（含惯性滑动）期间 IO 回调会被浏览器
+   * 抑制 / 延迟，光靠回调驱动 settle 不可靠；scroll 事件在整个滚动
+   * 过程中持续触发，是「还没停」的可靠信号。capture 才能收到内部
+   * 滚动容器的 scroll（scroll 不冒泡），passive 保证不卡滚动。
+   */
+  const handleScroll = () => scheduleViewportFlush();
+
+  const bindScrollListener = () => {
+    if (scrollBound) return;
+    if (typeof window === "undefined") return;
+    if (typeof window.addEventListener !== "function") return;
+    window.addEventListener("scroll", handleScroll, {
+      capture: true,
+      passive: true,
+    });
+    scrollBound = true;
+  };
+
+  const unbindScrollListener = () => {
+    if (!scrollBound) return;
+    if (typeof window !== "undefined" &&
+      typeof window.removeEventListener === "function") {
+      window.removeEventListener("scroll", handleScroll, { capture: true });
+    }
+    scrollBound = false;
+  };
 
   /**
    * 注册待检测的 item。
@@ -206,6 +235,9 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     for (const [item, el] of inViewMap) {
       // 已检测过 / 已在队列中的 item 不重复送检
       if (!pendingItems.has(item) || queuedItems.has(item)) continue;
+      // 双保险：移动端 IO 回调可能延迟，「进了又出」的项此时实际已离开
+      // 视口。IO 说相交（含 rootMargin 预检区）不等于此刻真在视口里。
+      if (!isActuallyInViewport(el)) continue;
       ready.push(item);
       // 一次性观察：送检后解绑，滚回去不重复检测
       observer?.unobserve(el);
@@ -216,9 +248,20 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     if (ready.length > 0) enqueueItems(ready);
   };
 
+  /** 送检前的真实位置校验：元素此刻是否与视口本体相交 */
+  const isActuallyInViewport = (el: Element) => {
+    // 无几何信息的元素（测试 / 异常环境）信任 IO 状态
+    if (typeof el.getBoundingClientRect !== "function") return true;
+    const vh = window.innerHeight;
+    if (!vh) return true;
+    const rect = el.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < vh;
+  };
+
   const ensureObserver = () => {
     if (!observer) {
       observer = new IntersectionObserver(handleIntersect, { rootMargin });
+      bindScrollListener();
     }
     return observer;
   };
@@ -280,6 +323,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
 
     observer?.disconnect();
     observer = null;
+    unbindScrollListener();
     itemToEl.clear();
     elToItem.clear();
 
