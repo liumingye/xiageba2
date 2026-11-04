@@ -116,7 +116,7 @@
 
 - **限流**：`nuxt-api-shield`，全局 30 次 / 60 秒，按路径配置频率与封禁时长
 - **ISR / 缓存**：首页 ISR 300 秒；Nitro `defineCachedEventHandler` 缓存搜索结果；Redis 缓存目录树、转存链接、配置数据
-- **PWA**：`@vite-pwa/nuxt`，`autoUpdate` 策略，图片与 payload 运行时缓存（开发环境关闭）
+- **PWA**：`@vite-pwa/nuxt`，仅提供安装能力（manifest + 图标，Chrome 112+ 安装不依赖 Service Worker）；SW 零缓存：不预缓存、不拦截请求，`cleanupOutdatedCaches` 负责清理历史缓存（开发环境关闭）
 - **参数化 SQL**：搜索与列表使用 `pg` / Prisma 参数化查询，无字符串拼接
 - **屏蔽词**：自实现 AC 自动机（`server/lib/simpleAC.ts`），零外部依赖
 - **浏览器兼容**：生产构建启用 `@teages/nuxt-legacy` + `@vitejs/plugin-legacy`，目标 Chrome ≥ 87 / Safari ≥ 12 / iOS ≥ 12

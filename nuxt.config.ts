@@ -104,18 +104,9 @@ export default defineNuxtConfig({
         // 自动更新策略：检测到新版本时自动激活新的 Service Worker，无需用户手动刷新或确认
         registerType: "autoUpdate",
 
-        // 需要被预缓存（Pre-cache）的静态资源列表（除了构建生成的资源外）
-        // 只保留小体积且每次访问都用得上的图标；512 的两张合计约 394KB，
-        // 仅在「安装到桌面」那一瞬才用得到，不预缓存，交由浏览器 HTTP 缓存按需获取
-        includeAssets: [
-          "favicon.ico",
-          "pwa/icon-192.png",
-          "pwa/apple-touch-icon.png",
-          "img/cover.png",
-          "img/title_bg.webp",
-        ],
-
         // 应用清单配置（控制 PWA 安装到手机或桌面端后的外观和行为）
+        // Chrome 112+ / Edge 安装 PWA 的条件只有 manifest + HTTPS，不依赖 Service Worker，
+        // 因此下方移除全部 workbox 缓存后，安装能力不受影响
         manifest: {
           id: "/", // PWA 的唯一标识符，防止由于 start_url 改变导致生成两个应用
           name: "下歌吧", // 应用的完整名称（安装时显示）
@@ -166,88 +157,25 @@ export default defineNuxtConfig({
         },
 
         // Workbox 配置（底层 Service Worker 的运行核心）
+        //
+        // ⚠️ 不要整个删掉 workbox 字段：@vite-pwa/nuxt 的默认 globPatterns 是
+        // "**/*.{js,css,html}"，会把全部构建产物塞进预缓存，正是要移除的行为。
+        // 必须显式 globPatterns: [] 才能清零。
+        //
+        // SW 本身保留注册（autoUpdate）：安装兼容性兜底 + 旧版本 SW 的平滑替换，
+        // 清理历史缓存仍由 cleanupOutdatedCaches 负责。
         workbox: {
           cleanupOutdatedCaches: true, // 清理之前版本留下的旧缓存，释放存储空间
           clientsClaim: true, // 新的 Service Worker 激活后，立刻接管所有打开的页面
           skipWaiting: true, // 跳过等待，强制最新的 Service Worker 立即进入激活状态
-          navigateFallback: null, // 禁用全局导航回退。因为下方 runtimeCaching 中对单页面做了精确的离线后备处理
+          navigateFallback: null, // 禁用导航回退：不提供离线页面
 
-          // 匹配需要通过 Workbox 自动打包并预缓存的文件类型后缀
-          //
-          // ⚠️ 只预缓存每次访问都必需的入口资源。
-          // 旧值 "**/*.{js,css,html,ico,png,svg,webp,woff2}" 会把全部构建产物塞进预缓存，
-          // 实测 519 个文件 / 9.31 MB（含 243 个 legacy chunk、后台 admin 页面 chunk、
-          // tiptap 编辑器 668KB、shiki+comark 476KB），用户访问首页时后台静默全量下载，
-          // 且 autoUpdate + skipWaiting 下每次发版老用户再重下一遍。
-          //
-          // 其余 chunk 全部交给下方 runtimeCaching 按需缓存：产物文件名带 content hash，
-          // 内容变更必然换名，因此 StaleWhileRevalidate 不会出现「命中旧内容」的问题，
-          // 同时只缓存用户真正访问过的 chunk，不再为后台页面买单。
-          //
-          // 注 1：pattern 相对构建输出根目录，Nuxt 的产物在 _nuxt/ 子目录下，必须带 **/ 前缀。
-          // 注 2：实测 includeAssets 在 @vite-pwa/nuxt 下未生效（图标此前一直是被旧 pattern
-          //       的 **/*.{ico,png,webp} 连带匹配进来的），因此这里显式列出所需静态资源。
-          globPatterns: [
-            "**/entry.*.{js,css}",
-            "favicon.ico",
-            "img/cover.png",
-            "img/title_bg.webp",
-            "pwa/icon-192.png",
-            "pwa/apple-touch-icon.png",
-          ],
-
-          // 运行时缓存策略（针对预缓存之外的动态请求）
-          // 注意：Workbox 按数组顺序匹配，第一个命中的规则生效
-          runtimeCaching: [
-            {
-              // 0. JS / CSS chunk：按需缓存，访问过才存
-              // 排除 /_nuxt/ 之外的路径，避免把 SSR 页面 HTML 也缓存进去
-              urlPattern: ({ url }) =>
-                url.pathname.includes("/_nuxt/") &&
-                /\.(js|css)$/.test(url.pathname),
-              handler: "StaleWhileRevalidate",
-              options: {
-                cacheName: "assets-cache",
-                cacheableResponse: { statuses: [0, 200] },
-                expiration: {
-                  maxEntries: 120, // 最多缓存 120 个 chunk
-                  maxAgeSeconds: 60 * 60 * 24 * 7, // 7 天
-                  purgeOnQuotaError: true, // 配额不足时自动清空，避免撑爆用户磁盘
-                },
-              },
-            },
-            {
-              // 1. 图片资源缓存规则：匹配所有图片类型的请求
-              urlPattern: ({ request }) => request.destination === "image",
-              handler: "StaleWhileRevalidate", // 速度优先策略：直接从缓存读取旧数据秒开页面，同时在后台静默发起网络请求更新缓存
-              options: {
-                cacheName: "images-cache",
-                cacheableResponse: { statuses: [0, 200] },
-                expiration: {
-                  maxEntries: 100, // 最多缓存 100 张图片
-                  maxAgeSeconds: 60 * 60 * 24, // 缓存有效时间：1 天
-                },
-              },
-            },
-            {
-              // 2. 针对 ISR 数据 payload 进行 NetworkFirst 缓存，避免离线白屏且不滥用带宽
-              urlPattern: ({ url }) => url.pathname.endsWith("_payload.json"),
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "payload-cache",
-                networkTimeoutSeconds: 3,
-                expiration: {
-                  maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 12, // 12 小时
-                },
-              },
-            },
-          ],
+          globPatterns: [], // 零预缓存：不把任何构建产物或静态资源打包进 SW
         },
 
         // 开发环境配置
         devOptions: {
-          enabled: false, // 在开发模式（npm run dev）下禁用 PWA 功能，避免频繁的 Service Worker 缓存导致调试困难
+          enabled: false, // 在开发模式（npm run dev）下禁用 PWA 功能，避免调试困难
         },
       },
     ],
