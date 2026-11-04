@@ -5,18 +5,24 @@ export type CheckStatus = "checking" | "valid" | "invalid" | "failed";
 /** /api/source/check 返回的单项检测结果 */
 type ServerCheckStatus = "valid" | "invalid" | "pending" | "unknown";
 
+/** flushViewport 逐项决策的跳过原因 */
+type SkipReason = "不在 pendingItems" | "已在队列" | "位置校验未过";
+
+/** 三个计时器的名字：队列聚合 / 滚动停止判定 / 位置校验重试 */
+type TimerName = "flush" | "settle" | "geomRetry";
+
 interface UsePanCheckOptions {
   enabled?: boolean;
   mode?: "ids" | "urls";
-  /** 单次请求批量大小（服务端上限 20），默认 10 */
+  /** 单次请求批量大小（服务端上限 20），默认 15 */
   batchSize?: number;
   /** 视口预检边距：链接距视口还有多远就视为进入（预检）区域，默认 "200px" */
   rootMargin?: string;
-  /** 视口条目聚合延迟（ms）：把同一批入队的多个链接合并发出，默认 150 */
+  /** 视口条目聚合延迟（ms）：把同一批入队的多个链接合并发出，默认 100 */
   flushDelay?: number;
   /**
    * 滚动停止判定延时（ms）：视口组成一变化就重置计时，滚动停下这么久
-   * 之后才把当前仍在视口内的 item 送入检测队列。默认 300。
+   * 之后才把当前仍在视口内的 item 送入检测队列。默认 100。
    * 直接一路滚到底时，中途「进了又出」的 item 不会送检。
    */
   scrollSettleDelay?: number;
@@ -51,11 +57,15 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     geomRetryDelay = 200,
   } = options;
 
+  // ---- 对外状态 ----
+
   const checking = ref(false);
   // 用 Map 统一管理每一个 item (URL/ID) 的状态：checking | valid | invalid | failed
   const itemStatusMap = reactive<Map<string, CheckStatus>>(new Map());
   // 仅存放检测为有效的 item，方便外部快速获取结果集
   const validItems = ref<Set<string>>(new Set());
+
+  // ---- 内部状态 ----
 
   // 进行中的检测请求，用于组件销毁或 stop 时中断
   const controllers = new Set<AbortController>();
@@ -72,40 +82,48 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   const itemToEl = new Map<string, Element>();
   const elToItem = new Map<Element, string>();
 
-  let observer: IntersectionObserver | null = null;
-  let flushTimer: ReturnType<typeof setTimeout> | null = null;
-  let settleTimer: ReturnType<typeof setTimeout> | null = null;
-  let geomRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  // 位置校验重试的剩余次数，视口组成变化（IO 回调）时重置
   let geomRetriesLeft = MAX_GEOM_RETRIES;
-  let scrollBound = false;
+
+  // ---- 计时器基础设施 ----
+  // 三种计时器共用一套「设 / 清 / 全清」，各调度函数只表达自己的语义
+
+  const timers: Record<TimerName, ReturnType<typeof setTimeout> | null> = {
+    flush: null,
+    settle: null,
+    geomRetry: null,
+  };
 
   /**
-   * 滚动信号监听。移动端触摸滚动（含惯性滑动）期间 IO 回调会被浏览器
-   * 抑制 / 延迟，光靠回调驱动 settle 不可靠；scroll 事件在整个滚动
-   * 过程中持续触发，是「还没停」的可靠信号。capture 才能收到内部
-   * 滚动容器的 scroll（scroll 不冒泡），passive 保证不卡滚动。
+   * @param mode "once"：已挂起则不动作（队列聚合，首个项触发后计时不重置）；
+   *             "reset"：清旧设新（滚动判定 / 重试，来新信号就重新计时）
    */
-  const handleScroll = () => scheduleViewportFlush();
-
-  const bindScrollListener = () => {
-    if (scrollBound) return;
-    if (typeof window === "undefined") return;
-    if (typeof window.addEventListener !== "function") return;
-    window.addEventListener("scroll", handleScroll, {
-      capture: true,
-      passive: true,
-    });
-    scrollBound = true;
+  const setTimer = (
+    name: TimerName,
+    fn: () => void,
+    delay: number,
+    mode: "once" | "reset",
+  ) => {
+    if (mode === "once" && timers[name] !== null) return;
+    if (timers[name] !== null) clearTimeout(timers[name]);
+    timers[name] = setTimeout(() => {
+      timers[name] = null;
+      fn();
+    }, delay);
   };
 
-  const unbindScrollListener = () => {
-    if (!scrollBound) return;
-    if (typeof window !== "undefined" &&
-      typeof window.removeEventListener === "function") {
-      window.removeEventListener("scroll", handleScroll, { capture: true });
+  const clearTimer = (name: TimerName) => {
+    if (timers[name] !== null) {
+      clearTimeout(timers[name]);
+      timers[name] = null;
     }
-    scrollBound = false;
   };
+
+  const clearAllTimers = () => {
+    (Object.keys(timers) as TimerName[]).forEach(clearTimer);
+  };
+
+  // ---- 注册 ----
 
   /**
    * 注册待检测的 item。
@@ -115,27 +133,29 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   const registerItems = (items: string[]) => {
     if (!enabled || !isBrowser() || items.length === 0) return;
 
-    const fresh = items.filter(
-      (item) =>
-        typeof item === "string" &&
-        item.length > 0 &&
-        !itemStatusMap.has(item) &&
-        !pendingItems.has(item),
-    );
+    // 一遍循环分类：有效待注册 / 已有状态 / 已注册 / 非法值
+    const fresh: string[] = [];
+    const withStatus: string[] = [];
+    const registered: string[] = [];
+    for (const item of items) {
+      if (typeof item !== "string" || item.length === 0) continue;
+      if (itemStatusMap.has(item)) withStatus.push(item);
+      else if (pendingItems.has(item)) registered.push(item);
+      else fresh.push(item);
+    }
+
     if (fresh.length === 0) {
       debugLog(
         "registerItems: 全部被过滤",
-        items,
         "已有状态",
-        items.filter((item) => itemStatusMap.has(item)),
+        withStatus,
         "已注册",
-        items.filter((item) => pendingItems.has(item)),
+        registered,
       );
       return;
     }
 
     fresh.forEach((item) => pendingItems.add(item));
-
     debugLog("registerItems: 注册", fresh);
 
     // 老浏览器没有 IntersectionObserver：退化为注册后立即分批检测
@@ -143,6 +163,8 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
       enqueueItems(fresh);
     }
   };
+
+  // ---- 入队与批次提交 ----
 
   const enqueueItems = (items: string[]) => {
     let added = false;
@@ -157,11 +179,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   };
 
   const scheduleFlush = () => {
-    if (flushTimer !== null) return;
-    flushTimer = setTimeout(() => {
-      flushTimer = null;
-      void flushVisible();
-    }, flushDelay);
+    setTimer("flush", () => void flushVisible(), flushDelay, "once");
   };
 
   /** 从队列取一批（≤ batchSize）串行提交，剩余项继续排批 */
@@ -238,12 +256,17 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     items.forEach((item) => itemStatusMap.set(item, status));
   };
 
+  // ---- 视口判定与滚动停止 ----
+
   const handleIntersect = (entries: IntersectionObserverEntry[]) => {
     let viewportChanged = false;
     for (const entry of entries) {
       const item = elToItem.get(entry.target);
       if (!item) {
-        debugLog("handleIntersect: entry.target 无对应 item（已解绑）", entry.isIntersecting);
+        debugLog(
+          "handleIntersect: entry.target 无对应 item（已解绑）",
+          entry.isIntersecting,
+        );
         continue;
       }
       if (entry.isIntersecting) {
@@ -266,31 +289,17 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     }
   };
 
-  /** 滚动停止判定：停下 scrollSettleDelay 后，把当前仍在视口内的 item 送入队列 */
   const scheduleViewportFlush = () => {
-    if (settleTimer !== null) clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      settleTimer = null;
-      flushViewport();
-    }, scrollSettleDelay);
+    setTimer("settle", flushViewport, scrollSettleDelay, "reset");
   };
 
-  const flushViewport = () => {
-    if (geomRetryTimer !== null) {
-      clearTimeout(geomRetryTimer);
-      geomRetryTimer = null;
-    }
-    if (inViewMap.size === 0) return;
-    debugLog(
-      "flushViewport: inViewMap 快照",
-      [...inViewMap.keys()],
-      "pendingItems",
-      [...pendingItems],
-      "queuedItems",
-      [...queuedItems],
-    );
+  /**
+   * 逐项决策：返回 { ready, skipped }。
+   * 送检项同时解绑观察（一次性语义：滚回去不重复检测）并清理映射。
+   */
+  const collectReadyItems = () => {
     const ready: string[] = [];
-    const skipped: { item: string; reason: string }[] = [];
+    const skipped: { item: string; reason: SkipReason }[] = [];
     for (const [item, el] of inViewMap) {
       // 已检测过 / 已在队列中的 item 不重复送检
       if (!pendingItems.has(item)) {
@@ -308,12 +317,29 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
         continue;
       }
       ready.push(item);
-      // 一次性观察：送检后解绑，滚回去不重复检测
       observer?.unobserve(el);
       elToItem.delete(el);
       itemToEl.delete(item);
       inViewMap.delete(item);
     }
+    return { ready, skipped };
+  };
+
+  /** 滚动停止：把当前仍在视口内的 item 送入队列 */
+  const flushViewport = () => {
+    // 马上要重新决策，取消挂起的重试链（重试回调里定时器已自净）
+    clearTimer("geomRetry");
+    if (inViewMap.size === 0) return;
+
+    debugLog(
+      "flushViewport: inViewMap 快照",
+      [...inViewMap.keys()],
+      "pendingItems",
+      [...pendingItems],
+      "queuedItems",
+      [...queuedItems],
+    );
+    const { ready, skipped } = collectReadyItems();
     debugLog(
       "flushViewport: 送检",
       ready,
@@ -330,15 +356,16 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   /** 位置校验失败的重试：图片/字体加载、流式卡片涌入都会让 rect 延迟稳定 */
   const scheduleGeomRetry = () => {
     if (geomRetriesLeft <= 0) {
-      debugLog("flushViewport: 位置校验重试次数用尽，放弃（等后续 scroll/IO 事件）");
+      debugLog(
+        "scheduleGeomRetry: 重试次数用尽，放弃（等后续 scroll/IO 事件）",
+      );
       return;
     }
     geomRetriesLeft -= 1;
-    debugLog(`flushViewport: 位置校验未过，${geomRetryDelay}ms 后重试（剩余 ${geomRetriesLeft} 次）`);
-    geomRetryTimer = setTimeout(() => {
-      geomRetryTimer = null;
-      flushViewport();
-    }, geomRetryDelay);
+    debugLog(
+      `scheduleGeomRetry: ${geomRetryDelay}ms 后重试（剩余 ${geomRetriesLeft} 次）`,
+    );
+    setTimer("geomRetry", flushViewport, geomRetryDelay, "reset");
   };
 
   /** 送检前的真实位置校验：元素此刻是否与视口本体相交 */
@@ -351,7 +378,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     const inView = rect.bottom > 0 && rect.top < vh;
     if (!inView) {
       debugLog(
-        `isActuallyInViewport: rect`,
+        "isActuallyInViewport: 未过",
         { top: rect.top, bottom: rect.bottom },
         "vh",
         vh,
@@ -359,6 +386,35 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     }
     return inView;
   };
+
+  // ---- 滚动信号（移动端兜底） ----
+
+  /**
+   * 触摸滚动（含惯性滑动）期间 IO 回调会被浏览器抑制 / 延迟，光靠回调
+   * 驱动 settle 不可靠；scroll 事件在整个滚动过程中持续触发，是
+   * 「还没停」的可靠信号。capture 才能收到内部滚动容器的 scroll
+   * （scroll 不冒泡），passive 保证不卡滚动。
+   */
+  const handleScroll = () => scheduleViewportFlush();
+
+  const bindScrollListener = () => {
+    if (typeof window === "undefined") return;
+    if (typeof window.addEventListener !== "function") return;
+    window.addEventListener("scroll", handleScroll, {
+      capture: true,
+      passive: true,
+    });
+  };
+
+  const unbindScrollListener = () => {
+    if (typeof window === "undefined") return;
+    if (typeof window.removeEventListener !== "function") return;
+    window.removeEventListener("scroll", handleScroll, { capture: true });
+  };
+
+  // ---- 观察者管理 ----
+
+  let observer: IntersectionObserver | null = null;
 
   const ensureObserver = () => {
     if (!observer) {
@@ -401,6 +457,8 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     }
   };
 
+  // ---- 查询 / 停止 ----
+
   /**
    * O(1) 复杂度直接读取查询状态
    */
@@ -416,18 +474,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     controllers.forEach((controller) => controller.abort());
     controllers.clear();
 
-    if (flushTimer !== null) {
-      clearTimeout(flushTimer);
-      flushTimer = null;
-    }
-    if (settleTimer !== null) {
-      clearTimeout(settleTimer);
-      settleTimer = null;
-    }
-    if (geomRetryTimer !== null) {
-      clearTimeout(geomRetryTimer);
-      geomRetryTimer = null;
-    }
+    clearAllTimers();
     visibleQueue.length = 0;
     queuedItems.clear();
     pendingItems.clear();
@@ -463,7 +510,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     },
     unmounted(el) {
       releaseElement(el);
-    },
+    }
   };
 
   return {
