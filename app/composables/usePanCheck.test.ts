@@ -12,14 +12,28 @@ import { usePanCheck } from "./usePanCheck";
  * 3. 移动端触摸滚动（IO 回调被抑制/延迟）时 scroll 事件兜底重置 settle，
  *    flush 前再做真实位置校验，已滚出视口的不送检
  * 4. flushDelay 聚合 + batchSize 串行分批，在途批次跑完再接续新视口
- * 5. stopPanCheck 中断未发出的批次并清空状态
- * 6. 老浏览器（无 IntersectionObserver）退化为注册即检测
- * 7. enabled=false 全程静默
+ * 5. 位置校验失败（布局未稳）自动重试补检，次数用尽才放弃
+ * 6. stopPanCheck 中断未发出的批次并清空状态
+ * 7. 老浏览器（无 IntersectionObserver）退化为注册即检测
+ * 8. enabled=false 全程静默
  */
 
 const FLUSH_DELAY = 150;
 const SETTLE_DELAY = 300;
+const GEOM_RETRY_DELAY = 200;
 const VIEWPORT_HEIGHT = 800;
+
+/**
+ * 显式传参锁定时序语义，不随默认值漂移
+ * （默认值被调过：batchSize=15 / flushDelay=100 / scrollSettleDelay=100）
+ */
+const makePanCheck = (opts: Parameters<typeof usePanCheck>[0] = {}) =>
+  usePanCheck({
+    flushDelay: FLUSH_DELAY,
+    scrollSettleDelay: SETTLE_DELAY,
+    geomRetryDelay: GEOM_RETRY_DELAY,
+    ...opts,
+  });
 
 /** 推进到「滚动停止 + 队列聚合」之后 */
 const advancePastSettle = () =>
@@ -155,7 +169,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("registerItems 只注册不检测，滚动停止才发起请求", async () => {
-    const { registerItems, vPanCheck, itemStatusMap } = usePanCheck();
+    const { registerItems, vPanCheck, itemStatusMap } = makePanCheck();
     registerItems(["a", "b", "c"]);
     // 注册不等于检测：未进入视口前没有任何状态与请求
     expect(itemStatusMap.size).toBe(0);
@@ -186,7 +200,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("快速滚过（进了又出视口）的 item 不送检", async () => {
-    const { registerItems, vPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck } = makePanCheck();
     registerItems(["a", "b"]);
     const elA = {} as Element;
     const elB = {} as Element;
@@ -205,7 +219,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("滚动中途停顿不足 settle 会重置计时，不停不送检", async () => {
-    const { registerItems, vPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck } = makePanCheck();
     registerItems(["a"]);
     const elA = {} as Element;
     mountItem(vPanCheck, elA, "a");
@@ -221,7 +235,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("移动端：IO 回调被抑制时 scroll 事件兜底，滑动停后才送检", async () => {
-    const { registerItems, vPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck } = makePanCheck();
     registerItems(["a"]);
     const elA = {} as Element;
     mountItem(vPanCheck, elA, "a");
@@ -244,7 +258,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("移动端：IO 报了 enter 但已滚出视口的项，flush 前位置校验滤除", async () => {
-    const { registerItems, vPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck } = makePanCheck();
     registerItems(["a", "b"]);
     // a 此刻真在视口内；b 的 exit 回调还没到（IO 延迟），但实际已滚出视口
     const elA = makeElement({ top: 100, bottom: 400 });
@@ -260,8 +274,54 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
     expect(sentBatches()).toEqual([["a"]]);
   });
 
+  it("位置校验失败后布局稳定，自动重试补检", async () => {
+    const { registerItems, vPanCheck } = makePanCheck();
+    registerItems(["a"]);
+    // rect 可变：首次 flush 时还在视口外（布局未稳），之后稳定到视口内
+    const rect = { top: -500, bottom: -100 };
+    const elA = {
+      getBoundingClientRect: () => ({
+        top: rect.top,
+        bottom: rect.bottom,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: rect.bottom - rect.top,
+      }),
+    } as unknown as Element;
+    mountItem(vPanCheck, elA, "a");
+    const observer = FakeIntersectionObserver.instances[0]!;
+    observer.fire(elA, true);
+
+    // 首次 flush：校验未过 → 不送检
+    await vi.advanceTimersByTimeAsync(SETTLE_DELAY + 10);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // 布局稳定：元素进入视口（模拟图片加载完成后位置恢复）
+    rect.top = 100;
+    rect.bottom = 400;
+    await vi.advanceTimersByTimeAsync(GEOM_RETRY_DELAY + FLUSH_DELAY + 10);
+
+    expect(sentBatches()).toEqual([["a"]]);
+  });
+
+  it("位置校验持续失败，重试次数用尽后放弃", async () => {
+    const { registerItems, vPanCheck } = makePanCheck();
+    registerItems(["a"]);
+    // rect 永远在视口外（如 display:none 的隐藏卡片）
+    const elA = makeElement({ top: -5000, bottom: -4600 });
+    mountItem(vPanCheck, elA, "a");
+    const observer = FakeIntersectionObserver.instances[0]!;
+    observer.fire(elA, true);
+
+    // 推进远超 10 次重试（MAX_GEOM_RETRIES=10，每次 geomRetryDelay=200ms）
+    await vi.advanceTimersByTimeAsync(3000);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("stopPanCheck 解绑 scroll 监听，stop 后滚动不再触发送检", async () => {
-    const { registerItems, vPanCheck, stopPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck, stopPanCheck } = makePanCheck();
     registerItems(["a"]);
     const elA = {} as Element;
     mountItem(vPanCheck, elA, "a");
@@ -276,7 +336,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("中途停顿达标即送检，在途批次跑完再接续新视口", async () => {
-    const { registerItems, vPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck } = makePanCheck();
     registerItems(["a", "b"]);
     const elA = {} as Element;
     const elB = {} as Element;
@@ -296,7 +356,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("batchSize 内合并、超量串行排队", async () => {
-    const { registerItems, vPanCheck } = usePanCheck({ batchSize: 2 });
+    const { registerItems, vPanCheck } = makePanCheck({ batchSize: 2 });
     registerItems(["a", "b", "c", "d", "e"]);
     const els = ["a", "b", "c", "d", "e"].map((id) => {
       const el = {} as Element;
@@ -316,7 +376,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
 
   it("stopPanCheck 中断未发出的批次并清空状态", async () => {
     const { registerItems, vPanCheck, stopPanCheck, itemStatusMap, checking } =
-      usePanCheck();
+      makePanCheck();
     registerItems(["a", "b"]);
     const elA = {} as Element;
     mountItem(vPanCheck, elA, "a");
@@ -333,7 +393,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("stop 后重新注册可恢复正常检测", async () => {
-    const { registerItems, vPanCheck, stopPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck, stopPanCheck } = makePanCheck();
     registerItems(["a"]);
     const elA = {} as Element;
     mountItem(vPanCheck, elA, "a");
@@ -353,7 +413,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   it("invalid / 未知状态分别映射为 invalid / failed", async () => {
     statusOverrides = { b: "invalid", c: "pending" };
     const { registerItems, vPanCheck, itemStatusMap, validItems } =
-      usePanCheck({ batchSize: 3 });
+      makePanCheck({ batchSize: 3 });
     registerItems(["a", "b", "c"]);
     const els = ["a", "b", "c"].map((id) => {
       const el = {} as Element;
@@ -372,7 +432,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
 
   it("老浏览器（无 IntersectionObserver）退化为注册即检测", async () => {
     vi.stubGlobal("IntersectionObserver", undefined);
-    const { registerItems, itemStatusMap } = usePanCheck({ batchSize: 2 });
+    const { registerItems, itemStatusMap } = makePanCheck({ batchSize: 2 });
     registerItems(["a", "b", "c"]);
 
     for (let i = 0; i < 4; i++) {
@@ -385,7 +445,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("enabled=false 时注册与指令均不生效", async () => {
-    const { registerItems, vPanCheck, getCheckStatus } = usePanCheck({
+    const { registerItems, vPanCheck, getCheckStatus } = makePanCheck({
       enabled: false,
     });
     registerItems(["a"]);
@@ -399,7 +459,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("指令 updated 仅在绑定值变化时重新观察", async () => {
-    const { registerItems, vPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck } = makePanCheck();
     registerItems(["a", "b"]);
     const el = {} as Element;
     mountItem(vPanCheck, el, "a");
@@ -420,7 +480,7 @@ describe("usePanCheck（视口懒检测 · 滚动停止才送检）", () => {
   });
 
   it("元素卸载时解绑观察，settle 后也不送检", async () => {
-    const { registerItems, vPanCheck } = usePanCheck();
+    const { registerItems, vPanCheck } = makePanCheck();
     registerItems(["a"]);
     const el = {} as Element;
     mountItem(vPanCheck, el, "a");

@@ -20,7 +20,21 @@ interface UsePanCheckOptions {
    * 直接一路滚到底时，中途「进了又出」的 item 不会送检。
    */
   scrollSettleDelay?: number;
+  /**
+   * 位置校验失败后的重试延时（ms）：flush 时元素 rect 可能还没稳定
+   * （图片/字体加载中、流式卡片持续涌入），校验失败的项在
+   * 布局稳定后自动补检。默认 200。
+   */
+  geomRetryDelay?: number;
 }
+
+/** 调试日志：仅 dev 输出，统一前缀便于过滤 */
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.dev) console.log("[PanCheck]", ...args);
+};
+
+/** 位置校验失败最多重试几次，之后放弃（留给后续 scroll / IO 事件恢复） */
+const MAX_GEOM_RETRIES = 10;
 
 /** 浏览器环境才允许发起检测（SSR / 无 fetch 时静默跳过） */
 const isBrowser = () =>
@@ -34,6 +48,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     rootMargin = "200px",
     flushDelay = 100,
     scrollSettleDelay = 100,
+    geomRetryDelay = 200,
   } = options;
 
   const checking = ref(false);
@@ -60,6 +75,8 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   let observer: IntersectionObserver | null = null;
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
+  let geomRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  let geomRetriesLeft = MAX_GEOM_RETRIES;
   let scrollBound = false;
 
   /**
@@ -105,9 +122,21 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
         !itemStatusMap.has(item) &&
         !pendingItems.has(item),
     );
-    if (fresh.length === 0) return;
+    if (fresh.length === 0) {
+      debugLog(
+        "registerItems: 全部被过滤",
+        items,
+        "已有状态",
+        items.filter((item) => itemStatusMap.has(item)),
+        "已注册",
+        items.filter((item) => pendingItems.has(item)),
+      );
+      return;
+    }
 
     fresh.forEach((item) => pendingItems.add(item));
+
+    debugLog("registerItems: 注册", fresh);
 
     // 老浏览器没有 IntersectionObserver：退化为注册后立即分批检测
     if (typeof IntersectionObserver !== "function") {
@@ -143,6 +172,7 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     batch.forEach((item) => queuedItems.delete(item));
     batch.forEach((item) => itemStatusMap.set(item, "checking"));
     checking.value = true;
+    debugLog("flushVisible: 提交批次", batch, "队列剩余", [...visibleQueue]);
 
     await submitBatch(batch);
 
@@ -183,10 +213,18 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
           itemStatusMap.set(item, "failed");
         }
       }
+      debugLog(
+        "submitBatch: 完成",
+        items.map((item) => `${item}=${statuses[item] ?? "无返回"}`),
+      );
     } catch (e) {
       // 主动中断，直接退出
-      if (e instanceof DOMException && e.name === "AbortError") return;
+      if (e instanceof DOMException && e.name === "AbortError") {
+        debugLog("submitBatch: 被 abort 中断", items);
+        return;
+      }
       console.error("PanCheck batch failed:", e);
+      debugLog("submitBatch: 请求失败", items, e);
       markItemsStatus(items, "failed");
     } finally {
       controllers.delete(controller);
@@ -204,20 +242,28 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     let viewportChanged = false;
     for (const entry of entries) {
       const item = elToItem.get(entry.target);
-      if (!item) continue;
+      if (!item) {
+        debugLog("handleIntersect: entry.target 无对应 item（已解绑）", entry.isIntersecting);
+        continue;
+      }
       if (entry.isIntersecting) {
         // 只记录「当前在视口内」，不立即送检
         if (!inViewMap.has(item)) {
           inViewMap.set(item, entry.target);
           viewportChanged = true;
+          debugLog(`handleIntersect: ${item} 进入视口，加入 inViewMap`);
         }
       } else if (inViewMap.delete(item)) {
         // 已经离开视口（含快速滚过）：不再送检
         viewportChanged = true;
+        debugLog(`handleIntersect: ${item} 离开视口，移出 inViewMap`);
       }
     }
     // 视口组成一变化就重置计时：滚动不停，始终不送检
-    if (viewportChanged) scheduleViewportFlush();
+    if (viewportChanged) {
+      geomRetriesLeft = MAX_GEOM_RETRIES;
+      scheduleViewportFlush();
+    }
   };
 
   /** 滚动停止判定：停下 scrollSettleDelay 后，把当前仍在视口内的 item 送入队列 */
@@ -230,14 +276,37 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   };
 
   const flushViewport = () => {
+    if (geomRetryTimer !== null) {
+      clearTimeout(geomRetryTimer);
+      geomRetryTimer = null;
+    }
     if (inViewMap.size === 0) return;
+    debugLog(
+      "flushViewport: inViewMap 快照",
+      [...inViewMap.keys()],
+      "pendingItems",
+      [...pendingItems],
+      "queuedItems",
+      [...queuedItems],
+    );
     const ready: string[] = [];
+    const skipped: { item: string; reason: string }[] = [];
     for (const [item, el] of inViewMap) {
       // 已检测过 / 已在队列中的 item 不重复送检
-      if (!pendingItems.has(item) || queuedItems.has(item)) continue;
+      if (!pendingItems.has(item)) {
+        skipped.push({ item, reason: "不在 pendingItems" });
+        continue;
+      }
+      if (queuedItems.has(item)) {
+        skipped.push({ item, reason: "已在队列" });
+        continue;
+      }
       // 双保险：移动端 IO 回调可能延迟，「进了又出」的项此时实际已离开
       // 视口。IO 说相交（含 rootMargin 预检区）不等于此刻真在视口里。
-      if (!isActuallyInViewport(el)) continue;
+      if (!isActuallyInViewport(el)) {
+        skipped.push({ item, reason: "位置校验未过" });
+        continue;
+      }
       ready.push(item);
       // 一次性观察：送检后解绑，滚回去不重复检测
       observer?.unobserve(el);
@@ -245,7 +314,31 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
       itemToEl.delete(item);
       inViewMap.delete(item);
     }
+    debugLog(
+      "flushViewport: 送检",
+      ready,
+      "跳过",
+      skipped.map((s) => `${s.item}(${s.reason})`),
+    );
     if (ready.length > 0) enqueueItems(ready);
+    // 位置校验未过的项：布局稳定后自动补检，不依赖用户再次滚动
+    if (skipped.some((s) => s.reason === "位置校验未过")) {
+      scheduleGeomRetry();
+    }
+  };
+
+  /** 位置校验失败的重试：图片/字体加载、流式卡片涌入都会让 rect 延迟稳定 */
+  const scheduleGeomRetry = () => {
+    if (geomRetriesLeft <= 0) {
+      debugLog("flushViewport: 位置校验重试次数用尽，放弃（等后续 scroll/IO 事件）");
+      return;
+    }
+    geomRetriesLeft -= 1;
+    debugLog(`flushViewport: 位置校验未过，${geomRetryDelay}ms 后重试（剩余 ${geomRetriesLeft} 次）`);
+    geomRetryTimer = setTimeout(() => {
+      geomRetryTimer = null;
+      flushViewport();
+    }, geomRetryDelay);
   };
 
   /** 送检前的真实位置校验：元素此刻是否与视口本体相交 */
@@ -255,7 +348,16 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     const vh = window.innerHeight;
     if (!vh) return true;
     const rect = el.getBoundingClientRect();
-    return rect.bottom > 0 && rect.top < vh;
+    const inView = rect.bottom > 0 && rect.top < vh;
+    if (!inView) {
+      debugLog(
+        `isActuallyInViewport: rect`,
+        { top: rect.top, bottom: rect.bottom },
+        "vh",
+        vh,
+      );
+    }
+    return inView;
   };
 
   const ensureObserver = () => {
@@ -279,8 +381,12 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     elToItem.set(el, item);
 
     // 已检测过 / 已在队列中的 item 不重复观察
-    if (!pendingItems.has(item)) return;
+    if (!pendingItems.has(item)) {
+      debugLog(`observeElement: ${item} 未观察（不在 pendingItems）`);
+      return;
+    }
     ensureObserver().observe(el);
+    debugLog(`observeElement: ${item} 开始观察`);
   };
 
   const releaseElement = (el: Element) => {
@@ -290,7 +396,9 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
     elToItem.delete(el);
     itemToEl.delete(item);
     // 元素卸载时从待送检集合移除，防止 settle 后送检已消失的条目
-    inViewMap.delete(item);
+    if (inViewMap.delete(item)) {
+      debugLog(`releaseElement: ${item} 元素卸载，移出 inViewMap`);
+    }
   };
 
   /**
@@ -316,10 +424,15 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
       clearTimeout(settleTimer);
       settleTimer = null;
     }
+    if (geomRetryTimer !== null) {
+      clearTimeout(geomRetryTimer);
+      geomRetryTimer = null;
+    }
     visibleQueue.length = 0;
     queuedItems.clear();
     pendingItems.clear();
     inViewMap.clear();
+    geomRetriesLeft = MAX_GEOM_RETRIES;
 
     observer?.disconnect();
     observer = null;
