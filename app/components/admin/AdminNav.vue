@@ -9,10 +9,7 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { onClickOutside } from "@vueuse/core";
-import {
-  buildNavLayoutKey,
-  computeVisibleNavCount,
-} from "~/utils/navOverflow";
+import { buildNavLayoutKey, computeVisibleNavCount } from "~/utils/navOverflow";
 
 import {
   Music,
@@ -478,7 +475,11 @@ const calculateDesktopLayout = async () => {
   /**
    * 宽度完全没变化（滚动、动画里 ResizeObserver 触发很密）就直接结束。
    */
-  const layoutKey = buildNavLayoutKey({ containerWidth, itemWidths, moreWidth });
+  const layoutKey = buildNavLayoutKey({
+    containerWidth,
+    itemWidths,
+    moreWidth,
+  });
 
   if (layoutKey === lastLayoutKey) {
     layoutReady.value = true;
@@ -666,7 +667,7 @@ watch(isDesktop, async () => {
 
 <template>
   <nav
-    class="bg-default backdrop-blur-md border-b border-muted sticky top-0 z-40"
+    class="bg-default backdrop-blur-md border-b border-default sticky top-0 z-40"
   >
     <div class="max-w-7xl mx-auto px-4 sm:px-6">
       <div class="flex items-center h-14 gap-2">
@@ -758,7 +759,7 @@ watch(isDesktop, async () => {
               >
                 <div
                   v-if="activeDropdown === item.label"
-                  class="absolute left-0 top-full mt-1.5 w-44 bg-default border border-muted rounded-xl shadow-2xl py-1.5 z-50 overflow-hidden"
+                  class="absolute left-0 top-full mt-1.5 w-44 bg-default border border-default rounded-xl shadow-2xl py-1.5 z-50 overflow-hidden"
                 >
                   <button
                     v-for="child in item.children"
@@ -847,7 +848,7 @@ watch(isDesktop, async () => {
             >
               <div
                 v-if="activeDropdown === '__more__'"
-                class="absolute right-0 top-full mt-1.5 w-56 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl py-2 z-50 overflow-hidden"
+                class="absolute right-0 top-full mt-1.5 w-56 bg-default border border-default rounded-xl shadow-2xl py-2 z-50 overflow-hidden"
               >
                 <template
                   v-for="item in overflowNavItems"
@@ -864,7 +865,7 @@ watch(isDesktop, async () => {
                       :class="
                         isGroupActive(item)
                           ? 'text-primary-400 bg-primary-500/10'
-                          : 'text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100'
+                          : 'text-toned hover:bg-elevated hover:text-default'
                       "
                       @click="toggleDrawerGroup(item.label)"
                     >
@@ -888,7 +889,7 @@ watch(isDesktop, async () => {
                       v-show="
                         expandedDrawerGroups[item.label] || isGroupActive(item)
                       "
-                      class="pl-3 ml-3 border-l border-zinc-700 space-y-1 mb-1 pt-1"
+                      class="pl-3 ml-3 border-l border-default space-y-1 mb-1 pt-1"
                     >
                       <button
                         v-for="child in item.children"
@@ -898,7 +899,7 @@ watch(isDesktop, async () => {
                         :class="
                           isPathActive(child.path)
                             ? 'text-primary-400 bg-primary-500/10 font-medium'
-                            : 'text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
+                            : 'text-toned hover:bg-elevated hover:text-default'
                         "
                         @click="handleNavigate(child.path)"
                       >
@@ -925,7 +926,7 @@ watch(isDesktop, async () => {
                     :class="
                       isPathActive(item.path)
                         ? 'text-primary-400 bg-primary-500/10 font-medium'
-                        : 'text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100'
+                        : 'text-toned hover:bg-elevated hover:text-default'
                     "
                     @click="handleNavigate(item.path)"
                   >
@@ -1004,7 +1005,7 @@ watch(isDesktop, async () => {
     >
       <div
         v-if="mobileMenuOpen"
-        class="absolute left-0 right-0 md:hidden border-y border-muted bg-default px-4 pt-2 pb-4 space-y-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto rounded-b-2xl"
+        class="absolute left-0 right-0 md:hidden border-y border-default bg-default px-4 pt-2 pb-4 space-y-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto rounded-b-2xl"
       >
         <template v-for="item in navItems" :key="`mobile-${item.label}`">
           <!-- ==========================================
@@ -1038,7 +1039,7 @@ watch(isDesktop, async () => {
 
             <div
               v-show="expandedDrawerGroups[item.label] || isGroupActive(item)"
-              class="pl-4 space-y-1 border-l-2 border-muted ml-3 my-1"
+              class="pl-4 space-y-1 border-l-2 border-default ml-3 my-1"
             >
               <button
                 v-for="child in item.children"

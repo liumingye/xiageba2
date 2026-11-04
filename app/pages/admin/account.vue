@@ -70,9 +70,7 @@ const qrErrorMsg = ref("");
 let qrPollTimer: ReturnType<typeof setTimeout> | null = null;
 let qrSessionId = "";
 
-const canQrLogin = computed(() =>
-  QR_LOGIN_TYPES.includes(formData.value.type),
-);
+const canQrLogin = computed(() => QR_LOGIN_TYPES.includes(formData.value.type));
 
 const openQrLogin = async () => {
   qrShow.value = true;
@@ -94,8 +92,7 @@ const openQrLogin = async () => {
   } catch (e: any) {
     qrLoading.value = false;
     qrStatus.value = "error";
-    qrErrorMsg.value =
-      e?.response?.data?.message || "获取二维码失败，请重试";
+    qrErrorMsg.value = e?.response?.data?.message || "获取二维码失败，请重试";
   }
 };
 
@@ -522,18 +519,16 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
     v-else-if="accounts.length === 0"
     class="flex flex-col items-center justify-center py-20 text-color-500"
   >
-    <UserCog class="w-12 h-12 mb-3 text-zinc-700" />
+    <UserCog class="w-12 h-12 mb-3 text-muted" />
     <p class="text-sm">暂无网盘账号，点击「添加账号」开始配置</p>
   </div>
 
   <!-- 账号列表（按类型分组） -->
   <div v-else class="space-y-6">
     <div v-for="type in TYPE_ORDER" :key="type" v-show="groupedAccounts[type]">
-      <h3 class="text-sm text-color-400 mb-3 px-1">
+      <h3 class="text-sm mb-3 px-1">
         {{ getPanTypeLabel(type) }}
-        <span class="text-zinc-600"
-          >({{ groupedAccounts[type]?.length || 0 }})</span
-        >
+        <span>({{ groupedAccounts[type]?.length || 0 }})</span>
       </h3>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <UCard
@@ -724,9 +719,9 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
         <!-- 百度 OAuth2 -->
         <div
           v-if="formData.type === 'baidu'"
-          class="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 space-y-3"
+          class="p-4 rounded-lg border border-muted space-y-3"
         >
-          <div class="flex items-center gap-2 text-sm text-color-400">
+          <div class="flex items-center gap-2 text-sm text-muted">
             <KeyRound class="w-4 h-4" />
             <span>OAuth2 授权获取 Token</span>
           </div>
@@ -868,23 +863,28 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
   >
     <template #body>
       <div class="flex flex-col items-center justify-center py-4 space-y-4">
-        <p class="text-sm text-color-500">
+        <p class="text-sm">
           请使用{{ getPanTypeLabel(formData.type) }}手机 App 扫描二维码登录
         </p>
 
         <!-- 二维码 / 状态 -->
         <div
-          class="w-[220px] h-[220px] rounded-lg border border-zinc-700/50 bg-white flex items-center justify-center overflow-hidden"
+          class="w-55 h-55 p-2 rounded-lg border border-muted bg-white flex items-center justify-center overflow-hidden"
         >
           <img
-            v-if="qrImage && qrStatus !== 'confirmed' && qrStatus !== 'expired' && qrStatus !== 'error'"
+            v-if="
+              qrImage &&
+              qrStatus !== 'confirmed' &&
+              qrStatus !== 'expired' &&
+              qrStatus !== 'error'
+            "
             :src="qrImage"
             alt="登录二维码"
             class="w-full h-full object-contain"
           />
           <div
             v-else-if="qrLoading"
-            class="flex items-center justify-center text-zinc-500"
+            class="flex items-center justify-center text-muted"
           >
             <Loader2 class="w-8 h-8 animate-spin" />
           </div>
@@ -899,20 +899,21 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
             v-else-if="qrStatus === 'expired'"
             class="flex flex-col items-center gap-3 p-4 text-center"
           >
-            <span class="i-lucide-clock text-4xl text-zinc-500" />
-            <span class="text-sm text-zinc-500">{{ qrErrorMsg || "二维码已过期" }}</span>
+            <span class="i-lucide-clock text-4xl text-muted" />
+            <span class="text-sm text-muted">{{
+              qrErrorMsg || "二维码已过期"
+            }}</span>
           </div>
           <div
             v-else-if="qrStatus === 'error'"
             class="flex flex-col items-center gap-3 p-4 text-center"
           >
             <span class="i-lucide-x-circle text-4xl text-red-500" />
-            <span class="text-sm text-red-400">{{ qrErrorMsg || "登录失败" }}</span>
+            <span class="text-sm text-red-400">{{
+              qrErrorMsg || "登录失败"
+            }}</span>
           </div>
-          <div
-            v-else
-            class="flex items-center justify-center text-zinc-500"
-          >
+          <div v-else class="flex items-center justify-center text-muted">
             <QrCode class="w-10 h-10" />
           </div>
         </div>
@@ -920,7 +921,7 @@ const TYPE_ORDER = ["quark", "baidu", "uc", "xunlei", "guangya", "c139"];
         <!-- 状态提示 -->
         <p
           v-if="qrStatus === 'pending' && !qrLoading"
-          class="text-xs text-color-400"
+          class="text-xs text-muted"
         >
           等待扫码...
         </p>

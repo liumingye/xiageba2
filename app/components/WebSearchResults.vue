@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  Globe,
-  Loader2,
-  CheckCircle,
-  CircleSlash,
-  XCircle,
-} from "@lucide/vue";
+import { Globe, Loader2, CheckCircle, CircleSlash, XCircle } from "@lucide/vue";
 import { getStorageTypeFriendFromFilter, type PanFilter } from "#shared/utils";
 
 export interface WebSearchResult {
@@ -41,12 +35,7 @@ const filteredResults = computed<WebSearchResult[]>(() => {
 });
 
 // 实例化 panCheck Hook（视口懒检测：只有渲染出来且进入视口的链接才会送检）
-const {
-  registerItems,
-  getCheckStatus,
-  stopPanCheck,
-  vPanCheck,
-} = usePanCheck({
+const { registerItems, getCheckStatus, stopPanCheck, vPanCheck } = usePanCheck({
   mode: "urls",
   batchSize: 10,
 });
@@ -196,7 +185,7 @@ defineExpose({ results, searching, error });
       >
         <div
           v-if="getCheckStatus(item.url) === 'invalid'"
-          class="absolute inset-0 bg-red-900/10 pointer-events-none"
+          class="absolute inset-0 bg-error/8 pointer-events-none"
         />
         <div class="flex-1 min-w-0 flex gap-2 flex-col">
           <span
@@ -207,7 +196,7 @@ defineExpose({ results, searching, error });
           <span v-else class="min-w-0 break-all">{{ item.title }}</span>
           <div class="flex gap-2">
             <div
-              class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
+              class="bg-elevated px-2 py-1 rounded-sm text-sm self-start flex items-center"
             >
               <div
                 v-if="item.type !== 'other'"
@@ -230,7 +219,7 @@ defineExpose({ results, searching, error });
               </div>
               <div
                 v-if="getCheckStatus(item.url) === 'checking'"
-                class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
+                class="bg-elevated px-2 py-1 rounded-sm text-sm self-start flex items-center"
               >
                 <Loader2 class="size-4 animate-spin shrink-0 mr-1" />正在检测
               </div>

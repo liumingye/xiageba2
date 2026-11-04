@@ -391,13 +391,13 @@ onMounted(async () => {
 
     <!-- 未选择配置 -->
     <div v-else-if="!selectedConfigId" class="py-16 text-center">
-      <HardDrive class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+      <HardDrive class="w-10 h-10 text-muted mx-auto mb-2" />
       <p class="text-color-500">请选择存储配置</p>
     </div>
 
     <!-- 空状态 -->
     <div v-else-if="files.length === 0" class="py-16 text-center">
-      <FileText class="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+      <FileText class="w-10 h-10 text-muted mx-auto mb-2" />
       <p class="text-color-500">暂无文件</p>
     </div>
 
@@ -409,7 +409,7 @@ onMounted(async () => {
       <div
         v-for="file in files"
         :key="file.key"
-        class="group bg-color-200 border border-color-300 rounded-xl overflow-hidden hover:border-color-500 transition-colors"
+        class="group bg-default border border-default rounded-xl overflow-hidden hover:border-muted transition-colors"
       >
         <!-- 预览区域 -->
         <div
@@ -516,7 +516,7 @@ onMounted(async () => {
               <span class="text-[10px] text-color-500">{{
                 formatSize(file.size)
               }}</span>
-              <span class="text-[10px] text-zinc-600">{{
+              <span class="text-[10px] text-muted">{{
                 formatDate(file.lastModified).split(" ")[0]
               }}</span>
             </div>

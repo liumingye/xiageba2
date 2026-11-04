@@ -165,9 +165,9 @@ const deleteAdmin = async (id: string) => {
       <template #username-cell="{ row }">
         <div class="flex items-center gap-3">
           <div
-            class="w-10 h-10 bg-color-300 rounded-full flex items-center justify-center"
+            class="size-10 bg-elevated rounded-full flex items-center justify-center"
           >
-            <User class="w-5 h-5 text-color-500" />
+            <User class="w-5 h-5 text-muted" />
           </div>
           <span>{{ row.original.username }}</span>
         </div>

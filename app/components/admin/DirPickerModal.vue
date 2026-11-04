@@ -126,28 +126,17 @@ const handleClose = () => {
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left text-color-100 border"
           :class="
             selectedId === dir.id
-              ? 'bg-primary-500/20 border-primary-500'
-              : 'hover:bg-color-300 border-color-300'
+              ? 'bg-primary/20 border-primary'
+              : 'hover:bg-elevated border-muted'
           "
           @click="handleSelect(dir)"
         >
-          <Folder
-            class="w-4 h-4 shrink-0"
-            :class="
-              selectedId === dir.id ? 'text-primary-400' : 'text-zinc-500'
-            "
-          />
+          <Folder class="w-4 h-4 shrink-0" />
           <span class="flex-1 text-sm truncate">{{ dir.name }}</span>
-          <span
-            class="text-xs text-zinc-600 font-mono truncate max-w-30"
-            :title="dir.id"
-          >
+          <span class="text-xs font-mono truncate max-w-30" :title="dir.id">
             {{ dir.id }}
           </span>
-          <Check
-            v-if="selectedId === dir.id"
-            class="w-4 h-4 text-primary-400 shrink-0"
-          />
+          <Check v-if="selectedId === dir.id" class="w-4 h-4 shrink-0" />
         </button>
       </div>
     </template>

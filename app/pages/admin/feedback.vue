@@ -251,7 +251,7 @@ const columns: TableColumn<any>[] = [
       <template #song-cell="{ row }">
         <div class="flex items-center gap-2">
           <span class="truncate max-w-50">{{ row.original.musicTitle }}</span>
-          <span class="text-color-500 text-sm truncate max-w-30">{{
+          <span class="text-muted text-sm truncate max-w-30">{{
             row.original.musicArtist
           }}</span>
           <UButton
@@ -276,11 +276,11 @@ const columns: TableColumn<any>[] = [
       <template #description-cell="{ row }">
         <span
           v-if="row.original.description"
-          class="block max-w-50 truncate text-sm text-color-400"
+          class="block max-w-50 truncate text-sm"
           :title="row.original.description"
           >{{ row.original.description }}</span
         >
-        <span v-else class="text-sm text-zinc-600">-</span>
+        <span v-else class="text-sm">-</span>
       </template>
       <template #status-cell="{ row }">
         <UBadge
@@ -372,7 +372,7 @@ const columns: TableColumn<any>[] = [
         </div>
       </template>
       <template #createdAt-cell="{ row }">
-        <span class="text-sm text-color-500">{{
+        <span class="text-sm">{{
           new Date(row.original.createdAt).toLocaleString("zh-CN", {
             year: "numeric",
             month: "2-digit",
@@ -405,7 +405,7 @@ const columns: TableColumn<any>[] = [
           >
             完成
           </UButton>
-          <span v-else class="text-sm text-zinc-600">
+          <span v-else class="text-sm">
             {{ row.original.resolvedBy ? `by ${row.original.resolvedBy}` : "" }}
             {{
               row.original.resolvedAt

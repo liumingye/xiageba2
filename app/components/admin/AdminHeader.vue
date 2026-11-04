@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Music } from "@lucide/vue";
 import { useAuth } from "~/composables/useAuth";
 import { useRouter } from "vue-router";
 
@@ -13,14 +12,9 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <header class="bg-default border-b border-muted px-6 py-4">
+  <header class="bg-default border-b border-default p-4">
     <div class="flex items-center justify-between max-w-7xl mx-auto">
       <div class="flex items-center gap-3">
-        <div
-          class="size-8 bg-linear-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center"
-        >
-          <Music class="size-5 text-inverted" />
-        </div>
         <h1 class="text-xl font-bold">管理后台</h1>
       </div>
 

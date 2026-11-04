@@ -245,9 +245,9 @@ const deleteAnnouncement = async (id: string) => {
       <template #title-cell="{ row }">
         <div class="flex items-center gap-3">
           <div
-            class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center shrink-0"
+            class="size-10 bg-elevated rounded-lg flex items-center justify-center shrink-0"
           >
-            <Megaphone class="w-5 h-5 text-color-500" />
+            <Megaphone class="w-5 h-5 text-muted" />
           </div>
           <span class="truncate" :title="row.original.title">{{
             row.original.title

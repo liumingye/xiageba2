@@ -33,7 +33,7 @@ const emit = defineEmits<{
   >
     <div
       v-if="checkStatus === 'invalid'"
-      class="absolute inset-0 bg-red-900/10 pointer-events-none"
+      class="absolute inset-0 bg-error/8 pointer-events-none"
     />
     <div class="flex-1 min-w-0 flex gap-2 flex-col">
       <NuxtLink
@@ -67,7 +67,7 @@ const emit = defineEmits<{
       </span>
       <div class="flex gap-2">
         <div
-          class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
+          class="bg-elevated px-2 py-1 rounded-sm text-sm self-start flex items-center"
         >
           <div
             v-if="item.type !== 'other'"
@@ -96,7 +96,7 @@ const emit = defineEmits<{
           </div>
           <div
             v-else-if="checkStatus === 'checking'"
-            class="bg-accented px-2 py-1 rounded-sm text-sm self-start flex items-center"
+            class="bg-elevated px-2 py-1 rounded-sm text-sm self-start flex items-center"
           >
             <Loader2 class="size-4 animate-spin shrink-0 mr-1" />正在检测
           </div>
@@ -105,12 +105,12 @@ const emit = defineEmits<{
       <template v-if="item.menu">
         <pre
           v-if="highlightMenu"
-          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
+          class="bg-elevated p-2 rounded-sm text-xs max-h-36 overflow-auto"
           v-html="highlightMenu"
         ></pre>
         <pre
           v-else
-          class="bg-accented p-2 rounded-sm text-xs max-h-36 overflow-auto"
+          class="bg-elevated p-2 rounded-sm text-xs max-h-36 overflow-auto"
           >{{ item.menu }}</pre
         >
       </template>

@@ -388,22 +388,19 @@ const coverSame = (cover: string) => {
           >
             返回搜索列表
           </UButton>
-
-          <div class="flex items-center gap-2 text-xs text-zinc-500 ml-auto">
-            <UBadge color="primary" variant="solid">
-              {{
-                platforms.find(
-                  (p) => scrapeResult && p.value === scrapeResult.source,
-                )?.label
-              }}
-            </UBadge>
-          </div>
+          <UBadge color="primary" variant="solid" class="ml-auto">
+            {{
+              platforms.find(
+                (p) => scrapeResult && p.value === scrapeResult.source,
+              )?.label
+            }}
+          </UBadge>
         </div>
 
         <div
           class="flex items-center justify-between mb-4 text-sm flex-wrap gap-3"
         >
-          <div class="text-zinc-400">
+          <div class="text-muted">
             勾选需要更新的字段，点击确认后仅更新勾选的内容
           </div>
           <div class="flex items-center gap-3">
@@ -485,7 +482,7 @@ const coverSame = (cover: string) => {
                 />
                 <div
                   v-else
-                  class="w-16 h-16 rounded bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs"
+                  class="w-16 h-16 rounded bg-accented flex items-center justify-center text-xs"
                 >
                   无
                 </div>

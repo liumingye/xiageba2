@@ -303,7 +303,7 @@ const deletePage = async (item: AdminPage) => {
       <template #title-cell="{ row }">
         <div class="flex items-center gap-3">
           <div
-            class="w-10 h-10 bg-color-300 rounded-lg flex items-center justify-center shrink-0"
+            class="size-10 bg-elevated rounded-lg flex items-center justify-center shrink-0"
           >
             <UIcon
               :name="`i-lucide-${row.original.icon || 'file-text'}`"

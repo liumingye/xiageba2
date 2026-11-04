@@ -585,7 +585,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
                   v-for="cls in doubanClasses"
                   :key="cls.type_id"
                   type="button"
-                  class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap shrink-0 border"
+                  class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-xl gap-1.5 px-3 whitespace-nowrap shrink-0 border"
                   :class="
                     activeCategoryId === cls.type_id
                       ? 'bg-muted shadow-sm border-muted'
@@ -623,7 +623,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
                   v-for="opt in filter.value"
                   :key="opt.value"
                   type="button"
-                  class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap shrink-0 border"
+                  class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-xl gap-1.5 px-3 whitespace-nowrap shrink-0 border"
                   :class="
                     activeFilters[filter.key] === opt.value
                       ? 'bg-muted shadow-sm border-muted'
@@ -760,7 +760,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
                 type="button"
                 role="tab"
                 :aria-selected="activeWeekday === day.id"
-                class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-full gap-1.5 px-3 whitespace-nowrap shrink-0 border"
+                class="inline-flex items-center justify-center text-sm font-medium transition-all outline-none h-8 rounded-xl gap-1.5 px-3 whitespace-nowrap shrink-0 border"
                 :class="
                   activeWeekday === day.id
                     ? 'bg-muted shadow-sm border-muted'

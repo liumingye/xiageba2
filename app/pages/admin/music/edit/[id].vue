@@ -135,7 +135,7 @@ const handleSubmit = async () => {
 
 <template>
   <div class="min-h-screen">
-    <header class="bg-color-100 border-b border-color-300 px-6 py-4">
+    <header class="bg-default border-b border-muted px-6 py-4">
       <div class="flex items-center justify-between max-w-4xl mx-auto">
         <div class="flex items-center gap-4">
           <UButton
@@ -251,7 +251,7 @@ const handleSubmit = async () => {
               </div>
               <div v-if="form.cover" class="flex items-start gap-3">
                 <div
-                  class="w-24 h-24 rounded-lg border border-color-400 overflow-hidden flex items-center justify-center bg-color-300 shrink-0"
+                  class="w-24 h-24 rounded-lg border border-muted overflow-hidden flex items-center justify-center bg-elevated shrink-0"
                 >
                   <img
                     v-if="!coverImgError"
@@ -260,10 +260,10 @@ const handleSubmit = async () => {
                     class="w-full h-full object-cover"
                     @error="coverImgError = true"
                   />
-                  <ImageIcon v-else class="w-8 h-8 text-zinc-600" />
+                  <ImageIcon v-else class="w-8 h-8 text-muted" />
                 </div>
-                <div class="text-xs text-color-500 pt-1 break-all flex-1">
-                  预览：<span class="text-color-400">{{ form.cover }}</span>
+                <div class="text-xs text-muted pt-1 break-all flex-1">
+                  预览：<span>{{ form.cover }}</span>
                 </div>
               </div>
             </div>
@@ -312,7 +312,7 @@ const handleSubmit = async () => {
 
           <div
             v-if="form.downloads.length === 0"
-            class="text-center py-8 text-zinc-600"
+            class="text-center py-8 text-muted"
           >
             暂无下载链接，点击上方按钮添加
           </div>
