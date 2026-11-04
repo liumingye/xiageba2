@@ -12,7 +12,7 @@ const insecureAgent = new https.Agent({
 const REQUEST_TIMEOUT = 8000;
 
 // /api/v1/links/check 的探测载荷：用一个固定的夸克分享链接触发一次提交，
-// 返回对象只要带 total_duration 就说明检测服务可用
+// 返回对象只要带 total_duration 字段（值可为 null）就说明检测服务可用
 const LINKS_CHECK_PAYLOAD = {
   links: ["https://pan.quark.cn/s/45cfe8e10323"],
   selected_platforms: [
@@ -67,7 +67,9 @@ const probeHealth = async (base: string): Promise<ProbeResult> => {
   }
 };
 
-// 探测 /api/v1/links/check：2xx 且返回对象含 total_duration 才算通过
+// 探测 /api/v1/links/check：2xx 且返回对象含 total_duration 字段才算通过
+// （total_duration 的值不作要求：可能为 0 或 null，都算有效；
+//   仅当字段完全不存在时才判失败）
 const probeLinksCheck = async (base: string): Promise<ProbeResult> => {
   const start = Date.now();
   try {
@@ -82,11 +84,9 @@ const probeLinksCheck = async (base: string): Promise<ProbeResult> => {
       },
     );
     const data: any = res.data;
-    // total_duration 允许为 0，用 != null 而非 truthy 判断
+    // 只看键是否存在（null / 0 均有效），in 检查可区分「键不存在」与「值为 null」
     const hasTotalDuration =
-      data !== null &&
-      typeof data === "object" &&
-      data.total_duration != null;
+      data !== null && typeof data === "object" && "total_duration" in data;
     const ok = res.status >= 200 && res.status < 300 && hasTotalDuration;
     return {
       ok,
