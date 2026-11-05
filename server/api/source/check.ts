@@ -10,8 +10,8 @@ import {
   type PanCheckLinkStatus,
 } from "#server/lib/pan-check";
 
-// 有效链接状态缓存 24 小时（key 为前端传入的原始标识：id 或加密后的 url）
-const LINK_STATUS_CACHE_TTL = 60 * 60 * 24;
+// 有效链接状态缓存 2 小时（key 为前端传入的原始标识：id 或加密后的 url）
+const LINK_STATUS_CACHE_TTL = 60 * 60 * 2;
 /** 单次请求允许检测的最大链接数 */
 const MAX_CHECK_LINKS = 20;
 const idCacheKey = (id: string) => `pancheck:status:id:${id}`;
