@@ -481,13 +481,11 @@ export default defineEventHandler(async (event) => {
         replyText = "自动回复功能已关闭。";
       } else if (!content) {
         replyText = "请输入搜索关键词（最多30字）。";
-      } else if (content.length > MAX_KEYWORD_LENGTH) {
-        replyText = `关键词过长，最多 ${MAX_KEYWORD_LENGTH} 个字。`;
-      } else if (content.length < MIN_KEYWORD_LENGTH) {
-        replyText = `关键词过短，至少 ${MIN_KEYWORD_LENGTH} 个字。`;
       } else {
         const lowerContent = content.toLowerCase();
 
+        // ⚠️ 命令类输入（翻页 / 获取 / 纯数字序号）必须优先于关键词长度校验：
+        // 纯数字序号可能只有 1 位，会被「关键词至少 2 个字」的规则误杀。
         if (lowerContent === "上一页" || lowerContent === "prev") {
           if (!fromUser) return;
           const session = getSession(fromUser);
@@ -571,6 +569,10 @@ export default defineEventHandler(async (event) => {
               replyText = "搜索服务暂时不可用，请稍后重试。";
             }
           }
+        } else if (content.length > MAX_KEYWORD_LENGTH) {
+          replyText = `关键词过长，最多 ${MAX_KEYWORD_LENGTH} 个字。`;
+        } else if (content.length < MIN_KEYWORD_LENGTH) {
+          replyText = `关键词过短，至少 ${MIN_KEYWORD_LENGTH} 个字。`;
         } else {
           try {
             if (!fromUser) return;
