@@ -553,6 +553,11 @@ export default defineEventHandler(async (event) => {
 
           if (session && targetItem) {
             replyText = handleGetResourceLink(targetItem);
+          } else if (content.length > MAX_KEYWORD_LENGTH) {
+            // 纯数字同时也可能是搜索关键词，但作为关键词仍需遵守长度上限
+            replyText = `关键词过长，最多 ${MAX_KEYWORD_LENGTH} 个字。`;
+          } else if (content.length < MIN_KEYWORD_LENGTH) {
+            replyText = `关键词过短，至少 ${MIN_KEYWORD_LENGTH} 个字。`;
           } else {
             try {
               const limit = Math.max(1, Math.min(20, cfg.searchLimit || 5));
