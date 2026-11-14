@@ -38,6 +38,7 @@ import {
 import type { PanFile, PanType, TransferResult } from "#server/lib/pan/types";
 import { scheduleAdCleanup } from "#server/lib/pan/ad-filter";
 import { assertBotDefense } from "#server/utils/bot-defense";
+import { toIsDir } from "#server/lib/pan/tree";
 
 const disableSource = async (sourceId: string) => {
   await prisma.source.update({
@@ -157,7 +158,7 @@ async function listFilesBaidu(
       result.push({
         id: file.path || "",
         name: file.server_filename || "",
-        isDir: file.isdir === 1,
+        isDir: toIsDir(file.isdir),
       });
     }
 
@@ -764,8 +765,7 @@ async function transferGuangya(
   // 异步删除广告文件（后台执行，不阻塞分享创建）
   await scheduleAdCleanup(event, {
     topFids: newFids,
-    listChildren: (parentId, isTop) =>
-      listFilesGuangya(fsApi, parentId, isTop),
+    listChildren: (parentId, isTop) => listFilesGuangya(fsApi, parentId, isTop),
     remove: (ids) => fsApi.delete(ids),
   });
 
@@ -975,7 +975,11 @@ export async function transferShareUrl(
   event.waitUntil(
     prisma.sourceTemp
       .create({
-        data: { url: shareUrl, fid: JSON.stringify(data.fids), accountId: account.id },
+        data: {
+          url: shareUrl,
+          fid: JSON.stringify(data.fids),
+          accountId: account.id,
+        },
       })
       .catch((err) => console.error("落库失败", err)),
   );
