@@ -1,5 +1,5 @@
 import { prisma } from "#server/lib/prisma";
-import { generateToken } from "#server/utils/auth";
+import { issueTokens } from "#server/utils/auth";
 import { verifyPassword } from "#server/utils/password";
 
 export default defineEventHandler(async (event) => {
@@ -32,11 +32,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: "用户名或密码错误" });
   }
 
-  const token = generateToken(admin.username);
+  const tokens = issueTokens(admin.username);
 
   return {
     id: admin.id,
     username: admin.username,
-    token,
+    ...tokens,
   };
 });

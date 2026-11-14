@@ -110,7 +110,12 @@ const handleSubmit = async (
       rememberedUsername.value = "";
     }
 
-    login(data.username, data.token);
+    login(data.username, {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      expiresIn: data.expiresIn,
+      refreshExpiresIn: data.refreshExpiresIn,
+    });
     const redirect = route.query.redirect as string;
     const SAFE_REDIRECT =
       redirect && redirect.startsWith("/") && !redirect.startsWith("//")

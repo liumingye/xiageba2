@@ -59,7 +59,12 @@
 ### 后台管理 `/admin`
 
 后台为 SPA 模式（`ssr: false`），使用独立 `admin` 布局，登录页单独 SSR。
-鉴权方式：JWT Bearer Token（`ADMIN_SECRET` 签名），密码使用 **scrypt** 哈希存储。
+鉴权方式：JWT 双 token（`ADMIN_SECRET` 签名），密码使用 **scrypt** 哈希存储。
+
+- `accessToken` 有效期 1 小时，随请求头 `Authorization: Bearer` 发送
+- `refreshToken` 有效期 7 天，仅用于 `POST /api/admin/refresh` 换取新令牌，不能访问业务接口
+- 前端 axios 拦截器在 access 剩余不足 5 分钟时主动续期；遇到 401 也会自动刷新并重放原请求，用户无感
+- 刷新会轮转 refreshToken，但继承原会话的绝对过期点：7 天内活跃可持续续期，超过 7 天必须重新登录
 
 | 分组 | 页面 | 说明 |
 |------|------|------|

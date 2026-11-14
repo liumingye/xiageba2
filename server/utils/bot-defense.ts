@@ -31,7 +31,7 @@ export async function assertBotDefense(
   // 后台管理员放行
   try {
     const adminToken = getTokenFromEvent(event);
-    if (adminToken && verifyToken(adminToken)) return;
+    if (adminToken && verifyToken(adminToken, "access")) return;
   } catch {
     // ADMIN_SECRET 未配置时视为无管理员通道，继续走通行令牌判定
   }
