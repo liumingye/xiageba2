@@ -17,6 +17,8 @@ import {
   initAutomaton_websearch_filter_keywords,
   automaton_websearch_filter_keywords,
   websearch_filter_keywords_list,
+  initAutomaton_ad_filter,
+  automaton_ad_filter,
 } from "./simpleAC";
 import { getConfigValue } from "#server/lib/configCache";
 
@@ -165,5 +167,58 @@ describe("initAutomaton_websearch_filter_keywords", () => {
     vi.mocked(getConfigValue).mockResolvedValue(",, ,,");
     await initAutomaton_websearch_filter_keywords();
     expect(websearch_filter_keywords_list).toEqual([]);
+  });
+});
+
+describe("initAutomaton_ad_filter", () => {
+  it("配置为空时构建空自动机", async () => {
+    vi.mocked(getConfigValue).mockResolvedValue("");
+    await initAutomaton_ad_filter();
+    expect(automaton_ad_filter).toBeInstanceOf(SimpleAC);
+    expect(automaton_ad_filter!.hasMatch("任何文本")).toBe(false);
+  });
+
+  it("enabled 为 false 时构建空自动机", async () => {
+    vi.mocked(getConfigValue).mockResolvedValue(
+      JSON.stringify({ enabled: false, keywords: "广告" }),
+    );
+    await initAutomaton_ad_filter();
+    expect(automaton_ad_filter).toBeInstanceOf(SimpleAC);
+    expect(automaton_ad_filter!.hasMatch("广告")).toBe(false);
+  });
+
+  it("enabled 为 true 且有 keywords 时构建匹配自动机", async () => {
+    vi.mocked(getConfigValue).mockResolvedValue(
+      JSON.stringify({ enabled: true, keywords: "广告,推广" }),
+    );
+    await initAutomaton_ad_filter();
+    expect(automaton_ad_filter!.hasMatch("这是广告")).toBe(true);
+    expect(automaton_ad_filter!.hasMatch("推广链接")).toBe(true);
+    expect(automaton_ad_filter!.hasMatch("正常文件")).toBe(false);
+  });
+
+  // 回归测试：之前 enabled=true 但 keywords 缺失时会抛 TypeError 导致启动崩溃
+  it("enabled 为 true 但 keywords 缺失时不崩溃，构建空自动机", async () => {
+    vi.mocked(getConfigValue).mockResolvedValue(
+      JSON.stringify({ enabled: true }),
+    );
+    await expect(initAutomaton_ad_filter()).resolves.not.toThrow();
+    expect(automaton_ad_filter).toBeInstanceOf(SimpleAC);
+    expect(automaton_ad_filter!.hasMatch("广告")).toBe(false);
+  });
+
+  it("enabled 为 true 但 keywords 非字符串时不崩溃", async () => {
+    vi.mocked(getConfigValue).mockResolvedValue(
+      JSON.stringify({ enabled: true, keywords: 12345 }),
+    );
+    await expect(initAutomaton_ad_filter()).resolves.not.toThrow();
+    expect(automaton_ad_filter).toBeInstanceOf(SimpleAC);
+  });
+
+  it("配置为非法 JSON 时不崩溃，构建空自动机", async () => {
+    vi.mocked(getConfigValue).mockResolvedValue("{invalid json");
+    await expect(initAutomaton_ad_filter()).resolves.not.toThrow();
+    expect(automaton_ad_filter).toBeInstanceOf(SimpleAC);
+    expect(automaton_ad_filter!.hasMatch("广告")).toBe(false);
   });
 });
