@@ -404,7 +404,7 @@ export default defineNuxtConfig({
       ),
       "@netdisk-sdk/quarkuc-sdk": path.resolve(
         __dirname,
-        "./packages/netdisk-sdk-js/packages/quarkuc-sdk/src",
+        "./packages/netdisk-sdk-js/packages/quarkUC-sdk/src",
       ),
       "@netdisk-sdk/xunlei-sdk": path.resolve(
         __dirname,

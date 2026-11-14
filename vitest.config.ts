@@ -30,7 +30,7 @@ export default defineConfig({
       ),
       "@netdisk-sdk/quarkuc-sdk": path.resolve(
         root,
-        "packages/netdisk-sdk-js/packages/quarkuc-sdk/src",
+        "packages/netdisk-sdk-js/packages/quarkUC-sdk/src",
       ),
       "@netdisk-sdk/xunlei-sdk": path.resolve(
         root,
