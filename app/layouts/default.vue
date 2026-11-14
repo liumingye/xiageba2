@@ -8,8 +8,8 @@ import type { PublicLayoutConfig, PublicLayoutLink } from "~/utils/page";
 /* ---------------- 布局装修配置（后台「页面装修」）---------------- */
 // 两个请求必须并行发起：服务端 await useFetch() 会阻塞 SSR，串行写法会把
 // TTFB 变成两次往返。Promise.all 里的调用是同步触发的，请求同时在途。
-const [{ icpLicence, siteShortTitle }, { data: layoutData }] = await Promise.all(
-  [
+const [{ icpLicence, siteShortTitle }, { data: layoutData }] =
+  await Promise.all([
     useSiteSeo(),
     useFetch<{ data: PublicLayoutConfig }>("/api/layout/default", {
       default: () => ({
@@ -18,8 +18,7 @@ const [{ icpLicence, siteShortTitle }, { data: layoutData }] = await Promise.all
       key: "layout-default",
       dedupe: "defer",
     }),
-  ],
-);
+  ]);
 
 // ---------------- 全局壳（UHeader / UFooter）----------------
 
@@ -47,11 +46,6 @@ const menuItems = computed<NavigationMenuItem[]>(() =>
       active: !external && route.path.startsWith(item.to),
     };
   }),
-);
-
-// 是否展示头部搜索框
-const showHeaderSearch = computed(
-  () => !(route.path === "/" || route.path.startsWith("/book")),
 );
 
 const showFooter = computed(
@@ -168,7 +162,7 @@ const isMobile = isMobileOrTablet();
         <div class="flex-1">
           <SearchBar
             ref="searchBarRef"
-            v-if="showHeaderSearch"
+            v-if="!route.meta.hideHeaderSearch"
             :model-value="searchQuery"
             class="w-full"
           />
@@ -216,7 +210,11 @@ const isMobile = isMobileOrTablet();
       base: 'min-h-0',
     }"
   >
-    <div class="max-w-4xl mx-auto px-2">
+    <!-- 落地页（route.meta.landing）放宽容器，其余页面维持 4xl 阅读宽度 -->
+    <div
+      class="mx-auto px-2"
+      :class="route.meta.landing ? 'max-w-6xl' : 'max-w-4xl'"
+    >
       <slot />
     </div>
   </UMain>

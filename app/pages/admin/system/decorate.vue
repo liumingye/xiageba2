@@ -333,12 +333,12 @@ const reset = async () => {
               id="app-preview-image"
               v-model="appConfig.previewImageUrl"
               type="text"
-              placeholder="如 /img/app.jpg 或 https://example.com/preview.png"
+              placeholder="如 /img/app/hero-phone.webp 或 https://example.com/preview.png"
               class="w-full flex-1"
             />
           </div>
           <p class="text-color-500 text-xs mt-2">
-            下载页展示的 APP 预览图（建议竖屏截图），留空使用 /img/app.jpg
+            下载页展示的 APP 预览图（建议竖屏截图），留空使用 /img/app/hero-phone.webp
           </p>
         </div>
 

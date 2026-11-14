@@ -28,7 +28,7 @@ export interface AppDownloadConfig {
 }
 
 /** 下载页默认预览图（预览图地址留空时使用） */
-export const DEFAULT_APP_PREVIEW_IMAGE = "/img/app.jpg";
+export const DEFAULT_APP_PREVIEW_IMAGE = "/img/app/hero-phone.webp";
 
 /** 更新策略下拉选项（后台装修页使用） */
 export const APP_UPDATE_STRATEGY_OPTIONS: {

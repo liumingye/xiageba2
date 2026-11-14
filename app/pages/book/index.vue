@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  BookOpen,
-  AlertTriangle,
-  RotateCcw,
-  Filter,
-} from "@lucide/vue";
+import { BookOpen, AlertTriangle, RotateCcw, Filter } from "@lucide/vue";
 import { useDebounceFn } from "@vueuse/core";
 import type { SampleReadBook } from "@/components/SampleReadModal.vue";
 import { NuxtLink } from "#components";
@@ -12,6 +7,8 @@ import { NuxtLink } from "#components";
 defineOptions({
   name: "BookIndexPage",
 });
+
+definePageMeta({ hideHeaderSearch: true });
 
 const route = useRoute();
 const router = useRouter();

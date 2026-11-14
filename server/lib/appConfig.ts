@@ -10,7 +10,7 @@ import { getConfigValue, setConfigValue } from "#server/lib/configCache";
  * - versionName   版本号（字符串版，如 1.2.0）
  * - versionCode   版本号（整数版，如 1020）
  * - apkUrl        APK 下载地址
- * - previewImageUrl 预览图地址，留空时前台回落到 /img/app.jpg
+ * - previewImageUrl 预览图地址，留空时前台回落到 /img/app/hero-phone.webp
  * - updateStrategy 更新策略：0 不更新 / 1 弹窗更新 / 2 强制更新 / 3 wgt 热更新
  * - wgtUrl        wgt 热更新包链接地址
  * - wgtMd5        wgt 热更新包 MD5
@@ -41,7 +41,7 @@ export interface AppDownloadConfig {
   versionCode: number;
   /** APK 下载地址 */
   apkUrl: string;
-  /** 下载页预览图地址，留空时前台回落到 /img/app.jpg */
+  /** 下载页预览图地址，留空时前台回落到 /img/app/hero-phone.webp */
   previewImageUrl: string;
   /** 更新策略 */
   updateStrategy: AppUpdateStrategy;

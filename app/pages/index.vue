@@ -15,6 +15,8 @@ defineOptions({
   name: "IndexPage",
 });
 
+definePageMeta({ hideHeaderSearch: true });
+
 const musicStore = useMusicStore();
 const searchBarRef = useTemplateRef("searchBarRef");
 const sectionRef = useTemplateRef("sectionRef");

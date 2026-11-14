@@ -139,9 +139,9 @@ const currentPage = computed(() =>
 const searchKeyword = computed(() => (route.query.q as string) || "");
 const searchType = computed(() => {
   const t = route.query.type as string;
-  if (t === "resource") return "resource";
+  if (t === "music") return "music";
   if (t === "ai") return "ai";
-  return "music";
+  return "resource";
 });
 const isMusic = computed(() => searchType.value === "music");
 const isAi = computed(() => searchType.value === "ai");
@@ -478,7 +478,8 @@ const goToPage = (page: number) => {
 
 const skeletonList = Array.from({ length: 4 });
 
-const { registerItems, getCheckStatus, stopPanCheck, vPanCheck } = usePanCheck();
+const { registerItems, getCheckStatus, stopPanCheck, vPanCheck } =
+  usePanCheck();
 
 watch(
   [results],
@@ -543,11 +544,7 @@ watch(
     </ClientOnly>
 
     <template v-else>
-      <UCard
-        v-if="errorInfo && searchKeyword"
-        class="text-center"
-        role="alert"
-      >
+      <UCard v-if="errorInfo && searchKeyword" class="text-center" role="alert">
         <div
           class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
           :class="

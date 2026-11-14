@@ -16,6 +16,8 @@ defineOptions({
   name: "BookDetailPage",
 });
 
+definePageMeta({ hideHeaderSearch: true });
+
 const route = useRoute();
 
 const bookId = computed(() => {
@@ -196,11 +198,7 @@ useSeoMeta({
     </UCard>
 
     <!-- 骨架屏 -->
-    <UCard
-      v-else-if="loading"
-      aria-busy="true"
-      aria-label="正在加载小说详情"
-    >
+    <UCard v-else-if="loading" aria-busy="true" aria-label="正在加载小说详情">
       <div
         class="flex gap-4 md:gap-6 flex-col md:flex-row items-start md:items-center"
       >
