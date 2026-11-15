@@ -255,6 +255,9 @@ export class C139Client {
       .post(url)
       .set(headers)
       .send(encrypted)
+      // parser 要累积完整响应体；superagent 10.x 的 buffer 默认表为空，
+      // 不显式声明会每次请求都告警
+      .buffer(true)
       .parse((res: any, cb: (err: Error | null, data: string) => void) => {
         let data = "";
         res.on("data", (chunk: Buffer) => {

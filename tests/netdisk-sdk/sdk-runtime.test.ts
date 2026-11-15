@@ -20,6 +20,7 @@ interface IStubCall {
   url: string;
   payload: any;
   at: number;
+  buffered?: boolean;
 }
 
 /** 用假请求替换 agent 的 post/get，await 时才记为一次真实发出 */
@@ -30,18 +31,23 @@ const stubAgent = (
   const calls: IStubCall[] = [];
   const make = (method: string) => (url: string) => {
     let payload: any;
+    let buffered: boolean | undefined;
     const req: any = {
       set: () => req,
       query: () => req,
       type: () => req,
       parse: () => req,
+      buffer: (value: boolean) => {
+        buffered = value;
+        return req;
+      },
       timeout: () => req,
       send: (body: any) => {
         payload = body;
         return req;
       },
       then: (onOk: any, onErr: any) => {
-        calls.push({ method, url, payload, at: Date.now() });
+        calls.push({ method, url, payload, at: Date.now(), buffered });
         return Promise.resolve()
           .then(() => handler(url, payload))
           .then(onOk, onErr);
@@ -367,6 +373,13 @@ describe("c139 分享响应解码", () => {
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toMatch(/not valid JSON/);
     expect(err.info().body).toContain("502 Bad Gateway");
+  });
+
+  it("自定义 parser 显式声明 buffer(true)，避免 superagent 逐请求告警", async () => {
+    const client = new C139Client({ cookie: "authorization=Basic x" });
+    const calls = stubAgent(client.agent, () => ({ body: "{}" }));
+    await client.sharePost("https://example.test/share", "{}");
+    expect(calls[0].buffered).toBe(true);
   });
 });
 
