@@ -1,4 +1,8 @@
 import path from "path";
+import { fileURLToPath } from "node:url";
+
+// 包为 type:module，Nuxt 4.6.4 起以原生 ESM 加载本文件，__dirname 不可用
+const configDir = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-06-01",
@@ -391,27 +395,27 @@ export default defineNuxtConfig({
     },
     alias: {
       "@netdisk-sdk/baidu-sdk": path.resolve(
-        __dirname,
+        configDir,
         "./packages/netdisk-sdk-js/packages/baidu-sdk/src",
       ),
       "@netdisk-sdk/c139-sdk": path.resolve(
-        __dirname,
+        configDir,
         "./packages/netdisk-sdk-js/packages/c139-sdk/src",
       ),
       "@netdisk-sdk/guangya-sdk": path.resolve(
-        __dirname,
+        configDir,
         "./packages/netdisk-sdk-js/packages/guangya-sdk/src",
       ),
       "@netdisk-sdk/quarkuc-sdk": path.resolve(
-        __dirname,
+        configDir,
         "./packages/netdisk-sdk-js/packages/quarkUC-sdk/src",
       ),
       "@netdisk-sdk/xunlei-sdk": path.resolve(
-        __dirname,
+        configDir,
         "./packages/netdisk-sdk-js/packages/xunlei-sdk/src",
       ),
       "@netdisk-sdk/utils": path.resolve(
-        __dirname,
+        configDir,
         "./packages/netdisk-sdk-js/packages/utils/src",
       ),
     },
