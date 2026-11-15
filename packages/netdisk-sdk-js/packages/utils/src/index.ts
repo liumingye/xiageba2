@@ -6,3 +6,7 @@ export * from "./array";
 export * from "./object";
 export * from "./async";
 export * from "./op";
+export * from "./string";
+export * from "./agent";
+export * from "./poll";
+export * from "./errors";

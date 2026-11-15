@@ -1,4 +1,5 @@
 import { C139Client } from "./client";
+import { pollTask } from "@netdisk-sdk/utils";
 import {
   C139_SHARE_LIST_URL,
   C139_TRANSFER_CREATE_URL,
@@ -219,14 +220,16 @@ export class C139ShareApi {
    * 等待转存任务完成（轮询）
    */
   async waitTransferTask(taskId: string): Promise<IC139TransferResult> {
-    for (let i = 0; i < C139_TASK_POLL_MAX; i++) {
-      const result = await this.queryTransferTask(taskId);
-      if (result.done) return result;
-      await new Promise((resolve) =>
-        setTimeout(resolve, C139_TASK_POLL_INTERVAL),
-      );
-    }
-    throw ApiError.create("c139 transfer task timed out");
+    return pollTask(() => this.queryTransferTask(taskId), {
+      intervalMs: C139_TASK_POLL_INTERVAL,
+      maxAttempts: C139_TASK_POLL_MAX,
+      isDone: (result) => result.done,
+      timeoutError: (last) =>
+        ApiError.create("c139 transfer task timed out, task_id={taskId}", {
+          taskId,
+          ...(last ?? {}),
+        }),
+    });
   }
 
   /**

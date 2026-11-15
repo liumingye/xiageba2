@@ -20,16 +20,24 @@ export enum Method {
 }
 
 export namespace CookieUtil {
-    export const cookieToArray = (cookies: string) => cookies.split(';').map(cookie => StringUtil.splitN(cookie, '=', 2) as [key: string, value: string])
+    export const cookieToArray = (cookies: string): [key: string, value: string][] => {
+        const result: [string, string][] = []
+        for (const segment of cookies.split(';')) {
+            const [key, ...rest] = StringUtil.splitN(segment.trim(), '=', 2)
+            if (!key) continue
+            result.push([key, (rest[0] ?? '').trim()])
+        }
+        return result
+    }
     export const cookieToMap = (cookies: string) => new Map(cookieToArray(cookies))
+    /** 合并 cookie，同名键以新值覆盖；输出用 '; ' 分隔（HTTP 规范格式） */
     export const mergeCookie = (orgCookies: string, ...newCookies: string[]) => {
-        const oldCookie = cookieToMap(orgCookies)
+        const merged = cookieToMap(orgCookies)
         for (const cookie of newCookies) {
-            const cookies = cookieToArray(cookie)
-            for (const [key, value] of cookies) {
-                oldCookie.set(key, value)
+            for (const [key, value] of cookieToArray(cookie)) {
+                merged.set(key, value)
             }
         }
-        return Array.from(oldCookie.entries()).map(cookie => cookie.join('=')).join(';')
+        return Array.from(merged, ([key, value]) => `${key}=${value}`).join('; ')
     }
 }

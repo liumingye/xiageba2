@@ -2,6 +2,11 @@ import superagent, { type Agent } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
 import crypto from "crypto";
 import zlib from "zlib";
+import {
+  KEEP_ALIVE_OPTIONS,
+  REQUEST_TIMEOUT,
+  idempotentRetry,
+} from "@netdisk-sdk/utils";
 
 import {
   C139_SHARE_AES_KEY,
@@ -12,7 +17,7 @@ import {
   C139_YUN_CHANNEL_SOURCE,
   C139_YUN_MODULE_TYPE,
 } from "./const";
-import { throwError, AuthError } from "./errors";
+import { throwError, ApiError, AuthError } from "./errors";
 import { C139ShareApi } from "./share_api";
 import { C139FSApi } from "./fs_api";
 
@@ -179,18 +184,13 @@ export class C139Client {
     this.authorization = extractAuthorization(config.cookie);
     this.account = extractAccount(config.cookie);
 
-    const httpsAgent = new HttpsAgent({
-      maxSockets: 100,
-      maxFreeSockets: 10,
-      timeout: 60000,
-      freeSocketTimeout: 30000,
-    });
+    const httpsAgent = new HttpsAgent(KEEP_ALIVE_OPTIONS);
 
     this.agent = superagent
       .agent(httpsAgent as any)
-      .timeout(15000)
+      .timeout(REQUEST_TIMEOUT)
       .ok(throwError)
-      .retry(3);
+      .use(idempotentRetry());
 
     this.agentApi = this.agent;
 
@@ -262,14 +262,21 @@ export class C139Client {
         });
         res.on("end", () => cb(null, data));
       });
+    // 响应多为 AES 密文，少数接口直接返回明文 JSON
+    let plain = body;
     try {
-      return JSON.parse(aesDecrypt(this.aesKey, body));
+      plain = aesDecrypt(this.aesKey, body);
     } catch {
-      try {
-        return JSON.parse(body);
-      } catch {
-        return {};
-      }
+      // 解密失败则按明文继续
+    }
+    try {
+      return JSON.parse(plain);
+    } catch {
+      // 返回 {} 会被 isC139Success 判成成功，静默丢数据
+      throw ApiError.create(
+        "c139 share response is not valid JSON, body={body}",
+        { body: String(body ?? "").slice(0, 500) },
+      );
     }
   }
 

@@ -21,7 +21,7 @@ export type IBaiduResult2<Extend = {}> = {
 } & Extend;
 
 export const isIBaiduResult2 = (o: any): o is IBaiduResult2 => {
-  return Check.isObject(o) && "error_code" in o && "error_msg" in o;
+  return Check.isObject(o) && "error_code" in o;
 };
 
 export type ResultList<T = any, Extend = {}> = {

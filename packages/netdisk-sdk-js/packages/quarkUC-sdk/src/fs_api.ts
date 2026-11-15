@@ -1,8 +1,8 @@
 import {
   ArrayUtil,
-  AsyncUtil,
   Check,
   type NBoolean,
+  pollTask,
 } from "@netdisk-sdk/utils";
 import { QuarkUCClient } from "./client";
 import {
@@ -16,7 +16,7 @@ import {
   getFileFid,
   toSortStr,
 } from "./types";
-import { HttpError } from "./errors";
+import { ApiError, HttpError } from "./errors";
 import crypto from "crypto";
 import { Buffer } from "buffer";
 
@@ -328,6 +328,9 @@ export type IPartUpdateParam = Pick<
   | "auth_info"
   | "task_id"
 > & {};
+/** upload_url 可能带 http:// 或 https://，统一剥掉协议再拼 bucket 子域 */
+const stripProtocol = (url: string) => url.replace(/^https?:\/\//, "");
+
 QuarkUCFSApi.prototype.partUpdate = async function (param, partNumber, data) {
   const { format_type, bucket, upload_id, obj_key, upload_url } = param;
   const ua = `aliyun-sdk-js/6.6.1 Chrome 98.0.4758.80 on Windows 10 64-bit`;
@@ -350,7 +353,7 @@ x-oss-user-agent:${ua}
     .send({ auth_info, auth_meta, task_id });
 
   const result = await this.client.agent
-    .put(`https://${bucket}.${upload_url.substring(7)}/${obj_key}`)
+    .put(`https://${bucket}.${stripProtocol(upload_url)}/${obj_key}`)
     .set({
       Authorization: auth_key,
       "Content-Type": format_type,
@@ -383,13 +386,16 @@ QuarkUCFSApi.prototype.upCommit = async function (param, md5s) {
   const ua = `aliyun-sdk-js/6.6.1 Chrome 98.0.4758.80 on Windows 10 64-bit`;
   const timeStr = new Date().toUTCString();
   const body = `<?xml version="1.0" encoding="UTF-8"?>
-${md5s.map(
-  (md5, index) => `<Part>
+<CompleteMultipartUpload>
+${md5s
+  .map(
+    (md5, index) => `<Part>
 <PartNumber>${index + 1}</PartNumber>
 <ETag>${md5}</ETag>
 </Part>`,
-)}
-<CompleteMultipartUpload>`;
+  )
+  .join("\n")}
+</CompleteMultipartUpload>`;
   const contentMD5 = crypto.hash("md5", body, "hex");
   const callbackBase64 = Buffer.from(JSON.stringify(callback)).toString(
     "base64",
@@ -413,7 +419,7 @@ x-oss-user-agent:${ua}
     .send({ auth_info, auth_meta, task_id });
 
   const result = await this.client.agent
-    .post(`https://${bucket}.${upload_url.substring(7)}/${obj_key}`)
+    .post(`https://${bucket}.${stripProtocol(upload_url)}/${obj_key}`)
     .set({
       Authorization: auth_key,
       "Content-MD5": contentMD5,
@@ -423,7 +429,7 @@ x-oss-user-agent:${ua}
       "x-oss-user-agent": ua,
     })
     .query({ uploadId: upload_id })
-    .send(auth_meta);
+    .send(body);
 
   if (result.status != 200)
     throw HttpError.create(
@@ -432,22 +438,32 @@ x-oss-user-agent:${ua}
   return null;
 };
 
+/** 任务轮询：500ms 一次，最多 120 次（60s） */
+const TASK_POLL_INTERVAL = 500;
+const TASK_POLL_MAX = 120;
+
 QuarkUCFSApi.prototype.task = async function (task_id, _await = false) {
-  let retry_index = 0;
-  let result: ITaskStateResult;
-  do {
+  const fetch = async (attempt: number) => {
     const {
       body: { data },
     } = await this.client.agentApi
       .get("/task")
-      .query({ task_id, retry_index: retry_index++ });
-    result = data;
-  } while (
-    _await &&
-    result.status == 0 &&
-    ((await AsyncUtil.sleep(500)) ?? true)
-  );
-  return result as any;
+      .query({ task_id, retry_index: attempt });
+    return data as ITaskStateResult;
+  };
+
+  if (!_await) return (await fetch(0)) as any;
+
+  return pollTask(fetch, {
+    intervalMs: TASK_POLL_INTERVAL,
+    maxAttempts: TASK_POLL_MAX,
+    isDone: (r) => r.status != 0,
+    timeoutError: (last) =>
+      ApiError.create("quark task timeout, task_id={task_id}", {
+        task_id,
+        ...(last ?? {}),
+      }),
+  }) as any;
 };
 
 /************

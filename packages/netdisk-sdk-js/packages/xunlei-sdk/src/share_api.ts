@@ -1,3 +1,4 @@
+import { pollTask } from "@netdisk-sdk/utils";
 import { XunleiClient } from "./client";
 import { ApiError } from "./errors";
 import {
@@ -46,6 +47,35 @@ export interface IRestoreParam {
   fileIds: string[];
 }
 
+/** getShare / detail 的响应结构一致，统一映射 */
+const toShareDetail = (
+  shareId: string,
+  data: IShareDetailData,
+): IXunleiShareDetail => {
+  const files: IXunleiShareFile[] = [];
+  for (const file of data.files ?? []) {
+    const id = file.id ?? file.file_id;
+    if (!id) continue;
+    files.push({
+      id,
+      file_id: id,
+      name: file.name ?? "",
+      kind: file.kind,
+      is_dir: file.is_dir ?? file.kind === "drive#folder",
+      size: file.size,
+    });
+  }
+
+  return {
+    shareId,
+    title: data.title ?? "",
+    passCodeToken: data.pass_code_token ?? "",
+    files,
+    share_status: data.share_status,
+    share_status_text: data.share_status_text,
+  };
+};
+
 export class XunleiShareApi {
   client: XunleiClient;
 
@@ -81,28 +111,7 @@ export class XunleiShareApi {
       );
     }
 
-    const files: IXunleiShareFile[] = [];
-    for (const file of data.files ?? []) {
-      const id = file.id ?? file.file_id;
-      if (!id) continue;
-      files.push({
-        id,
-        file_id: id,
-        name: file.name ?? "",
-        kind: file.kind,
-        is_dir: file.is_dir ?? file.kind === "drive#folder",
-        size: file.size,
-      });
-    }
-
-    return {
-      shareId,
-      title: data.title ?? "",
-      passCodeToken: data.pass_code_token ?? "",
-      files,
-      share_status: data.share_status,
-      share_status_text: data.share_status_text,
-    };
+    return toShareDetail(shareId, data);
   }
 
   /**
@@ -139,28 +148,7 @@ export class XunleiShareApi {
       );
     }
 
-    const files: IXunleiShareFile[] = [];
-    for (const file of data.files ?? []) {
-      const id = file.id ?? file.file_id;
-      if (!id) continue;
-      files.push({
-        id,
-        file_id: id,
-        name: file.name ?? "",
-        kind: file.kind,
-        is_dir: file.is_dir ?? file.kind === "drive#folder",
-        size: file.size,
-      });
-    }
-
-    return {
-      shareId,
-      title: data.title ?? "",
-      passCodeToken: data.pass_code_token ?? "",
-      files,
-      share_status: data.share_status,
-      share_status_text: data.share_status_text,
-    };
+    return toShareDetail(shareId, data);
   }
 
   /**
@@ -208,16 +196,15 @@ export class XunleiShareApi {
   ): Promise<IXunleiTaskResult> {
     const { maxAttempts = 30, intervalMs = 1000 } = options;
 
-    for (let i = 0; i < maxAttempts; i++) {
-      const task = await this.getTask(taskId);
-      if (task.progress === 100) {
-        return task;
-      }
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
-    }
-
-    throw ApiError.create("xunlei task timed out, task_id={taskId}", {
-      taskId,
+    return pollTask(() => this.getTask(taskId), {
+      intervalMs,
+      maxAttempts,
+      isDone: (task) => task.progress === 100,
+      timeoutError: (last) =>
+        ApiError.create("xunlei task timed out, task_id={taskId}", {
+          taskId,
+          ...(last ?? {}),
+        }),
     });
   }
 

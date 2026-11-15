@@ -13,7 +13,7 @@ import {
   QuarkUCFSApi,
   QuarkUCClient,
   type ISaveTaskStateResult,
-} from "@netdisk-sdk/quarkUC-sdk";
+} from "@netdisk-sdk/quarkuc-sdk";
 import { XunleiFSApi, XunleiClient } from "@netdisk-sdk/xunlei-sdk";
 import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
 import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";

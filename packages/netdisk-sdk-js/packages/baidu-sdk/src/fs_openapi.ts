@@ -3,16 +3,19 @@ import {
   Method,
   type NBoolean,
   type StringNumber,
+  REQUEST_TIMEOUT,
 } from "@netdisk-sdk/utils";
 import { BaiduClient } from "./client";
 import type { ReadableStream } from "stream/web";
 import { type ProgressEvent, Request } from "superagent";
 import { type FileCategory, type IFile, type ResultList } from "./types";
 import superagent from "superagent";
+import { dispatchRequest } from "./request";
 
 export class BaiduFSOpenApi {
   prefix = "https://pan.baidu.com";
   client: BaiduClient;
+  private refreshPromise?: Promise<void>;
 
   constructor(client: BaiduClient) {
     this.client = client;
@@ -23,25 +26,36 @@ export class BaiduFSOpenApi {
     if (!clientId || !clientSecret || !refreshToken) {
       return;
     }
+    // 百度刷新后会轮换 refresh_token，并发刷新会互相作废，这里单飞
+    if (this.refreshPromise) return this.refreshPromise;
 
-    const agent = superagent.agent();
-    const { body } = await agent
-      .get("https://openapi.baidu.com/oauth/2.0/token")
-      .query({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
-        client_id: clientId,
-        client_secret: clientSecret,
+    this.refreshPromise = (async () => {
+      const agent = superagent.agent();
+      const { body } = await agent
+        .get("https://openapi.baidu.com/oauth/2.0/token")
+        .timeout(REQUEST_TIMEOUT)
+        .query({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+          client_id: clientId,
+          client_secret: clientSecret,
+        });
+      if (!body.access_token || !body.refresh_token || !body.expires_in) {
+        return;
+      }
+      const expiresAt = Date.now() + body.expires_in * 1000;
+      this.client._onRefreshToken({
+        accessToken: body.access_token,
+        refreshToken: body.refresh_token,
+        expiresAt,
       });
-    if (!body.access_token || !body.refresh_token || !body.expires_in) {
-      return;
+    })();
+
+    try {
+      await this.refreshPromise;
+    } finally {
+      this.refreshPromise = undefined;
     }
-    const expiresAt = Date.now() + body.expires_in * 1000;
-    this.client._onRefreshToken({
-      accessToken: body.access_token,
-      refreshToken: body.refresh_token,
-      expiresAt,
-    });
   }
 
   async ensureToken(): Promise<void> {
@@ -53,11 +67,9 @@ export class BaiduFSOpenApi {
   }
 
   request(method: Method, url: string): Request {
-    const md = method.toLowerCase();
-    if (url.startsWith("/")) url = this.prefix + url;
-    const request = (this.client.agentApi as any)[md](url) as Request;
-    request.query({ access_token: this.client.accessToken });
-    return request;
+    return dispatchRequest(this.client, this.prefix, method, url).query({
+      access_token: this.client.accessToken,
+    });
   }
 
   /** 用户信息 */

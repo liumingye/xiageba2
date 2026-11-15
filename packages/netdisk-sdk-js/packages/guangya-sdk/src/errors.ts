@@ -1,6 +1,5 @@
-import { Check } from "@netdisk-sdk/utils";
+import { Check, createThrowError, extractMessage } from "@netdisk-sdk/utils";
 import { SError } from "error";
-import { Response } from "superagent";
 
 export class ApiError extends SError {}
 /** http 请求错误 */
@@ -29,20 +28,14 @@ export const isGuangyaApiResult = (body: any): body is IGuangyaErrorBody => {
 /**
  * 提取错误消息（从顶层或 data 字段中查找 message/msg/errorMessage 等）
  */
-export const extractGuangyaMessage = (payload: IGuangyaErrorBody): string => {
-  const scopes: IGuangyaErrorBody[] = [payload];
-  const data = payload.data;
-  if (Check.isObject(data)) {
-    scopes.push(data as IGuangyaErrorBody);
-  }
-  for (const scope of scopes) {
-    for (const k of ["message", "msg", "errorMessage", "error_message", "detail"]) {
-      const v = (scope as any)[k];
-      if (Check.isString(v) && v.trim() !== "") return v.trim();
-    }
-  }
-  return "";
-};
+export const extractGuangyaMessage = (payload: IGuangyaErrorBody): string =>
+  extractMessage(payload, [
+    "message",
+    "msg",
+    "errorMessage",
+    "error_message",
+    "detail",
+  ]);
 
 /**
  * 成功判定（无统一数值 code，按 msg/data 容错）
@@ -86,23 +79,20 @@ export const hasGuangyaExplicitFailure = (payload: IGuangyaErrorBody): boolean =
   return false;
 };
 
-export const throwError = ({ body, status, text }: Response) => {
-  if (Check.isString(body || text)) {
-    try {
-      body = JSON.parse(body || text);
-    } catch {
-      // ignore
-    }
-  }
+// 光鸭响应无统一数值 code，成功/失败由各 API 方法自行判定（isGuangyaSuccess）。
+// 此处仅处理 HTTP 层错误，与 Go 实现 doJSONOnce 一致：只要 2xx 且能解析 JSON 即放行。
+export const throwError = createThrowError({
+  HttpError,
+  AuthError,
+  authMessage: "guangya auth error, status={status}",
+});
 
-  // 光鸭响应无统一数值 code，成功/失败由各 API 方法自行判定（isGuangyaSuccess）。
-  // 此处仅处理 HTTP 层错误，与 Go 实现 doJSONOnce 一致：只要 2xx 且能解析 JSON 即放行。
-  if (status >= 400) {
-    if (status === 401) {
-      throw AuthError.create("guangya auth error, status={status}", { status });
-    }
-    throw HttpError.create("http request error, status={status}", { status });
-  }
-
-  return true;
+/** 失败时抛出带响应片段的错误 */
+export const raiseApiError = (
+  payload: Record<string, any>,
+  fallback: string,
+): never => {
+  const msg = extractGuangyaMessage(payload) || fallback;
+  const snippet = JSON.stringify(payload).slice(0, 500);
+  throw ApiError.create(`${msg}; body=${snippet}`, payload);
 };

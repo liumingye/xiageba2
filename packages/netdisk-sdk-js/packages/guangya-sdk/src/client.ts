@@ -1,6 +1,12 @@
 import superagent, { type Agent } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
 import crypto from "crypto";
+import {
+  AsyncUtil,
+  KEEP_ALIVE_OPTIONS,
+  REQUEST_TIMEOUT,
+  idempotentRetry,
+} from "@netdisk-sdk/utils";
 
 import {
   GUANGYA_ACCOUNT_API,
@@ -105,16 +111,21 @@ export const generateGuangyaTraceparent = (): string => {
 
 /** 全局限流：保证相邻请求间隔 50-100ms 随机值 */
 let lastReqAt = 0;
-const guangyaThrottle = async (): Promise<void> => {
-  const interval = 50 + Math.floor(Math.random() * 50);
-  const now = Date.now();
-  if (lastReqAt > 0) {
-    const wait = interval - (now - lastReqAt);
-    if (wait > 0) {
-      await new Promise((resolve) => setTimeout(resolve, wait));
+let throttleQueue: Promise<void> = Promise.resolve();
+const guangyaThrottle = (): Promise<void> => {
+  // 并发调用必须排队：否则都读到同一个 lastReqAt，等待后一起发出
+  const turn = throttleQueue.then(async () => {
+    const interval = 50 + Math.floor(Math.random() * 50);
+    if (lastReqAt > 0) {
+      const wait = interval - (Date.now() - lastReqAt);
+      if (wait > 0) {
+        await AsyncUtil.sleep(wait);
+      }
     }
-  }
-  lastReqAt = Date.now();
+    lastReqAt = Date.now();
+  });
+  throttleQueue = turn;
+  return turn;
 };
 
 export class GuangyaClient {
@@ -141,18 +152,13 @@ export class GuangyaClient {
       this.expiresAt = config.expiresAt;
     }
 
-    const httpsAgent = new HttpsAgent({
-      maxSockets: 100,
-      maxFreeSockets: 10,
-      timeout: 60000,
-      freeSocketTimeout: 30000,
-    });
+    const httpsAgent = new HttpsAgent(KEEP_ALIVE_OPTIONS);
 
     this.agent = superagent
       .agent(httpsAgent as any)
-      .timeout(15000)
+      .timeout(REQUEST_TIMEOUT)
       .ok(throwError)
-      .retry(3);
+      .use(idempotentRetry());
 
     this.agentApi = this.agent;
 

@@ -1,5 +1,12 @@
 import superagent, { type Agent, Request, Response } from "superagent";
-import { ArrayUtil, Check, CookieUtil } from "@netdisk-sdk/utils";
+import {
+  ArrayUtil,
+  Check,
+  CookieUtil,
+  KEEP_ALIVE_OPTIONS,
+  REQUEST_TIMEOUT,
+  idempotentRetry,
+} from "@netdisk-sdk/utils";
 import { HttpsAgent } from "agentkeepalive";
 
 import { CreateQuarkClientParam, CreateUCClientParam } from "./const";
@@ -63,15 +70,19 @@ export class QuarkUCClient {
       this.config = config;
     }
 
-    const httpsAgent = new HttpsAgent({
-      maxSockets: 100,
-      maxFreeSockets: 10,
-      timeout: 60000, // active socket keepalive for 60 seconds
-      freeSocketTimeout: 30000, // free socket keepalive for 30 seconds
-    });
+    const httpsAgent = new HttpsAgent(KEEP_ALIVE_OPTIONS);
 
-    this.agent = (agent ?? superagent.agent(httpsAgent as any))
-      .timeout(15000)
+    // OSS 直传专用：不注入 quark 登录态，避免 cookie/referer 外发 aliyuncs.com。
+    // 响应不是 quark JSON，放行后由调用处按 status 判定，保留 OSS 错误详情。
+    // 上传耗时远高于普通接口，不能用 15s 整体 deadline。
+    this.agent = superagent
+      .agent(new HttpsAgent(KEEP_ALIVE_OPTIONS) as any)
+      .timeout({ response: 60000, deadline: 600000 })
+      .ok(() => true)
+      .use(idempotentRetry());
+
+    this.agentApi = (agent ?? superagent.agent(httpsAgent as any))
+      .timeout(REQUEST_TIMEOUT)
       .use((request: Request) => {
         // 监听cookie更新
         request.on("response", (resp: Response) => {
@@ -81,9 +92,7 @@ export class QuarkUCClient {
           const puus = setCookie.find((c) => c.startsWith("__puus"));
           if (puus != null) this.updateCookie(setCookie.join(";"));
         });
-      });
-    this.agentApi = this.agent
-      .timeout(15000)
+      })
       .use(prefix(this.config.api))
       .use((request: Request) => {
         // 自动注入
@@ -102,7 +111,7 @@ export class QuarkUCClient {
         };
       })
       .ok(throwError)
-      .retry(3);
+      .use(idempotentRetry());
 
     this.fsApi = new QuarkUCFSApi(this);
     this.shareApi = new QuarkUCShareApi(this);

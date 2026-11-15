@@ -1,6 +1,5 @@
-import { Check } from "@netdisk-sdk/utils";
+import { createThrowError, extractMessage } from "@netdisk-sdk/utils";
 import { SError } from "error";
-import { Response } from "superagent";
 
 export class ApiError extends SError {}
 /** http 请求错误 */
@@ -31,40 +30,15 @@ export const isC139Success = (payload: IC139ErrorBody): boolean => {
 };
 
 /** 提取错误消息 */
-export const extractC139Message = (payload: IC139ErrorBody): string => {
-  const scopes: IC139ErrorBody[] = [payload];
-  const data = payload.data;
-  if (Check.isObject(data)) {
-    scopes.push(data as IC139ErrorBody);
-  }
-  for (const scope of scopes) {
-    for (const k of ["desc", "message", "msg"] as const) {
-      const v = (scope as any)[k];
-      if (Check.isString(v) && v.trim() !== "") return v.trim();
-    }
-  }
-  return "";
-};
+export const extractC139Message = (payload: IC139ErrorBody): string =>
+  extractMessage(payload, ["desc", "message", "msg"]);
 
 /** 仅处理 HTTP 层错误，业务成功/失败由各 API 方法自行判定 */
-export const throwError = ({ body, status, text }: Response) => {
-  if (Check.isString(body || text)) {
-    try {
-      body = JSON.parse(body || text);
-    } catch {
-      // ignore
-    }
-  }
-
-  if (status >= 400) {
-    if (status === 401) {
-      throw AuthError.create("c139 auth error, status={status}", { status });
-    }
-    throw HttpError.create("http request error, status={status}", { status });
-  }
-
-  return true;
-};
+export const throwError = createThrowError({
+  HttpError,
+  AuthError,
+  authMessage: "c139 auth error, status={status}",
+});
 
 /** 失败时抛出带响应片段的错误 */
 export const raiseApiError = (

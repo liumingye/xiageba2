@@ -1,7 +1,9 @@
-import { ContentType, Method, type NBoolean, AsyncUtil } from "@netdisk-sdk/utils";
+import { ContentType, Method, type NBoolean, pollTask } from "@netdisk-sdk/utils";
 import { BaiduClient } from "./client";
+import { ApiError } from "./errors";
 import { type FileCategory, type IFile, type ResultInfo } from "./types";
-import { type ProgressEvent, Request } from "superagent";
+import { type ProgressEvent } from "superagent";
+import { dispatchRequest } from "./request";
 import type { ReadableStream } from "stream/web";
 
 export class BaiduFSApi {
@@ -14,10 +16,7 @@ export class BaiduFSApi {
   }
 
   request(method: Method, url: string) {
-    const md = method.toLowerCase();
-    if (url.startsWith("/")) url = this.prefix + url;
-    const request = (this.client.agentApi as any)[md](url) as Request;
-    return request.query({
+    return dispatchRequest(this.client, this.prefix, method, url).query({
       app_id: 250528,
       channel: "chunlei",
       web: 1,
@@ -226,12 +225,17 @@ export type IFileManagerResult = {
   info: Record<string, any>[];
 };
 BaiduFSApi.prototype.filemanager = async function (opera, param) {
-  // @ts-ignore
-  if ("filelist" in param) param.filelist = JSON.stringify(param.filelist);
   const { bdstoken } = await this.gettemplatevariable(["bdstoken"]);
+  // 不原地改写入参：复用同一个 param 二次调用会双重 JSON 编码
+  const { async: asyncMode, ...rest } = param as Record<string, any>;
+  const payload =
+    "filelist" in rest
+      ? { ...rest, filelist: JSON.stringify(rest.filelist) }
+      : rest;
+
   const { body } = await this.request(Method.POST, "/api/filemanager")
     .query({
-      async: 2,
+      async: asyncMode ?? 2,
       onnest: "fail",
       opera,
       bdstoken,
@@ -239,7 +243,7 @@ BaiduFSApi.prototype.filemanager = async function (opera, param) {
       clienttype: 0,
     })
     .type(ContentType.FormUrlencoded)
-    .send(param);
+    .send(payload);
   return body;
 };
 
@@ -363,21 +367,26 @@ BaiduFSApi.prototype.recycleClear = async function (param) {
   );
   return body;
 };
-BaiduFSApi.prototype.recycleDelete = async function (param, ...fsids) {
-  const fidlist = JSON.stringify(fsids.map((v) => parseInt(v as any)));
-  const { body } = await this.request(Method.POST, "/api/recycle/delete")
+/** delete / restore 仅 endpoint 不同 */
+const recycleOp = async (
+  api: BaiduFSApi,
+  op: "delete" | "restore",
+  param: IRecycleParam | undefined,
+  fsids: number[],
+): Promise<IRecycleResult> => {
+  const { body } = await api
+    .request(Method.POST, `/api/recycle/${op}`)
     .query(param || {})
     .type(ContentType.FormUrlencoded)
-    .send({ fidlist });
+    .send({ fidlist: JSON.stringify(fsids.map((v) => parseInt(v as any))) });
   return body;
 };
+
+BaiduFSApi.prototype.recycleDelete = async function (param, ...fsids) {
+  return recycleOp(this, "delete", param, fsids);
+};
 BaiduFSApi.prototype.recycleRestore = async function (param, ...fsids) {
-  const fidlist = JSON.stringify(fsids.map((v) => parseInt(v as any)));
-  const { body } = await this.request(Method.POST, "/api/recycle/restore")
-    .query(param || {})
-    .type(ContentType.FormUrlencoded)
-    .send({ fidlist });
-  return body;
+  return recycleOp(this, "restore", param, fsids);
 };
 
 export type ITaskQueryResult = {
@@ -392,17 +401,31 @@ export type ITaskQueryResult = {
     to_fs_id: number;
   }[];
 };
+/** 任务轮询：500ms 一次，最多 120 次（60s） */
+const TASK_POLL_INTERVAL = 500;
+const TASK_POLL_MAX = 120;
+
 BaiduFSApi.prototype.taskquery = async function (taskid, _await = false) {
-  let result: ITaskQueryResult;
-  do {
+  const fetch = async () => {
     const { body } = await this.request(Method.GET, "/share/taskquery").query({
       taskid,
     });
-    result = body;
-  } while (
-    _await &&
-    (result.status === "pending" || result.status === "running") &&
-    ((await AsyncUtil.sleep(500)) ?? true)
-  );
-  return result;
+    return body as ITaskQueryResult;
+  };
+
+  if (!_await) return fetch();
+
+  return pollTask(fetch, {
+    intervalMs: TASK_POLL_INTERVAL,
+    maxAttempts: TASK_POLL_MAX,
+    isDone: (r) => r.status !== "pending" && r.status !== "running",
+    isFailed: (r) => r.status === "failed",
+    failedError: (r) =>
+      ApiError.create("baidu task failed, task_errno={task_errno}, task_error={task_error}", r),
+    timeoutError: (last) =>
+      ApiError.create("baidu task query timeout, taskid={taskid}", {
+        taskid,
+        ...(last ?? {}),
+      }),
+  });
 };

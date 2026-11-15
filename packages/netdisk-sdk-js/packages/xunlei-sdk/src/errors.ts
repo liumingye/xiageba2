@@ -1,6 +1,5 @@
-import { Check } from "@netdisk-sdk/utils";
+import { Check, createThrowError } from "@netdisk-sdk/utils";
 import { SError } from "error";
-import { Response } from "superagent";
 
 export class ApiError extends SError {}
 export class HttpError extends SError {}
@@ -20,27 +19,15 @@ export const isXunleiApiError = (body: any): body is IXunleiErrorBody => {
   );
 };
 
-export const throwError = ({ body, status, text }: Response) => {
-  if (Check.isString(body || text)) {
-    try {
-      body = JSON.parse(body || text);
-    } catch {
-      // ignore
-    }
-  }
-
-  if (isXunleiApiError(body)) {
+export const throwError = createThrowError({
+  HttpError,
+  inspect: (body) => {
+    if (!isXunleiApiError(body)) return false;
     const code = body.error ?? body.error_code;
     if (code === undefined || code === "" || code === 0) return true;
     throw ApiError.create(
       "xunlei api error, code={error}, description={error_description}, message={message}",
       body as unknown as Record<string, unknown>,
     );
-  }
-
-  if (status >= 400) {
-    throw HttpError.create("http request error, status={status}", { status });
-  }
-
-  return true;
-};
+  },
+});

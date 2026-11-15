@@ -1,5 +1,10 @@
 import superagent, { type Agent } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
+import {
+  KEEP_ALIVE_OPTIONS,
+  REQUEST_TIMEOUT,
+  idempotentRetry,
+} from "@netdisk-sdk/utils";
 
 import {
   XUNLEI_USER_BASE_URL,
@@ -48,6 +53,7 @@ export class XunleiClient {
     expiresAt: number;
   };
   private captchas = new Map<string, ICachedCaptcha>();
+  private refreshPromise?: Promise<string>;
 
   constructor(config: IXunleiClientConfig) {
     this.config = {
@@ -66,16 +72,11 @@ export class XunleiClient {
       };
     }
 
-    const httpsAgent = new HttpsAgent({
-      maxSockets: 100,
-      maxFreeSockets: 10,
-      timeout: 60000, // active socket keepalive for 60 seconds
-      freeSocketTimeout: 30000, // free socket keepalive for 30 seconds
-    });
+    const httpsAgent = new HttpsAgent(KEEP_ALIVE_OPTIONS);
 
     this.agent = superagent
       .agent(httpsAgent as any)
-      .timeout(15000)
+      .timeout(REQUEST_TIMEOUT)
       .set({
         "user-agent": this.config.userAgent,
         Accept: "application/json, text/plain, */*",
@@ -89,7 +90,7 @@ export class XunleiClient {
         "x-device-id": this.config.deviceId,
       })
       .ok(throwError)
-      .retry(3);
+      .use(idempotentRetry());
 
     this.agentApi = this.agent;
 
@@ -102,33 +103,43 @@ export class XunleiClient {
     if (this.token && this.token.expiresAt > now) {
       return this.token.accessToken;
     }
+    // 刷新会轮换 refresh_token，并发刷新会互相作废，这里单飞
+    if (this.refreshPromise) return this.refreshPromise;
 
-    const { body } = await this.agent
-      .post(`${XUNLEI_USER_BASE_URL}/v1/auth/token`)
-      .send({
-        client_id: this.config.clientId,
-        grant_type: "refresh_token",
-        refresh_token: this.config.refreshToken,
+    this.refreshPromise = (async () => {
+      const { body } = await this.agent
+        .post(`${XUNLEI_USER_BASE_URL}/v1/auth/token`)
+        .send({
+          client_id: this.config.clientId,
+          grant_type: "refresh_token",
+          refresh_token: this.config.refreshToken,
+        });
+
+      const data = body as IXunleiTokenData;
+      if (!data?.access_token || !data?.refresh_token || !data?.expires_in) {
+        throw AuthError.create("xunlei token response missing access_token");
+      }
+
+      const expiresAt = Date.now() + (data.expires_in - 60) * 1000;
+      this.config.refreshToken = data.refresh_token;
+      this.token = {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt,
+      };
+      this.config.onRefreshToken?.({
+        refreshToken: data.refresh_token,
+        accessToken: data.access_token,
+        expiresAt,
       });
+      return data.access_token;
+    })();
 
-    const data = body as IXunleiTokenData;
-    if (!data?.access_token || !data?.refresh_token || !data?.expires_in) {
-      throw AuthError.create("xunlei token response missing access_token");
+    try {
+      return await this.refreshPromise;
+    } finally {
+      this.refreshPromise = undefined;
     }
-
-    const expiresAt = now + (data.expires_in - 60) * 1000;
-    this.config.refreshToken = data.refresh_token;
-    this.token = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt,
-    };
-    this.config.onRefreshToken?.({
-      refreshToken: data.refresh_token,
-      accessToken: data.access_token,
-      expiresAt,
-    });
-    return data.access_token;
   }
 
   async getCaptchaToken(action: string, renew = false): Promise<string> {

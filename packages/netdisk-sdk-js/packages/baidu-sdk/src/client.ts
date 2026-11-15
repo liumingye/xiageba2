@@ -1,5 +1,11 @@
 import superagent, { type Agent, Request } from "superagent";
 import { HttpsAgent } from "agentkeepalive";
+import {
+  CookieUtil,
+  KEEP_ALIVE_OPTIONS,
+  REQUEST_TIMEOUT,
+  idempotentRetry,
+} from "@netdisk-sdk/utils";
 import { throwError } from "./errors";
 import { BaiduFSOpenApi } from "./fs_openapi";
 import { BaiduFSApi } from "./fs_api";
@@ -55,16 +61,20 @@ export class BaiduClient {
       agent,
     } = config;
 
+    // superagent 合并 cookie jar 时按 '; ' 切分，未规范化的 cookie 串
+    // 会在第二个请求起丢掉 BDUSS/STOKEN，这里统一规范化。
+    const cookie = CookieUtil.mergeCookie(source);
+    this.source = cookie;
+
     const authPlugin = (request: Request) => {
       const end = request.end;
       request.end = async function () {
-        this.set("Cookie", source);
+        this.set("Cookie", cookie);
         // @ts-ignore
         return end.apply(this, arguments);
       };
     };
 
-    this.source = source;
     this.clientId = clientId ?? null;
     this.clientSecret = clientSecret ?? null;
     this.onRefreshToken = onRefreshToken;
@@ -72,20 +82,15 @@ export class BaiduClient {
     this.refreshToken = refreshToken ?? null;
     this.expiresAt = expiresAt ?? null;
 
-    const httpsAgent = new HttpsAgent({
-      maxSockets: 100,
-      maxFreeSockets: 10,
-      timeout: 60000, // active socket keepalive for 60 seconds
-      freeSocketTimeout: 30000, // free socket keepalive for 30 seconds
-    });
+    const httpsAgent = new HttpsAgent(KEEP_ALIVE_OPTIONS);
 
     this.agentApi = (agent ?? superagent.agent(httpsAgent as any))
       // 增加授权信息
-      .timeout(15000)
+      .timeout(REQUEST_TIMEOUT)
       .use(authPlugin)
       .set({ "user-agent": "pan.baidu.com" })
       .ok(throwError)
-      .retry(3);
+      .use(idempotentRetry());
 
     this.fsApi = new BaiduFSApi(this, "https://pan.baidu.com");
     this.fsShareApi = new BaiduShareFSApi(this);
@@ -108,7 +113,7 @@ export class BaiduClient {
   }
 
   private async _initializeUserDetails(cookie: string) {
-    const bdussMatch = cookie.match(/BDUSS=([^;]+)/);
+    const bdussMatch = cookie.match(/(?:^|;\s*)BDUSS=([^;]+)/);
     if (bdussMatch) {
       this.bduss = bdussMatch[1] ?? null;
       this.uid = await this._getUidFromSyncApi();
@@ -125,6 +130,7 @@ export class BaiduClient {
       const agent = superagent.agent();
       const response = await agent
         .get("https://tieba.baidu.com/mo/q/sync")
+        .timeout(REQUEST_TIMEOUT)
         .set("Cookie", `BDUSS=${this.bduss}`);
       const result = response.body;
       if (result.no === 0 && result.data && result.data.user_id) {

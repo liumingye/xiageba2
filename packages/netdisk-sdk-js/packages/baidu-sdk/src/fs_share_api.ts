@@ -6,23 +6,30 @@ import {
 } from "@netdisk-sdk/utils";
 import { BaiduClient } from "./client";
 import { type IListParam } from "./fs_api";
-import { Request } from "superagent";
+import { dispatchRequest } from "./request";
 import { type IFile } from "./types";
 import { generateSharedownloadSign, Android } from "./helper";
 
 export const parseShareParam = (_url: string | URL): IShareParam | null => {
-  const url = new URL(_url);
-  const pwd = url.searchParams.get("pwd") ?? void 0;
-  if (url.pathname.startsWith("/s/")) {
-    const shorturl = url.pathname.slice(3);
-    if (shorturl != "") return { shorturl, pwd };
-  } else if (url.pathname.startsWith("/share/init")) {
+  let url: URL;
+  try {
+    url = new URL(_url);
+  } catch {
+    // 裸短码 / 无协议链接：签名承诺返回 null，不应抛异常
+    return null;
+  }
+  const pwd = url.searchParams.get("pwd") || void 0;
+  const pathname = url.pathname.replace(/\/+$/, "");
+  if (pathname.startsWith("/s/")) {
+    const shorturl = pathname.slice(3);
+    if (shorturl !== "") return { shorturl, pwd };
+  } else if (pathname.startsWith("/share/init")) {
     const shorturl = url.searchParams.get("surl");
-    if (shorturl != null) return { shorturl: "1" + shorturl, pwd };
+    if (shorturl) return { shorturl: "1" + shorturl, pwd };
 
     const shareid = url.searchParams.get("shareid");
     const uk = url.searchParams.get("uk");
-    if (shareid != null && uk != null) return { shareid, uk, pwd };
+    if (shareid && uk) return { shareid, uk, pwd };
   }
   return null;
 };
@@ -36,10 +43,10 @@ export class BaiduShareFSApi {
   }
 
   request(method: Method, url: string) {
-    const md = method.toLowerCase();
-    if (url.startsWith("/")) url = this.prefix + url;
-    const request = (this.client.agentApi as any)[md](url) as Request;
-    return request.set("Referer", "http://pan.baidu.com/");
+    return dispatchRequest(this.client, this.prefix, method, url).set(
+      "Referer",
+      "http://pan.baidu.com/",
+    );
   }
 
   wxlist(param: IListShareParam): Promise<IListShareResult> {
@@ -96,6 +103,8 @@ export type IShareParam = { pwd?: string } & (
 export type IListShareParam = IListParam<
   IShareParam & {
     root?: NBoolean;
+    /** 子目录列举需带父层响应下发的 seckey */
+    sekey?: string;
   }
 >;
 export type IListShareResult = {
@@ -212,13 +221,21 @@ BaiduShareFSApi.prototype.sharedownload = async function (
   const timestamp = Math.floor(Date.now() / 1000);
   const timestamp_ms = timestamp * 1000;
 
+  // sekey 含裸 % 时 decodeURIComponent 会抛 URIError，退回原值
+  let decodedSekey = sekey;
+  try {
+    decodedSekey = decodeURIComponent(sekey);
+  } catch {
+    // 保留原始 sekey
+  }
+
   const post_data_items = [
     ["encrypt", "0"],
     ["uk", uk],
     ["product", "share"],
     ["primaryid", shareid],
     ["fid_list", JSON.stringify(fsid_list)],
-    ["extra", JSON.stringify({ sekey: decodeURIComponent(sekey) })],
+    ["extra", JSON.stringify({ sekey: decodedSekey })],
   ];
 
   const post_body_string = post_data_items

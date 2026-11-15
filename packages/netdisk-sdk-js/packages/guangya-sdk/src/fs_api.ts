@@ -5,7 +5,7 @@ import {
   GUANGYA_API_USER_RES_V2,
   GUANGYA_ACCOUNT_API,
 } from "./const";
-import { isGuangyaSuccess, extractGuangyaMessage, ApiError } from "./errors";
+import { isGuangyaSuccess, raiseApiError } from "./errors";
 import {
   type IGuangyaAssetsResult,
   type IGuangyaCreateDirParam,
@@ -14,16 +14,6 @@ import {
   type IGuangyaListFilesResult,
   type IGuangyaUserInfoResult,
 } from "./types";
-
-/** 辅助：失败时抛出带响应片段的错误 */
-const raiseApiError = (
-  payload: Record<string, any>,
-  fallback: string,
-): never => {
-  const msg = extractGuangyaMessage(payload) || fallback;
-  const snippet = JSON.stringify(payload).slice(0, 500);
-  throw ApiError.create(`${msg}; body=${snippet}`, payload);
-};
 
 /** 归一化 parentId："0" / "/" / "root" → "" */
 const normalizeParentId = (parentId?: string): string => {

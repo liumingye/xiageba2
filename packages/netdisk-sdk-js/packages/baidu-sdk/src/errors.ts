@@ -1,7 +1,6 @@
-import { Check } from "@netdisk-sdk/utils"
+import { createThrowError } from "@netdisk-sdk/utils"
 import { isIBaiduResult, isIBaiduResult2 } from "./types"
 import { SError } from "error"
-import { Response } from "superagent";
 
 export { SError };
 
@@ -9,21 +8,25 @@ export class ApiError extends SError { }
 /** http 请求错误 */
 export class HttpError extends SError { }
 
-export const throwError = ({ body, status, text }: Response) => {
-    if (Check.isString(body || text)) try { body = JSON.parse(body || text) } catch (error) { }
-    if (isIBaiduResult(body)) {
-        const errorTmpl = 'code: {errno}, msg: {errmsg}, show_msg: {show_msg}, refer to https://pan.baidu.com/union/doc/'
-        switch (body.errno) {
-            case 0: return true
-            default: throw ApiError.create(errorTmpl, body)
+/** 百度部分接口把 errno 下发成字符串 "0" */
+const isSuccessCode = (code: unknown) => code === 0 || code === "0"
+
+export const throwError = createThrowError({
+    HttpError,
+    inspect: (body) => {
+        if (isIBaiduResult(body)) {
+            if (isSuccessCode(body.errno)) return true
+            throw ApiError.create(
+                'code: {errno}, msg: {errmsg}, show_msg: {show_msg}, refer to https://pan.baidu.com/union/doc/',
+                body,
+            )
         }
-    }else if(isIBaiduResult2(body)){
-         const errorTmpl = 'code: {error_code}, msg: {error_msg}, refer to https://pan.baidu.com/union/doc/'
-         switch (body.error_code) {
-            case 0: return true
-            default: throw ApiError.create(errorTmpl, body)
+        if (isIBaiduResult2(body)) {
+            if (isSuccessCode(body.error_code)) return true
+            throw ApiError.create(
+                'code: {error_code}, msg: {error_msg}, refer to https://pan.baidu.com/union/doc/',
+                body,
+            )
         }
-    }
-    if (status >= 400) throw HttpError.create('http request error, status={status}', { status })
-    return true
-}
+    },
+})

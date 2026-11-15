@@ -1,17 +1,19 @@
 import { GuangyaClient } from "./client";
+import { pollTask } from "@netdisk-sdk/utils";
 import {
   GUANGYA_API_USER_RES,
   GUANGYA_API_USER_RES_V2,
   GUANGYA_TASK_POLL_INTERVAL,
   GUANGYA_TASK_POLL_MAX,
 } from "./const";
-import { isGuangyaSuccess, extractGuangyaMessage, ApiError } from "./errors";
+import { isGuangyaSuccess, raiseApiError, ApiError } from "./errors";
 import {
   parseGuangyaFile,
   extractItems,
   clean,
   firstNonNil,
   normalizeParentId,
+  toNumber,
 } from "./fs_api";
 import {
   type IGuangyaCreateShareParam,
@@ -25,16 +27,6 @@ import {
   type IGuangyaShareSummaryResult,
   type IGuangyaTaskStatusResult,
 } from "./types";
-
-/** 辅助：失败时抛出带响应片段的错误 */
-const raiseApiError = (
-  payload: Record<string, any>,
-  fallback: string,
-): never => {
-  const msg = extractGuangyaMessage(payload) || fallback;
-  const snippet = JSON.stringify(payload).slice(0, 500);
-  throw ApiError.create(`${msg}; body=${snippet}`, payload);
-};
 
 /** 构建创建分享请求载荷（抓包原样） */
 const buildSharePayload = (
@@ -82,24 +74,15 @@ const extractTaskId = (payload: Record<string, any>): string => {
 const parseTaskStatus = (
   payload: Record<string, any>,
 ): IGuangyaTaskStatusResult => {
-  const data = payload.data;
-  const statusVal: number = data.status;
-  let done = false;
-  let failed = false;
-
-  switch (statusVal) {
-    case 2:
-      done = true;
-      break;
-    case 3:
-      failed = true;
-      break;
-  }
+  const data =
+    payload.data && typeof payload.data === "object" ? payload.data : payload;
+  // 状态值可能是字符串 "2"/"3"，严格数值比较会漏判
+  const statusVal = toNumber(data.status);
 
   return {
     status: statusVal,
-    done,
-    failed,
+    done: statusVal === 2,
+    failed: statusVal === 3,
     message: payload.msg,
     raw: payload,
   };
@@ -198,24 +181,32 @@ export class GuangyaShareApi {
       `${GUANGYA_API_USER_RES}/get_task_status`,
       { taskId },
     );
-    return parseTaskStatus(payload);
+    const status = parseTaskStatus(payload);
+    // 取不到状态值且响应非成功时立即抛错，否则 waitTask 会空转到超时。
+    // 有状态值就不看 msg，避免把「处理中」的描述误判成接口失败。
+    if (status.status === undefined && !isGuangyaSuccess(payload)) {
+      raiseApiError(payload, "guangya get task status failed");
+    }
+    return status;
   }
 
   /**
    * 等待转存任务完成
    */
   async waitTask(taskId: string): Promise<IGuangyaTaskStatusResult> {
-    for (let i = 0; i < GUANGYA_TASK_POLL_MAX; i++) {
-      const status = await this.taskStatus(taskId);
-      if (status.failed) {
-        throw ApiError.create(status.message || "guangya task failed");
-      }
-      if (status.done) return status;
-      await new Promise((resolve) =>
-        setTimeout(resolve, GUANGYA_TASK_POLL_INTERVAL),
-      );
-    }
-    throw ApiError.create("guangya task timed out");
+    return pollTask(() => this.taskStatus(taskId), {
+      intervalMs: GUANGYA_TASK_POLL_INTERVAL,
+      maxAttempts: GUANGYA_TASK_POLL_MAX,
+      isDone: (status) => status.done,
+      isFailed: (status) => status.failed,
+      failedError: (status) =>
+        ApiError.create(status.message || "guangya task failed"),
+      timeoutError: (last) =>
+        ApiError.create("guangya task timed out, task_id={taskId}", {
+          taskId,
+          ...(last ?? {}),
+        }),
+    });
   }
 
   /**
