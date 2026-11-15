@@ -468,9 +468,21 @@ export const initAutomaton_websearch_filter_keywords = async () => {
 initAutomaton_websearch_filter_keywords();
 
 export const initAutomaton_ad_filter = async () => {
-  const json = await getConfigValue("ad_filter");
-  const adFilter = JSON.parse(json || "{}");
-  const keywords = adFilter.enabled ? adFilter.keywords.split(",") : [];
-  automaton_ad_filter = new SimpleAC(keywords);
+  try {
+    const json = await getConfigValue("ad_filter");
+    if (!json) {
+      automaton_ad_filter = new SimpleAC([]);
+      return;
+    }
+    const parsed: { enabled?: unknown; keywords?: unknown } = JSON.parse(json);
+    const enabled = Boolean(parsed?.enabled);
+    const keywordsStr =
+      typeof parsed?.keywords === "string" ? parsed.keywords : "";
+    const keywords = enabled ? keywordsStr.split(",") : [];
+    automaton_ad_filter = new SimpleAC(keywords);
+  } catch {
+    // 配置解析失败时回退到空自动机（不启用广告过滤），避免启动期崩溃或保存接口 500
+    automaton_ad_filter = new SimpleAC([]);
+  }
 };
 initAutomaton_ad_filter();
