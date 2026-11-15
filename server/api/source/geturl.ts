@@ -815,7 +815,7 @@ async function transferC139(
     const info = typeof err?.info === "function" ? err.info() : undefined;
     // 9188 | 提取码非法
     // 200000727  | 外链不存在/外链被分享者取消
-    if (sourceId && info && [9188, 200000727].includes(info.code)) {
+    if (sourceId && info && ["9188", "200000727"].includes(info.code)) {
       event.waitUntil(disableSource(sourceId));
     }
     throw createError({
