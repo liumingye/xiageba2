@@ -334,11 +334,11 @@ const suggestionItems: EditorSuggestionMenuItem[] = [
           class="flex flex-wrap gap-y-0.5 overflow-x-auto border-b border-muted px-2 py-1"
         />
 
-        <UEditorToolbar
+        <!-- <UEditorToolbar
           :editor="editor"
           :items="bubbleItems(editor)"
           layout="bubble"
-        />
+        /> -->
 
         <UEditorSuggestionMenu :editor="editor" :items="suggestionItems" />
 

@@ -749,7 +749,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
     <UInput
       v-model="keyword"
       type="text"
-      placeholder="搜索资源名称或链接"
+      placeholder="搜索资源名称、链接或 ID"
       class="max-w-md w-full"
       @keyup.enter="handleFilterChange"
     />

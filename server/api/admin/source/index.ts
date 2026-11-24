@@ -38,6 +38,8 @@ export default defineEventHandler(async (event) => {
         client = await pool.connect();
 
         const isUrl = /^https?:\/\//i.test(keyword);
+        // cuid(2) 资源 ID：24 位字母数字，可直接按 ID 精准匹配
+        const isId = /^[A-Za-z0-9]{24}$/.test(keyword);
         const baseParams: any[] = [];
         let paramIndex = 1;
         const conditions: string[] = [];
@@ -52,6 +54,10 @@ export default defineEventHandler(async (event) => {
         if (isUrl) {
           // 精准 URL 匹配
           conditions.push(`url = $${paramIndex++}`);
+          baseParams.push(keyword);
+        } else if (isId) {
+          // 精准 ID 匹配
+          conditions.push(`id = $${paramIndex++}`);
           baseParams.push(keyword);
         } else {
           // 分词 + 全文检索逻辑
@@ -70,13 +76,16 @@ export default defineEventHandler(async (event) => {
 
         const whereClause = `WHERE ${conditions.join(" AND ")}`;
 
+        // URL / ID 均为精准匹配，不需要全文检索
+        const isExactMatch = isUrl || isId;
+
         // 参数克隆与分页索引
         const countParams = [...baseParams];
         const dataParams = [...baseParams, pageSize, skip];
         const limitIndex = baseParams.length + 1;
         const offsetIndex = baseParams.length + 2;
 
-        const dataSql = isUrl
+        const dataSql = isExactMatch
           ? `
             SELECT id, cid, title, url, description, menu, "isSelf", status, "createdAt"
             FROM "Source"
@@ -95,7 +104,7 @@ export default defineEventHandler(async (event) => {
             LIMIT $${limitIndex} OFFSET $${offsetIndex};
           `;
 
-        const countSql = isUrl
+        const countSql = isExactMatch
           ? `
             SELECT COUNT(*)::int AS count
             FROM "Source"
