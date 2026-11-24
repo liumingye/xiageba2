@@ -205,6 +205,22 @@ const loadAesConfig = async () => {
   aesConfig.value = { ...aesConfig.value, ...data.data };
 };
 
+const generateRandomAesConfig = () => {
+  const toBase64 = (bytes: Uint8Array) => {
+    let binary = "";
+    bytes.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
+    return btoa(binary);
+  };
+  const key = new Uint8Array(32);
+  const iv = new Uint8Array(16);
+  crypto.getRandomValues(key);
+  crypto.getRandomValues(iv);
+  aesConfig.value.aes_key = toBase64(key);
+  aesConfig.value.aes_iv = toBase64(iv);
+};
+
 const saveAesConfig = async () => {
   savingAes.value = true;
   savedAes.value = false;
@@ -227,15 +243,26 @@ const saveAesConfig = async () => {
   <section class="mb-8">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-medium">加密配置</h2>
-      <UButton
-        color="primary"
-        :icon="savedAes ? 'i-lucide-check' : 'i-lucide-save'"
-        :loading="savingAes"
-        :disabled="savingAes || loading"
-        @click="saveAesConfig"
-      >
-        {{ savedAes ? "已保存" : "保存" }}
-      </UButton>
+      <div class="flex items-center gap-2">
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-dices"
+          :disabled="loading"
+          @click="generateRandomAesConfig"
+        >
+          随机生成 Key 和 IV
+        </UButton>
+        <UButton
+          color="primary"
+          :icon="savedAes ? 'i-lucide-check' : 'i-lucide-save'"
+          :loading="savingAes"
+          :disabled="savingAes || loading"
+          @click="saveAesConfig"
+        >
+          {{ savedAes ? "已保存" : "保存" }}
+        </UButton>
+      </div>
     </div>
     <UCard>
       <div class="flex items-center gap-3 mb-6">
@@ -273,7 +300,7 @@ const saveAesConfig = async () => {
             id="aes-iv"
             v-model="aesConfig.aes_iv"
             type="text"
-            placeholder="输入 base64 编码的 12 字节 IV"
+            placeholder="输入 base64 编码的 16 字节 IV"
             class="font-mono text-xs w-full"
           />
         </div>
