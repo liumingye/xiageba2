@@ -167,6 +167,7 @@ const isMobile = isMobileOrTablet();
             class="w-full"
           />
         </div>
+        <slot name="header-right" />
         <div
           class="flex transition-[max-width,opacity] shrink-0 duration-100"
           :class="[

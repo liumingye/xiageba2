@@ -4,16 +4,27 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    network_mode: host
+    command: ["postgres", "-c", "listen_addresses=127.0.0.1"]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - redis-server
+      - --bind
+      - 127.0.0.1
+      - --port
+      - "6379"
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --appendonly
+      - "yes"
+      - --dir
+      - /data
     volumes:
-      - pgdata:/var/lib/postgresql
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - pg_isready -h 127.0.0.1 -p 5432 -q -U $${POSTGRES_USER}
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      - redisdata:/data
 
   app:
     build:
@@ -25,8 +36,9 @@ services:
     ports:
       - "5736:3000"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+      - redis
 
 volumes:
   pgdata:
+  redisdata:
