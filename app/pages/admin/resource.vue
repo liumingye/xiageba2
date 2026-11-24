@@ -577,8 +577,50 @@ function purifyCurrentEdit() {
 }
 
 const items = ref<ContextMenuItem[]>([]);
+// 右键时页面上已选中的文本，供「复制文本」菜单项使用
+const selectedText = ref("");
+
+const copySelectedText = async () => {
+  if (!selectedText.value) return;
+  try {
+    await navigator.clipboard.writeText(selectedText.value);
+    toast.add({
+      title: "已复制选中文本",
+      icon: "i-lucide-check",
+      color: "success",
+    });
+  } catch {
+    toast.add({
+      title: "复制失败，请手动选择复制",
+      icon: "i-lucide-x",
+      color: "error",
+    });
+  }
+};
+
+/** Ctrl + 右键：拦截事件不让自定义菜单打开，保留浏览器原生菜单 */
+function onContextCapture(e: MouseEvent) {
+  if (e.ctrlKey) {
+    e.stopPropagation();
+  }
+}
 
 function getRowItems(row: TableRow<Source>): ContextMenuItem[] {
+  // 有选中文本时才显示「复制文本」
+  const copyTextItems: ContextMenuItem[] = selectedText.value
+    ? [
+        [
+          {
+            label: "复制文本",
+            icon: "i-lucide-copy",
+            onSelect() {
+              copySelectedText();
+            },
+          },
+        ],
+      ]
+    : [];
+
   // 有选中项时追加批量操作菜单组
   const batchItems: ContextMenuItem[] = selectedIds.value.length
     ? [
@@ -621,6 +663,7 @@ function getRowItems(row: TableRow<Source>): ContextMenuItem[] {
     : [];
 
   return [
+    ...copyTextItems,
     [
       {
         label: row.getIsSelected() ? "取消选中该行" : "选中该行",
@@ -677,6 +720,7 @@ function getRowItems(row: TableRow<Source>): ContextMenuItem[] {
 }
 
 function onContextmenu(_e: Event, row: TableRow<Source>) {
+  selectedText.value = window.getSelection()?.toString().trim() || "";
   items.value = getRowItems(row);
 }
 </script>
@@ -758,113 +802,126 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
       body: 'sm:p-0 p-0',
     }"
   >
-    <UContextMenu :items="items">
-      <UTable
-        @hover="() => {}"
-        @contextmenu="onContextmenu"
-        ref="table"
-        v-model:column-visibility="columnVisibility"
-        v-model:row-selection="rowSelection"
-        :data="isLoading ? [] : sources"
-        :loading="isLoading"
-        :columns="columns"
-        :get-row-id="(row: Source) => row.id"
-      >
-        <template #select-header="{ table }">
-          <UCheckbox
-            :model-value="
-              table.getIsSomePageRowsSelected()
-                ? 'indeterminate'
-                : table.getIsAllPageRowsSelected()
-            "
-            aria-label="全选"
-            @update:model-value="
-              (value: boolean | 'indeterminate') =>
-                table.toggleAllPageRowsSelected(!!value)
-            "
-          />
-        </template>
-        <template #select-cell="{ row }">
-          <UCheckbox
-            :model-value="row.getIsSelected()"
-            aria-label="选择该行"
-            @update:model-value="
-              (value: boolean | 'indeterminate') => row.toggleSelected(!!value)
-            "
-          />
-        </template>
-        <template #id-cell="{ row }">
-          {{ row.original.id }}
-        </template>
-        <template #title-cell="{ row }">
-          <UIcon
-            v-if="row.original.isSelf"
-            name="i-lucide-user-star"
-            class="size-3 text-primary"
-          />
-          {{ row.original.title }}
-        </template>
-        <template #category-cell="{ row }">
-          {{
-            categories.find((cat) => cat.id === row.original.cid)?.name || "-"
-          }}
-        </template>
-        <template #url-cell="{ row }">
-          <a :href="row.original.url" target="_blank" :title="row.original.url">
-            {{ row.original.url }}
-          </a>
-        </template>
-        <template #createdAt-cell="{ row }">
-          {{ new Date(row.original.createdAt).toLocaleString("zh-CN") }}
-        </template>
-        <template #status-cell="{ row }">
-          <UButton
-            size="sm"
-            :color="row.original.status === 1 ? 'success' : 'neutral'"
-            variant="subtle"
-            :icon="
-              row.original.status === 1
-                ? 'i-lucide-check'
-                : 'i-lucide-circle-off'
-            "
-            @click="toggleStatus(row.original)"
-          >
-            {{ row.original.status === 1 ? "启用" : "禁用" }}
-          </UButton>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex items-center justify-center gap-2">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              square
-              size="sm"
-              icon="i-lucide-pencil"
-              title="编辑"
-              aria-label="编辑"
-              @click="openEditModal(row.original)"
+    <div @contextmenu.capture="onContextCapture">
+      <UContextMenu :items="items">
+        <UTable
+          @hover="() => {}"
+          @contextmenu="onContextmenu"
+          ref="table"
+          v-model:column-visibility="columnVisibility"
+          v-model:row-selection="rowSelection"
+          :data="isLoading ? [] : sources"
+          :loading="isLoading"
+          :columns="columns"
+          :get-row-id="(row: Source) => row.id"
+        >
+          <template #select-header="{ table }">
+            <UCheckbox
+              :model-value="
+                table.getIsSomePageRowsSelected()
+                  ? 'indeterminate'
+                  : table.getIsAllPageRowsSelected()
+              "
+              aria-label="全选"
+              @update:model-value="
+                (value: boolean | 'indeterminate') =>
+                  table.toggleAllPageRowsSelected(!!value)
+              "
             />
-            <UButton
-              color="error"
-              variant="ghost"
-              square
-              size="sm"
-              icon="i-lucide-trash-2"
-              title="删除"
-              aria-label="删除"
-              @click="deleteSource(row.original.id)"
+          </template>
+          <template #select-cell="{ row }">
+            <UCheckbox
+              :model-value="row.getIsSelected()"
+              aria-label="选择该行"
+              @update:model-value="
+                (value: boolean | 'indeterminate') =>
+                  row.toggleSelected(!!value)
+              "
             />
-          </div>
-        </template>
-        <template #empty>
-          <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
-            <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
-            <p class="text-muted text-sm mt-2">加载中...</p>
-          </div>
-          <p v-else class="text-center text-muted py-12">暂无资源</p>
-        </template>
-      </UTable>
-    </UContextMenu>
+          </template>
+          <template #id-cell="{ row }">
+            {{ row.original.id }}
+          </template>
+          <template #title-cell="{ row }">
+            <NuxtLink
+              :to="`/source/${row.original.id}`"
+              target="_blank"
+              class="inline-flex items-center gap-1 hover:underline"
+            >
+              <UIcon
+                v-if="row.original.isSelf"
+                name="i-lucide-user-star"
+                class="size-3 shrink-0 text-primary"
+              />
+              {{ row.original.title }}
+            </NuxtLink>
+          </template>
+          <template #category-cell="{ row }">
+            {{
+              categories.find((cat) => cat.id === row.original.cid)?.name || "-"
+            }}
+          </template>
+          <template #url-cell="{ row }">
+            <a
+              :href="row.original.url"
+              target="_blank"
+              :title="row.original.url"
+            >
+              {{ row.original.url }}
+            </a>
+          </template>
+          <template #createdAt-cell="{ row }">
+            {{ new Date(row.original.createdAt).toLocaleString("zh-CN") }}
+          </template>
+          <template #status-cell="{ row }">
+            <UButton
+              size="sm"
+              :color="row.original.status === 1 ? 'success' : 'neutral'"
+              variant="subtle"
+              :icon="
+                row.original.status === 1
+                  ? 'i-lucide-check'
+                  : 'i-lucide-circle-off'
+              "
+              @click="toggleStatus(row.original)"
+            >
+              {{ row.original.status === 1 ? "启用" : "禁用" }}
+            </UButton>
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex items-center justify-center gap-2">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-pencil"
+                title="编辑"
+                aria-label="编辑"
+                @click="openEditModal(row.original)"
+              />
+              <UButton
+                color="error"
+                variant="ghost"
+                square
+                size="sm"
+                icon="i-lucide-trash-2"
+                title="删除"
+                aria-label="删除"
+                @click="deleteSource(row.original.id)"
+              />
+            </div>
+          </template>
+          <template #empty>
+            <div v-if="isLoading" class="flex flex-col items-center gap-2 py-8">
+              <Loader2 class="w-6 h-6 text-primary-500 animate-spin" />
+              <p class="text-muted text-sm mt-2">加载中...</p>
+            </div>
+            <p v-else class="text-center text-muted py-12">暂无资源</p>
+          </template>
+        </UTable>
+      </UContextMenu>
+    </div>
 
     <div
       v-if="selectedIds.length"
@@ -939,6 +996,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
     @close="closeAddModal"
     :ui="{
       footer: 'justify-end',
+      content: 'max-w-2xl',
     }"
   >
     <template #body>
@@ -1051,16 +1109,8 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
           </div>
         </div>
         <div>
-          <label class="block text-color-400 text-sm mb-2" for="new-desc"
-            >资源介绍</label
-          >
-          <UTextarea
-            id="new-desc"
-            v-model="newDescription"
-            :rows="3"
-            placeholder="资源说明，可选"
-            class="w-full"
-          />
+          <label class="block text-color-400 text-sm mb-2">资源介绍</label>
+          <Editor v-model="newDescription" placeholder="资源说明，可选" />
         </div>
         <UCheckbox
           id="newIsSelf"
@@ -1170,6 +1220,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
     @close="closeEditModal"
     :ui="{
       footer: 'justify-end',
+      content: 'max-w-2xl',
     }"
   >
     <template #body>
@@ -1243,16 +1294,8 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
           />
         </div>
         <div>
-          <label class="block text-color-400 text-sm mb-2" for="edit-desc"
-            >资源介绍</label
-          >
-          <UTextarea
-            id="edit-desc"
-            v-model="editDescription"
-            :rows="3"
-            placeholder="资源说明，可选"
-            class="w-full"
-          />
+          <label class="block text-color-400 text-sm mb-2">资源介绍</label>
+          <Editor v-model="editDescription" placeholder="资源说明，可选" />
         </div>
         <div>
           <div class="flex items-center justify-between mb-2">
