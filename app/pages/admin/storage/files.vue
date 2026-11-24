@@ -235,6 +235,13 @@ const cancelRename = () => {
   renameValue.value = "";
 };
 
+const showRenameModal = computed({
+  get: () => !!renameTarget.value,
+  set: (open: boolean) => {
+    if (!open) cancelRename();
+  },
+});
+
 const confirmRename = async () => {
   if (!renameTarget.value || !selectedConfigId.value) return;
   const newName = renameValue.value.trim();
@@ -409,7 +416,7 @@ onMounted(async () => {
       <div
         v-for="file in files"
         :key="file.key"
-        class="group bg-default border border-default rounded-xl overflow-hidden hover:border-muted transition-colors"
+        class="bg-default border border-default rounded-xl overflow-hidden hover:border-muted transition-colors"
       >
         <!-- 预览区域 -->
         <div
@@ -432,13 +439,26 @@ onMounted(async () => {
             class="w-10 h-10 text-color-300"
           />
           <File v-else class="w-10 h-10 text-color-300" />
+        </div>
 
-          <!-- 悬浮操作 -->
-          <div
-            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
-          >
+        <!-- 文件信息 -->
+        <div class="p-2.5">
+          <p class="text-xs truncate" :title="file.name">
+            {{ file.name }}
+          </p>
+          <div class="flex items-center justify-between mt-1">
+            <span class="text-[10px] text-color-500">{{
+              formatSize(file.size)
+            }}</span>
+            <span class="text-[10px] text-muted">{{
+              formatDate(file.lastModified).split(" ")[0]
+            }}</span>
+          </div>
+          <!-- 操作按钮 -->
+          <div class="flex items-center gap-2 mt-2">
             <UButton
-              variant="outline"
+              color="neutral"
+              variant="soft"
               square
               size="sm"
               icon="i-lucide-copy"
@@ -447,7 +467,8 @@ onMounted(async () => {
               @click="copyUrl(file)"
             />
             <UButton
-              variant="outline"
+              color="neutral"
+              variant="soft"
               square
               size="sm"
               icon="i-lucide-pencil"
@@ -457,7 +478,8 @@ onMounted(async () => {
               @click="startRename(file)"
             />
             <UButton
-              variant="outline"
+              color="error"
+              variant="soft"
               square
               size="sm"
               icon="i-lucide-trash-2"
@@ -468,59 +490,6 @@ onMounted(async () => {
               @click="handleDelete(file)"
             />
           </div>
-        </div>
-
-        <!-- 文件信息 -->
-        <div class="p-2.5">
-          <!-- 重命名输入框 -->
-          <div
-            v-if="renameTarget?.key === file.key"
-            class="flex items-center gap-1"
-          >
-            <UInput
-              v-model="renameValue"
-              type="text"
-              class="flex-1"
-              @keyup.enter="confirmRename"
-              @keyup.esc="cancelRename"
-            />
-            <UButton
-              color="primary"
-              variant="ghost"
-              square
-              size="sm"
-              icon="i-lucide-check"
-              :loading="isRenaming"
-              :disabled="isRenaming"
-              title="确认"
-              aria-label="确认"
-              @click="confirmRename"
-            />
-            <UButton
-              color="neutral"
-              variant="ghost"
-              square
-              size="sm"
-              icon="i-lucide-x"
-              title="取消"
-              aria-label="取消"
-              @click="cancelRename"
-            />
-          </div>
-          <!-- 正常文件名 -->
-          <template v-else>
-            <p class="text-xs truncate" :title="file.name">
-              {{ file.name }}
-            </p>
-            <div class="flex items-center justify-between mt-1">
-              <span class="text-[10px] text-color-500">{{
-                formatSize(file.size)
-              }}</span>
-              <span class="text-[10px] text-muted">{{
-                formatDate(file.lastModified).split(" ")[0]
-              }}</span>
-            </div>
-          </template>
         </div>
       </div>
     </div>
@@ -533,4 +502,51 @@ onMounted(async () => {
       @page-change="onPageChange"
     />
   </UCard>
+
+  <UModal
+    v-model:open="showRenameModal"
+    title="重命名文件"
+    :dismissible="!isRenaming"
+    :ui="{
+      footer: 'justify-end',
+    }"
+  >
+    <template #body>
+      <div>
+        <label class="block text-color-400 text-sm mb-2" for="rename-input"
+          >文件名</label
+        >
+        <UInput
+          id="rename-input"
+          v-model="renameValue"
+          type="text"
+          placeholder="请输入新的文件名"
+          class="w-full"
+          autofocus
+          @keyup.enter="confirmRename"
+        />
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex gap-4">
+        <UButton
+          color="neutral"
+          variant="soft"
+          :disabled="isRenaming"
+          @click="cancelRename"
+        >
+          取消
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="isRenaming"
+          :disabled="isRenaming"
+          @click="confirmRename"
+        >
+          确定
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>
