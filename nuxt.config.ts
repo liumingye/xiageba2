@@ -307,6 +307,35 @@ export default defineNuxtConfig({
       },
     },
   },
+  // 网盘 SDK 以 pnpm workspace 包形式内置，仅提供 TS 源码（无 dist 产物）。
+  // 必须在所有环境下指向 src，否则生产构建会把它们当作外部依赖，
+  // 运行时因 package.json 的 main/module 指向不存在的 dist 而报 ERR_MODULE_NOT_FOUND。
+  alias: {
+    "@netdisk-sdk/baidu-sdk": path.resolve(
+      configDir,
+      "./packages/netdisk-sdk-js/packages/baidu-sdk/src",
+    ),
+    "@netdisk-sdk/c139-sdk": path.resolve(
+      configDir,
+      "./packages/netdisk-sdk-js/packages/c139-sdk/src",
+    ),
+    "@netdisk-sdk/guangya-sdk": path.resolve(
+      configDir,
+      "./packages/netdisk-sdk-js/packages/guangya-sdk/src",
+    ),
+    "@netdisk-sdk/quarkuc-sdk": path.resolve(
+      configDir,
+      "./packages/netdisk-sdk-js/packages/quarkUC-sdk/src",
+    ),
+    "@netdisk-sdk/xunlei-sdk": path.resolve(
+      configDir,
+      "./packages/netdisk-sdk-js/packages/xunlei-sdk/src",
+    ),
+    "@netdisk-sdk/utils": path.resolve(
+      configDir,
+      "./packages/netdisk-sdk-js/packages/utils/src",
+    ),
+  },
   nitro: {
     compressPublicAssets: true,
     storage: {
@@ -392,32 +421,6 @@ export default defineNuxtConfig({
     sourcemap: {
       server: true,
       client: true,
-    },
-    alias: {
-      "@netdisk-sdk/baidu-sdk": path.resolve(
-        configDir,
-        "./packages/netdisk-sdk-js/packages/baidu-sdk/src",
-      ),
-      "@netdisk-sdk/c139-sdk": path.resolve(
-        configDir,
-        "./packages/netdisk-sdk-js/packages/c139-sdk/src",
-      ),
-      "@netdisk-sdk/guangya-sdk": path.resolve(
-        configDir,
-        "./packages/netdisk-sdk-js/packages/guangya-sdk/src",
-      ),
-      "@netdisk-sdk/quarkuc-sdk": path.resolve(
-        configDir,
-        "./packages/netdisk-sdk-js/packages/quarkUC-sdk/src",
-      ),
-      "@netdisk-sdk/xunlei-sdk": path.resolve(
-        configDir,
-        "./packages/netdisk-sdk-js/packages/xunlei-sdk/src",
-      ),
-      "@netdisk-sdk/utils": path.resolve(
-        configDir,
-        "./packages/netdisk-sdk-js/packages/utils/src",
-      ),
     },
   },
 });
