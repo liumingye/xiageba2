@@ -24,9 +24,6 @@ interface NovelBook {
   tag: string;
 }
 
-const currentPage = computed(() =>
-  Math.max(1, parseInt(route.query.page as string) || 1),
-);
 const searchKeyword = computed(() => (route.query.q as string) || "");
 const isSearchMode = computed(() => !!searchKeyword.value);
 
@@ -94,7 +91,7 @@ const hasFilters = computed(() => {
 });
 
 const updateFilter = (key: string, value: string) => {
-  const query: Record<string, string> = { page: "1" };
+  const query: Record<string, string> = {};
   if (value !== "-1" && value !== "all") {
     query[key] = value;
   }
@@ -106,7 +103,7 @@ const updateFilter = (key: string, value: string) => {
 };
 
 const clearFilters = () => {
-  router.push({ path: "/book", query: { page: "1" } });
+  router.push({ path: "/book" });
 };
 
 // 搜索
@@ -140,31 +137,71 @@ const clearSearch = () => {
 // 列表数据（列表模式）
 // 两个 fetch 始终挂载，靠 enabled 互斥。URL 返回 "" 跳不了请求——
 // 那只会发出一次打到当前页面的空地址请求。
+// 首屏 SSR 拉第一页，客户端滚动到底后逐页追加。
+const accumulatedBooks = ref<NovelBook[]>([]);
+const hasMorePages = ref(false);
+const nextPage = ref(1);
+const loadingMore = ref(false);
+const loadMoreError = ref<any>(null);
+
+const buildListParams = (page: number) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: "20",
+  });
+  if (bookStatusFilter.value !== "-1")
+    params.set("book_status", bookStatusFilter.value);
+  if (novelCategoryFilter.value !== "all")
+    params.set("category", novelCategoryFilter.value);
+  return params.toString();
+};
+
 const {
   data: novelData,
   pending: novelLoading,
   error: novelFetchError,
   refresh: novelRetryFetch,
 } = await useLazyFetch<{ books: NovelBook[]; hasMore: boolean }>(
-  () => {
-    const params = new URLSearchParams({
-      page: (currentPage.value - 1).toString(),
-      limit: "20",
-    });
-    if (bookStatusFilter.value !== "-1")
-      params.set("book_status", bookStatusFilter.value);
-    if (novelCategoryFilter.value !== "all")
-      params.set("category", novelCategoryFilter.value);
-    return `/api/novel/list?${params.toString()}`;
-  },
+  () => `/api/novel/list?${buildListParams(0)}`,
   {
     key: () =>
-      `novel-list-${currentPage.value}-${bookStatusFilter.value}-${novelCategoryFilter.value}`,
+      `novel-list-${bookStatusFilter.value}-${novelCategoryFilter.value}`,
     enabled: () => !isSearchMode.value,
     server: true,
-    watch: [currentPage, bookStatusFilter, novelCategoryFilter, isSearchMode],
+    watch: [bookStatusFilter, novelCategoryFilter, isSearchMode],
   },
 );
+
+// 首屏数据与筛选变化后的重新拉取都会重置累积列表
+watch(
+  novelData,
+  (val) => {
+    if (!val) return;
+    accumulatedBooks.value = val.books;
+    hasMorePages.value = val.hasMore === true;
+    nextPage.value = 1;
+    loadMoreError.value = null;
+  },
+  { immediate: true },
+);
+
+const loadMore = async () => {
+  if (isSearchMode.value || loadingMore.value || !hasMorePages.value) return;
+  loadingMore.value = true;
+  loadMoreError.value = null;
+  try {
+    const res = await $fetch<{ books: NovelBook[]; hasMore: boolean }>(
+      `/api/novel/list?${buildListParams(nextPage.value)}`,
+    );
+    accumulatedBooks.value.push(...res.books);
+    hasMorePages.value = res.hasMore === true;
+    nextPage.value += 1;
+  } catch (err) {
+    loadMoreError.value = err;
+  } finally {
+    loadingMore.value = false;
+  }
+};
 
 // 搜索数据（搜索模式）
 const {
@@ -187,22 +224,15 @@ const {
 // 统一的书本列表
 const books = computed<NovelBook[]>(() => {
   if (isSearchMode.value) return searchData.value?.books || [];
-  return novelData.value?.books || [];
+  return accumulatedBooks.value;
 });
 
 const isLoading = computed(() =>
   isSearchMode.value ? searchLoading.value : novelLoading.value,
 );
 
-const hasMore = computed(() => {
-  if (isSearchMode.value) return !searchData.value?.isEnd;
-  return novelData.value?.hasMore === true;
-});
-
-const totalPages = computed(() => {
-  if (books.value.length === 0) return 0;
-  return hasMore.value ? currentPage.value + 1 : currentPage.value;
-});
+// 搜索接口一次性返回全部结果，仅列表模式支持无限滚动
+const hasMore = computed(() => !isSearchMode.value && hasMorePages.value);
 
 // 错误处理
 interface ErrorInfo {
@@ -258,15 +288,6 @@ const handleRetry = () => {
 
 const debounceRefresh = useDebounceFn(handleRetry, 200);
 
-const goToPage = (page: number) => {
-  if (page < 1 || page > totalPages.value || page === currentPage.value) return;
-  window.scrollTo({ top: 0 });
-  router.push({
-    path: "/book",
-    query: { ...route.query, page: page.toString() },
-  });
-};
-
 // 封面加载错误状态
 const novelCoverError = reactive<Record<string, boolean>>({});
 
@@ -318,9 +339,7 @@ useSeoMeta({
       return `"${searchKeyword.value}" - 搜小说`;
     }
     if (isSearchMode.value) return `"${searchKeyword.value}" - 搜小说`;
-    return books.value.length > 0
-      ? `搜小说 - 第${currentPage.value}页`
-      : "搜小说";
+    return "搜小说";
   },
   description: `${siteShortTitle}小说搜索 - 百度网盘小说免费在线阅读，支持试读和获取口令。`,
 });
@@ -466,12 +485,7 @@ useSeoMeta({
           搜索"<span class="text-primary-400">{{ searchKeyword }}</span
           >"找到 {{ books.length }} 本小说
         </template>
-        <template v-else>
-          共找到 {{ books.length }} 本小说
-          <span v-if="totalPages > 1" class="ml-2"
-            >（第 {{ currentPage }} 页）</span
-          >
-        </template>
+        <template v-else> 共找到 {{ books.length }} 本小说 </template>
       </h2>
 
       <!-- 小说列表网格 -->
@@ -584,12 +598,24 @@ useSeoMeta({
         </div>
       </template>
 
-      <!-- 分页 -->
-      <Pagination
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        @change="goToPage"
-      />
+      <!-- 加载更多（仅列表模式无限滚动） -->
+      <template v-if="!isSearchMode && books.length > 0">
+        <div v-if="loadMoreError" class="text-center py-4">
+          <p class="text-sm text-muted mb-2">加载失败</p>
+          <UButton variant="outline" @click="loadMore()">重试</UButton>
+        </div>
+        <div
+          v-else-if="loadingMore"
+          class="text-center py-4 text-sm text-muted"
+          aria-busy="true"
+        >
+          加载中...
+        </div>
+        <InfiniteLoad v-else-if="hasMore" @infinite-load="loadMore" />
+        <div v-else class="text-center py-4 text-sm text-muted">
+          — 已经到底了 —
+        </div>
+      </template>
     </div>
   </main>
 
