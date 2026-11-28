@@ -1,4 +1,8 @@
-import { webSearchConcurrent } from "#server/lib/webSearch";
+import {
+  isSearchKeywordTooLong,
+  MAX_SEARCH_KEYWORD_LENGTH,
+  webSearchConcurrent,
+} from "#server/lib/webSearch";
 import type { WebSearchResult } from "#server/lib/webSearch";
 import {
   automaton_websearch_filter_keywords,
@@ -38,6 +42,16 @@ export default defineEventHandler(async (event) => {
   };
 
   send({ type: "start", keyword });
+
+  // EventSource 拿不到非 200 响应的错误信息，超长要用流里的 error 帧告知前端
+  if (isSearchKeywordTooLong(keyword)) {
+    send({
+      type: "error",
+      message: `关键词过长，最多 ${MAX_SEARCH_KEYWORD_LENGTH} 个字符`,
+    });
+    nodeRes.end();
+    return;
+  }
 
   try {
     // 使用并发搜索，实时返回结果

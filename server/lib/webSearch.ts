@@ -36,21 +36,55 @@ const extractList = (data: any, listPath: string): any[] => {
   return Array.isArray(list) ? list : [];
 };
 
+// 替换值一律经由回调返回：String.prototype.replace 把字符串替换串里的
+// `$&`、`$'`、`$1`、`$$` 当作特殊模式展开，用户输入里带这些字符就会把结果改坏。
 const replaceFields = (
   template: string,
   searchFields: string[],
-  keyword: string,
+  value: string,
 ) => {
-  if (!searchFields || searchFields.length === 0 || !keyword) return template;
+  if (!searchFields || searchFields.length === 0 || !value) return template;
   const searchFieldsStr = searchFields.map((field) => `{${field}}`).join("|");
-  return template.replace(new RegExp(searchFieldsStr, "g"), keyword);
+  return template.replace(new RegExp(searchFieldsStr, "g"), () => value);
 };
 
+const KEYWORD_FIELDS = ["keyword", "kw"];
+
+/** 把关键词填进 URL 模板。先做百分号编码，`&` `#` `%` 空格等字符才不会破坏 URL 结构 */
+const fillUrlKeyword = (template: string, keyword: string) =>
+  replaceFields(template, KEYWORD_FIELDS, encodeURIComponent(keyword));
+
+/** 递归替换参数对象里所有字符串值中的关键词占位符。
+ *  不能走 JSON.stringify → replace → JSON.parse：关键词里的引号、反斜杠、换行会把 JSON 弄坏 */
 const fillParams = (params: any, keyword: string): any => {
-  const str = JSON.stringify(params);
-  const filled = replaceFields(str, ["keyword", "kw"], keyword);
-  return JSON.parse(filled);
+  if (typeof params === "string") {
+    return replaceFields(params, KEYWORD_FIELDS, keyword);
+  }
+  if (Array.isArray(params)) {
+    return params.map((item) => fillParams(item, keyword));
+  }
+  if (params && typeof params === "object") {
+    const filled: Record<string, any> = {};
+    for (const [key, value] of Object.entries(params)) {
+      filled[key] = fillParams(value, keyword);
+    }
+    return filled;
+  }
+  return params;
 };
+
+/** 搜索关键词长度上限（按 Unicode 码点计） */
+export const MAX_SEARCH_KEYWORD_LENGTH = 100;
+
+export function isSearchKeywordTooLong(keyword: string): boolean {
+  return Array.from(keyword).length > MAX_SEARCH_KEYWORD_LENGTH;
+}
+
+/** 去掉首尾空白并截断到上限：关键词会进入请求 URL、Redis 缓存键和并发锁键，必须有界 */
+export function normalizeSearchKeyword(keyword: string): string {
+  const chars = Array.from(String(keyword ?? "").trim());
+  return chars.slice(0, MAX_SEARCH_KEYWORD_LENGTH).join("").trim();
+}
 
 const extractImage = (item: any, fieldMap: any): string | undefined => {
   const imageField = fieldMap?.fields?.image;
@@ -93,7 +127,7 @@ const searchApi = async (
   const fieldMap = JSON.parse(config.field_map || "{}") as any;
   const count = Math.max(1, config.count || 10);
 
-  let url = replaceFields(urlTemplate, ["keyword", "kw"], keyword);
+  let url = fillUrlKeyword(urlTemplate, keyword);
   const params = fillParams(fixedParams, keyword);
 
   const requestConfig: AxiosRequestConfig = {
@@ -254,7 +288,7 @@ const searchHtml = async (
   config: any,
   keyword: string,
 ): Promise<WebSearchResult[]> => {
-  const url = replaceFields(config.url || "", ["keyword", "kw"], keyword);
+  const url = fillUrlKeyword(config.url || "", keyword);
   const headers = JSON.parse(config.headers || "{}") as Record<string, string>;
   const html = await fetchHtml(url, headers || {});
   const $ = cheerio.load(html);
@@ -332,8 +366,11 @@ const searchHtml = async (
 
 export async function testWebSearchConfig(
   config: any,
-  keyword: string,
+  rawKeyword: string,
 ): Promise<WebSearchResult[]> {
+  const keyword = normalizeSearchKeyword(rawKeyword);
+  if (!keyword) return [];
+
   if (config.type === "api") {
     return await searchApi(config, keyword);
   } else if (config.type === "pansou") {
@@ -348,9 +385,13 @@ export async function testWebSearchConfig(
  * 引入互斥单飞锁 + 分级限流机制，保护中间件和 Redis 不在高并发下崩溃
  */
 export async function webSearchConcurrent(
-  keyword: string,
+  rawKeyword: string,
   onResult: (results: WebSearchResult[]) => void,
 ): Promise<number> {
+  // 关键词先收敛成有界的规范值，后面所有引擎、锁与缓存键都用它
+  const keyword = normalizeSearchKeyword(rawKeyword);
+  if (!keyword) return 0;
+
   // 1. 大闸放行：一次性拿回所有启用的引擎配置（走本地缓存或轻量查询）
   const configs = await prisma.apiList.findMany({
     where: { status: 1 },
