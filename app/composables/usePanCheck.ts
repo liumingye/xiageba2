@@ -1,4 +1,10 @@
-import { ref, reactive, onBeforeUnmount, type ObjectDirective } from "vue";
+import {
+  ref,
+  reactive,
+  onBeforeUnmount,
+  onDeactivated,
+  type ObjectDirective,
+} from "vue";
 
 export type CheckStatus = "checking" | "valid" | "invalid" | "failed";
 
@@ -408,6 +414,10 @@ export function usePanCheck(options: UsePanCheckOptions = {}) {
   };
 
   onBeforeUnmount(stopPanCheck);
+  // 搜索页被 KeepAlive 缓存（app.vue include SearchPage）：切走时只触发
+  // deactivated 不触发 unmount，仅靠 onBeforeUnmount 会让 IntersectionObserver、
+  // scroll 监听和定时器在缓存期间持续后台运行。
+  onDeactivated(stopPanCheck);
 
   /**
    * 模板指令：绑在列表项根元素上。元素进入视口不立即检测，
