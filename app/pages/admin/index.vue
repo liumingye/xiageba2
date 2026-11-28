@@ -142,8 +142,16 @@ const editMusic = (id: string) => {
 const deleteMusic = async (id: string) => {
   if (!confirm("确定要删除这首歌吗？")) return;
 
-  await del("/api/admin/music", { data: { id } });
-  await loadMusic();
+  try {
+    await del("/api/admin/music", { data: { id } });
+    await loadMusic();
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "删除失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
+  }
 };
 
 // ============ 状态开关 ============
@@ -156,8 +164,12 @@ const toggleStatus = async (item: TableData) => {
       status: newStatus,
     });
     await loadMusic();
-  } catch {
-    // 忽略，401 由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "状态更新失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 

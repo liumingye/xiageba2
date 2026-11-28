@@ -60,33 +60,37 @@ export function useDoubanList() {
     return doubanFilters.value[activeCategoryId.value] || [];
   });
 
+  /** 当前在途请求；发起新请求时旧的那个被 abort，且不允许再写状态 */
   let cancelToken: AbortController | null = null;
-  let signal: AbortSignal | null = null;
 
   /**
    * 拉取列表
    *
    * 并发调用（快速切分类 / 连续触底）时先中断上一次请求，避免旧响应
    * 覆盖新结果。
+   *
+   * 被中断的旧请求也会走自己的 catch / finally，所以写状态前一律核对
+   * 「我还是不是当前请求」，否则旧请求会把新请求的 loading 翻回 false、
+   * 把刚清空的列表再清一遍。
    */
   const fetchDoubanList = async (page: number = 1, append: boolean = false) => {
-    if (doubanLoading.value) {
-      cancelToken?.abort();
-      cancelToken = null;
-      signal = null;
-    }
+    cancelToken?.abort();
+    const controller = new AbortController();
+    cancelToken = controller;
     doubanLoading.value = true;
+
+    const isCurrent = () => cancelToken === controller;
+
     try {
-      cancelToken = new AbortController();
-      signal = cancelToken.signal;
       const data = await $fetch<DoubanListData>("/api/home/douban", {
         query: {
           categoryId: activeCategoryId.value,
           page,
           filters: JSON.stringify(activeFilters.value),
         },
-        signal,
+        signal: controller.signal,
       });
+      if (!isCurrent()) return;
       if (append) {
         doubanList.value.push(...(data.list || []));
       } else {
@@ -95,12 +99,17 @@ export function useDoubanList() {
       doubanPage.value = data.page || page;
       doubanPageCount.value = data.pagecount || 0;
     } catch {
-      // 中断或失败：追加时保留已有内容，刷新时清空
+      // 已被更新的请求取代：状态归新请求管，这里什么都不动
+      if (!isCurrent()) return;
+      // 真正失败：追加时保留已有内容，刷新时清空
       if (!append) {
         doubanList.value = [];
       }
     } finally {
-      doubanLoading.value = false;
+      if (isCurrent()) {
+        cancelToken = null;
+        doubanLoading.value = false;
+      }
     }
   };
 

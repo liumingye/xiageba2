@@ -11,6 +11,8 @@ useSeoMeta({
   title: "分类管理",
 });
 
+const toast = useToast();
+
 interface Category {
   id: number;
   name: string;
@@ -73,6 +75,8 @@ const editImage = ref("");
 const editSort = ref(0);
 const editIsShow = ref(true);
 const error = ref("");
+// 新增 / 编辑共用一个提交锁：两段提交都是「写库 → 刷新列表 → 关弹窗」，连点会建出重复分类
+const saving = ref(false);
 
 const showAddCoverPicker = ref(false);
 const showEditCoverPicker = ref(false);
@@ -133,11 +137,13 @@ const closeEditModal = () => {
 };
 
 const addCategory = async () => {
+  if (saving.value) return;
   if (!newName.value.trim()) {
     error.value = "分类名称不能为空";
     return;
   }
 
+  saving.value = true;
   try {
     await post("/api/admin/category", {
       name: newName.value,
@@ -149,16 +155,20 @@ const addCategory = async () => {
     closeAddModal();
   } catch (e: any) {
     error.value = getApiErrorMessage(e, "添加失败");
+  } finally {
+    saving.value = false;
   }
 };
 
 const saveEdit = async () => {
+  if (saving.value) return;
   if (!editId.value) return;
   if (!editName.value.trim()) {
     error.value = "分类名称不能为空";
     return;
   }
 
+  saving.value = true;
   try {
     await put(`/api/admin/category/${editId.value}`, {
       name: editName.value,
@@ -170,6 +180,8 @@ const saveEdit = async () => {
     closeEditModal();
   } catch (e: any) {
     error.value = getApiErrorMessage(e, "保存失败");
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -179,8 +191,12 @@ const deleteCategory = async (id: number) => {
   try {
     await del(`/api/admin/category/${id}`);
     await loadCategories();
-  } catch {
-    // 忽略，401 由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "删除失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 </script>
@@ -344,7 +360,14 @@ const deleteCategory = async (id: number) => {
         <UButton color="neutral" variant="soft" @click="closeAddModal">
           取消
         </UButton>
-        <UButton color="primary" @click="addCategory">添加</UButton>
+        <UButton
+          color="primary"
+          :loading="saving"
+          :disabled="saving"
+          @click="addCategory"
+        >
+          添加
+        </UButton>
       </div>
     </template>
   </UModal>
@@ -424,7 +447,14 @@ const deleteCategory = async (id: number) => {
         <UButton color="neutral" variant="soft" @click="closeEditModal">
           取消
         </UButton>
-        <UButton color="primary" @click="saveEdit">保存</UButton>
+        <UButton
+          color="primary"
+          :loading="saving"
+          :disabled="saving"
+          @click="saveEdit"
+        >
+          保存
+        </UButton>
       </div>
     </template>
   </UModal>

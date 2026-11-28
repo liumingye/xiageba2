@@ -15,6 +15,7 @@ useSeoMeta({
 const router = useRouter();
 const route = useRoute();
 const { username } = useAuth();
+const toast = useToast();
 
 const feedbacks = ref<any[]>([]);
 const currentPage = ref(1);
@@ -118,8 +119,12 @@ const resolveFeedback = async (id: string) => {
       resolvedBy: username.value,
     });
     await loadFeedback();
-  } catch {
-    // 忽略，401 由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "操作失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 
@@ -129,8 +134,12 @@ const deleteFeedback = async (id: string) => {
   try {
     await del(`/api/admin/feedback/${id}`);
     await loadFeedback();
-  } catch {
-    // 忽略，401 由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "删除失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 

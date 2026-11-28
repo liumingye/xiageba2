@@ -11,6 +11,8 @@ useSeoMeta({
   title: "公告管理",
 });
 
+const toast = useToast();
+
 const announcements = ref<Announcement[]>([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
@@ -205,8 +207,12 @@ const archiveAnnouncement = async (item: Announcement) => {
       status: "ARCHIVED",
     });
     await loadAnnouncements();
-  } catch {
-    // 401 已由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "归档失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 
@@ -216,8 +222,12 @@ const deleteAnnouncement = async (id: string) => {
   try {
     await del(`/api/admin/announcement/${id}`);
     await loadAnnouncements();
-  } catch {
-    // 401 已由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "删除失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 </script>
@@ -387,7 +397,7 @@ const deleteAnnouncement = async (id: string) => {
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2">内容</label>
-          <Editor v-model="newContent" />
+          <LazyEditor v-model="newContent" />
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2" for="ann-dtype"
@@ -484,7 +494,7 @@ const deleteAnnouncement = async (id: string) => {
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2">内容</label>
-          <Editor v-model="editContent" />
+          <LazyEditor v-model="editContent" />
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2" for="edit-ann-dtype"

@@ -540,7 +540,7 @@ watch(
   <main>
     <!-- AI 搜索模式 -->
     <ClientOnly v-if="isAi">
-      <AiChat :initial-query="searchKeyword" />
+      <LazyAiChat :initial-query="searchKeyword" />
     </ClientOnly>
 
     <template v-else>

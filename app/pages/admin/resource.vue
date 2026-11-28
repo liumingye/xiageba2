@@ -191,13 +191,33 @@ watch(
   },
 );
 
+/**
+ * 把 query 归一成可比较的键（空值视为不存在、键排序）。
+ * 用于判断 router.push 是否真的会改变路由——query 不变时 route.query 的 watcher 不会触发。
+ */
+const queryKey = (query: Record<string, unknown>) =>
+  Object.entries(query)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(",") : String(v)}`)
+    .join("&");
+
+/**
+ * 列表只由 route.query 的 watcher 驱动加载（避免与显式调用重复发请求）。
+ * query 与当前一致时路由不会变化，此时直接加载一次，保留「点搜索/点当前页可刷新」的行为。
+ */
+const replaceQueryThenLoad = (query: Record<string, string>) => {
+  if (queryKey(query) === queryKey(route.query)) {
+    loadSources();
+    return;
+  }
+  router.push({ query });
+};
+
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
-  router.push({
-    query: { ...route.query, page: page.toString() },
-  });
-  loadSources();
+  replaceQueryThenLoad({ ...route.query, page: page.toString() });
 };
 
 /** 搜索/筛选变更：重置页码并同步 URL 查询参数后加载列表 */
@@ -211,8 +231,7 @@ const handleFilterChange = () => {
   if (keyword.value.trim()) {
     query.q = keyword.value.trim();
   }
-  router.push({ query });
-  loadSources();
+  replaceQueryThenLoad(query);
 };
 
 const openAddModal = () => {
@@ -428,8 +447,12 @@ const toggleStatus = async (item: Source) => {
       status: newStatus,
     });
     await loadSources();
-  } catch {
-    // 忽略，401 由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "状态更新失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 
@@ -439,8 +462,12 @@ const deleteSource = async (id: string) => {
   try {
     await del(`/api/admin/source/${id}`);
     await loadSources();
-  } catch {
-    // 忽略，401 由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "删除失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 
@@ -1110,7 +1137,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2">资源介绍</label>
-          <Editor v-model="newDescription" placeholder="资源说明，可选" />
+          <LazyEditor v-model="newDescription" placeholder="资源说明，可选" />
         </div>
         <UCheckbox
           id="newIsSelf"
@@ -1295,7 +1322,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2">资源介绍</label>
-          <Editor v-model="editDescription" placeholder="资源说明，可选" />
+          <LazyEditor v-model="editDescription" placeholder="资源说明，可选" />
         </div>
         <div>
           <div class="flex items-center justify-between mb-2">

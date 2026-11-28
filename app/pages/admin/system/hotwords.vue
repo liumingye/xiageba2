@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
 import { TrendingUp } from "@lucide/vue";
 import { get, post } from "~/utils/request";
@@ -8,6 +9,9 @@ useSeoMeta({
 });
 
 const loading = ref(true);
+// 加载失败的原因；非空时页面顶部提示并禁止保存（表单里是默认值，保存会把线上配置覆盖成空）
+const loadError = ref("");
+const toast = useToast();
 
 interface HotWord {
   word: string;
@@ -21,15 +25,20 @@ const savedHotwords = ref(false);
 
 // ============ 生命周期 ============
 
-onMounted(async () => {
-  await loadHotwordsConfig();
-  loading.value = false;
-});
-
 const loadHotwordsConfig = async () => {
-  const data = await get("/api/admin/config/hotwords");
-  hotwords.value = data.data || [];
+  loading.value = true;
+  loadError.value = "";
+  try {
+    const data = await get("/api/admin/config/hotwords");
+    hotwords.value = data.data || [];
+  } catch (e) {
+    loadError.value = getApiErrorMessage(e, "配置加载失败");
+  } finally {
+    loading.value = false;
+  }
 };
+
+onMounted(loadHotwordsConfig);
 
 const saveHotwordsConfig = async () => {
   savingHotwords.value = true;
@@ -40,8 +49,12 @@ const saveHotwordsConfig = async () => {
     setTimeout(() => {
       savedHotwords.value = false;
     }, 2000);
-  } catch {
-    // 保存失败
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "保存失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     savingHotwords.value = false;
   }
@@ -57,6 +70,27 @@ const removeHotword = (index: number) => {
 </script>
 
 <template>
+  <UAlert
+    v-if="loadError"
+    color="error"
+    variant="soft"
+    title="配置加载失败"
+    :description="loadError"
+    class="mb-8"
+  >
+    <template #actions>
+      <UButton
+        size="xs"
+        color="error"
+        icon="i-lucide-refresh-cw"
+        :loading="loading"
+        @click="loadHotwordsConfig"
+      >
+        重试
+      </UButton>
+    </template>
+  </UAlert>
+
   <!-- 热搜词配置 -->
   <section class="mb-8">
     <div class="flex items-center justify-between mb-4">
@@ -65,7 +99,7 @@ const removeHotword = (index: number) => {
         color="primary"
         :icon="savedHotwords ? 'i-lucide-check' : 'i-lucide-save'"
         :loading="savingHotwords"
-        :disabled="savingHotwords || loading"
+        :disabled="savingHotwords || loading || !!loadError"
         @click="saveHotwordsConfig"
       >
         {{ savedHotwords ? "已保存" : "保存" }}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { getApiErrorMessage } from "~/utils/apiError";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { get, post, put, del } from "~/utils/request";
 import { Loader2, KeyRound, UserCog, QrCode } from "@lucide/vue";
 import DirPickerModal from "~/components/admin/DirPickerModal.vue";
@@ -68,6 +69,8 @@ const qrStatus = ref<"pending" | "scanned" | "confirmed" | "expired" | "error">(
 );
 const qrErrorMsg = ref("");
 let qrPollTimer: ReturnType<typeof setTimeout> | null = null;
+// 扫码成功后「停留 1.2s 再关弹窗」的定时器，也要随页面卸载清掉
+let qrCloseTimer: ReturnType<typeof setTimeout> | null = null;
 let qrSessionId = "";
 
 const canQrLogin = computed(() => QR_LOGIN_TYPES.includes(formData.value.type));
@@ -78,21 +81,24 @@ const openQrLogin = async () => {
   qrImage.value = "";
   qrStatus.value = "pending";
   qrErrorMsg.value = "";
-  stopQrPolling();
+  stopQrTimers();
 
   try {
     const data = await post("/api/admin/pan-qr", {
       action: "create",
       type: formData.value.type,
     });
+    // 请求在途时弹窗已关 / 页面已卸载：不再启动轮询
+    if (!qrShow.value) return;
     qrSessionId = data.sessionId;
     qrImage.value = data.qrcode;
     qrLoading.value = false;
     startQrPolling();
   } catch (e: any) {
+    if (!qrShow.value) return;
     qrLoading.value = false;
     qrStatus.value = "error";
-    qrErrorMsg.value = e?.response?.data?.message || "获取二维码失败，请重试";
+    qrErrorMsg.value = getApiErrorMessage(e, "获取二维码失败，请重试");
   }
 };
 
@@ -108,12 +114,24 @@ const stopQrPolling = () => {
   }
 };
 
+const stopQrTimers = () => {
+  stopQrPolling();
+  if (qrCloseTimer) {
+    clearTimeout(qrCloseTimer);
+    qrCloseTimer = null;
+  }
+};
+
 const pollQrStatus = async () => {
+  const sessionId = qrSessionId;
   try {
     const data = await post("/api/admin/pan-qr", {
       action: "poll",
-      sessionId: qrSessionId,
+      sessionId,
     });
+
+    // 请求在途时弹窗被关 / 页面被卸载 / 重新生成了二维码：这次结果作废，也不再续轮询
+    if (!qrShow.value || sessionId !== qrSessionId) return;
 
     if (data.status === "confirmed") {
       qrStatus.value = "confirmed";
@@ -125,7 +143,8 @@ const pollQrStatus = async () => {
         duration: 2000,
       });
       // 稍作停留让用户看到成功态，再自动关闭
-      setTimeout(() => {
+      qrCloseTimer = setTimeout(() => {
+        qrCloseTimer = null;
         closeQrLogin();
       }, 1200);
       return;
@@ -145,18 +164,21 @@ const pollQrStatus = async () => {
     }
     // pending / scanned 继续轮询
     startQrPolling();
-  } catch (e: any) {
+  } catch (e) {
+    if (!qrShow.value || sessionId !== qrSessionId) return;
     // 会话过期（404）等：提示重新生成
     qrStatus.value = "error";
-    qrErrorMsg.value =
-      e?.response?.data?.message || "轮询失败，请重新生成二维码";
+    qrErrorMsg.value = getApiErrorMessage(e, "轮询失败，请重新生成二维码");
   }
 };
 
 const closeQrLogin = () => {
-  stopQrPolling();
+  stopQrTimers();
   qrShow.value = false;
 };
+
+// 扫码弹窗开着时切到别的后台页：停掉轮询，否则会一直 POST /api/admin/pan-qr 直到服务端会话过期
+onBeforeUnmount(closeQrLogin);
 
 function getEmptyForm(): AccountFormData {
   return {
@@ -220,6 +242,8 @@ const openEditForm = async (account: AccountListItem) => {
 
 const closeForm = () => {
   formShow.value = false;
+  // 表单弹窗关了，叠在上面的扫码弹窗（若开着）一并关掉，顺便停轮询
+  closeQrLogin();
 };
 
 const saveForm = async () => {
@@ -303,8 +327,12 @@ const saveForm = async () => {
     }
     formShow.value = false;
     await loadAccounts();
-  } catch {
-    // 401 已由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "保存失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     formSaving.value = false;
   }
@@ -324,8 +352,12 @@ const deleteAccount = async (account: AccountListItem) => {
       duration: 2000,
     });
     await loadAccounts();
-  } catch {
-    // 401 已由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "删除失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 
@@ -340,8 +372,12 @@ const toggleStatus = async (account: AccountListItem) => {
       color: "success",
       duration: 2000,
     });
-  } catch {
-    // 401 已由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "状态更新失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
 };
 

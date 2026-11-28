@@ -11,6 +11,8 @@ useSeoMeta({
 });
 
 const loading = ref(true);
+// 加载失败的原因；非空时页面顶部提示并禁止保存（表单里是默认值，保存会把线上配置覆盖成空）
+const loadError = ref("");
 
 interface AesConfig {
   aes_key: string;
@@ -200,9 +202,21 @@ watch(
 
 // ============ 生命周期 ============
 
+/** 三份配置并行加载；任一失败都记入 loadError，并保证 loading 复位（否则按钮永久禁用） */
+const loadPageConfig = async () => {
+  loading.value = true;
+  loadError.value = "";
+  try {
+    await Promise.all([loadAesConfig(), loadBotDefense(), loadApiToken()]);
+  } catch (e) {
+    loadError.value = getApiErrorMessage(e, "配置加载失败");
+  } finally {
+    loading.value = false;
+  }
+};
+
 onMounted(async () => {
-  await Promise.all([loadAesConfig(), loadBotDefense(), loadApiToken()]);
-  loading.value = false;
+  await loadPageConfig();
   renderPreview();
 });
 
@@ -241,8 +255,12 @@ const saveAesConfig = async () => {
     setTimeout(() => {
       savedAes.value = false;
     }, 2000);
-  } catch {
-    // 保存失败
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "保存失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     savingAes.value = false;
   }
@@ -295,6 +313,27 @@ const saveApiToken = async () => {
 </script>
 
 <template>
+  <UAlert
+    v-if="loadError"
+    color="error"
+    variant="soft"
+    title="配置加载失败"
+    :description="loadError"
+    class="mb-8"
+  >
+    <template #actions>
+      <UButton
+        size="xs"
+        color="error"
+        icon="i-lucide-refresh-cw"
+        :loading="loading"
+        @click="loadPageConfig"
+      >
+        重试
+      </UButton>
+    </template>
+  </UAlert>
+
   <!-- AES 配置 -->
   <section class="mb-8">
     <div class="flex items-center justify-between mb-4">
@@ -313,7 +352,7 @@ const saveApiToken = async () => {
           color="primary"
           :icon="savedAes ? 'i-lucide-check' : 'i-lucide-save'"
           :loading="savingAes"
-          :disabled="savingAes || loading"
+          :disabled="savingAes || loading || !!loadError"
           @click="saveAesConfig"
         >
           {{ savedAes ? "已保存" : "保存" }}
@@ -391,7 +430,7 @@ const saveApiToken = async () => {
           color="primary"
           :icon="savedToken ? 'i-lucide-check' : 'i-lucide-save'"
           :loading="savingToken"
-          :disabled="savingToken || loading"
+          :disabled="savingToken || loading || !!loadError"
           @click="saveApiToken"
         >
           {{ savedToken ? "已保存" : "保存" }}
@@ -456,7 +495,7 @@ const saveApiToken = async () => {
         color="primary"
         :icon="savedBot ? 'i-lucide-check' : 'i-lucide-save'"
         :loading="savingBot"
-        :disabled="savingBot || loading"
+        :disabled="savingBot || loading || !!loadError"
         @click="saveBotDefense"
       >
         {{ savedBot ? "已保存" : "保存" }}

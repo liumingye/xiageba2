@@ -448,7 +448,7 @@ const deletePage = async (item: AdminPage) => {
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2">正文内容</label>
-          <Editor v-model="newContent" />
+          <LazyEditor v-model="newContent" />
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -548,7 +548,7 @@ const deletePage = async (item: AdminPage) => {
         </div>
         <div>
           <label class="block text-color-400 text-sm mb-2">正文内容</label>
-          <Editor v-model="editContent" />
+          <LazyEditor v-model="editContent" />
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>

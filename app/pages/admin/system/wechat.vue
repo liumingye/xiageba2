@@ -13,6 +13,8 @@ const toast = useToast();
 const { copy: copyToClipboard } = useClipboard();
 
 const loading = ref(true);
+// 加载失败的原因；非空时页面顶部提示并禁止保存（表单里是默认值，保存会把线上配置覆盖成空）
+const loadError = ref("");
 
 // ============ 微信公众号配置 ============
 interface WechatConfig {
@@ -48,13 +50,6 @@ const wechatVerifyFile = ref<File | null>(null);
 const wechatVerifyUploading = ref(false);
 const wechatVerifyFileInput = ref<HTMLInputElement | null>(null);
 const wechatOrigin = ref("");
-
-const loadWechatConfig = async () => {
-  const data = await get("/api/admin/config/wechat");
-  if (data.data) {
-    wechatConfig.value = { ...wechatConfig.value, ...data.data };
-  }
-};
 
 const saveWechatConfig = async () => {
   savingWechat.value = true;
@@ -151,16 +146,51 @@ const copyText = async (text: string, label?: string) => {
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  await loadWechatConfig();
-  // 构造回调地址域名（仅用于显示复制）
+  // 构造回调地址域名（仅用于显示复制），与配置加载互不影响
   if (typeof window !== "undefined") {
     wechatOrigin.value = window.location.origin;
   }
-  loading.value = false;
+  await loadWechatConfig();
 });
+
+const loadWechatConfig = async () => {
+  loading.value = true;
+  loadError.value = "";
+  try {
+    const data = await get("/api/admin/config/wechat");
+    if (data.data) {
+      wechatConfig.value = { ...wechatConfig.value, ...data.data };
+    }
+  } catch (e) {
+    loadError.value = getApiErrorMessage(e, "配置加载失败");
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <template>
+  <UAlert
+    v-if="loadError"
+    color="error"
+    variant="soft"
+    title="配置加载失败"
+    :description="loadError"
+    class="mb-8"
+  >
+    <template #actions>
+      <UButton
+        size="xs"
+        color="error"
+        icon="i-lucide-refresh-cw"
+        :loading="loading"
+        @click="loadWechatConfig"
+      >
+        重试
+      </UButton>
+    </template>
+  </UAlert>
+
   <!-- 微信公众号配置 -->
   <section class="mb-8">
     <div class="flex items-center justify-between mb-4">
@@ -169,7 +199,7 @@ onMounted(async () => {
         color="primary"
         :icon="savedWechat ? 'i-lucide-check' : 'i-lucide-save'"
         :loading="savingWechat"
-        :disabled="savingWechat || loading"
+        :disabled="savingWechat || loading || !!loadError"
         @click="saveWechatConfig"
       >
         {{ savedWechat ? "已保存" : "保存" }}

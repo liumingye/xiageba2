@@ -80,6 +80,7 @@ const form = ref({
 });
 const error = ref("");
 const testing = ref(false);
+const saving = ref(false);
 
 const parseFixedParams = () => {
   try {
@@ -199,9 +200,11 @@ const validateForm = () => {
 };
 
 const saveApi = async () => {
+  if (saving.value) return;
   error.value = validateForm();
   if (error.value) return;
 
+  saving.value = true;
   try {
     if (isEdit.value) {
       await put(`/api/admin/apiList/${editId.value}`, form.value);
@@ -212,6 +215,8 @@ const saveApi = async () => {
     await loadApis();
   } catch (e: any) {
     error.value = getApiErrorMessage(e, "保存失败");
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -254,8 +259,12 @@ const deleteApi = async (id: string) => {
   if (!confirm("确定删除该接口配置？")) return;
   try {
     await del(`/api/admin/apiList/${id}`);
-  } catch {
-    // 401 已由拦截器处理
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "删除失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   }
   await loadApis();
 };
@@ -691,7 +700,7 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
         color="warning"
         icon="i-lucide-zap"
         :loading="testing"
-        :disabled="testing"
+        :disabled="testing || saving"
         @click="testApi"
       >
         {{ testing ? "测试中..." : "测试线路" }}
@@ -700,7 +709,14 @@ const statusLabel = (status: number) => (status === 1 ? "启用" : "禁用");
         <UButton color="neutral" variant="ghost" @click="closeModal">
           取消
         </UButton>
-        <UButton color="primary" @click="saveApi">保存</UButton>
+        <UButton
+          color="primary"
+          :loading="saving"
+          :disabled="saving || testing"
+          @click="saveApi"
+        >
+          保存
+        </UButton>
       </div>
     </template>
   </UModal>

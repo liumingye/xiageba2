@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getApiErrorMessage } from "~/utils/apiError";
 import { ref, onMounted } from "vue";
 import { ShieldAlert, Filter } from "@lucide/vue";
 import { get, post } from "~/utils/request";
@@ -8,6 +9,9 @@ useSeoMeta({
 });
 
 const loading = ref(true);
+// 加载失败的原因；非空时页面顶部提示并禁止保存（表单里是默认值，保存会把线上配置覆盖成空）
+const loadError = ref("");
+const toast = useToast();
 
 interface WebSearchFilterConfig {
   websearch_filter_keywords: string;
@@ -32,11 +36,20 @@ const savedAdFilter = ref(false);
 
 // ============ 生命周期 ============
 
-onMounted(async () => {
-  await loadWebSearchFilterConfig();
-  await loadAdFilterConfig();
-  loading.value = false;
-});
+/** 两份配置并行加载；任一失败都记入 loadError，并保证 loading 复位（否则按钮永久禁用） */
+const loadPageConfig = async () => {
+  loading.value = true;
+  loadError.value = "";
+  try {
+    await Promise.all([loadWebSearchFilterConfig(), loadAdFilterConfig()]);
+  } catch (e) {
+    loadError.value = getApiErrorMessage(e, "配置加载失败");
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(loadPageConfig);
 
 // 全网搜过滤词配置
 const loadWebSearchFilterConfig = async () => {
@@ -61,8 +74,12 @@ const saveWebSearchFilterConfig = async () => {
     setTimeout(() => {
       savedWebSearchFilter.value = false;
     }, 2000);
-  } catch {
-    // 保存失败
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "保存失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     savingWebSearchFilter.value = false;
   }
@@ -84,8 +101,12 @@ const saveAdFilterConfig = async () => {
     setTimeout(() => {
       savedAdFilter.value = false;
     }, 2000);
-  } catch {
-    // 保存失败
+  } catch (e) {
+    toast.add({
+      title: getApiErrorMessage(e, "保存失败"),
+      icon: "i-lucide-x",
+      color: "error",
+    });
   } finally {
     savingAdFilter.value = false;
   }
@@ -93,6 +114,27 @@ const saveAdFilterConfig = async () => {
 </script>
 
 <template>
+  <UAlert
+    v-if="loadError"
+    color="error"
+    variant="soft"
+    title="配置加载失败"
+    :description="loadError"
+    class="mb-8"
+  >
+    <template #actions>
+      <UButton
+        size="xs"
+        color="error"
+        icon="i-lucide-refresh-cw"
+        :loading="loading"
+        @click="loadPageConfig"
+      >
+        重试
+      </UButton>
+    </template>
+  </UAlert>
+
   <!-- 全网搜过滤词配置 -->
   <section class="mb-8">
     <div class="flex items-center justify-between mb-4">
@@ -101,7 +143,7 @@ const saveAdFilterConfig = async () => {
         color="primary"
         :icon="savedWebSearchFilter ? 'i-lucide-check' : 'i-lucide-save'"
         :loading="savingWebSearchFilter"
-        :disabled="savingWebSearchFilter || loading"
+        :disabled="savingWebSearchFilter || loading || !!loadError"
         @click="saveWebSearchFilterConfig"
       >
         {{ savedWebSearchFilter ? "已保存" : "保存" }}
