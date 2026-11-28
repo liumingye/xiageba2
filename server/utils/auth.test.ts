@@ -5,7 +5,7 @@
 // 已存在的 env 变量。这里在测试 setup 阶段先设置 ADMIN_SECRET。
 // getTokenFromEvent 依赖 Nitro 全局 getHeader，vitest 中未定义，跳过测试。
 
-import { createHash } from "crypto";
+import { createHash, createHmac } from "crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const TEST_SECRET = "test-admin-secret-not-for-production-use-only";
@@ -393,6 +393,31 @@ describe("auth token（双 token）", () => {
       ).toString("base64url");
       // 源码中 getSecret() 抛错被外层 try/catch 捕获，最终返回 null
       expect(verifyToken(`${header}.${payload}.abc`)).toBeNull();
+    });
+  });
+
+  describe("ADMIN_SECRET 是占位值场景", () => {
+    const PLACEHOLDER = "change-me-in-production";
+
+    it("generateAccessToken 拒绝用占位值签发令牌", async () => {
+      process.env.ADMIN_SECRET = PLACEHOLDER;
+      const { generateAccessToken } = await importAuth();
+      expect(() => generateAccessToken("admin")).toThrow(/占位值/);
+    });
+
+    it("用占位值在本地签出的令牌（带合法的管理员 ID 与密码指纹）校验不通过", async () => {
+      process.env.ADMIN_SECRET = "another-secret-value-for-this-test";
+      const { issueTokens, verifyToken } = await importAuth();
+      const token = issueTokens(ADMIN).accessToken;
+      const [header, payload] = token.split(".");
+
+      // 攻击者持有公开的占位值，可以在本地重算出签名
+      const signature = createHmac("sha256", PLACEHOLDER)
+        .update(`${header}.${payload}`)
+        .digest("base64url");
+
+      process.env.ADMIN_SECRET = PLACEHOLDER;
+      expect(verifyToken(`${header}.${payload}.${signature}`, "access")).toBeNull();
     });
   });
 });

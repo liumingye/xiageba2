@@ -388,7 +388,7 @@ cp .env.example .env
 | 变量 | 必填 | 说明 |
 |------|------|------|
 | `DATABASE_URL` | ✅ | PostgreSQL 连接串，例：`postgresql://user:pass@localhost:5432/music?schema=public` |
-| `ADMIN_SECRET` | ✅ | 后台 JWT 签名密钥，**生产环境必须修改**，无硬编码兜底 |
+| `ADMIN_SECRET` | ✅ | 后台 JWT 与验证码通行令牌的签名密钥，**生产环境必须修改**，无硬编码兜底；未设置或仍是 `.env.example` 的占位值时拒绝签发和校验令牌 |
 | `SITE_HOST` | 建议 | 站点域名（如 `https://example.com`），用于邮件链接、微信回调、AI 搜索结果链接 |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` / `SMTP_FROM_NAME` | 可选 | 反馈处理完成后的邮件通知，不配置则不发信 |
 | `MEOW_API` | 可选 | 网盘账号失效时的推送通知接口（定时任务 `source:check_account`） |

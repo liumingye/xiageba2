@@ -337,6 +337,16 @@ describe("通行令牌", () => {
       if (backup !== undefined) process.env.ADMIN_SECRET = backup;
     }
   });
+
+  it("getBotDefenseSecret 拒绝 .env.example 的占位值", () => {
+    const backup = process.env.ADMIN_SECRET;
+    process.env.ADMIN_SECRET = "change-me-in-production";
+    try {
+      expect(() => getBotDefenseSecret()).toThrow(/占位值/);
+    } finally {
+      process.env.ADMIN_SECRET = backup;
+    }
+  });
 });
 
 // ============ Provider 二次校验 ============

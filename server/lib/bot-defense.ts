@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { readAdminSecret } from "#server/lib/adminSecret";
 import { getConfigValue } from "#server/lib/configCache";
 
 /**
@@ -390,13 +391,7 @@ export async function getBotDefenseConfig(): Promise<BotDefenseConfig> {
  * 令牌格式：base64url(payload).base64url(hmac-sha256(payload))
  */
 export function getBotDefenseSecret(): string {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) {
-    throw new Error(
-      "[bot-defense] ADMIN_SECRET 环境变量未设置，请在 .env 或部署环境中配置",
-    );
-  }
-  return secret;
+  return readAdminSecret("bot-defense");
 }
 
 const safeEqualStr = (a: string, b: string): boolean => {

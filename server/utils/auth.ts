@@ -1,3 +1,4 @@
+import { readAdminSecret } from "#server/lib/adminSecret";
 import {
   createHash,
   createHmac,
@@ -59,15 +60,8 @@ export const credentialOf = (admin: {
   pv: credentialStamp(admin.password),
 });
 
-const getSecret = (): string => {
-  const SECRET = process.env.ADMIN_SECRET;
-  if (!SECRET) {
-    throw new Error(
-      "[auth] ADMIN_SECRET 环境变量未设置，请在 .env 或部署环境中配置",
-    );
-  }
-  return SECRET;
-};
+/** 未设置或仍是 .env.example 占位值时抛错；校验路径由调用方的 try/catch 兜底成「令牌无效」 */
+const getSecret = (): string => readAdminSecret("auth");
 
 /**
  * refresh token 使用由 ADMIN_SECRET 派生的独立密钥。
