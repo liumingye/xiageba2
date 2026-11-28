@@ -1,4 +1,9 @@
-import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "crypto";
 import "dotenv/config";
 
 /** access token 有效期（秒）：1 小时 */
@@ -24,7 +29,35 @@ export interface VerifiedToken {
   /** 过期时间（秒级时间戳） */
   exp: number;
   jti: string;
+  /** 签发令牌的管理员 ID；旧版令牌没有，为空串 */
+  uid: string;
+  /** 签发时的密码指纹；旧版令牌没有，为空串 */
+  pv: string;
 }
+
+/** 写进令牌的凭据标识：校验时据此到库里核对管理员是否仍然有效 */
+export interface TokenCredential {
+  uid: string;
+  pv: string;
+}
+
+/**
+ * 密码指纹：密码哈希的 SHA-256 前 16 位十六进制。
+ *
+ * 令牌带着签发时的指纹，校验时与库里的当前指纹比对，改密码后旧令牌全部失效。
+ * 输入是加盐的 scrypt 哈希，取摘要前缀不会泄露密码；密码每改一次指纹必然变化。
+ */
+export const credentialStamp = (passwordHash: string): string =>
+  createHash("sha256").update(passwordHash).digest("hex").slice(0, 16);
+
+/** 由管理员记录构造令牌凭据标识 */
+export const credentialOf = (admin: {
+  id: string;
+  password: string;
+}): TokenCredential => ({
+  uid: admin.id,
+  pv: credentialStamp(admin.password),
+});
 
 const getSecret = (): string => {
   const SECRET = process.env.ADMIN_SECRET;
@@ -77,12 +110,14 @@ export const safeEqual = (a: string, b: string): boolean => {
  * 签发令牌
  * @param ttlSeconds 相对有效期（秒），未指定 expOverride 时生效
  * @param expOverride 绝对过期时间（秒级时间戳），用于轮转 refresh 时继承原会话的过期点
+ * @param cred 凭据标识（管理员 ID + 密码指纹）。不传时签出的令牌无法通过吊销校验
  */
 const signToken = (
   username: string,
   type: TokenType,
   ttlSeconds: number,
   expOverride?: number,
+  cred?: TokenCredential,
 ): string => {
   const now = Math.floor(Date.now() / 1000);
 
@@ -96,6 +131,7 @@ const signToken = (
       iat: now, // JWT 规范推荐使用秒级时间戳
       exp: expOverride ?? now + ttlSeconds,
       jti: randomBytes(16).toString("hex"),
+      ...(cred ? { uid: cred.uid, pv: cred.pv } : {}),
     }),
   );
 
@@ -108,12 +144,16 @@ const signToken = (
 };
 
 /** 签发 access token（1 小时） */
-export const generateAccessToken = (username: string): string =>
-  signToken(username, "access", ACCESS_TOKEN_TTL);
+export const generateAccessToken = (
+  username: string,
+  cred?: TokenCredential,
+): string => signToken(username, "access", ACCESS_TOKEN_TTL, undefined, cred);
 
 /** 签发 refresh token（7 天） */
-export const generateRefreshToken = (username: string): string =>
-  signToken(username, "refresh", REFRESH_TOKEN_TTL);
+export const generateRefreshToken = (
+  username: string,
+  cred?: TokenCredential,
+): string => signToken(username, "refresh", REFRESH_TOKEN_TTL, undefined, cred);
 
 /** 校验并解出完整载荷，失败返回 null */
 export const verifyTokenDetailed = (
@@ -157,6 +197,8 @@ export const verifyTokenDetailed = (
       username: decoded.sub,
       exp: decoded.exp,
       jti: typeof decoded.jti === "string" ? decoded.jti : "",
+      uid: typeof decoded.uid === "string" ? decoded.uid : "",
+      pv: typeof decoded.pv === "string" ? decoded.pv : "",
     };
   } catch {
     return null;
@@ -175,40 +217,66 @@ export const verifyToken = (
   return decoded ? { username: decoded.username } : null;
 };
 
-/** 登录成功后签发的令牌组 */
-export const issueTokens = (username: string): TokenPair => ({
-  accessToken: generateAccessToken(username),
-  refreshToken: generateRefreshToken(username),
-  expiresIn: ACCESS_TOKEN_TTL,
-  refreshExpiresIn: REFRESH_TOKEN_TTL,
-});
+/**
+ * 登录成功后签发的令牌组
+ *
+ * 需要完整的管理员记录：令牌里写入 ID 与密码指纹，供后续吊销校验。
+ */
+export const issueTokens = (admin: {
+  id: string;
+  username: string;
+  password: string;
+}): TokenPair => {
+  const cred = credentialOf(admin);
+  return {
+    accessToken: generateAccessToken(admin.username, cred),
+    refreshToken: generateRefreshToken(admin.username, cred),
+    expiresIn: ACCESS_TOKEN_TTL,
+    refreshExpiresIn: REFRESH_TOKEN_TTL,
+  };
+};
 
 /**
- * 用 refresh token 换一组新令牌（轮转）
+ * 用已通过校验的 refresh token 载荷换一组新令牌（轮转）
  *
  * 新 refresh token 继承原会话的绝对过期点：7 天内持续活跃可以一直续，
  * 超过 7 天必须重新登录。这样既不会每小时踢人，也不会让会话无限延长。
+ * 管理员 ID 与密码指纹原样带过去，新令牌继续受吊销校验约束。
  */
-export const rotateTokens = (refreshToken: string): TokenPair | null => {
-  const verified = verifyTokenDetailed(refreshToken, "refresh");
-  if (!verified) return null;
-
+export const rotateVerifiedTokens = (
+  verified: VerifiedToken,
+): TokenPair | null => {
   const now = Math.floor(Date.now() / 1000);
   const remaining = verified.exp - now;
   // 已过期（verifyTokenDetailed 允许 60s 漂移）不再续期
   if (remaining <= 0) return null;
 
+  const cred = { uid: verified.uid, pv: verified.pv };
   return {
-    accessToken: generateAccessToken(verified.username),
+    accessToken: generateAccessToken(verified.username, cred),
     refreshToken: signToken(
       verified.username,
       "refresh",
       REFRESH_TOKEN_TTL,
       verified.exp,
+      cred,
     ),
     expiresIn: ACCESS_TOKEN_TTL,
     refreshExpiresIn: remaining,
   };
+};
+
+/**
+ * 用 refresh token 换一组新令牌（轮转）
+ *
+ * 只做签名与有效期校验。调用方必须先确认该管理员仍然有效
+ * （见 server/lib/adminToken.ts 的 resolveTokenAdmin），否则被删除或改过密码的
+ * 管理员可以一直续期到 7 天到期。
+ */
+export const rotateTokens = (refreshToken: string): TokenPair | null => {
+  const verified = verifyTokenDetailed(refreshToken, "refresh");
+  if (!verified) return null;
+  return rotateVerifiedTokens(verified);
 };
 
 export const getTokenFromEvent = (event: any): string | null => {

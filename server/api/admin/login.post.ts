@@ -32,7 +32,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: "用户名或密码错误" });
   }
 
-  const tokens = issueTokens(admin.username);
+  // 令牌写入管理员 ID 与密码指纹，供后续吊销校验
+  const tokens = issueTokens(admin);
 
   return {
     id: admin.id,

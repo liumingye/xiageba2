@@ -1,4 +1,5 @@
-import { rotateTokens } from "#server/utils/auth";
+import { resolveTokenAdmin } from "#server/lib/adminToken";
+import { rotateVerifiedTokens, verifyTokenDetailed } from "#server/utils/auth";
 
 /**
  * 用 refresh token 换新的 access token（同时轮转 refresh token）
@@ -25,14 +26,22 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const tokens = rotateTokens(refreshToken);
-  if (!tokens) {
-    throw createError({
+  const expiredError = () =>
+    createError({
       statusCode: 401,
       statusMessage: "Unauthorized",
       message: "登录已过期，请重新登录",
     });
+
+  // 先校验签名与有效期，再做吊销校验：管理员被删除或改过密码后不允许续期
+  const verified = verifyTokenDetailed(refreshToken, "refresh");
+  if (!verified || !(await resolveTokenAdmin(verified))) {
+    throw expiredError();
   }
+
+  const tokens = rotateVerifiedTokens(verified);
+  // 签名校验允许 60 秒时钟漂移，漂移窗口内的已过期令牌不能续
+  if (!tokens) throw expiredError();
 
   return tokens;
 });

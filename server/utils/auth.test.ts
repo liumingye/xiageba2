@@ -5,12 +5,22 @@
 // 已存在的 env 变量。这里在测试 setup 阶段先设置 ADMIN_SECRET。
 // getTokenFromEvent 依赖 Nitro 全局 getHeader，vitest 中未定义，跳过测试。
 
+import { createHash } from "crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const TEST_SECRET = "test-admin-secret-not-for-production-use-only";
 
 const decodePart = (part: string): any =>
   JSON.parse(Buffer.from(part, "base64url").toString());
+
+/** issueTokens 需要完整管理员记录（id + 密码哈希用于生成凭据标识） */
+const ADMIN = { id: "adm_test_1", username: "admin", password: "abcd$1234" };
+
+/** 模拟库里的密码哈希（"<salt>$<hash>"），不依赖 scrypt 实现 */
+const hashPasswordLike = (plain: string): string => {
+  const salt = "0011aabb";
+  return `${salt}$${createHash("sha256").update(`${salt}:${plain}`).digest("hex").slice(0, 32)}`;
+};
 
 describe("auth token（双 token）", () => {
   let originalSecret: string | undefined;
@@ -222,7 +232,7 @@ describe("auth token（双 token）", () => {
     it("返回 access + refresh 及各自有效期", async () => {
       const { issueTokens, ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } =
         await importAuth();
-      const tokens = issueTokens("admin");
+      const tokens = issueTokens(ADMIN);
 
       expect(tokens.expiresIn).toBe(ACCESS_TOKEN_TTL);
       expect(tokens.refreshExpiresIn).toBe(REFRESH_TOKEN_TTL);
@@ -234,7 +244,7 @@ describe("auth token（双 token）", () => {
   describe("rotateTokens", () => {
     it("用合法 refresh token 换出新令牌", async () => {
       const { issueTokens, rotateTokens, verifyToken } = await importAuth();
-      const { refreshToken } = issueTokens("admin");
+      const { refreshToken } = issueTokens(ADMIN);
 
       const next = rotateTokens(refreshToken);
       expect(next).not.toBeNull();
@@ -251,7 +261,7 @@ describe("auth token（双 token）", () => {
 
     it("新 refresh token 继承原会话的绝对过期点，不延长", async () => {
       const { issueTokens, rotateTokens } = await importAuth();
-      const { refreshToken } = issueTokens("admin");
+      const { refreshToken } = issueTokens(ADMIN);
       const originalExp = decodePart(refreshToken.split(".")[1]!).exp;
 
       vi.useFakeTimers();
@@ -268,7 +278,7 @@ describe("auth token（双 token）", () => {
 
     it("超过 7 天的 refresh token 无法再续", async () => {
       const { issueTokens, rotateTokens } = await importAuth();
-      const { refreshToken } = issueTokens("admin");
+      const { refreshToken } = issueTokens(ADMIN);
 
       vi.useFakeTimers();
       vi.setSystemTime(Date.now() + 8 * 24 * 60 * 60 * 1000);
@@ -277,7 +287,7 @@ describe("auth token（双 token）", () => {
 
     it("access token 不能用来刷新", async () => {
       const { issueTokens, rotateTokens } = await importAuth();
-      const { accessToken } = issueTokens("admin");
+      const { accessToken } = issueTokens(ADMIN);
       expect(rotateTokens(accessToken)).toBeNull();
     });
 
@@ -292,6 +302,76 @@ describe("auth token（双 token）", () => {
           ).toString("base64url")}.forged`,
         ),
       ).toBeNull();
+    });
+  });
+
+  describe("凭据标识（吊销校验的依据）", () => {
+    it("issueTokens 签出的两个令牌都带 uid 与 pv，pv 等于密码指纹", async () => {
+      const { issueTokens, credentialStamp, verifyTokenDetailed } =
+        await importAuth();
+      const tokens = issueTokens(ADMIN);
+
+      const access = verifyTokenDetailed(tokens.accessToken, "access")!;
+      const refresh = verifyTokenDetailed(tokens.refreshToken, "refresh")!;
+      for (const decoded of [access, refresh]) {
+        expect(decoded.uid).toBe(ADMIN.id);
+        expect(decoded.pv).toBe(credentialStamp(ADMIN.password));
+        expect(decoded.pv).toHaveLength(16);
+        expect(decoded.pv).not.toContain(ADMIN.password); // 不泄露密码哈希原文
+      }
+    });
+
+    it("密码变化 → 指纹变化；同一密码 → 指纹稳定", async () => {
+      const { credentialStamp } = await importAuth();
+      const oldHash = hashPasswordLike("old-password");
+      expect(credentialStamp(hashPasswordLike("new-password"))).not.toBe(
+        credentialStamp(oldHash),
+      );
+      expect(credentialStamp(oldHash)).toBe(credentialStamp(oldHash));
+    });
+
+    it("轮转出来的新令牌沿用原 uid / pv", async () => {
+      const { issueTokens, rotateTokens, verifyTokenDetailed } =
+        await importAuth();
+      const before = verifyTokenDetailed(
+        issueTokens(ADMIN).refreshToken,
+        "refresh",
+      )!;
+      const next = rotateTokens(
+        issueTokens(ADMIN).refreshToken,
+      )!;
+      expect(verifyTokenDetailed(next.accessToken, "access")).toMatchObject({
+        uid: before.uid,
+        pv: before.pv,
+      });
+      expect(verifyTokenDetailed(next.refreshToken, "refresh")).toMatchObject({
+        uid: before.uid,
+        pv: before.pv,
+      });
+    });
+
+    it("不传凭据签出的令牌没有 uid / pv（旧版令牌形态），签名校验本身仍通过", async () => {
+      const { generateAccessToken, generateRefreshToken, verifyTokenDetailed } =
+        await importAuth();
+      // 由吊销校验（resolveTokenAdmin）负责拒绝，这里只锁定载荷形态
+      expect(verifyTokenDetailed(generateAccessToken("admin"), "access")).toMatchObject({
+        uid: "",
+        pv: "",
+      });
+      expect(verifyTokenDetailed(generateRefreshToken("admin"), "refresh")).toMatchObject({
+        uid: "",
+        pv: "",
+      });
+    });
+
+    it("篡改 uid（换成别的管理员）后签名不匹配", async () => {
+      const { issueTokens, verifyTokenDetailed } = await importAuth();
+      const token = issueTokens(ADMIN).accessToken;
+      const [header, payload, signature] = token.split(".");
+      const forged = Buffer.from(
+        JSON.stringify({ ...decodePart(payload!), uid: "adm_other" }),
+      ).toString("base64url");
+      expect(verifyTokenDetailed(`${header}.${forged}.${signature}`, "access")).toBeNull();
     });
   });
 

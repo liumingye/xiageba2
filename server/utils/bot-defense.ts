@@ -4,7 +4,8 @@ import {
   getBotDefenseConfig,
   getBotDefenseSecret,
 } from "#server/lib/bot-defense";
-import { getTokenFromEvent, verifyToken } from "#server/utils/auth";
+import { resolveTokenAdmin } from "#server/lib/adminToken";
+import { getTokenFromEvent, verifyTokenDetailed } from "#server/utils/auth";
 
 /**
  * BOT 防御闸门（nitro 自动导入，受保护接口 handler 顶部调用）
@@ -28,10 +29,13 @@ export async function assertBotDefense(
   if (config.captchaType === "none") return;
   if (!config.protectedApis.includes(apiPath)) return;
 
-  // 后台管理员放行
+  // 后台管理员放行（同样走吊销校验：被删除或改过密码的管理员令牌不再放行）
   try {
     const adminToken = getTokenFromEvent(event);
-    if (adminToken && verifyToken(adminToken, "access")) return;
+    const decoded = adminToken
+      ? verifyTokenDetailed(adminToken, "access")
+      : null;
+    if (decoded && (await resolveTokenAdmin(decoded))) return;
   } catch {
     // ADMIN_SECRET 未配置时视为无管理员通道，继续走通行令牌判定
   }

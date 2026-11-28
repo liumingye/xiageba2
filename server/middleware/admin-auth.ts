@@ -1,4 +1,5 @@
-import { getTokenFromEvent, verifyToken } from "#server/utils/auth";
+import { resolveTokenAdmin } from "#server/lib/adminToken";
+import { getTokenFromEvent, verifyTokenDetailed } from "#server/utils/auth";
 
 /**
  * 免鉴权端点：登录与刷新令牌本身不能要求已登录
@@ -6,7 +7,7 @@ import { getTokenFromEvent, verifyToken } from "#server/utils/auth";
  */
 const PUBLIC_ADMIN_PATHS = new Set(["/api/admin/login", "/api/admin/refresh"]);
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const path = (event.path || "").split("?")[0] || "";
 
   // 只拦截 /api/admin/** 下的请求
@@ -25,7 +26,7 @@ export default defineEventHandler((event) => {
   }
 
   // 只接受 access token：refresh token 只能用来换新令牌，不能直接访问接口
-  const decoded = verifyToken(token, "access");
+  const decoded = verifyTokenDetailed(token, "access");
   if (!decoded) {
     throw createError({
       statusCode: 401,
@@ -34,6 +35,16 @@ export default defineEventHandler((event) => {
     });
   }
 
+  // 吊销校验：管理员已被删除、或签发后改过密码的令牌不再有效
+  const admin = await resolveTokenAdmin(decoded);
+  if (!admin) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Unauthorized",
+      message: "未登录或登录已过期",
+    });
+  }
+
   // 将用户信息挂载到 event 上下文，供后续 handler 使用
-  event.context.user = decoded;
+  event.context.user = { username: admin.username };
 });
