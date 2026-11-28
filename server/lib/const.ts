@@ -9,6 +9,9 @@ export const THIRTY_MINUTES = 30 * 60; // ⚡ 秒数
 // 文件结构树最大行数
 export const TREE_MAX_LINE = 150;
 
+// 开放 API（/api/open/**）鉴权 Token 在 Config 表中的键名
+export const API_TOKEN_CONFIG_KEY = "api_token";
+
 // 后台账号管理支持的网盘类型（原 accounts/index.ts 与 [id].ts 各存一份）
 export const PAN_ACCOUNT_TYPES = [
   "quark",

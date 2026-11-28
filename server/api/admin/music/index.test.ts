@@ -48,6 +48,15 @@ vi.mock("#server/lib/prisma", () => {
   };
 });
 
+// handler 经 musicService 间接引入 Prisma 命名空间，vitest 无此别名，需手动 mock
+vi.mock("@@/prisma/generated", () => ({
+  Prisma: {
+    sql: (strings: TemplateStringsArray, ...values: any[]) => ({ strings, values }),
+    empty: {},
+    raw: (value: string) => ({ value }),
+  },
+}));
+
 vi.mock("#server/utils/jieba", () => ({
   buildTokens: () => "fake-tokens",
   cutForSearch: () => [],

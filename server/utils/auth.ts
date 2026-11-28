@@ -59,7 +59,7 @@ const base64urlDecode = (str: string): string =>
  * crypto.timingSafeEqual 要求传入的两个 Buffer 长度必须完全一致，否则会抛错。
  * 因此这里在内部对长度做了安全置换处理。
  */
-const safeEqual = (a: string, b: string): boolean => {
+export const safeEqual = (a: string, b: string): boolean => {
   const bufA = Buffer.from(a, "utf8");
   const bufB = Buffer.from(b, "utf8");
 

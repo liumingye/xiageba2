@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { getApiErrorMessage } from "~/utils/apiError";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { Key, ShieldCheck } from "@lucide/vue";
+import { useClipboard } from "@vueuse/core";
+import { Key, KeyRound, ShieldCheck } from "@lucide/vue";
 import { get, post } from "~/utils/request";
 import { loadScriptOnce } from "~/utils/loadScript";
 
@@ -22,6 +23,16 @@ const aesConfig = ref<AesConfig>({
 });
 const savingAes = ref(false);
 const savedAes = ref(false);
+
+// ============ 开放 API Token ============
+
+const apiToken = ref("");
+const showToken = ref(false);
+const savingToken = ref(false);
+const savedToken = ref(false);
+const tokenError = ref("");
+const toast = useToast();
+const { copy } = useClipboard();
 
 // ============ BOT 防御配置 ============
 
@@ -190,7 +201,7 @@ watch(
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  await Promise.all([loadAesConfig(), loadBotDefense()]);
+  await Promise.all([loadAesConfig(), loadBotDefense(), loadApiToken()]);
   loading.value = false;
   renderPreview();
 });
@@ -234,6 +245,51 @@ const saveAesConfig = async () => {
     // 保存失败
   } finally {
     savingAes.value = false;
+  }
+};
+
+const loadApiToken = async () => {
+  const data = await get("/api/admin/config/api-token");
+  apiToken.value = data.data?.api_token ?? "";
+};
+
+// 32 字节随机数转 64 位 hex，字符集对 Bearer 头与各类 HTTP 客户端都安全
+const generateApiToken = () => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  apiToken.value = Array.from(bytes, (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+};
+
+const copyApiToken = async () => {
+  await copy(apiToken.value);
+  toast.add({
+    icon: "i-lucide-check",
+    title: "API Token 已复制",
+    duration: 2000,
+  });
+};
+
+const saveApiToken = async () => {
+  savingToken.value = true;
+  savedToken.value = false;
+  tokenError.value = "";
+  try {
+    await post("/api/admin/config/api-token", {
+      api_token: apiToken.value.trim(),
+    });
+    savedToken.value = true;
+    setTimeout(() => {
+      savedToken.value = false;
+    }, 2000);
+  } catch (e: any) {
+    tokenError.value = getApiErrorMessage(
+      e,
+      e?.message || "保存失败，请检查配置",
+    );
+  } finally {
+    savingToken.value = false;
   }
 };
 </script>
@@ -305,6 +361,90 @@ const saveAesConfig = async () => {
           />
         </div>
       </div>
+    </UCard>
+  </section>
+
+  <!-- 开放 API Token -->
+  <section class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-medium">开放 API</h2>
+      <div class="flex items-center gap-2">
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-dices"
+          :disabled="loading"
+          @click="generateApiToken"
+        >
+          随机生成
+        </UButton>
+        <UButton
+          color="neutral"
+          variant="soft"
+          icon="i-lucide-copy"
+          :disabled="loading || !apiToken"
+          @click="copyApiToken"
+        >
+          复制
+        </UButton>
+        <UButton
+          color="primary"
+          :icon="savedToken ? 'i-lucide-check' : 'i-lucide-save'"
+          :loading="savingToken"
+          :disabled="savingToken || loading"
+          @click="saveApiToken"
+        >
+          {{ savedToken ? "已保存" : "保存" }}
+        </UButton>
+      </div>
+    </div>
+    <UCard>
+      <div class="flex items-center gap-3 mb-6">
+        <div
+          class="w-10 h-10 shrink-0 bg-sky-600 rounded-lg flex items-center justify-center"
+        >
+          <KeyRound class="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h3 class="font-medium">API Token</h3>
+          <p class="text-color-500 text-sm">
+            第三方通过 Authorization: Bearer &lt;token&gt; 调用
+            /api/open/* 接口（增加/搜索资源、增加/搜索音乐）；留空即关闭开放
+            API，修改后立即生效
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-muted text-sm mb-2" for="api-token"
+          >API Token</label
+        >
+        <UInput
+          id="api-token"
+          v-model="apiToken"
+          :type="showToken ? 'text' : 'password'"
+          placeholder="点击「随机生成」或输入 16-128 位字母数字字符"
+          class="font-mono text-xs w-full"
+        >
+          <template #trailing>
+            <UButton
+              color="neutral"
+              variant="link"
+              size="sm"
+              :icon="showToken ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+              :aria-label="showToken ? '隐藏 Token' : '显示 Token'"
+              @click="showToken = !showToken"
+            />
+          </template>
+        </UInput>
+      </div>
+
+      <p
+        v-if="tokenError"
+        class="text-red-500 text-sm mt-4"
+      >
+        {{ tokenError }}
+      </p>
     </UCard>
   </section>
 

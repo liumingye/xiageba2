@@ -126,6 +126,112 @@
 - **屏蔽词**：自实现 AC 自动机（`server/lib/simpleAC.ts`），零外部依赖
 - **浏览器兼容**：生产构建启用 `@teages/nuxt-legacy` + `@vitejs/plugin-legacy`，目标 Chrome ≥ 87 / Safari ≥ 12 / iOS ≥ 12
 
+## 开放 API
+
+面向第三方程序（脚本、采集器等）的接口，前缀 `/api/open`，通过 API Token 鉴权。
+
+### 启用与鉴权
+
+- 后台「安全配置」→「开放 API」→ 点「随机生成」→「保存」。Token 存于 `Config` 表 `api_token`，**留空保存即关闭开放 API**，修改后立即生效
+- 请求头：`Authorization: Bearer <API Token>`（`Bearer` 大小写不敏感）
+- 错误码：未配置 Token → `403`；缺少 / 错误 Token → `401`（附 `WWW-Authenticate: Bearer`）
+- `/api/open/**` **未登记限流规则**，调用方请自行控制频率
+
+```bash
+curl "https://example.com/api/open/music/search?q=周杰伦&pageSize=5" \
+  -H "Authorization: Bearer <API Token>"
+```
+
+所有列表接口统一分页信封：
+
+```json
+{ "data": [], "total": 0, "page": 1, "pageSize": 20, "totalPages": 0 }
+```
+
+错误响应为 h3 默认格式，`data` 字段在部分错误中携带附加信息（如重复列表）：
+
+```json
+{ "statusCode": 409, "message": "1 个资源地址已存在", "data": { "duplicates": [] } }
+```
+
+### 接口列表
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/open/source` | 增加资源（支持批量） |
+| `GET` | `/api/open/source/search` | 搜索资源（仅启用状态） |
+| `POST` | `/api/open/music` | 增加音乐 |
+| `GET` | `/api/open/music/search` | 搜索音乐（仅启用状态） |
+
+与后台共用同一套创建 / 检索逻辑（`server/lib/sourceService.ts`、`server/lib/musicService.ts`），去重与分词规则完全一致。
+
+### 增加资源 `POST /api/open/source`
+
+请求体（JSON）：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `title` | string | 是 | 资源名称 |
+| `urls` | string[] | 是 | 网盘链接，自动 trim、去重、去空 |
+| `cid` | number | 否 | 分类 ID |
+| `description` | string | 否 | 描述，默认空 |
+| `menu` | string | 否 | 目录树文本，默认空 |
+| `isSelf` | boolean | 否 | 是否自有资源，默认 `false` |
+| `force` | boolean | 否 | 地址已存在时仍插入新记录 |
+| `updateExisting` | boolean | 否 | 地址已存在时用本次数据覆盖 |
+| `skipDuplicates` | boolean | 否 | 跳过已存在的地址，只插入新地址 |
+
+去重按 `url` 精确匹配。命中重复且未传上述三个标志时返回 `409`，`data.duplicates` 为 `[{ id, title, url }]`，由调用方决定处理方式后重发。
+
+响应：
+
+```json
+{ "success": true, "inserted": 1, "updated": 0, "duplicate": 0, "failed": 0 }
+```
+
+新建资源默认 `status = 1`（直接上架）。
+
+### 搜索资源 `GET /api/open/source/search`
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| `q` | 是 | 关键词，最多 200 字符 |
+| `cid` | 否 | 分类 ID |
+| `page` | 否 | 页码，默认 1 |
+| `pageSize` | 否 | 每页条数，默认 20，最大 50 |
+
+`q` 为 `http(s)://` 开头时按链接精确匹配，为 24 位资源 ID 时按 ID 精确匹配，否则 jieba 分词全文检索并按相关度排序。只返回 `status = 1` 的资源。
+
+`data[]` 字段：`id`、`cid`、`title`、`url`、`description`、`menu`、`isSelf`、`status`、`createdAt`。
+
+### 增加音乐 `POST /api/open/music`
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `title` | string | 是 | 歌名 |
+| `artist` | string | 是 | 歌手 |
+| `album` | string | 否 | 专辑，默认空 |
+| `cover` | string | 否 | 封面地址，默认空 |
+| `lyrics` | string | 否 | 歌词，默认空 |
+| `playUrl` | string | 否 | 试听地址，默认空 |
+| `downloads` | array | 否 | 下载列表，默认 `[]` |
+
+`downloads` 元素结构：`{ "quality": "FLAC", "url": "https://...", "source": "kuwo", "sourceId": "xxx" }`（`source`、`sourceId` 可选；接口不校验元素结构，请保证 `quality`、`url` 有值）。音乐没有唯一约束，重复提交会产生重复记录。
+
+响应为完整的音乐记录（含 `id`、`status`、`createdAt` 等），默认 `status = 1`（直接上架）。
+
+### 搜索音乐 `GET /api/open/music/search`
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| `q` | 是 | 关键词，最多 64 字符 |
+| `page` | 否 | 页码，默认 1 |
+| `pageSize` | 否 | 每页条数，默认 20，最大 50 |
+
+jieba 分词后以 OR 宽泛匹配，按相关度排序。只返回 `status = 1` 的音乐。
+
+`data[]` 字段：`id`、`title`、`artist`、`album`、`cover`、`lyrics`、`playUrl`、`downloads`、`viewCount`、`status`、`createdAt`。
+
 ## 技术栈
 
 | 分类 | 技术 | 版本（package.json） |
@@ -372,6 +478,7 @@ Dockerfile 要点：`node:20-slim` 构建与运行 → corepack 激活 pnpm 10.2
 - `/api/source/geturl`、`/api/source/tree`：15 次 / 30 秒
 - `/api/ai-search`：10 次 / 30 秒
 - `/api/music/feedback`：10 次 / 300 秒
+- `/api/open/**`（开放 API）：未登记限流
 - IP 识别顺序：`X-Forwarded-For` → `X-Real-IP` → `socket.remoteAddress`
 
 ### 定时任务
