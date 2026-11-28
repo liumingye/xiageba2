@@ -1,15 +1,7 @@
 import { prisma } from "#server/lib/prisma";
 import { getAccountById } from "#server/lib/accountCache";
 import { getClientByAccount } from "#server/lib/pan-instance";
-import { QuarkUCClient as QuarkUCClientType } from "@netdisk-sdk/quarkuc-sdk";
-import { BaiduClient as BaiduClientType } from "@netdisk-sdk/baidu-sdk";
-import type {
-  IFileManagerResult,
-  IOpenApiFileManagerResult,
-} from "@netdisk-sdk/baidu-sdk";
-import { XunleiClient as XunleiClientType } from "@netdisk-sdk/xunlei-sdk";
-import { GuangyaClient as GuangyaClientType } from "@netdisk-sdk/guangya-sdk";
-import { C139Client as C139ClientType } from "@netdisk-sdk/c139-sdk";
+import { getAdapterByClient } from "#server/lib/pan/adapters";
 import { acquireLock } from "#server/lib/lock";
 import { THIRTY_MINUTES } from "#server/lib/const";
 
@@ -143,95 +135,14 @@ export default defineTask({
 
         try {
           const client = await getClientByAccount(account);
+          const adapter = getAdapterByClient(client);
+          if (!adapter) continue;
 
-          if (client instanceof QuarkUCClientType) {
-            for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
-              const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
-              const task = await client.fsApi.delete(
-                chunk.flatMap((c) => c.fids),
-              );
-              await client.fsApi.task(task.task_id, true);
-              successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
-            }
-          } else if (client instanceof XunleiClientType) {
-            for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
-              const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
-              await client.fsApi.delete(chunk.flatMap((c) => c.fids));
-              successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
-            }
-          } else if (client instanceof GuangyaClientType) {
-            for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
-              const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
-              await client.fsApi.delete(chunk.flatMap((c) => c.fids));
-              successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
-            }
-            if (items.length > 0) {
-              await client.fsApi.clearRecycleBin();
-            }
-          } else if (client instanceof C139ClientType) {
-            for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
-              const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
-              await client.fsApi.batchTrash(chunk.flatMap((c) => c.fids));
-              successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
-            }
-          } else if (client instanceof BaiduClientType) {
-            let tempDir = account.tempDir;
-            if (!tempDir) throw new Error("未配置百度网盘临时目录");
-            if (!tempDir.startsWith("/")) tempDir = `/${tempDir}`;
-            tempDir = tempDir.replace(/\/+/g, "/")
-
-            for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
-              const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
-              const validChunkDbIds: number[] = [];
-              const allPanPaths: string[] = [];
-
-              for (const item of chunk) {
-                let hasValidPath = false;
-                for (let path of item.fids) {
-                  if (!path || typeof path !== "string") continue;
-                  if (!path.startsWith("/")) path = `/${path}`;
-                  path = path.replace(/\/+/g, "/");
-
-                  const cleanPath = path.replace(/\/$/, "");
-                  if (
-                    path === "/" ||
-                    cleanPath === tempDir ||
-                    !cleanPath.startsWith(tempDir)
-                  ) {
-                    continue;
-                  }
-                  // path可能需要encodeURIComponent
-                  allPanPaths.push(path);
-                  hasValidPath = true;
-                }
-                if (hasValidPath) {
-                  validChunkDbIds.push(item.id);
-                }
-              }
-
-              if (allPanPaths.length > 0) {
-                let task:
-                  | IFileManagerResult
-                  | IOpenApiFileManagerResult
-                  | undefined;
-                if (client.accessToken) {
-                  task = await client.fsOpenApi.filemanager("delete", {
-                    filelist: allPanPaths,
-                    async: 0,
-                  });
-                } else {
-                  task = await client.fsApi.filemanager("delete", {
-                    filelist: allPanPaths,
-                  });
-                }
-                if (task.taskid) {
-                  await client.fsApi.taskquery(task.taskid, true);
-                }
-                successfullyDeletedDbIds.push(...validChunkDbIds);
-              } else {
-                successfullyDeletedDbIds.push(...chunk.map((c) => c.id));
-              }
-            }
+          // 厂商差异收进 adapter.deleteFiles，这里只做统一分批
+          for (let i = 0; i < items.length; i += PAN_BATCH_LIMIT) {
+            const chunk = items.slice(i, i + PAN_BATCH_LIMIT);
+            const deletedIds = await adapter.deleteFiles(client, chunk, account);
+            successfullyDeletedDbIds.push(...deletedIds);
           }
         } catch (e: any) {
           results.errors.push(

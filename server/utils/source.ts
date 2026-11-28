@@ -29,6 +29,16 @@ export const updateRefreshTokenByAccountId = async (
   clearAccountCache();
 };
 
+/** 禁用资源（分享失效/违规时下架，status = 0） */
+export const disableSource = async (sourceId: string) => {
+  await prisma.source.update({
+    where: { id: sourceId },
+    data: {
+      status: 0,
+    },
+  });
+};
+
 // IP字符串转数字
 function ipToNum(ip: string) {
   return ip.split(".").reduce((sum, part) => (sum << 8) + Number(part), 0);

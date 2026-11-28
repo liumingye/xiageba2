@@ -4,17 +4,7 @@ import { getRedisCache, setRedisCache } from "#server/lib/redis";
 import { clearTreeSymbols, truncateString } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
 import { parseShareUrl } from "#server/lib/pan/share-url";
-import { renderTree, sortEntries, toIsDir } from "#server/lib/pan/tree";
-import { filterAdFiles } from "#server/lib/pan/ad-filter";
-import type { PanFile, ParsedShare } from "#server/lib/pan/types";
-import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
-import type { IShareFile } from "@netdisk-sdk/quarkuc-sdk";
-import { BaiduClient, parseShareParam } from "@netdisk-sdk/baidu-sdk";
-import type { IFile as IBaiduFile } from "@netdisk-sdk/baidu-sdk";
-import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
-import type { IGuangyaFile } from "@netdisk-sdk/guangya-sdk";
-import { C139Client } from "@netdisk-sdk/c139-sdk";
+import { getAdapterByType } from "#server/lib/pan/adapters";
 import { getClientByAccount } from "#server/lib/pan-instance";
 import { getRandomAccountByType } from "#server/lib/accountCache";
 import { TREE_MAX_LINE } from "#server/lib/const";
@@ -119,12 +109,14 @@ export default defineEventHandler(async (event) => {
   // 构建核心的文件树递归生成任务链
   const generateTreePromise = (async () => {
     const parsed = parseShareUrl(url);
-    const builder = TREE_BUILDERS[parsed.type];
-    if (!builder) {
+    const adapter = getAdapterByType(parsed.type);
+    if (!adapter) {
       throw createError({ statusCode: 400, message: "不支持的该网盘类型" });
     }
 
-    const generatedTree = await builder(parsed);
+    const account = await requireAccount(parsed.type);
+    const client = await getClientByAccount(account);
+    const generatedTree = await adapter.buildTree(client, parsed);
 
     const truncateTree = truncateString(
       generatedTree,
@@ -166,289 +158,10 @@ export default defineEventHandler(async (event) => {
   }
 });
 
-/**
- * 网盘类型 → 树构建器。
- * 新增网盘只需在此登记一行，handler 与渲染骨架都不用动。
- */
-const TREE_BUILDERS: Record<
-  string,
-  (parsed: ParsedShare) => Promise<string>
-> = {
-  quark: (p) => buildQuarkUCTree("quark", p.fid, p.passcode),
-  uc: (p) => buildQuarkUCTree("uc", p.fid, p.passcode),
-  baidu: (p) => buildBaiduTree(p.url),
-  xunlei: (p) => buildXunleiTree(p.fid, p.passcode),
-  guangya: (p) => buildGuangyaTree(p.fid, p.passcode),
-  c139: (p) => buildC139Tree(p.fid, p.passcode),
-};
-
 async function requireAccount(type: string) {
   const account = await getRandomAccountByType(type);
   if (!account) {
     throw createError({ statusCode: 500, message: "没有可用的网盘账号" });
   }
   return account;
-}
-
-async function buildQuarkUCTree(
-  type: "quark" | "uc",
-  pwdId: string,
-  passcode: string,
-): Promise<string> {
-  const account = await requireAccount(type);
-  const client = (await getClientByAccount(account)) as QuarkUCClient;
-
-  let stoken: string;
-  try {
-    const tokenRes = await client.shareApi.token(pwdId, passcode || undefined);
-    stoken = tokenRes.stoken;
-  } catch (e: any) {
-    throw createError({
-      statusCode: 404,
-      message: `获取分享令牌失败: ${e.message || "未知错误"}`,
-    });
-  }
-
-  if (!stoken) {
-    throw createError({ statusCode: 404, message: "获取分享令牌失败" });
-  }
-
-  return renderTree({
-    rootId: "0",
-    listChildren: async (parentId) => {
-      const items: IShareFile[] = [];
-      // 夸克api有限制pageSize最大100
-      const pageSize = 100;
-      const maxPages = 2;
-      let page = 1;
-
-      while (page <= maxPages) {
-        const res = await client.shareApi.detail(pwdId, stoken, {
-          pdir_fid: parentId,
-          _page: page,
-          _size: pageSize,
-          _sort: ["file_type:asc", "file_name:asc"],
-        });
-
-        if (res.list && res.list.length > 0) {
-          items.push(...res.list);
-        }
-
-        if (!res.list || res.list.length < pageSize) break;
-        page++;
-      }
-
-      const files: PanFile[] = items.map((item) => ({
-        id: item.fid,
-        name: item.file_name,
-        isDir: item.file_type === 0,
-      }));
-      return filterAdFiles(files);
-    },
-  });
-}
-
-async function buildBaiduTree(shareUrl: string): Promise<string> {
-  const shareParam = parseShareParam(shareUrl);
-  if (!shareParam) {
-    throw createError({ statusCode: 404, message: "无效的百度分享链接" });
-  }
-
-  const account = await requireAccount("baidu");
-  const client = (await getClientByAccount(account)) as BaiduClient;
-
-  let rootInfo: any;
-  try {
-    rootInfo = await client.fsShareApi.wxlist({
-      ...shareParam,
-      dir: "/",
-      page: 1,
-      num: 200,
-      root: 1,
-    });
-  } catch {
-    throw createError({ statusCode: 404, message: "分享已过期" });
-  }
-
-  // 百度的 seckey 是逐层下发的：子目录必须带父层响应里的 seckey。
-  // 深度优先遍历保证父层一定先于子层被访问，用路径 → seckey 的映射即可还原。
-  const sekeyByDir = new Map<string, string>([
-    ["/", rootInfo.seckey || ""],
-  ]);
-
-  return renderTree({
-    rootId: "/",
-    listChildren: async (dir) => {
-      const res = await client.fsShareApi.wxlist({
-        ...shareParam,
-        dir,
-        page: 1,
-        num: 200,
-        root: dir === "/" ? 1 : 0,
-        sekey: sekeyByDir.get(dir) || "",
-        order: "name",
-        desc: 0,
-      } as any);
-
-      const fileList: IBaiduFile[] = res.list || [];
-      const currentSekey = res.seckey || sekeyByDir.get(dir) || "";
-      for (const file of fileList) {
-        if (toIsDir(file.isdir)) sekeyByDir.set(file.path, currentSekey);
-      }
-
-      const files: PanFile[] = fileList.map((file) => ({
-        id: file.path,
-        name: file.server_filename,
-        isDir: toIsDir(file.isdir),
-      }));
-      return filterAdFiles(sortEntries(files));
-    },
-  });
-}
-
-async function buildXunleiTree(
-  shareId: string,
-  passcode: string,
-): Promise<string> {
-  if (!shareId) {
-    throw createError({ statusCode: 404, message: "无效的迅雷分享链接" });
-  }
-
-  const account = await requireAccount("xunlei");
-  const client = (await getClientByAccount(account)) as XunleiClient;
-
-  let detail: any;
-  try {
-    detail = await client.shareApi.getShare({
-      shareId,
-      passCode: passcode,
-      limit: 200,
-    });
-  } catch {
-    throw createError({ statusCode: 404, message: "分享已过期" });
-  }
-
-  if (detail.files.length === 0) {
-    throw createError({ statusCode: 404, message: "分享内容为空" });
-  }
-
-  // 迅雷根目录的文件在 getShare 响应里直接给出，无需再请求
-  const ROOT_ID = "";
-
-  return renderTree({
-    rootId: ROOT_ID,
-    listChildren: async (parentId) => {
-      const raw =
-        parentId === ROOT_ID
-          ? detail.files
-          : (
-              await client.shareApi.detail({
-                shareId,
-                passCodeToken: detail.passCodeToken,
-                parentId,
-                limit: 200,
-              })
-            ).files;
-
-      const files: PanFile[] = raw.map(
-        (f: { id: string; name: string; is_dir?: boolean }) => ({
-          id: f.id,
-          name: f.name,
-          isDir: !!f.is_dir,
-        }),
-      );
-      return filterAdFiles(files);
-    },
-  });
-}
-
-async function buildGuangyaTree(
-  shareId: string,
-  passcode: string,
-): Promise<string> {
-  const account = await requireAccount("guangya");
-  const client = (await getClientByAccount(account)) as GuangyaClient;
-
-  // 获取分享访问令牌
-  let accessToken = "";
-  try {
-    const tokenRes = await client.shareApi.shareAccessToken(shareId, passcode);
-    accessToken = tokenRes.accessToken;
-  } catch (e: any) {
-    throw createError({
-      statusCode: 404,
-      message: `获取分享令牌失败: ${e.message || "未知错误"}`,
-    });
-  }
-
-  if (!accessToken) {
-    throw createError({ statusCode: 404, message: "获取分享令牌失败" });
-  }
-
-  return renderTree({
-    rootId: "",
-    listChildren: async (parentId) => {
-      const items: IGuangyaFile[] = [];
-      const pageSize = 100;
-      const maxPages = 2;
-      let page = 1;
-
-      while (page <= maxPages) {
-        const res = await client.shareApi.shareFilesList({
-          accessToken,
-          parentId,
-          page,
-          pageSize,
-        });
-
-        if (res.list && res.list.length > 0) {
-          items.push(...res.list);
-        }
-
-        if (!res.list || res.list.length < pageSize) break;
-        page++;
-      }
-
-      const files: PanFile[] = items.map((item) => ({
-        id: item.fid,
-        name: item.fileName,
-        isDir: item.isDir,
-      }));
-      return filterAdFiles(sortEntries(files));
-    },
-  });
-}
-
-async function buildC139Tree(
-  linkId: string,
-  passcode: string,
-): Promise<string> {
-  const account = await requireAccount("c139");
-  const client = (await getClientByAccount(account)) as C139Client;
-
-  return renderTree({
-    rootId: "root",
-    listChildren: async (pcaId) => {
-      let res;
-      try {
-        res = await client.shareApi.getShareFiles({
-          linkId,
-          pcaId,
-          passwd: passcode,
-        });
-      } catch (e: any) {
-        throw createError({
-          statusCode: 404,
-          message: `获取分享目录失败: ${e.message || "未知错误"}`,
-        });
-      }
-
-      const files: PanFile[] = (res.list || []).map((item) => ({
-        id: item.fid,
-        name: item.fileName,
-        isDir: item.isDir,
-      }));
-      return filterAdFiles(sortEntries(files));
-    },
-  });
 }

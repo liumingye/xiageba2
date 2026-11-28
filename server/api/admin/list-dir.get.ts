@@ -1,12 +1,7 @@
 import { getAccountById } from "#server/lib/accountCache";
 import { getClientByAccount, createTempClient } from "#server/lib/pan-instance";
-import type { PanClient } from "#server/lib/pan-instance";
-import { toIsDir } from "#server/lib/pan/tree";
-import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
-import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
-import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
-import { C139Client } from "@netdisk-sdk/c139-sdk";
+import { getAdapterByClient } from "#server/lib/pan/adapters";
+import type { PanClient } from "#server/lib/pan/adapters/types";
 
 interface DirItem {
   id: string;
@@ -14,67 +9,9 @@ interface DirItem {
 }
 
 async function listDirs(client: PanClient): Promise<DirItem[]> {
-  if (client instanceof QuarkUCClient) {
-    const res = await client.fsApi.sort({
-      pdir_fid: "0",
-      _page: 1,
-      _size: 100,
-    });
-    return (res.list || [])
-      .filter((f) => f.file_type === 0)
-      .map((f) => ({ id: f.fid, name: f.file_name }));
-  }
-
-  if (client instanceof BaiduClient) {
-    const res = await client.fsApi.list({
-      dir: "/",
-      page: 1,
-      num: 100,
-      order: "name",
-      desc: 0,
-    });
-    // 百度 isdir 真机上不严格等于 1（出现过 "1"），必须宽容判定，
-    // 否则子目录被当成文件过滤掉，临时目录只能选到根目录
-    return (res.list || [])
-      .filter((f) => toIsDir(f.isdir))
-      .map((f) => ({ id: f.path, name: f.server_filename }));
-  }
-
-  // XunleiClient
-  if (client instanceof XunleiClient) {
-    const res = await client.fsApi.listFiles({
-      parentId: "",
-      limit: 100,
-    });
-    return (res.list || [])
-      .filter((f) => f.is_dir)
-      .map((f) => ({ id: f.id, name: f.name }));
-  }
-
-  // GuangyaClient
-  if (client instanceof GuangyaClient) {
-    const res = await client.fsApi.listFiles({
-      parentId: "",
-      page: 0,
-      pageSize: 100,
-    });
-    return (res.list || [])
-      .filter((f) => f.isDir)
-      .map((f) => ({ id: f.fid, name: f.fileName }));
-  }
-
-  // C139Client
-  if (client instanceof C139Client) {
-    const res = await client.fsApi.listFiles({
-      parentFileId: "/",
-      pageSize: 100,
-    });
-    return (res.list || [])
-      .filter((f) => f.isDir)
-      .map((f) => ({ id: f.fid, name: f.fileName }));
-  }
-
-  return [];
+  const adapter = getAdapterByClient(client);
+  if (!adapter) return [];
+  return adapter.listRootDirs(client);
 }
 
 export default defineEventHandler(async (event) => {

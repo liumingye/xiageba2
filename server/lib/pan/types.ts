@@ -36,3 +36,11 @@ export interface TransferResult {
   shareUrl: string;
   fids: string[];
 }
+
+/** 转存调用的上下文（从分享链接解析出的定位信息 + 来源资源） */
+export interface TransferContext {
+  sourceUrl: string;
+  fid: string;
+  passcode: string;
+  sourceId?: string;
+}

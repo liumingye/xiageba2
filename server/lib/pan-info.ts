@@ -1,92 +1,7 @@
-import { QuarkUCClient } from "@netdisk-sdk/quarkuc-sdk";
-import { BaiduClient } from "@netdisk-sdk/baidu-sdk";
-import { XunleiClient } from "@netdisk-sdk/xunlei-sdk";
-import { GuangyaClient } from "@netdisk-sdk/guangya-sdk";
-import { C139Client } from "@netdisk-sdk/c139-sdk";
 import { getClientByAccount, createTempClient } from "#server/lib/pan-instance";
+import { getAdapterByClient } from "#server/lib/pan/adapters";
+import type { PanClient } from "#server/lib/pan/adapters/types";
 import type { PanAccount } from "#server/lib/accountCache";
-
-type PanClient = QuarkUCClient | BaiduClient | XunleiClient | GuangyaClient | C139Client;
-
-/**
- * 夸克/UC：账号信息接口
- * 夸克: https://pan.quark.cn/account/info → data.nickname
- * UC:   https://drive.uc.cn/account/info   → data.nickname
- */
-async function getQuarkUCName(client: QuarkUCClient): Promise<string> {
-  const { pr } = client.config;
-  client.config.ua =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0";
-  const baseUrl =
-    pr === "ucpro" ? "https://pan.quark.cn" : "https://drive.uc.cn";
-
-  const res = await client.agentApi.get(`${baseUrl}/account/info`);
-
-  const nickname = res.body?.data?.nickname;
-  if (typeof nickname !== "string" || !nickname.trim()) {
-    throw new Error("未获取到昵称");
-  }
-  return nickname.trim();
-}
-
-/**
- * 百度：用户信息接口
- * https://pan.baidu.com/rest/2.0/xpan/nas?method=uinfo → netdisk_name | baidu_name
- */
-async function getBaiduName(client: BaiduClient): Promise<string> {
-  const res = await client.agentApi
-    .get("https://pan.baidu.com/rest/2.0/xpan/nas")
-    .query({ method: "uinfo" });
-
-  const body = res.body;
-  if (!body) throw new Error("未获取到账号信息");
-
-  const name = body.netdisk_name || body.baidu_name || "";
-  if (!name) throw new Error("未获取到昵称");
-  return String(name);
-}
-
-/**
- * 迅雷：用户信息接口
- * https://xluser-ssl.xunlei.com/v1/user/me → nickname | username | email
- */
-async function getXunleiName(client: XunleiClient): Promise<string> {
-  const accessToken = await client.getAccessToken();
-  const res = await client.agent
-    .get("https://xluser-ssl.xunlei.com/v1/user/me")
-    .set({
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json, text/plain, */*",
-    });
-
-  const body = res.body;
-  if (!body) throw new Error("未获取到账号信息");
-
-  const name = body.name || body.email || "";
-  if (!name) throw new Error("未获取到昵称");
-  return String(name);
-}
-
-/**
- * 光鸭：用户信息接口
- * fsApi.userInfo() → nickname / phone
- */
-async function getGuangyaName(client: GuangyaClient): Promise<string> {
-  const res = await client.fsApi.userInfo();
-  const name = res.nickname || res.phone || "光鸭云盘用户";
-  if (!name) throw new Error("未获取到昵称");
-  return String(name);
-}
-
-/**
- * 139 云盘：从 cookie 解析账号（手机号）作为昵称
- * 无独立用户信息接口，直接使用 cookie 中的账号标识
- */
-async function getC139Name(client: C139Client): Promise<string> {
-  const account = client.getAccount();
-  if (!account) throw new Error("未获取到账号信息");
-  return String(account);
-}
 
 /**
  * 通过已创建的 client 获取账号昵称
@@ -94,22 +9,11 @@ async function getC139Name(client: C139Client): Promise<string> {
 export async function getAccountNameByClient(
   client: PanClient,
 ): Promise<string> {
-  if (client instanceof QuarkUCClient) {
-    return await getQuarkUCName(client);
+  const adapter = getAdapterByClient(client);
+  if (!adapter) {
+    throw new Error("不支持的网盘类型");
   }
-  if (client instanceof BaiduClient) {
-    return await getBaiduName(client);
-  }
-  if (client instanceof XunleiClient) {
-    return await getXunleiName(client);
-  }
-  if (client instanceof GuangyaClient) {
-    return await getGuangyaName(client);
-  }
-  if (client instanceof C139Client) {
-    return await getC139Name(client);
-  }
-  throw new Error("不支持的网盘类型");
+  return adapter.getAccountName(client);
 }
 
 /**
