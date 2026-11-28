@@ -85,6 +85,11 @@ const columnVisibility = ref({
 
 const sources = ref<Source[]>([]);
 const categories = ref<Category[]>([]);
+// 分类 id → 名称映射：表格每一行都按 cid 取名称，
+// 用 Map 式查找替代每行 categories.find 线性扫描
+const categoryNameMap = computed<Record<number, string>>(() =>
+  Object.fromEntries(categories.value.map((cat) => [cat.id, cat.name])),
+);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const total = ref(0);
@@ -884,9 +889,7 @@ function onContextmenu(_e: Event, row: TableRow<Source>) {
             </NuxtLink>
           </template>
           <template #category-cell="{ row }">
-            {{
-              categories.find((cat) => cat.id === row.original.cid)?.name || "-"
-            }}
+            {{ categoryNameMap[row.original.cid] || "-" }}
           </template>
           <template #url-cell="{ row }">
             <a

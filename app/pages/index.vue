@@ -29,6 +29,17 @@ const gridCardUi = {
   body: "flex flex-col px-2 sm:px-2 lg:px-3 py-4 sm:py-4",
 };
 
+// 豆瓣/番组媒体卡片与骨架卡片的 UCard 配置：提升到 setup，
+// 避免列表渲染时为每一行重复创建相同对象
+const mediaCardUi = {
+  root: "relative border border-muted ring ring-default transition-all hover:ring-primary-500",
+  body: "p-0 sm:p-0",
+};
+const skeletonCardUi = {
+  root: "relative border border-muted ring ring-default",
+  body: "p-0 sm:p-0",
+};
+
 const checkSectionOverflow = () => {
   if (!sectionRef.value || sectionExpanded.value) return;
   sectionOverflowing.value =
@@ -60,8 +71,23 @@ interface CategoryWithLatest {
   }[];
 }
 
-// 首页数据与 SEO 配置并行拉取。服务端 await useFetch() 会阻塞 SSR，
-// 逐行 await 会把首页 TTFB 变成 4 次串行往返。
+// 首页数据、SEO 配置与豆瓣首屏并行拉取。服务端 await useFetch() 会阻塞 SSR，
+// 逐行/分轮 await 会把首页 TTFB 变成多次串行往返。
+const {
+  doubanClasses,
+  activeCategoryId,
+  activeFilters,
+  currentFilters,
+  doubanList,
+  doubanLoading,
+  doubanPage,
+  doubanPageCount,
+  loadMoreDouban,
+  onCategoryChange,
+  onFilterChange,
+  loadInitial: loadDoubanInitial,
+} = useDoubanList();
+
 const [
   { data: hotMusic },
   { data: hotwordsData },
@@ -88,6 +114,9 @@ const [
     default: () => ({ data: [] }),
   }),
   useSiteSeo(),
+  // 豆瓣首屏（内部串行两次请求：分类/筛选 → 第一页列表，存在依赖无法拆分），
+  // 与上面四项并行，不再单独串行一轮
+  loadDoubanInitial(),
 ]);
 
 const hotwords = computed(() => hotwordsData.value?.data || []);
@@ -145,21 +174,6 @@ const handleHotwordClick = (hotword: HotWord) => {
   });
 };
 
-const {
-  doubanClasses,
-  activeCategoryId,
-  activeFilters,
-  currentFilters,
-  doubanList,
-  doubanLoading,
-  doubanPage,
-  doubanPageCount,
-  loadMoreDouban,
-  onCategoryChange,
-  onFilterChange,
-  loadInitial: loadDoubanInitial,
-} = useDoubanList();
-
 const goToResourceSearch = async (item: DoubanItem) => {
   musicStore.searchType = "resource";
   await nextTick();
@@ -195,25 +209,32 @@ const onDragMouseUpOrLeave = () => {
   dragState.value.el = null;
 };
 
-await loadDoubanInitial();
+// 模板中每一行都会调用 getPic，缓存解析结果，避免每次渲染重复 new URL
+const picUrlCache = new Map<string, string>();
 
 const getPic = (url: string) => {
+  const cached = picUrlCache.get(url);
+  if (cached !== undefined) return cached;
+
   // 接口返回的图片地址可能为空或非标准 URL，直接 new URL() 会抛 TypeError 导致渲染崩溃
   let urlObj: URL;
   try {
     urlObj = new URL(url || "");
   } catch {
+    picUrlCache.set(url, "");
     return "";
   }
 
+  let result = url;
   if (urlObj.hostname.endsWith(".doubanio.com")) {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://m.douban.com`;
+    result = `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://m.douban.com`;
   } else if (urlObj.hostname.endsWith(".iqiyipic.com")) {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://www.iqiyi.com`;
+    result = `/api/image-proxy?url=${encodeURIComponent(url)}&referer=https://www.iqiyi.com`;
   } else if (urlObj.hostname === "bgmimg.anibt.net") {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    result = `/api/image-proxy?url=${encodeURIComponent(url)}`;
   }
-  return url;
+  picUrlCache.set(url, result);
+  return result;
 };
 
 interface BangumiItem {
@@ -651,10 +672,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
           <UCard
             v-for="(_, i) in Array.from({ length: 10 })"
             :key="i"
-            :ui="{
-              root: 'relative border border-muted ring ring-default',
-              body: 'p-0 sm:p-0',
-            }"
+            :ui="skeletonCardUi"
           >
             <USkeleton class="aspect-2/3 bg-accented" />
           </UCard>
@@ -671,10 +689,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
           <UCard
             v-for="item in doubanList"
             :key="item.vod_id"
-            :ui="{
-              root: 'relative border border-muted ring ring-default transition-all hover:ring-primary-500',
-              body: 'p-0 sm:p-0',
-            }"
+            :ui="mediaCardUi"
             @click="goToResourceSearch(item)"
           >
             <div class="aspect-2/3 overflow-hidden bg-black">
@@ -788,10 +803,7 @@ const goToBangumiSearch = async (item: BangumiItem) => {
           <UCard
             v-for="item in bangumiList"
             :key="item.id"
-            :ui="{
-              root: 'relative border border-muted ring ring-default transition-all hover:ring-primary-500',
-              body: 'p-0 sm:p-0',
-            }"
+            :ui="mediaCardUi"
             @click="goToBangumiSearch(item)"
           >
             <div class="aspect-2/3 overflow-hidden bg-black">

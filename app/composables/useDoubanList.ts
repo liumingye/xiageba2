@@ -47,11 +47,13 @@ interface DoubanListData {
 }
 
 export function useDoubanList() {
-  const doubanClasses = ref<DoubanClass[]>([]);
-  const doubanFilters = ref<Record<string, DoubanFilter[]>>({});
+  // 大列表（分类/筛选/榜单数据）用 shallowRef：整体替换即可触发更新，
+  // 避免对数百个媒体条目做深度响应式代理
+  const doubanClasses = shallowRef<DoubanClass[]>([]);
+  const doubanFilters = shallowRef<Record<string, DoubanFilter[]>>({});
   const activeCategoryId = ref("tv");
   const activeFilters = ref<Record<string, string>>({});
-  const doubanList = ref<DoubanItem[]>([]);
+  const doubanList = shallowRef<DoubanItem[]>([]);
   const doubanLoading = ref(false);
   const doubanPage = ref(1);
   const doubanPageCount = ref(0);
@@ -92,7 +94,8 @@ export function useDoubanList() {
       });
       if (!isCurrent()) return;
       if (append) {
-        doubanList.value.push(...(data.list || []));
+        // shallowRef 必须整体替换才能触发更新
+        doubanList.value = [...doubanList.value, ...(data.list || [])];
       } else {
         doubanList.value = data.list || [];
       }
