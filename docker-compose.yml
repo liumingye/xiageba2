@@ -6,6 +6,8 @@ services:
       - .env
     network_mode: host
     command: ["postgres", "-c", "listen_addresses=127.0.0.1"]
+    volumes:
+      - pgdata:/var/lib/postgresql
 
   redis:
     image: redis:7-alpine
