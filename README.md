@@ -187,8 +187,17 @@ curl "https://example.com/api/open/music/search?q=周杰伦&pageSize=5" \
 响应：
 
 ```json
-{ "success": true, "inserted": 1, "updated": 0, "duplicate": 0, "failed": 0 }
+{
+  "success": true,
+  "inserted": 1,
+  "updated": 0,
+  "duplicate": 0,
+  "failed": 0,
+  "errors": [{ "url": "https://pan.example.com/s/xxxx", "reason": "字段值超出取值范围" }]
+}
 ```
+
+逐条写入，单条失败不影响其余地址；`errors` 与 `failed` 条数一致，`reason` 是可直接展示的原因（不含数据库连接信息）。每条资源的写入与全文索引更新在同一事务内完成，失败不留半成品记录。
 
 新建资源默认 `status = 1`（直接上架）。
 

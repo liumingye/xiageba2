@@ -90,6 +90,7 @@ model Source {
   @@index([cid])
   @@index([cid, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
+  @@index([url])
 }
 
 model SourceTemp {

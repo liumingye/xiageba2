@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import type { Prisma } from "@@/prisma/generated";
 import { prisma } from "#server/lib/prisma";
 import { buildSourceSearchTokens } from "#server/utils/source";
 import { cutForSearch, buildSearchWebQuery } from "#server/utils/jieba";
@@ -26,16 +27,20 @@ export interface SourceListRow {
   createdAt: Date;
 }
 
-/** 重建资源的 searchVector 全文索引（分词规则与全量重建共用单点实现） */
-const updateSearchVector = async (source: {
-  id: string;
-  title: string | null;
-  description: string | null;
-  menu: string | null;
-}) => {
+/** 重建资源的 searchVector 全文索引（分词规则与全量重建共用单点实现）。
+ *  只接受事务客户端：必须和写入记录的同一条事务一起提交，否则向量写失败会留下搜不到的记录 */
+const updateSearchVector = async (
+  tx: Prisma.TransactionClient,
+  source: {
+    id: string;
+    title: string | null;
+    description: string | null;
+    menu: string | null;
+  },
+) => {
   const tokens = buildSourceSearchTokens(source);
   if (tokens) {
-    await prisma.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
+    await tx.$executeRaw`UPDATE "Source" SET "searchVector" = to_tsvector('simple', ${tokens}) WHERE id = ${source.id}`;
   }
 };
 
@@ -171,12 +176,65 @@ export interface CreateSourceResult {
   updated: number;
   duplicate: number;
   failed: number;
+  /** 每条写入失败的地址及原因，条数与 failed 一致 */
+  errors: CreateSourceError[];
 }
 
+/** 单条写入失败的原因。只放可以直接展示给调用方的文字，完整异常在服务端日志里 */
+export interface CreateSourceError {
+  url: string;
+  reason: string;
+}
+
+/** 新建一条资源并重建全文向量（需在事务回调里调用） */
+const insertSource = async (
+  tx: Prisma.TransactionClient,
+  data: Omit<Prisma.SourceCreateInput, "url">,
+  url: string,
+) => {
+  const source = await tx.source.create({ data: { ...data, url } });
+  await updateSearchVector(tx, source);
+};
+
 /**
- * 批量新建资源：按 url 精确匹配去重。
+ * 把写入异常转成可以直接展示给调用方的原因。
+ *
+ * 不直接透出 err.message：Prisma 的原始信息里带有数据库主机端口、服务端文件路径和堆栈，
+ * 而这个接口同时开放给外部（开放 API）。完整异常由 createSources 写进服务端日志。
+ *
+ * 按 code / name 字段判断而不是 instanceof：依赖里可能同时存在多个版本的 Prisma 客户端，
+ * instanceof 遇到「不是同一个构造函数」的实例会静默失效。
+ */
+const describeWriteError = (err: unknown): string => {
+  const code = (err as { code?: unknown } | null)?.code;
+  const name = (err as { name?: unknown } | null)?.name;
+
+  if (typeof code === "string" && /^P\d{4}$/.test(code)) {
+    switch (code) {
+      case "P2000":
+        return "字段值超出长度限制";
+      case "P2002":
+        return "违反唯一约束";
+      case "P2003":
+        return "关联的记录不存在";
+      case "P2020":
+        return "字段值超出取值范围";
+      default:
+        return `数据库错误（${code}）`;
+    }
+  }
+  if (name === "PrismaClientValidationError") {
+    return "参数校验未通过";
+  }
+  return "写入失败";
+};
+
+/**
+ * 批量新建资源：按 url 精确匹配去重（走 Source_url_idx）。
  * 存在重复且未指定 force / updateExisting / skipDuplicates 时抛 409，
  * data.duplicates 携带重复列表供调用方决定处理方式。
+ *
+ * 逐条写入，单条失败不影响其余地址；每条记录的写入与全文向量重建在同一事务里。
  */
 export const createSources = async (
   body: CreateSourceInput,
@@ -233,6 +291,7 @@ export const createSources = async (
     updated: 0,
     duplicate: 0,
     failed: 0,
+    errors: [],
   };
 
   for (const itemUrl of urlList) {
@@ -241,18 +300,18 @@ export const createSources = async (
 
       if (existing) {
         if (updateExisting) {
-          const source = await prisma.source.update({
-            where: { id: existing.id },
-            data: baseData,
+          // 记录与全文向量在同一事务里更新，向量写失败时标题等字段也不留下半截修改
+          await prisma.$transaction(async (tx) => {
+            const source = await tx.source.update({
+              where: { id: existing.id },
+              data: baseData,
+            });
+            await updateSearchVector(tx, source);
           });
-          await updateSearchVector(source);
           result.updated++;
         } else if (force) {
           // 强制添加：即使地址重复也插入新记录
-          const source = await prisma.source.create({
-            data: { ...baseData, url: itemUrl },
-          });
-          await updateSearchVector(source);
+          await prisma.$transaction((tx) => insertSource(tx, baseData, itemUrl));
           result.inserted++;
         } else {
           result.duplicate++;
@@ -260,13 +319,13 @@ export const createSources = async (
         continue;
       }
 
-      const source = await prisma.source.create({
-        data: { ...baseData, url: itemUrl },
-      });
-      await updateSearchVector(source);
+      await prisma.$transaction((tx) => insertSource(tx, baseData, itemUrl));
       result.inserted++;
-    } catch {
+    } catch (err) {
       result.failed++;
+      // 完整异常只进服务端日志；给调用方的是不含连接信息和堆栈的原因
+      console.error(`[source] 批量导入失败 url=${itemUrl}`, err);
+      result.errors.push({ url: itemUrl, reason: describeWriteError(err) });
     }
   }
 

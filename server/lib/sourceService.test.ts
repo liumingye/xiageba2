@@ -15,6 +15,8 @@ const h = vi.hoisted(() => ({
   creates: [] as any[],
   updates: [] as any[],
   executeRawCalls: 0,
+  executeRawVia: [] as ("tx" | "root")[],
+  transactions: 0,
   createError: null as Error | null,
   createCalls: 0,
   createFailAt: 0,
@@ -37,39 +39,50 @@ vi.mock("pg", () => ({
   },
 }));
 
-vi.mock("#server/lib/prisma", () => ({
-  prisma: {
-    source: {
-      findMany: async (args: any) => {
-        h.findManyArgs.push(args);
-        return h.existing;
-      },
-      create: async (args: any) => {
-        h.createCalls++;
-        if (h.createError || h.createCalls === h.createFailAt) {
-          throw h.createError || new Error("boom");
-        }
-        const row = {
-          id: `new-${h.creates.length + 1}`,
-          description: "",
-          menu: "",
-          ...args.data,
-        };
-        h.creates.push(row);
-        return row;
-      },
-      update: async (args: any) => {
-        const row = { id: args.where.id, description: "", menu: "", ...args.data };
-        h.updates.push(row);
-        return row;
+vi.mock("#server/lib/prisma", () => {
+  const source = {
+    findMany: async (args: any) => {
+      h.findManyArgs.push(args);
+      return h.existing;
+    },
+    create: async (args: any) => {
+      h.createCalls++;
+      if (h.createError || h.createCalls === h.createFailAt) {
+        throw h.createError || new Error("boom");
+      }
+      const row = {
+        id: `new-${h.creates.length + 1}`,
+        description: "",
+        menu: "",
+        ...args.data,
+      };
+      h.creates.push(row);
+      return row;
+    },
+    update: async (args: any) => {
+      const row = { id: args.where.id, description: "", menu: "", ...args.data };
+      h.updates.push(row);
+      return row;
+    },
+  };
+  const executeRaw = (via: "tx" | "root") => async () => {
+    h.executeRawCalls++;
+    h.executeRawVia.push(via);
+    return 1;
+  };
+  // 事务客户端：与顶层 prisma 共用同一组 source 操作，并记录向量更新是否经由事务发起
+  const tx = { source, $executeRaw: executeRaw("tx") };
+  return {
+    prisma: {
+      source,
+      $executeRaw: executeRaw("root"),
+      $transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
+        h.transactions++;
+        return await fn(tx);
       },
     },
-    $executeRaw: async () => {
-      h.executeRawCalls++;
-      return 1;
-    },
-  },
-}));
+  };
+});
 
 vi.mock("#server/utils/jieba", () => ({
   cutForSearch: (k: string) => (k === "nomatch" ? [] : ["mp3"]),
@@ -87,6 +100,9 @@ const { searchSourcesByKeyword, createSources } = await import("./sourceService"
 const pagination = { page: 1, pageSize: 20, skip: 0 };
 
 beforeEach(() => {
+  // 还原上一条用例安装的 console.error 监听，避免层层叠加导致调用次数翻倍
+  vi.restoreAllMocks();
+
   h.queries = [];
   h.releaseCalls = 0;
   h.queryError = null;
@@ -95,6 +111,8 @@ beforeEach(() => {
   h.creates = [];
   h.updates = [];
   h.executeRawCalls = 0;
+  h.executeRawVia = [];
+  h.transactions = 0;
   h.createError = null;
   h.createCalls = 0;
   h.createFailAt = 0;
@@ -212,7 +230,14 @@ describe("createSources", () => {
       skipDuplicates: true,
     });
 
-    expect(res).toEqual({ success: true, inserted: 1, updated: 0, duplicate: 1, failed: 0 });
+    expect(res).toEqual({
+      success: true,
+      inserted: 1,
+      updated: 0,
+      duplicate: 1,
+      failed: 0,
+      errors: [],
+    });
     expect(h.creates.map((c) => c.url)).toEqual(["b"]);
     expect(h.updates).toHaveLength(0);
   });
@@ -226,7 +251,14 @@ describe("createSources", () => {
       updateExisting: true,
     });
 
-    expect(res).toEqual({ success: true, inserted: 0, updated: 1, duplicate: 0, failed: 0 });
+    expect(res).toEqual({
+      success: true,
+      inserted: 0,
+      updated: 1,
+      duplicate: 0,
+      failed: 0,
+      errors: [],
+    });
     expect(h.updates[0]).toMatchObject({ id: "s1", title: "new" });
     expect(h.executeRawCalls).toBe(1);
     expect(h.creates).toHaveLength(0);
@@ -243,10 +275,92 @@ describe("createSources", () => {
 
   it("单条写入失败计入 failed，不影响其余地址", async () => {
     h.createFailAt = 1;
+    vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await createSources({ title: "t", urls: ["a", "b"] });
 
-    expect(res).toEqual({ success: true, inserted: 1, updated: 0, duplicate: 0, failed: 1 });
+    expect(res).toMatchObject({ inserted: 1, updated: 0, duplicate: 0, failed: 1 });
     expect(h.creates.map((c) => c.url)).toEqual(["b"]);
+  });
+
+  it("每条写入（含向量更新）都在各自的事务里完成，向量不脱离事务单独执行", async () => {
+    h.existing = [{ id: "s1", title: "old", url: "a" }];
+
+    await createSources({ title: "t", urls: ["a", "b"], updateExisting: true });
+
+    // a 更新、b 新建：两次写入对应两个事务，两次向量更新都经由事务客户端
+    expect(h.transactions).toBe(2);
+    expect(h.executeRawVia).toEqual(["tx", "tx"]);
+  });
+
+  describe("失败原因", () => {
+    const errorOf = (fields: Record<string, unknown>) => Object.assign(new Error("raw"), fields);
+
+    beforeEach(() => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    it("响应里给出失败地址与原因，完整异常写入服务端日志", async () => {
+      h.createError = errorOf({ code: "P2020" });
+
+      const res = await createSources({ title: "t", urls: ["a"] });
+
+      expect(res.failed).toBe(1);
+      expect(res.errors).toEqual([{ url: "a", reason: "字段值超出取值范围" }]);
+      expect(console.error).toHaveBeenCalledTimes(1);
+      const [message, err] = vi.mocked(console.error).mock.calls[0]!;
+      expect(String(message)).toContain("url=a");
+      expect(err).toBe(h.createError);
+    });
+
+    it("原始错误信息（含主机、路径、堆栈）不出现在给调用方的原因里", async () => {
+      h.createError = Object.assign(
+        new Error(
+          "Invalid `tx.source.create()` invocation in C:/app/server.ts:12:3\nCan't reach database server at `10.0.0.5:5432`",
+        ),
+        { code: "P1001" },
+      );
+
+      const res = await createSources({ title: "t", urls: ["a"] });
+
+      expect(res.errors).toEqual([{ url: "a", reason: "数据库错误（P1001）" }]);
+      expect(JSON.stringify(res)).not.toMatch(/10\.0\.0\.5|server\.ts/);
+    });
+
+    it.each([
+      ["P2000", undefined, "字段值超出长度限制"],
+      ["P2002", undefined, "违反唯一约束"],
+      ["P2003", undefined, "关联的记录不存在"],
+      ["P2020", undefined, "字段值超出取值范围"],
+      ["P1010", undefined, "数据库错误（P1010）"],
+      [undefined, "PrismaClientValidationError", "参数校验未通过"],
+      [undefined, undefined, "写入失败"],
+    ])("code=%s name=%s → %s", async (code, name, reason) => {
+      h.createError = errorOf({ code, name });
+
+      const res = await createSources({ title: "t", urls: ["a"] });
+
+      expect(res.errors).toEqual([{ url: "a", reason }]);
+    });
+
+    it("非 Error 类型的异常也能给出原因", async () => {
+      h.createError = "just a string" as unknown as Error;
+
+      const res = await createSources({ title: "t", urls: ["a"] });
+
+      expect(res.errors).toEqual([{ url: "a", reason: "写入失败" }]);
+    });
+
+    it("多条失败时逐条对应", async () => {
+      h.createError = errorOf({ code: "P2000" });
+
+      const res = await createSources({ title: "t", urls: ["a", "b"] });
+
+      expect(res.failed).toBe(2);
+      expect(res.errors).toEqual([
+        { url: "a", reason: "字段值超出长度限制" },
+        { url: "b", reason: "字段值超出长度限制" },
+      ]);
+    });
   });
 });
