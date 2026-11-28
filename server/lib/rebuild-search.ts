@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { dbPool } from "#server/lib/prisma";
 import { buildSourceSearchTokens } from "#server/utils/source";
 import { buildTokens } from "#server/utils/jieba";
 import { setRedisCache, getRedisCache } from "#server/lib/redis";
@@ -24,7 +24,6 @@ type RebuildTargetConfig = {
   batchErrorLog: (ids: string[]) => string;
   successLog: (totalUpdated: number, failedBatches: number) => string;
   fatalErrorLog: string;
-  closePoolErrorLog: string;
 };
 
 const TARGET_CONFIGS: Record<RebuildTarget, RebuildTargetConfig> = {
@@ -51,7 +50,6 @@ const TARGET_CONFIGS: Record<RebuildTarget, RebuildTargetConfig> = {
     successLog: (totalUpdated, failedBatches) =>
       `[RebuildMusicSearch] 音乐全文索引重建结束，共处理 ${totalUpdated} 条记录，失败批次 ${failedBatches}。`,
     fatalErrorLog: "[RebuildMusicSearch] 索引重建后台任务发生严重异常:",
-    closePoolErrorLog: "[RebuildMusicSearch] 关闭连接池失败:",
   },
   source: {
     batchSize: 200,
@@ -70,7 +68,6 @@ const TARGET_CONFIGS: Record<RebuildTarget, RebuildTargetConfig> = {
     successLog: (totalUpdated, failedBatches) =>
       `[RebuildSearch] 全文索引重建结束，已处理 ${totalUpdated} 条，失败批次 ${failedBatches}`,
     fatalErrorLog: "[RebuildSearch] 严重异常:",
-    closePoolErrorLog: "[RebuildSearch] 关闭连接池失败:",
   },
 };
 
@@ -107,6 +104,9 @@ export const getRebuildStatus = async (target: RebuildTarget) => {
 /**
  * 为单个重建入口创建独立任务控制器。
  * start 同步完成检查与置锁，重复触发返回 false；实际工作在后台执行。
+ *
+ * 读写都走进程共享的 dbPool，任务结束后不关池（那是整个进程在用的池）。
+ * 循环内同一时刻只占一个连接，批量之间留 50ms 间隔让出给在线请求。
  */
 export function createSearchRebuildTask(target: RebuildTarget) {
   let isRebuilding = false;
@@ -118,15 +118,9 @@ export function createSearchRebuildTask(target: RebuildTarget) {
       isRebuilding = true;
 
       setImmediate(async () => {
-        let pool: Pool | null = null;
         const taskType = all ? "all" : "inc";
 
         try {
-          pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
-            max: 15,
-          });
-
           console.log(config.startLog(all));
 
           let lastId = "";
@@ -139,7 +133,7 @@ export function createSearchRebuildTask(target: RebuildTarget) {
             : `WHERE id > $1 AND ("searchVector" IS NULL OR "searchVector" = '')`;
 
           while (hasMore) {
-            const { rows } = await pool.query<RebuildRow>(
+            const { rows } = await dbPool.query<RebuildRow>(
               config.selectSql(baseWhere, config.batchSize),
               [lastId],
             );
@@ -158,7 +152,7 @@ export function createSearchRebuildTask(target: RebuildTarget) {
             }
 
             try {
-              await pool.query(config.updateSql, [ids, tokenStrings]);
+              await dbPool.query(config.updateSql, [ids, tokenStrings]);
               totalUpdated += rows.length;
               await setRedisCache(
                 config.cacheKey,
@@ -208,9 +202,6 @@ export function createSearchRebuildTask(target: RebuildTarget) {
           console.error(config.fatalErrorLog, globalErr);
         } finally {
           isRebuilding = false;
-          await pool?.end().catch((err) => {
-            console.error(config.closePoolErrorLog, err);
-          });
         }
       });
 

@@ -1,6 +1,5 @@
 import type { OpenAI } from "openai";
-import { Pool } from "pg";
-import { prisma } from "#server/lib/prisma";
+import { dbPool, prisma } from "#server/lib/prisma";
 import { getAiChatClient } from "#server/lib/aiClient";
 import "dotenv/config";
 import { cutForSearch, buildTsQuery } from "#server/utils/jieba";
@@ -52,9 +51,6 @@ function toStringList(value: unknown, max: number): string[] {
   }
   return result;
 }
-
-// 保持同一个连接池，或者引用你全局的 pool
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 15 });
 
 /**
  * 专供大模型 Agent 调用的底层数据库检索函数
@@ -142,7 +138,7 @@ async function searchSourcesForAi(keyword: string, panType: PanFilter = "all") {
 
   let client;
   try {
-    client = await pool.connect();
+    client = await dbPool.connect();
     const result = await client.query(sql, dataParams);
 
     // 4. 数据脱敏与字段极其精简（绝不暴露原始 url 防止 AI 读错）

@@ -7,14 +7,18 @@ const h = vi.hoisted(() => ({
   body: { all: false } as any,
   bodyError: null as Error | null,
   redisWrites: [] as any[],
+  poolEndCalls: 0,
 }));
 
-vi.mock("pg", () => ({
-  Pool: class {
+// 重建任务用的是进程共享的 dbPool（lib/prisma 导出），不再每次 new Pool()
+vi.mock("#server/lib/prisma", () => ({
+  dbPool: {
     async query() {
       return { rows: [] };
-    }
-    async end() {}
+    },
+    end() {
+      h.poolEndCalls++;
+    },
   },
 }));
 
@@ -48,6 +52,16 @@ describe("重建索引锁", () => {
     h.body = { all: false };
     h.bodyError = null;
     h.redisWrites = [];
+    h.poolEndCalls = 0;
+  });
+
+  it("任务结束后不会关闭共享连接池", async () => {
+    await expect(handler({} as any)).resolves.toMatchObject({ success: true });
+
+    await tick();
+    expect(h.redisWrites.at(-1)?.value?.status).toBe("done");
+    // dbPool 是整个进程在用的池，旧实现每轮结束都 end() 一次；换成共享池后绝不能再关
+    expect(h.poolEndCalls).toBe(0);
   });
 
   it("readBody 抛错后锁保持可用，后续请求仍能启动", async () => {

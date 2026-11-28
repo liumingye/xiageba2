@@ -1,11 +1,8 @@
-import { Pool } from "pg";
 import type { Prisma } from "@@/prisma/generated";
-import { prisma } from "#server/lib/prisma";
+import { dbPool, prisma } from "#server/lib/prisma";
 import { buildSourceSearchTokens } from "#server/utils/source";
 import { cutForSearch, buildSearchWebQuery } from "#server/utils/jieba";
 import type { Pagination } from "#server/utils/admin";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 15 });
 
 export interface SourceKeywordSearchParams {
   keyword: string;
@@ -56,7 +53,7 @@ export const searchSourcesByKeyword = async (
 
   let client;
   try {
-    client = await pool.connect();
+    client = await dbPool.connect();
 
     const isUrl = /^https?:\/\//i.test(keyword);
     // cuid(2) 资源 ID：24 位字母数字，可直接按 ID 精准匹配

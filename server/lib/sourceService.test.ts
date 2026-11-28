@@ -22,23 +22,7 @@ const h = vi.hoisted(() => ({
   createFailAt: 0,
 }));
 
-vi.mock("pg", () => ({
-  Pool: class {
-    async connect() {
-      return {
-        query: async (sql: string, params: any[]) => {
-          if (h.queryError) throw h.queryError;
-          h.queries.push({ sql, params });
-          return { rows: /COUNT/i.test(sql) ? h.countRows : h.dataRows };
-        },
-        release: () => {
-          h.releaseCalls++;
-        },
-      };
-    }
-  },
-}));
-
+// 原生 SQL 走 lib/prisma 导出的共享池 dbPool；这里不再 mock "pg"
 vi.mock("#server/lib/prisma", () => {
   const source = {
     findMany: async (args: any) => {
@@ -80,6 +64,18 @@ vi.mock("#server/lib/prisma", () => {
         h.transactions++;
         return await fn(tx);
       },
+    },
+    dbPool: {
+      connect: async () => ({
+        query: async (sql: string, params: any[]) => {
+          if (h.queryError) throw h.queryError;
+          h.queries.push({ sql, params });
+          return { rows: /COUNT/i.test(sql) ? h.countRows : h.dataRows };
+        },
+        release: () => {
+          h.releaseCalls++;
+        },
+      }),
     },
   };
 });
