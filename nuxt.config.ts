@@ -350,6 +350,7 @@ export default defineNuxtConfig({
       "*/10 * * * *": ["source:clean_temp"],
       "*/5 * * * *": ["source:check_account", "source:check_violated"],
       "0 * * * *": ["shield:cleanIpData", "shield:cleanBans"],
+      "*/30 * * * *": ["music:flush_view_count"],
     },
   },
   postcss: {
