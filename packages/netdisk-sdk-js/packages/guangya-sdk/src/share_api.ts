@@ -119,6 +119,9 @@ export class GuangyaShareApi {
       `${GUANGYA_API_USER_RES}/get_share_access_token`,
       { shareId, code },
     );
+    if (!isGuangyaSuccess(payload)) {
+      raiseApiError(payload, "guangya share access token failed");
+    }
     const accessToken = extractShareAccessToken(payload);
     return { accessToken, raw: payload };
   }
