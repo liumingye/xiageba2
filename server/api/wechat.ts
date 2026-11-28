@@ -226,6 +226,9 @@ function getPageItems(session: SearchSession): WechatSearchItem[] {
  *  3. 资源搜索
  * ========================================================================= */
 
+/** 搜索候选集上限：先用索引无排序截取，再只对候选集算 ts_rank */
+const SEARCH_CANDIDATE_LIMIT = 200;
+
 async function searchResources(
   keyword: string,
   limit: number,
@@ -245,19 +248,26 @@ async function searchResources(
 
   try {
     const sourceLimit = Math.max(1, Math.ceil(limit / 2));
+    // ⚡ 两阶段查询：先借 GIN 索引无排序截取候选集，再只对候选集算 ts_rank。
+    // 直接 ORDER BY ts_rank 会让 PG 对全部命中行算分排序。
     const sourceRows: any[] = await prisma.$queryRaw`
       WITH search_query AS (
         SELECT to_tsquery('simple', ${keywordWebQuery}) AS value
+      ),
+      candidates AS (
+        SELECT s.id, s.title, s.description, s.cid, s.url,
+               s."searchVector", s."createdAt"
+        FROM "Source" s, search_query
+        WHERE s."status" = 1
+          AND s."invalidNum" < 3
+          AND search_query.value IS NOT NULL
+          AND s."searchVector" @@ search_query.value
+        LIMIT ${SEARCH_CANDIDATE_LIMIT}
       )
-      SELECT s.id, s.title, s.description, s.cid, s.url
-      FROM "Source" s
-      CROSS JOIN search_query
-      WHERE s."status" = 1
-        AND s."invalidNum" < 3
-        AND search_query.value IS NOT NULL
-        AND s."searchVector" @@ search_query.value
-      ORDER BY ts_rank(s."searchVector", search_query.value, 1) DESC,
-               s."createdAt" DESC
+      SELECT c.id, c.title, c.description, c.cid, c.url
+      FROM candidates c, search_query
+      ORDER BY ts_rank(c."searchVector", search_query.value, 1) DESC,
+               c."createdAt" DESC
       LIMIT ${sourceLimit}
     `;
     const cids = [...new Set(sourceRows.map((r) => r.cid).filter(Boolean))];
@@ -289,15 +299,21 @@ async function searchResources(
       const musicRows: any[] = await prisma.$queryRaw`
         WITH pq AS (
           SELECT to_tsquery('simple', ${keywordWebQuery}) AS q
+        ),
+        candidates AS (
+          SELECT m.id, m.title, m.artist, m.album,
+                 m."searchVector", m."viewCount", m."createdAt"
+          FROM "Music" m, pq
+          WHERE pq.q IS NOT NULL
+            AND m.status = 1
+            AND m."searchVector" @@ pq.q
+          LIMIT ${SEARCH_CANDIDATE_LIMIT}
         )
-        SELECT m.id, m.title, m.artist, m.album
-        FROM "Music" m, pq
-        WHERE pq.q IS NOT NULL
-          AND m.status = 1
-          AND m."searchVector" @@ pq.q
-        ORDER BY ts_rank(m."searchVector", pq.q, 1) DESC,
-                 m."viewCount" DESC,
-                 m."createdAt" DESC
+        SELECT c.id, c.title, c.artist, c.album
+        FROM candidates c, pq
+        ORDER BY ts_rank(c."searchVector", pq.q, 1) DESC,
+                 c."viewCount" DESC,
+                 c."createdAt" DESC
         LIMIT ${remaining}
       `;
       for (const r of musicRows) {
